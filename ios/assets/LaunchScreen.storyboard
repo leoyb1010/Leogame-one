@@ -16,12 +16,25 @@
                         <rect key="frame" x="0.0" y="0.0" width="1376" height="1032"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="BannerWide" translatesAutoresizingMaskIntoConstraints="NO" id="hN2-E0-Tu8">
-                                <rect key="frame" x="0.0" y="0.0" width="1376" height="586"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES" flexibleMaxY="YES"/>
-                                <variation key="heightClass=regular-widthClass=compact" image="Banner"/>
-                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="LEO" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Leo-Launch-Mark">
+                                <rect key="frame" x="632" y="482" width="112" height="68"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="52"/>
+                                <color key="textColor" red="0.7098039216" green="0.5411764706" blue="0.2705882353" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="◆" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="Leo-Launch-Flame">
+                                <rect key="frame" x="676" y="558" width="24" height="30"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="22"/>
+                                <color key="textColor" red="0.1803921569" green="0.6078431373" blue="0.4509803922" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
+                        <constraints>
+                            <constraint firstItem="Leo-Launch-Mark" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Leo-Mark-CenterX"/>
+                            <constraint firstItem="Leo-Launch-Mark" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-24" id="Leo-Mark-CenterY"/>
+                            <constraint firstItem="Leo-Launch-Flame" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Leo-Flame-CenterX"/>
+                            <constraint firstItem="Leo-Launch-Flame" firstAttribute="top" secondItem="Leo-Launch-Mark" secondAttribute="bottom" constant="8" id="Leo-Flame-Top"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -34,8 +47,4 @@
             <point key="canvasLocation" x="50" y="371.25"/>
         </scene>
     </scenes>
-    <resources>
-        <image name="Banner" width="420" height="300"/>
-        <image name="BannerWide" width="720" height="180"/>
-    </resources>
 </document>

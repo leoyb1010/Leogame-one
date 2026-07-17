@@ -682,7 +682,7 @@ public abstract class Char extends Actor {
 		}
 		defRoll *= FerretTuft.evasionMultiplier();
 
-		if (acuRoll >= defRoll){
+		if (CombatMath.rollHits(acuRoll, defRoll)){
 			hitMissIcon = FloatingText.getHitReasonIcon(attacker, acuRoll, defender, defRoll);
 			return true;
 		} else {

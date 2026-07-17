@@ -48,7 +48,7 @@ public class DesktopLaunchValidator {
 			// Check if we are the relaunched process, if so return true to avoid looping.
 			// The game will likely crash, but that's unavoidable at this point.
 			if ("true".equals(System.getProperty("shpdRelaunched"))){
-				System.err.println("Error: Could not verify new process is running on the first thread. Trying to run the game anyway...");
+				System.err.println(DesktopLaunchMessages.get("first_thread_unverified"));
 				return true;
 			}
 
@@ -64,9 +64,9 @@ public class DesktopLaunchValidator {
 			jvmArgs.add(System.getProperty("java.class.path"));
 			jvmArgs.add(DesktopLauncher.class.getName());
 
-			System.err.println("Error: Leo的地牢围攻 must start on the first thread in order to work on macOS.");
-			System.err.println("  To avoid this error, run the game with the \"-XstartOnFirstThread\" argument");
-			System.err.println("  Now attempting to relaunch the game on the first thread automatically:\n");
+			System.err.println(DesktopLaunchMessages.get("first_thread_required"));
+			System.err.println(DesktopLaunchMessages.get("first_thread_instruction"));
+			System.err.println(DesktopLaunchMessages.get("first_thread_relaunch"));
 
 			try {
 				Process process = new ProcessBuilder(jvmArgs).redirectErrorStream(true).start();

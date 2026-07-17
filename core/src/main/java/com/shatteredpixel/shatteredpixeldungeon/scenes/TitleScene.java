@@ -173,7 +173,9 @@ public class TitleScene extends PixelScene {
 		btnPlay.icon(Icons.get(Icons.ENTER));
 		add(btnPlay);
 
-		btnRankings = new LeoStyledButton(Messages.get(this, "rankings")){
+		int secondaryFontSize = landscape() ? 7 : 5;
+
+		btnRankings = new LeoStyledButton(Messages.get(this, "rankings"), secondaryFontSize){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchNoFade( RankingsScene.class );
@@ -183,7 +185,7 @@ public class TitleScene extends PixelScene {
 		add(btnRankings);
 		Dungeon.daily = Dungeon.dailyReplay = false;
 
-		btnJournal = new LeoStyledButton(Messages.get(this, "journal")){
+		btnJournal = new LeoStyledButton(Messages.get(this, "journal"), secondaryFontSize){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchNoFade( JournalScene.class );
@@ -192,14 +194,14 @@ public class TitleScene extends PixelScene {
 		btnJournal.icon(Icons.get(Icons.JOURNAL));
 		add(btnJournal);
 
-		btnChanges = new ChangesButton(Messages.get(this, "changes"));
+		btnChanges = new ChangesButton(Messages.get(this, "changes"), secondaryFontSize);
 		btnChanges.icon(Icons.get(Icons.CHANGES));
 		add(btnChanges);
 
-		btnSettings = new SettingsButton(Messages.get(this, "settings"));
+		btnSettings = new SettingsButton(Messages.get(this, "settings"), secondaryFontSize);
 		add(btnSettings);
 
-		btnAbout = new LeoStyledButton(Messages.get(this, "about")){
+		btnAbout = new LeoStyledButton(Messages.get(this, "about"), secondaryFontSize){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchScene( AboutScene.class );
@@ -391,8 +393,8 @@ public class TitleScene extends PixelScene {
 
 	private static class ChangesButton extends LeoStyledButton {
 
-		public ChangesButton(String label){
-			super(label);
+		public ChangesButton(String label, int size){
+			super(label, size);
 			if (SPDSettings.updates()) Updates.checkForUpdate();
 		}
 
@@ -445,8 +447,8 @@ public class TitleScene extends PixelScene {
 
 	private static class SettingsButton extends LeoStyledButton {
 
-		public SettingsButton(String label){
-			super(label);
+		public SettingsButton(String label, int size){
+			super(label, size);
 			if (Messages.lang().status() == Languages.Status.X_UNFINISH){
 				icon(Icons.get(Icons.LANGS));
 				icon.hardlight(1.5f, 0, 0);

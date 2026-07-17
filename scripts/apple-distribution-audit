@@ -1,0 +1,46 @@
+#!/bin/zsh
+set -euo pipefail
+
+expected_bundle_id=leogameone
+profile_roots=(
+  "$HOME/Library/MobileDevice/Provisioning Profiles"
+  "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+)
+
+identities=$(security find-identity -v -p codesigning 2>&1)
+if ! grep -q 'Developer ID Application:' <<<"$identities"; then
+  print -u2 'ERROR: missing Developer ID Application certificate for macOS distribution.'
+  exit 1
+fi
+if ! grep -q 'Apple Distribution:' <<<"$identities"; then
+  print -u2 'ERROR: missing Apple Distribution certificate for TestFlight/App Store.'
+  exit 1
+fi
+
+explicit_profile=false
+for profile_root in "${profile_roots[@]}"; do
+  [[ -d "$profile_root" ]] || continue
+  for profile in "$profile_root"/*.(mobileprovision|provisionprofile)(N); do
+    profile_plist=$(mktemp -t leogameone-profile.XXXXXX)
+    if security cms -D -i "$profile" > "$profile_plist" 2>/dev/null; then
+      application_id=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$profile_plist" 2>/dev/null || true)
+      if [[ "$application_id" == *".$expected_bundle_id" ]]; then
+        explicit_profile=true
+      fi
+    fi
+    rm -f "$profile_plist"
+  done
+done
+
+if [[ "$explicit_profile" != true ]]; then
+  print -u2 "ERROR: missing explicit iOS distribution profile for $expected_bundle_id."
+  exit 1
+fi
+
+if [[ -z "${NOTARY_KEYCHAIN_PROFILE:-}" ]]; then
+  print -u2 'ERROR: NOTARY_KEYCHAIN_PROFILE is required for notarized macOS releases.'
+  exit 1
+fi
+xcrun notarytool history --keychain-profile "$NOTARY_KEYCHAIN_PROFILE" >/dev/null
+
+print 'Apple distribution credentials are ready.'

@@ -24,7 +24,8 @@ public final class LeoChanges {
 	}
 
 	public static void addAllChanges(ArrayList<ChangeInfo> changeInfos) {
-		ChangeInfo version = new ChangeInfo("v1.0.0", true, "");
+		ChangeInfo version = new ChangeInfo("v1.0.0", true,
+				Messages.get(LeoChanges.class, "summary"));
 		version.hardlight(Window.TITLE_COLOR);
 		changeInfos.add(version);
 

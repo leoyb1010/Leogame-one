@@ -345,7 +345,7 @@ public class HeroSelectScene extends PixelScene {
 				bar.y = h + insets.top;
 				add(bar);
 
-				PointerArea blocker = new PointerArea(0, Camera.main.width - insets.bottom, Camera.main.width, insets.bottom);
+				PointerArea blocker = new PointerArea(0, Camera.main.height - insets.bottom, Camera.main.width, insets.bottom);
 				add(blocker);
 			}
 

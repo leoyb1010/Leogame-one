@@ -12,30 +12,33 @@ if (appleBuildRoot) {
     layout.buildDirectory = file("${appleBuildRoot}/ios")
 }
 
+// RoboVM reads this file while its plugin is applied, so it must exist before
+// plugin configuration. Generating it as a later task leaves the first build
+// using stale identity values from the previous checkout/build.
+def robovmProps = new Properties()
+robovmProps.setProperty('appName', appName)
+robovmProps.setProperty('appApplePackageName', appBundleId)
+robovmProps.setProperty('appVersionCode', appVersionCode.toString())
+robovmProps.setProperty('appVersionName', appVersionName)
+robovmProps.setProperty('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
+robovmProps.setProperty('appMainclass', appPackageName + ".ios.IOSLauncher")
+robovmProps.setProperty('appExecutable', "IOSLauncher")
+file("robovm.properties").withWriter {
+    robovmProps.store(it, "Dynamically generated, do not commit to version control!")
+}
+
 apply plugin: "java"
 apply plugin: "robovm"
 
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
-
-task updateRoboVMProps(){
-    def props = new Properties()
-    
-    props.setProperty ('appName', appName)
-    props.setProperty ('appApplePackageName', appBundleId)
-
-    props.setProperty ('appVersionCode', appVersionCode.toString())
-    props.setProperty ('appVersionName', appVersionName)
-    //parse out just #.#.# from version name, this is an apple requirement
-    props.setProperty ('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
-
-    props.setProperty ('appMainclass', appPackageName + ".ios.IOSLauncher")
-    props.setProperty ('appExecutable', "IOSLauncher")
-
-    file("robovm.properties").withWriter { props.store(it, "Dynamically generated, do not commit to version control!") }
+robovm {
+    def iosSignIdentity = System.getenv('IOS_SIGN_IDENTITY')
+    def iosProvisioningProfile = System.getenv('IOS_PROVISIONING_PROFILE')
+    if (iosSignIdentity) setIosSignIdentity(iosSignIdentity)
+    if (iosProvisioningProfile) setIosProvisioningProfile(iosProvisioningProfile)
 }
 
-build.dependsOn updateRoboVMProps
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
 
 launchIPhoneSimulator.dependsOn build
 launchIPadSimulator.dependsOn build
@@ -44,8 +47,8 @@ createIPA.dependsOn build
 
 dependencies {
     implementation project(':core')
-    implementation project(':services:updates:debugUpdates')
-    implementation project(':services:news:debugNews')
+    implementation project(':services:updates:offlineUpdates')
+    implementation project(':services:news:offlineNews')
 
     implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
     implementation "com.mobidevelop.robovm:robovm-rt:$robovmVersion"
@@ -57,4 +60,5 @@ dependencies {
     implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
     implementation "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios"
     implementation "com.badlogicgames.gdx-controllers:gdx-controllers-ios:$gdxControllersVersion"
+    testImplementation 'junit:junit:4.13.2'
 }

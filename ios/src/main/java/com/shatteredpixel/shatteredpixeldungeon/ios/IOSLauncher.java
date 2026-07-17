@@ -25,6 +25,7 @@ import com.badlogic.gdx.Files;
 import com.badlogic.gdx.backends.iosrobovm.DefaultIOSInput;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplication;
 import com.badlogic.gdx.backends.iosrobovm.IOSApplicationConfiguration;
+import com.badlogic.gdx.backends.iosrobovm.IOSAudio;
 import com.badlogic.gdx.backends.iosrobovm.IOSInput;
 import com.badlogic.gdx.backends.iosrobovm.IOSPreferences;
 import com.badlogic.gdx.backends.iosrobovm.bindings.metalangle.MGLDrawableColorFormat;
@@ -96,6 +97,7 @@ public class IOSLauncher extends IOSApplication.Delegate {
 		//end of prefs setup
 
 		IOSApplicationConfiguration config = new IOSApplicationConfiguration();
+		final boolean simulator = IOSRuntimeEnvironment.isSimulator(System.getenv());
 
 		config.colorFormat = MGLDrawableColorFormat.RGBA8888;
 		config.depthFormat = MGLDrawableDepthFormat.None;
@@ -103,6 +105,9 @@ public class IOSLauncher extends IOSApplication.Delegate {
 
 		config.hideHomeIndicator = true;
 		config.overrideRingerSwitch = SPDSettings.ignoreSilentMode();
+		// iOS 26 simulators can abort inside AURemoteIO/OpenAL during app startup.
+		// Keep full audio on real devices and use a crash-safe simulator fallback.
+		config.useAudio = !simulator;
 
 		config.useHaptics = true;
 		config.useAccelerometer = false;
@@ -189,6 +194,11 @@ public class IOSLauncher extends IOSApplication.Delegate {
 		config.addIosDevice("SIMULATOR_ARM64",  "arm64", 460);
 
 		return new IOSApplication(new ShatteredPixelDungeon(new IOSPlatformSupport()), config){
+			@Override
+			protected IOSAudio createAudio(IOSApplicationConfiguration configuration) {
+				return simulator ? new SilentIOSAudio() : super.createAudio(configuration);
+			}
+
 			@Override
 			protected IOSInput createInput() {
 				//FIXME essentially a backport of a fix to text fields from libGDX ios backend 1.13.5

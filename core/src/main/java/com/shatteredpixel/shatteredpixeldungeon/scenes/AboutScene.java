@@ -23,6 +23,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Flare;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TitleBackground;
@@ -67,9 +68,9 @@ public class AboutScene extends PixelScene {
 		//*** Leo's Dungeon Assault Credits ***
 
 		CreditsBlock leo = new CreditsBlock(true, Window.TITLE_COLOR,
-				"Leo的地牢围攻",
+				Messages.get(this, "leo_title"),
 				null,
-				"产品与二次开发：_Leo_\n基于 Shattered Pixel Dungeon 开源代码",
+				Messages.get(this, "leo_body"),
 				null,
 				null);
 		leo.setRect((w - fullWidth)/2f, insets.top + 6, 120, 0);
@@ -80,14 +81,14 @@ public class AboutScene extends PixelScene {
 		CreditsBlock shpx = new CreditsBlock(true, Window.SHPX_COLOR,
 				"Shattered Pixel Dungeon",
 				Icons.SHPX.get(),
-				"原作开发：_Evan Debenham_\n基于 Pixel Dungeon 开源代码",
+				Messages.get(this, "shpx_body"),
 				"ShatteredPixel.com",
 				"https://ShatteredPixel.com");
 		shpx.setRect((w - fullWidth)/2f, leo.bottom() + 12, 120, 0);
 		content.add(shpx);
 
 		CreditsBlock alex = new CreditsBlock(false, Window.SHPX_COLOR,
-				"插画与设计：",
+				Messages.get(this, "art_design"),
 				Icons.ALEKS.get(),
 				"Aleksandar Komitov",
 				"alekskomitov.com",
@@ -101,7 +102,7 @@ public class AboutScene extends PixelScene {
 		content.add(alex);
 
 		CreditsBlock celesti = new CreditsBlock(false, Window.SHPX_COLOR,
-				"音效：",
+				Messages.get(this, "sound_effects"),
 				Icons.CELESTI.get(),
 				"Celesti",
 				"celesti-whispers.itch.io",
@@ -110,7 +111,7 @@ public class AboutScene extends PixelScene {
 		content.add(celesti);
 
 		CreditsBlock lumine = new CreditsBlock(false, Window.SHPX_COLOR,
-				"音乐：",
+				Messages.get(this, "music"),
 				Icons.LUMINE.get(),
 				"Lumine Haaristo",
 				"youtube.com/@Lumine...",
@@ -124,7 +125,7 @@ public class AboutScene extends PixelScene {
 		CreditsBlock wata = new CreditsBlock(true, WATA_COLOR,
 				"Pixel Dungeon",
 				Icons.WATA.get(),
-				"原作开发：_Watabou_\n灵感来自 Brian Walker 的 Brogue",
+				Messages.get(this, "pixel_body"),
 				"watabou.itch.io",
 				"https://watabou.itch.io/");
 		if (landscape()){
@@ -137,7 +138,7 @@ public class AboutScene extends PixelScene {
 		addLine(wata.top() - 4, content);
 
 		CreditsBlock cube = new CreditsBlock(false, WATA_COLOR,
-				"音乐：",
+				Messages.get(this, "music"),
 				Icons.CUBE_CODE.get(),
 				"Cube Code",
 				null,
@@ -157,7 +158,7 @@ public class AboutScene extends PixelScene {
 				GDX_COLOR,
 				"libGDX",
 				Icons.LIBGDX.get(),
-				"《Leo的地牢围攻》由 _libGDX_ 驱动",
+				Messages.get(this, "libgdx_body"),
 				"libgdx.com",
 				"https://libgdx.com/");
 		if (landscape()){
@@ -170,7 +171,7 @@ public class AboutScene extends PixelScene {
 		addLine(gdx.top() - 4, content);
 
 		CreditsBlock arcnor = new CreditsBlock(false, GDX_COLOR,
-				"Pixel Dungeon GDX 移植：",
+				Messages.get(this, "gdx_port"),
 				Icons.ARCNOR.get(),
 				"Edu García",
 				"gamedev.place/@arcnor",
@@ -184,7 +185,7 @@ public class AboutScene extends PixelScene {
 		content.add(arcnor);
 
 		CreditsBlock purigro = new CreditsBlock(false, GDX_COLOR,
-				"Shattered GDX 技术协助：",
+				Messages.get(this, "gdx_help"),
 				Icons.PURIGRO.get(),
 				"Kevin MacMartin",
 				"github.com/prurigro",
@@ -198,7 +199,7 @@ public class AboutScene extends PixelScene {
 				Window.TITLE_COLOR,
 				null,
 				null,
-				"继承的多语言文本来自 ShatteredPD 的 _Transifex_ 社区，感谢所有志愿翻译者！",
+				Messages.get(this, "transifex_body"),
 				"transifex.com/shattered-pixel/...",
 				"https://explore.transifex.com/shattered-pixel/shattered-pixel-dungeon/");
 		transifex.setRect((Camera.main.width - colWidth)/2f, purigro.bottom() + 12, colWidth, 0);
@@ -214,16 +215,16 @@ public class AboutScene extends PixelScene {
 				Window.TITLE_COLOR,
 				null,
 				null,
-				"《Leo的地牢围攻》沿用 Shattered Pixel Dungeon 中来自 _freesound.org_ 的以下声音素材：\n\n" +
+				Messages.get(this, "freesound_intro") + "\n\n" +
 
-				"知识共享署名许可：\n" +
+				Messages.get(this, "cc_attribution") + "\n" +
 				"_SFX ATTACK SWORD 001.wav_ by _JoelAudio_\n" +
 				"_Pack: Slingshots and Longbows_ by _saturdaysoundguy_\n" +
 				"_Cracking/Crunching, A.wav_ by _InspectorJ_\n" +
 				"_Extracting a sword.mp3_ by _Taira Komori_\n" +
 				"_Pack: Uni Sound Library_ by _timmy h123_\n\n" +
 
-				"知识共享零号许可（CC0）：\n" +
+				Messages.get(this, "cc_zero") + "\n" +
 				"_Pack: Movie Foley: Swords_ by _Black Snow_\n" +
 				"_machine gun shot 2.flac_ by _qubodup_\n" +
 				"_m240h machine gun burst 4.flac_ by _qubodup_\n" +

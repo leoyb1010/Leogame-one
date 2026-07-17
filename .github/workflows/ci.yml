@@ -20,8 +20,10 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - name: Compile core and desktop
-        run: ./gradlew --no-daemon :core:compileJava :desktop:compileJava
+      - name: Test core and desktop
+        run: ./gradlew --no-daemon :core:test :desktop:test
+      - name: Validate internal release metadata
+        run: python3 scripts/validate_release.py
       - name: Verify patch whitespace
         run: git diff --check
 
@@ -35,5 +37,5 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - name: Compile Apple targets
-        run: ./gradlew --no-daemon :desktop:compileJava :ios:compileJava
+      - name: Test and package Apple targets
+        run: ./gradlew --no-daemon :ios:test :desktop:jpackageImage

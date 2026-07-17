@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.LeoIdentityConfig;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
@@ -104,7 +105,7 @@ public class WelcomeScene extends PixelScene {
 		w -= insets.left + insets.right;
 		h -= insets.top + insets.bottom;
 
-		RenderedTextBlock title = renderTextBlock("Leo的地牢围攻", landscape() ? 18 : 16);
+		RenderedTextBlock title = renderTextBlock(LeoIdentityConfig.gameTitle(), landscape() ? 18 : 16);
 		title.align(RenderedTextBlock.CENTER_ALIGN);
 		title.hardlight(Window.TITLE_COLOR);
 		add( title );

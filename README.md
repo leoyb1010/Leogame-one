@@ -39,7 +39,7 @@
 |---|---|
 | ![战士](artwork/inbox/splashes/warrior.png) | ![下水道](artwork/inbox/splashes/sewers.png) |
 
-原始生成素材位于 `artwork/inbox/`，处理后的透明素材位于 `artwork/processed/alpha/`，游戏运行时资源由 `scripts/process_leo_artwork.py` 生成。这样可以保留原图，并避免反复压缩。
+原始生成素材位于 `artwork/inbox/`，处理后的透明素材位于 `artwork/processed/alpha/`，游戏运行时资源由 `scripts/process_leo_artwork.py` 生成。源文件权属和派生关系记录在 `artwork/licenses/ASSET_PROVENANCE.csv`。
 
 ## 快速开始
 
@@ -62,6 +62,16 @@ scripts/apple-gradle :ios:launchIPhoneSimulator
 scripts/apple-gradle :ios:launchIPadSimulator
 ```
 
+### 测试与发布门禁
+
+```bash
+scripts/apple-gradle :core:test :desktop:test :ios:test
+python3 scripts/validate_release.py
+scripts/apple-distribution-audit
+```
+
+前两项会验证命中基线、英中文资源、存档攻击数值、移动间隔、iOS 安全区、离线服务与素材台账。最后一项只有在 Developer ID、Apple Distribution、显式 iOS Provisioning Profile 和公证凭据都就绪时才会通过。
+
 构建产物统一放在 macOS 用户缓存目录的 `leogameone-gradle/` 下，避免 iCloud/FileProvider 目录造成 Gradle 文件锁与签名异常。完整说明见 [APPLE_DEVELOPMENT.md](APPLE_DEVELOPMENT.md)。
 
 ## 项目结构
@@ -70,13 +80,15 @@ scripts/apple-gradle :ios:launchIPadSimulator
 core/       游戏规则、场景、中文资源、运行时美术
 desktop/    macOS/桌面启动器与图标
 ios/        iPhone/iPad 启动器、Info.plist、AppIcon
-services/   离线调试用更新与新闻服务适配
+services/   离线禁用的更新与新闻服务适配
 artwork/    Leo 原始素材与透明处理结果
 scripts/    Apple 构建包装器和素材处理管线
 docs/       美术规范、升级路线与开发说明
 ```
 
 核心规则层继续沿用稳定的 Java 包名，避免大规模包迁移破坏存档兼容；用户可见产品名和 Apple Bundle ID 已全部独立为 Leo 版本。
+
+`leogameone` 是项目所有者确定的最终 Bundle ID。它通过 Apple 字符集校验并可用于开发签名；首次上传 App Store Connect 前，必须在 Apple Developer 账户中将其注册为显式 App ID，此后不再变更。
 
 ## 战斗命中说明
 
@@ -96,7 +108,7 @@ docs/       美术规范、升级路线与开发说明
 
 代码基于 [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) 与 [Pixel Dungeon](https://github.com/00-Evan/pixel-dungeon-gradle)，继续遵循 [GPLv3](LICENSE.txt)。原作者、翻译者、音乐、美术和音效署名保留在游戏“关于”页面和源码版权头中。
 
-`artwork/` 中 Leo 新增的定制素材随本仓库源码发布；第三方原始素材仍遵循各自署名与许可。分发修改版时，必须同步提供对应源码、GPLv3 许可证及必要署名。
+`artwork/` 中 Leo 新增的定制素材随本仓库源码发布，具体记录见 [素材权属台账](artwork/licenses/README.md)；第三方原始素材仍遵循各自署名与许可。分发修改版时，必须同步提供对应源码、GPLv3 许可证及必要署名。
 
 ## 致谢
 

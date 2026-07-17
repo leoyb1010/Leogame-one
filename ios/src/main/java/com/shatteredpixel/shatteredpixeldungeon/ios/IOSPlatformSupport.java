@@ -100,11 +100,12 @@ public class IOSPlatformSupport extends PlatformSupport {
 
 		// Keep all HUD controls inside UIKit's real safe area. In particular, do not
 		// discard the home-indicator inset in fullscreen or shrink Dynamic Island data.
-		return new RectF(
-				(float)safeArea.getLeft() * scale,
-				(float)safeArea.getTop() * scale,
-				(float)safeArea.getRight() * scale,
-				(float)safeArea.getBottom() * scale);
+		return IOSLayoutMath.scaledInsets(
+				(float)safeArea.getLeft(),
+				(float)safeArea.getTop(),
+				(float)safeArea.getRight(),
+				(float)safeArea.getBottom(),
+				scale);
 	}
 
 	@Override
@@ -156,7 +157,11 @@ public class IOSPlatformSupport extends PlatformSupport {
 
 	@Override
 	public void setHonorSilentSwitch( boolean value ) {
-		OALSimpleAudio.sharedInstance().setHonorSilentSwitch(value);
+		// Simulator audio uses a no-op backend to avoid the iOS 26 AURemoteIO
+		// startup deadlock, so it must never initialize ObjectAL from settings.
+		if (!IOSRuntimeEnvironment.isSimulator(System.getenv())) {
+			OALSimpleAudio.sharedInstance().setHonorSilentSwitch(value);
+		}
 	}
 
 	public void setOnscreenKeyboardVisible(boolean value, boolean multiline){

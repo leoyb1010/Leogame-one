@@ -1,0 +1,39 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_root=${0:A:h:h}
+cache_root="$(getconf DARWIN_USER_CACHE_DIR)/leogameone-gradle"
+mac_app="$cache_root/desktop/jpackage/Leo的地牢围攻.app"
+ios_app="$cache_root/ios/robovm/IOSLauncher.app"
+ios_ipa="$cache_root/ios/robovm/IOSLauncher.ipa"
+notary_archive="$cache_root/desktop/LeoDungeonSiege-notary.zip"
+
+: "${MAC_SIGNING_IDENTITY:?Set MAC_SIGNING_IDENTITY to the Developer ID Application identity.}"
+: "${IOS_SIGN_IDENTITY:?Set IOS_SIGN_IDENTITY to the Apple Distribution identity.}"
+: "${IOS_PROVISIONING_PROFILE:?Set IOS_PROVISIONING_PROFILE to the explicit leogameone profile name or UUID.}"
+: "${NOTARY_KEYCHAIN_PROFILE:?Set NOTARY_KEYCHAIN_PROFILE to the saved notarytool profile.}"
+
+cd "$project_root"
+python3 scripts/validate_release.py
+scripts/apple-distribution-audit
+scripts/apple-gradle :core:test :desktop:test :ios:test :desktop:jpackageImage :ios:createIPA --no-daemon
+
+codesign --verify --deep --strict --verbose=2 "$mac_app"
+codesign --verify --deep --strict --verbose=2 "$ios_app"
+if ! codesign -dv --verbose=4 "$mac_app" 2>&1 | grep -q 'Authority=Developer ID Application:'; then
+  print -u2 'ERROR: macOS app was not signed with Developer ID Application.'
+  exit 1
+fi
+if ! codesign -dv --verbose=4 "$ios_app" 2>&1 | grep -q 'Authority=Apple Distribution:'; then
+  print -u2 'ERROR: iOS app was not signed with Apple Distribution.'
+  exit 1
+fi
+
+ditto -c -k --keepParent "$mac_app" "$notary_archive"
+xcrun notarytool submit "$notary_archive" --keychain-profile "$NOTARY_KEYCHAIN_PROFILE" --wait
+xcrun stapler staple "$mac_app"
+xcrun stapler validate "$mac_app"
+spctl -a -vv "$mac_app"
+
+print "macOS distribution app: $mac_app"
+print "iOS distribution IPA: $ios_ipa"

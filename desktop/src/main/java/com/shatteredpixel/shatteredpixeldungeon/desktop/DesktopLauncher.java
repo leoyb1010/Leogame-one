@@ -96,16 +96,12 @@ public class DesktopLauncher {
 				}
 
 				if (exceptionMsg.contains("Couldn’t create window")){
-					TinyFileDialogs.tinyfd_messageBox(title + " 启动失败",
-							"游戏无法初始化图形显示。请确认系统图形驱动可用并支持 OpenGL 2.0 或更高版本。\n\n" +
-									"版本：" + Game.version + "\n" +
-									exceptionMsg,
+					TinyFileDialogs.tinyfd_messageBox(title + DesktopLaunchMessages.get("window_failure"),
+							String.format(DesktopLaunchMessages.get("window_failure_body"), Game.version, exceptionMsg),
 							"ok", "error", false);
 				} else {
-					TinyFileDialogs.tinyfd_messageBox(title + " 发生错误",
-							"游戏遇到无法恢复的错误并已停止。请保留下面的信息用于问题排查。\n\n" +
-									"版本：" + Game.version + "\n" +
-									exceptionMsg,
+					TinyFileDialogs.tinyfd_messageBox(title + DesktopLaunchMessages.get("fatal_error"),
+							String.format(DesktopLaunchMessages.get("fatal_error_body"), Game.version, exceptionMsg),
 							"ok", "error", false);
 				}
 				System.exit(1);

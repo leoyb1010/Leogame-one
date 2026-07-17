@@ -35,6 +35,17 @@ tasks.register('debug', JavaExec) {
     }
 }
 
+tasks.named('run', JavaExec) {
+    systemProperty 'Specification-Title', appName
+    systemProperty 'Implementation-Title', appPackageName
+    systemProperty 'Specification-Version', appVersionName + "-INDEV"
+    systemProperty 'Implementation-Version', appVersionCode
+
+    if (osName.contains('mac')) {
+        jvmArgs '-XstartOnFirstThread'
+    }
+}
+
 tasks.withType(Jar).configureEach {
     manifest {
         attributes 'Main-Class': appMainClass
@@ -106,10 +117,15 @@ runtime {
             javaHome = macJdkHome.getAbsolutePath()
             jpackage {
                 jpackageHome = macJdkHome
-                imageOptions = ["--icon", file("./src/main/assets/icons/mac.icns"),
-                                "--java-options", "-XstartOnFirstThread",
-                                "--java-options", "-XX:+IgnoreUnrecognizedVMOptions",
-                                "--mac-package-identifier", appBundleId]
+                def macImageOptions = ["--icon", file("./src/main/assets/icons/mac.icns"),
+                                       "--java-options", "-XstartOnFirstThread",
+                                       "--java-options", "-XX:+IgnoreUnrecognizedVMOptions",
+                                       "--mac-package-identifier", appBundleId]
+                def signingIdentity = System.getenv('MAC_SIGNING_IDENTITY')
+                if (signingIdentity) {
+                    macImageOptions += ["--mac-sign", "--mac-signing-key-user-name", signingIdentity]
+                }
+                imageOptions = macImageOptions
             }
         }
     }
@@ -133,6 +149,7 @@ dependencies {
     implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux"
     implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux-arm64"
 
-    implementation project(':services:updates:debugUpdates')
-    implementation project(':services:news:debugNews')
+    implementation project(':services:updates:offlineUpdates')
+    implementation project(':services:news:offlineNews')
+    testImplementation 'junit:junit:4.13.2'
 }
