@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
+import com.shatteredpixel.shatteredpixeldungeon.LeoIdentityConfig;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
@@ -38,10 +39,11 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.IconButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
+import com.shatteredpixel.shatteredpixeldungeon.ui.LeoStyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
-import com.shatteredpixel.shatteredpixeldungeon.ui.TitleBackground;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndLeoWelcome;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndSettings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndVictoryCongrats;
@@ -49,6 +51,7 @@ import com.watabou.input.PointerEvent;
 import com.watabou.noosa.BitmapText;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.tweeners.Tweener;
@@ -62,6 +65,9 @@ import java.util.Date;
 public class TitleScene extends PixelScene {
 
 	private RenderedTextBlock title;
+	private RenderedTextBlock motto;
+	private Image titleFrame;
+	private Image menuPanel;
 	private Fireball leftFB;
 	private Fireball rightFB;
 
@@ -93,30 +99,54 @@ public class TitleScene extends PixelScene {
 
 		RectF insets = getCommonInsets();
 
-		TitleBackground BG = new TitleBackground( w, h );
-		add( BG );
+		Image BG = new Image(landscape()
+				? Assets.Splashes.Title.LEO_LANDSCAPE
+				: Assets.Splashes.Title.LEO_PORTRAIT);
+		float bgScale = Math.max(w / BG.width(), h / BG.height());
+		BG.scale.set(bgScale);
+		BG.x = (w - BG.width()) / 2f;
+		BG.y = (h - BG.height()) / 2f;
+		add(BG);
 
 		w -= insets.left + insets.right;
 		h -= insets.top + insets.bottom;
 
-		title = renderTextBlock("Leo的地牢围攻", landscape() ? 18 : 16);
+		titleFrame = new Image(Assets.Interfaces.LEO_TITLE_EMBLEM);
+		float frameWidth = Math.min(w * 0.92f, landscape() ? 230 : 148);
+		titleFrame.scale.set(frameWidth / titleFrame.width());
+		titleFrame.x = insets.left + (w - titleFrame.width()) / 2f;
+		titleFrame.y = insets.top + 2;
+		add(titleFrame);
+
+		title = renderTextBlock(LeoIdentityConfig.gameTitle(), landscape() ? 18 : 15);
 		title.align(RenderedTextBlock.CENTER_ALIGN);
-		title.hardlight(Window.TITLE_COLOR);
+		title.hardlight(LeoIdentityConfig.ANTIQUE_GOLD);
 		add( title );
 
-		float topRegion = Math.max(title.height() + 24, h*0.30f);
+		float topRegion = Math.max(titleFrame.height() + 8, h*0.31f);
 
-		title.setPos(insets.left + (w - title.width()) / 2f,
-				insets.top + (topRegion - title.height()) / 2f);
+		motto = renderTextBlock(LeoIdentityConfig.motto(), landscape() ? 7 : 6);
+		motto.align(RenderedTextBlock.CENTER_ALIGN);
+		motto.hardlight(LeoIdentityConfig.EMERALD);
+		motto.maxWidth((int) (frameWidth * 0.72f));
+		add(motto);
 
+		// Center the title and motto as one visual group inside the emblem.
+		float identityHeight = title.height() + 3 + motto.height();
+		float identityTop = titleFrame.y + titleFrame.height() * 0.585f - identityHeight / 2f;
+		title.setPos(insets.left + (w - title.width()) / 2f, identityTop);
+		motto.setPos(insets.left + (w - motto.width()) / 2f, title.bottom() + 3);
 		align(title);
+		align(motto);
 
 		leftFB = placeTorch(title.left() - 10, title.bottom() + 5);
 		rightFB = placeTorch(title.right() + 10, title.bottom() + 5);
 
-		final Chrome.Type GREY_TR = Chrome.Type.GREY_BUTTON_TR;
+		menuPanel = new Image(Assets.Interfaces.LEO_MENU_PANEL);
+		add(menuPanel);
 		
-		btnPlay = new StyledButton(GREY_TR, Messages.get(this, "enter")){
+		btnPlay = new LeoStyledButton(Messages.get(this,
+				GamesInProgress.checkAll().isEmpty() ? "new_expedition" : "continue_expedition")){
 			@Override
 			protected void onClick() {
 				if (GamesInProgress.checkAll().size() == 0){
@@ -143,7 +173,7 @@ public class TitleScene extends PixelScene {
 		btnPlay.icon(Icons.get(Icons.ENTER));
 		add(btnPlay);
 
-		btnRankings = new StyledButton(GREY_TR,Messages.get(this, "rankings")){
+		btnRankings = new LeoStyledButton(Messages.get(this, "rankings")){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchNoFade( RankingsScene.class );
@@ -153,7 +183,7 @@ public class TitleScene extends PixelScene {
 		add(btnRankings);
 		Dungeon.daily = Dungeon.dailyReplay = false;
 
-		btnJournal = new StyledButton(GREY_TR, Messages.get(this, "journal")){
+		btnJournal = new LeoStyledButton(Messages.get(this, "journal")){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchNoFade( JournalScene.class );
@@ -162,14 +192,14 @@ public class TitleScene extends PixelScene {
 		btnJournal.icon(Icons.get(Icons.JOURNAL));
 		add(btnJournal);
 
-		btnChanges = new ChangesButton(GREY_TR, Messages.get(this, "changes"));
+		btnChanges = new ChangesButton(Messages.get(this, "changes"));
 		btnChanges.icon(Icons.get(Icons.CHANGES));
 		add(btnChanges);
 
-		btnSettings = new SettingsButton(GREY_TR, Messages.get(this, "settings"));
+		btnSettings = new SettingsButton(Messages.get(this, "settings"));
 		add(btnSettings);
 
-		btnAbout = new StyledButton(GREY_TR, Messages.get(this, "about")){
+		btnAbout = new LeoStyledButton(Messages.get(this, "about")){
 			@Override
 			protected void onClick() {
 				ShatteredPixelDungeon.switchScene( AboutScene.class );
@@ -200,6 +230,15 @@ public class TitleScene extends PixelScene {
 			btnSettings.setRect(btnChanges.right()+2, btnChanges.top(), btnChanges.width(), BTN_HEIGHT);
 			btnAbout.setRect(btnSettings.right()+2, btnSettings.top(), btnChanges.width(), BTN_HEIGHT);
 		}
+
+		float panelLeft = btnPlay.left() - 6;
+		float panelTop = btnPlay.top() - 6;
+		float panelWidth = btnPlay.width() + 12;
+		float panelHeight = btnAbout.bottom() - panelTop + 6;
+		menuPanel.x = panelLeft;
+		menuPanel.y = panelTop;
+		menuPanel.scale.x = panelWidth / menuPanel.texture.width;
+		menuPanel.scale.y = panelHeight / menuPanel.texture.height;
 
 		version = new BitmapText( "v" + Game.version, pixelFont);
 		version.measure();
@@ -255,7 +294,9 @@ public class TitleScene extends PixelScene {
 		}
 
 		Badges.loadGlobal();
-		if (Badges.isUnlocked(Badges.Badge.VICTORY) && !SPDSettings.victoryNagged()) {
+		if (!SPDSettings.leoIdentityGranted()) {
+			add(new WndLeoWelcome());
+		} else if (Badges.isUnlocked(Badges.Badge.VICTORY) && !SPDSettings.victoryNagged()) {
 			SPDSettings.victoryNagged(true);
 			add(new WndVictoryCongrats());
 		}
@@ -269,6 +310,9 @@ public class TitleScene extends PixelScene {
 		float alpha = GameMath.gate(0f, uiAlpha, 1f);
 
 		title.alpha(alpha);
+		motto.alpha(alpha);
+		titleFrame.alpha(alpha);
+		menuPanel.alpha(alpha);
 		leftFB.am = alpha;
 		rightFB.am = alpha;
 
@@ -345,10 +389,10 @@ public class TitleScene extends PixelScene {
 		}
 	}
 
-	private static class ChangesButton extends StyledButton {
+	private static class ChangesButton extends LeoStyledButton {
 
-		public ChangesButton( Chrome.Type type, String label ){
-			super(type, label);
+		public ChangesButton(String label){
+			super(label);
 			if (SPDSettings.updates()) Updates.checkForUpdate();
 		}
 
@@ -399,10 +443,10 @@ public class TitleScene extends PixelScene {
 
 	}
 
-	private static class SettingsButton extends StyledButton {
+	private static class SettingsButton extends LeoStyledButton {
 
-		public SettingsButton( Chrome.Type type, String label ){
-			super(type, label);
+		public SettingsButton(String label){
+			super(label);
 			if (Messages.lang().status() == Languages.Status.X_UNFINISH){
 				icon(Icons.get(Icons.LANGS));
 				icon.hardlight(1.5f, 0, 0);

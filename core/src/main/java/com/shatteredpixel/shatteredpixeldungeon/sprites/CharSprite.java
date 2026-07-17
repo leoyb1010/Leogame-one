@@ -69,7 +69,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	public static final int WARNING		= 0xFF8800;
 	public static final int NEUTRAL		= 0xFFFF00;
 	
-	public static final float DEFAULT_MOVE_INTERVAL = 0.1f;
+	// Keep turn timing unchanged while making mouse/touch movement feel immediate.
+	public static final float DEFAULT_MOVE_INTERVAL = 0.075f;
 	private static float moveInterval = DEFAULT_MOVE_INTERVAL;
 	private static final float FLASH_INTERVAL	= 0.05f;
 

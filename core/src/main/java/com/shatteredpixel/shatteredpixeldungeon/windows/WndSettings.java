@@ -225,6 +225,7 @@ public class WndSettings extends WndTabbed {
 		OptionSlider optVisGrid;
 		OptionSlider optFollowIntensity;
 		OptionSlider optScreenShake;
+		OptionSlider optCombatFeedback;
 
 		@Override
 		protected void createChildren() {
@@ -311,6 +312,16 @@ public class WndSettings extends WndTabbed {
 			optScreenShake.setSelectedValue(SPDSettings.screenShake());
 			add(optScreenShake);
 
+			optCombatFeedback = new OptionSlider(Messages.get(this, "combat_feedback"),
+					Messages.get(this, "off"), Messages.get(this, "high"), 0, 2) {
+				@Override
+				protected void onChange() {
+					SPDSettings.combatFeedback(getSelectedValue());
+				}
+			};
+			optCombatFeedback.setSelectedValue(SPDSettings.combatFeedback());
+			add(optCombatFeedback);
+
 		}
 
 		@Override
@@ -342,15 +353,17 @@ public class WndSettings extends WndTabbed {
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width/2-GAP/2, SLIDER_HEIGHT);
 				optScreenShake.setRect(optFollowIntensity.right() + GAP, optFollowIntensity.top(), width/2-GAP/2, SLIDER_HEIGHT);
+				optCombatFeedback.setRect(0, optScreenShake.bottom() + GAP, width, SLIDER_HEIGHT);
 			} else {
 				optBrightness.setRect(0, bottom + GAP, width, SLIDER_HEIGHT);
 				optVisGrid.setRect(0, optBrightness.bottom() + GAP, width, SLIDER_HEIGHT);
 
 				optFollowIntensity.setRect(0, optVisGrid.bottom() + GAP, width, SLIDER_HEIGHT);
 				optScreenShake.setRect(0, optFollowIntensity.bottom() + GAP, width, SLIDER_HEIGHT);
+				optCombatFeedback.setRect(0, optScreenShake.bottom() + GAP, width, SLIDER_HEIGHT);
 			}
 
-			height = optScreenShake.bottom();
+			height = optCombatFeedback.bottom();
 		}
 
 	}

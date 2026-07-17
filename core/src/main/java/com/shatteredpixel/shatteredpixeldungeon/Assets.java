@@ -95,6 +95,12 @@ public class Assets {
 
 		public static final String HERO_ICONS       = "interfaces/hero_icons.png";
 
+		public static final String LEO_TITLE_EMBLEM = "interfaces/leo_title_emblem.png";
+		public static final String LEO_MENU_PANEL   = "interfaces/leo_menu_panel.png";
+		public static final String LEO_DIALOG_FRAME = "interfaces/leo_dialog_frame.png";
+		public static final String LEO_BUTTON       = "interfaces/leo_button_normal.png";
+		public static final String LEO_BUTTON_DOWN  = "interfaces/leo_button_pressed.png";
+
 		public static final String RADIAL_MENU      = "interfaces/radial_menu.png";
 	}
 
@@ -252,6 +258,9 @@ public class Assets {
 		public static final String HALLS    = "splashes/halls.jpg";
 
 		public static class Title {
+			public static final String LEO_LANDSCAPE = "splashes/title/leo_landscape.jpg";
+			public static final String LEO_PORTRAIT  = "splashes/title/leo_portrait.jpg";
+
 			public static final String ARCHS         = "splashes/title/archs.png";
 			public static final String BACK_CLUSTERS = "splashes/title/back_clusters.png";
 			public static final String MID_MIXED     = "splashes/title/mid_mixed.png";

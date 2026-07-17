@@ -43,6 +43,13 @@ import com.watabou.utils.Random;
 
 abstract public class KindOfWeapon extends EquipableItem {
 
+	public enum ImpactFamily {
+		SLASH,
+		STAB,
+		CRUSH,
+		GENERIC
+	}
+
 	protected String hitSound = Assets.Sounds.HIT;
 	protected float hitSoundPitch = 1f;
 	
@@ -288,6 +295,13 @@ abstract public class KindOfWeapon extends EquipableItem {
 
 	public void hitSound( float pitch ){
 		Sample.INSTANCE.play(hitSound, 1, pitch * hitSoundPitch);
+	}
+
+	public ImpactFamily impactFamily() {
+		if (Assets.Sounds.HIT_SLASH.equals(hitSound)) return ImpactFamily.SLASH;
+		if (Assets.Sounds.HIT_STAB.equals(hitSound) || Assets.Sounds.HIT_ARROW.equals(hitSound)) return ImpactFamily.STAB;
+		if (Assets.Sounds.HIT_CRUSH.equals(hitSound)) return ImpactFamily.CRUSH;
+		return ImpactFamily.GENERIC;
 	}
 	
 }

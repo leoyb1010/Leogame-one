@@ -24,9 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
-import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.TitleBackground;
@@ -34,20 +32,9 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.ChangeInfo;
+import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.LeoChanges;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.WndChanges;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.WndChangesTabbed;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_1_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_2_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_3_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_4_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_5_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_6_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_7_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_8_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v0_9_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v1_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v2_X_Changes;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.v3_X_Changes;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Image;
@@ -60,7 +47,9 @@ import com.watabou.utils.RectF;
 import java.util.ArrayList;
 
 public class ChangesScene extends PixelScene {
-	
+
+	// Retained for the existing footer controls; every page now resolves to the
+	// Leo edition history so legacy English records never leak into Chinese UI.
 	public static int changesSelected = 0;
 
 	private NinePatch rightPanel;
@@ -147,43 +136,7 @@ public class ChangesScene extends PixelScene {
 		add( panel );
 		
 		final ArrayList<ChangeInfo> changeInfos = new ArrayList<>();
-
-		if (Messages.lang() != Languages.ENGLISH){
-			ChangeInfo langWarn = new ChangeInfo("", true, Messages.get(this, "lang_warn"));
-			langWarn.hardlight(CharSprite.WARNING);
-			changeInfos.add(langWarn);
-		}
-		
-		switch (changesSelected){
-			case 0: default:
-				v3_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 1:
-				v2_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 2:
-				v1_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 3:
-				v0_9_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 4:
-				v0_8_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 5:
-				v0_7_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 6:
-				v0_6_X_Changes.addAllChanges(changeInfos);
-				break;
-			case 7:
-				v0_5_X_Changes.addAllChanges(changeInfos);
-				v0_4_X_Changes.addAllChanges(changeInfos);
-				v0_3_X_Changes.addAllChanges(changeInfos);
-				v0_2_X_Changes.addAllChanges(changeInfos);
-				v0_1_X_Changes.addAllChanges(changeInfos);
-				break;
-		}
+		LeoChanges.addAllChanges(changeInfos);
 
 		ScrollPane list = new ScrollPane( new Component() ){
 
@@ -249,6 +202,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 0) btn3_X.textColor( 0xBBBBBB );
 		btn3_X.setRect(list.left()-4f, list.bottom(), 19, changesSelected == 0 ? 19 : 15);
+		btn3_X.visible = btn3_X.active = false;
 		addToBack(btn3_X);
 
 		StyledButton btn2_X = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "2.X", 8){
@@ -263,6 +217,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 1) btn2_X.textColor( 0xBBBBBB );
 		btn2_X.setRect(btn3_X.right()-2, list.bottom(), 19, changesSelected == 1 ? 19 : 15);
+		btn2_X.visible = btn2_X.active = false;
 		addToBack(btn2_X);
 
 		StyledButton btn1_X = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "1.X", 8){
@@ -277,6 +232,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 2) btn1_X.textColor( 0xBBBBBB );
 		btn1_X.setRect(btn2_X.right()-2, list.bottom(), 19, changesSelected == 2 ? 19 : 15);
+		btn1_X.visible = btn1_X.active = false;
 		addToBack(btn1_X);
 
 		StyledButton btn0_9 = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "0.9", 8){
@@ -291,6 +247,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 3) btn0_9.textColor( 0xBBBBBB );
 		btn0_9.setRect(btn1_X.right()-2, list.bottom(), 19, changesSelected == 3 ? 19 : 15);
+		btn0_9.visible = btn0_9.active = false;
 		addToBack(btn0_9);
 
 		StyledButton btn0_8 = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "0.8", 8){
@@ -305,6 +262,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 4) btn0_8.textColor( 0xBBBBBB );
 		btn0_8.setRect(btn0_9.right()-2, list.bottom(), 19, changesSelected == 4 ? 19 : 15);
+		btn0_8.visible = btn0_8.active = false;
 		addToBack(btn0_8);
 		
 		StyledButton btn0_7 = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "0.7", 8){
@@ -319,6 +277,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 5) btn0_7.textColor( 0xBBBBBB );
 		btn0_7.setRect(btn0_8.right()-2, btn0_8.top(), 19, changesSelected == 5 ? 19 : 15);
+		btn0_7.visible = btn0_7.active = false;
 		addToBack(btn0_7);
 		
 		StyledButton btn0_6 = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "0.6", 8){
@@ -333,6 +292,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 6) btn0_6.textColor( 0xBBBBBB );
 		btn0_6.setRect(btn0_7.right()-2, btn0_8.top(), 19, changesSelected == 6 ? 19 : 15);
+		btn0_6.visible = btn0_6.active = false;
 		addToBack(btn0_6);
 		
 		StyledButton btnOld = new StyledButton(Chrome.Type.GREY_BUTTON_TR, "0.5-", 8){
@@ -347,6 +307,7 @@ public class ChangesScene extends PixelScene {
 		};
 		if (changesSelected != 7) btnOld.textColor( 0xBBBBBB );
 		btnOld.setRect(btn0_6.right()-2, btn0_8.top(), 22, changesSelected == 7 ? 19 : 15);
+		btnOld.visible = btnOld.active = false;
 		addToBack(btnOld);
 
 		addToBack( BG );

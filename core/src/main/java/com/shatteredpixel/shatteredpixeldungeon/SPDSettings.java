@@ -36,6 +36,7 @@ public class SPDSettings extends GameSettings {
 	//Version info
 	
 	public static final String KEY_VERSION      = "version";
+	public static final String KEY_LEO_IDENTITY_GRANTED = "leo_identity_granted";
 	
 	public static void version( int value)  {
 		put( KEY_VERSION, value );
@@ -43,6 +44,14 @@ public class SPDSettings extends GameSettings {
 	
 	public static int version() {
 		return getInt( KEY_VERSION, 0 );
+	}
+
+	public static void leoIdentityGranted(boolean value) {
+		put(KEY_LEO_IDENTITY_GRANTED, value);
+	}
+
+	public static boolean leoIdentityGranted() {
+		return getBoolean(KEY_LEO_IDENTITY_GRANTED, false);
 	}
 	
 	//Display
@@ -54,6 +63,7 @@ public class SPDSettings extends GameSettings {
 	public static final String KEY_GRID 	    = "visual_grid";
 	public static final String KEY_CAMERA_FOLLOW= "camera_follow";
 	public static final String KEY_SCREEN_SHAKE = "screen_shake";
+	public static final String KEY_COMBAT_FEEDBACK = "combat_feedback";
 	
 	public static void fullscreen( boolean value ) {
 		put( KEY_FULLSCREEN, value );
@@ -114,6 +124,14 @@ public class SPDSettings extends GameSettings {
 
 	public static int screenShake() {
 		return getInt( KEY_SCREEN_SHAKE, 2, 0, 4 );
+	}
+
+	public static void combatFeedback(int value) {
+		put(KEY_COMBAT_FEEDBACK, value);
+	}
+
+	public static int combatFeedback() {
+		return getInt(KEY_COMBAT_FEEDBACK, 2, 0, 2);
 	}
 	
 	//Interface

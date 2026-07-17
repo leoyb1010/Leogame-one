@@ -18,3 +18,7 @@ local.properties
 #intellij project files
 *.iml
 *.idea
+
+# macOS metadata and generated artwork intermediates
+.DS_Store
+artwork/processed/chroma/
