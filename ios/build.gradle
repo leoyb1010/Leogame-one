@@ -22,8 +22,7 @@ task updateRoboVMProps(){
     def props = new Properties()
     
     props.setProperty ('appName', appName)
-    //append .apple because com.shatteredpixel.shatteredpixeldungeon was taken =(
-    props.setProperty ('appApplePackageName', appPackageName + ".apple")
+    props.setProperty ('appApplePackageName', appBundleId)
 
     props.setProperty ('appVersionCode', appVersionCode.toString())
     props.setProperty ('appVersionName', appVersionName)
@@ -46,7 +45,7 @@ createIPA.dependsOn build
 dependencies {
     implementation project(':core')
     implementation project(':services:updates:debugUpdates')
-    implementation project(':services:news:shatteredNews')
+    implementation project(':services:news:debugNews')
 
     implementation "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
     implementation "com.mobidevelop.robovm:robovm-rt:$robovmVersion"

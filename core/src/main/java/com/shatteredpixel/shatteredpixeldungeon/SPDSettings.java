@@ -31,8 +31,6 @@ import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.GameSettings;
 import com.watabou.utils.Point;
 
-import java.util.Locale;
-
 public class SPDSettings extends GameSettings {
 	
 	//Version info
@@ -425,11 +423,7 @@ public class SPDSettings extends GameSettings {
 	
 	public static Languages language() {
 		String code = getString(KEY_LANG, null);
-		if (code == null){
-			return Languages.matchLocale(Locale.getDefault());
-		} else {
-			return Languages.matchCode(code);
-		}
+		return Languages.ENGLISH.code().equals(code) ? Languages.ENGLISH : Languages.CHI_SMPL;
 	}
 
 	//Window management (desktop only atm)

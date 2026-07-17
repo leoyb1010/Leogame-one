@@ -64,23 +64,30 @@ public class AboutScene extends PixelScene {
 		Component content = list.content();
 		content.clear();
 
-		//*** Shattered Pixel Dungeon Credits ***
+		//*** Leo's Dungeon Assault Credits ***
+
+		CreditsBlock leo = new CreditsBlock(true, Window.TITLE_COLOR,
+				"Leo的地牢围攻",
+				null,
+				"产品与二次开发：_Leo_\n基于 Shattered Pixel Dungeon 开源代码",
+				null,
+				null);
+		leo.setRect((w - fullWidth)/2f, insets.top + 6, 120, 0);
+		content.add(leo);
+
+		//*** Shattered Pixel Dungeon Credits (required attribution) ***
 
 		CreditsBlock shpx = new CreditsBlock(true, Window.SHPX_COLOR,
 				"Shattered Pixel Dungeon",
 				Icons.SHPX.get(),
-				"Developed by: _Evan Debenham_\nBased on Pixel Dungeon's open source",
+				"原作开发：_Evan Debenham_\n基于 Pixel Dungeon 开源代码",
 				"ShatteredPixel.com",
 				"https://ShatteredPixel.com");
-		if (landscape()){
-			shpx.setRect((w - fullWidth)/2f - 6, insets.top + 10, 120, 0);
-		} else {
-			shpx.setRect((w - fullWidth)/2f, insets.top + 6, 120, 0);
-		}
+		shpx.setRect((w - fullWidth)/2f, leo.bottom() + 12, 120, 0);
 		content.add(shpx);
 
 		CreditsBlock alex = new CreditsBlock(false, Window.SHPX_COLOR,
-				"Splash Art & Design:",
+				"插画与设计：",
 				Icons.ALEKS.get(),
 				"Aleksandar Komitov",
 				"alekskomitov.com",
@@ -94,7 +101,7 @@ public class AboutScene extends PixelScene {
 		content.add(alex);
 
 		CreditsBlock celesti = new CreditsBlock(false, Window.SHPX_COLOR,
-				"Sound Effects:",
+				"音效：",
 				Icons.CELESTI.get(),
 				"Celesti",
 				"celesti-whispers.itch.io",
@@ -103,7 +110,7 @@ public class AboutScene extends PixelScene {
 		content.add(celesti);
 
 		CreditsBlock lumine = new CreditsBlock(false, Window.SHPX_COLOR,
-				"Music:",
+				"音乐：",
 				Icons.LUMINE.get(),
 				"Lumine Haaristo",
 				"youtube.com/@Lumine...",
@@ -117,7 +124,7 @@ public class AboutScene extends PixelScene {
 		CreditsBlock wata = new CreditsBlock(true, WATA_COLOR,
 				"Pixel Dungeon",
 				Icons.WATA.get(),
-				"Developed by: _Watabou_\nInspired by Brian Walker's Brogue",
+				"原作开发：_Watabou_\n灵感来自 Brian Walker 的 Brogue",
 				"watabou.itch.io",
 				"https://watabou.itch.io/");
 		if (landscape()){
@@ -130,7 +137,7 @@ public class AboutScene extends PixelScene {
 		addLine(wata.top() - 4, content);
 
 		CreditsBlock cube = new CreditsBlock(false, WATA_COLOR,
-				"Music:",
+				"音乐：",
 				Icons.CUBE_CODE.get(),
 				"Cube Code",
 				null,
@@ -150,7 +157,7 @@ public class AboutScene extends PixelScene {
 				GDX_COLOR,
 				"libGDX",
 				Icons.LIBGDX.get(),
-				"ShatteredPD is powered by _libGDX_!",
+				"《Leo的地牢围攻》由 _libGDX_ 驱动",
 				"libgdx.com",
 				"https://libgdx.com/");
 		if (landscape()){
@@ -163,7 +170,7 @@ public class AboutScene extends PixelScene {
 		addLine(gdx.top() - 4, content);
 
 		CreditsBlock arcnor = new CreditsBlock(false, GDX_COLOR,
-				"Pixel Dungeon GDX:",
+				"Pixel Dungeon GDX 移植：",
 				Icons.ARCNOR.get(),
 				"Edu García",
 				"gamedev.place/@arcnor",
@@ -177,7 +184,7 @@ public class AboutScene extends PixelScene {
 		content.add(arcnor);
 
 		CreditsBlock purigro = new CreditsBlock(false, GDX_COLOR,
-				"Shattered GDX Help:",
+				"Shattered GDX 技术协助：",
 				Icons.PURIGRO.get(),
 				"Kevin MacMartin",
 				"github.com/prurigro",
@@ -191,7 +198,7 @@ public class AboutScene extends PixelScene {
 				Window.TITLE_COLOR,
 				null,
 				null,
-				"ShatteredPD is community-translated via _Transifex_! Thank you so much to all of Shattered's volunteer translators!",
+				"继承的多语言文本来自 ShatteredPD 的 _Transifex_ 社区，感谢所有志愿翻译者！",
 				"transifex.com/shattered-pixel/...",
 				"https://explore.transifex.com/shattered-pixel/shattered-pixel-dungeon/");
 		transifex.setRect((Camera.main.width - colWidth)/2f, purigro.bottom() + 12, colWidth, 0);
@@ -207,16 +214,16 @@ public class AboutScene extends PixelScene {
 				Window.TITLE_COLOR,
 				null,
 				null,
-				"Shattered Pixel Dungeon uses the following sound samples from _freesound.org_:\n\n" +
+				"《Leo的地牢围攻》沿用 Shattered Pixel Dungeon 中来自 _freesound.org_ 的以下声音素材：\n\n" +
 
-				"Creative Commons Attribution License:\n" +
+				"知识共享署名许可：\n" +
 				"_SFX ATTACK SWORD 001.wav_ by _JoelAudio_\n" +
 				"_Pack: Slingshots and Longbows_ by _saturdaysoundguy_\n" +
 				"_Cracking/Crunching, A.wav_ by _InspectorJ_\n" +
 				"_Extracting a sword.mp3_ by _Taira Komori_\n" +
 				"_Pack: Uni Sound Library_ by _timmy h123_\n\n" +
 
-				"Creative Commons Zero License:\n" +
+				"知识共享零号许可（CC0）：\n" +
 				"_Pack: Movie Foley: Swords_ by _Black Snow_\n" +
 				"_machine gun shot 2.flac_ by _qubodup_\n" +
 				"_m240h machine gun burst 4.flac_ by _qubodup_\n" +

@@ -39,7 +39,8 @@ import org.robovm.apple.audiotoolbox.AudioServices;
 import org.robovm.apple.systemconfiguration.SCNetworkReachability;
 import org.robovm.apple.systemconfiguration.SCNetworkReachabilityFlags;
 import org.robovm.apple.uikit.UIApplication;
-import org.robovm.apple.uikit.UIInterfaceOrientation;
+import org.robovm.apple.uikit.UIEdgeInsets;
+import org.robovm.apple.uikit.UIWindow;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,42 +92,19 @@ public class IOSPlatformSupport extends PlatformSupport {
 
 	@Override
 	public RectF getSafeInsets(int level) {
-		RectF insets = super.getSafeInsets(INSET_ALL);
+		UIWindow window = UIApplication.getSharedApplication().getKeyWindow();
+		if (window == null) return super.getSafeInsets(INSET_ALL);
 
-		//magic number BS for larger status bar caused by dynamic island
-		boolean hasDynamicIsland = insets.top / Gdx.graphics.getBackBufferScale() >= 51;
+		UIEdgeInsets safeArea = window.getSafeAreaInsets();
+		float scale = Gdx.graphics.getBackBufferScale();
 
-		//iOS gives us ALL insets by default, and so we need to filter from there:
-
-		//ignore the home indicator if we're in fullscreen
-		if (!supportsFullScreen() || SPDSettings.fullscreen()){
-			insets.bottom = 0;
-		}
-
-		//only cutouts can be on top/left/right, which are never blocking
-		if (level == INSET_BLK){
-			insets.left = insets.top = insets.right = 0;
-		} else if (level == INSET_LRG && hasDynamicIsland){
-			//Dynamic Island counts as a 'small cutout'
-			insets.left = insets.top = insets.right = 0;
-		}
-
-		//if we are in landscape, the display cutout is only actually on one side, so cancel the other
-		if (Game.width > Game.height){
-			if (UIApplication.getSharedApplication().getStatusBarOrientation().equals(UIInterfaceOrientation.LandscapeLeft)){
-				insets.left = 0;
-			} else {
-				insets.right = 0;
-			}
-		}
-
-		//finally iOS is very conservative with these insets, we can shrink them a bit.
-		insets.top /= hasDynamicIsland ? 1.2f : 1.4f;
-		insets.left /= hasDynamicIsland ? 1.2f : 1.4f;
-		insets.right /= hasDynamicIsland ? 1.2f : 1.4f;
-		insets.bottom /= 2; //home bar inset is especially big for no reason
-
-		return insets;
+		// Keep all HUD controls inside UIKit's real safe area. In particular, do not
+		// discard the home-indicator inset in fullscreen or shrink Dynamic Island data.
+		return new RectF(
+				(float)safeArea.getLeft() * scale,
+				(float)safeArea.getTop() * scale,
+				(float)safeArea.getRight() * scale,
+				(float)safeArea.getBottom() * scale);
 	}
 
 	@Override

@@ -96,18 +96,15 @@ public class DesktopLauncher {
 				}
 
 				if (exceptionMsg.contains("Couldn’t create window")){
-					TinyFileDialogs.tinyfd_messageBox(title + " Has Crashed!",
-							title + " was not able to initialize its graphics display, sorry about that!\n\n" +
-									"This usually happens when your graphics card has misconfigured drivers or does not support openGL 2.0+.\n\n" +
-									"If you are certain the game should work on your computer, please message the developer (Evan@ShatteredPixel.com)\n\n" +
-									"version: " + Game.version + "\n" +
+					TinyFileDialogs.tinyfd_messageBox(title + " 启动失败",
+							"游戏无法初始化图形显示。请确认系统图形驱动可用并支持 OpenGL 2.0 或更高版本。\n\n" +
+									"版本：" + Game.version + "\n" +
 									exceptionMsg,
 							"ok", "error", false);
 				} else {
-					TinyFileDialogs.tinyfd_messageBox(title + " Has Crashed!",
-							title + " has run into an error it cannot recover from and has crashed, sorry about that!\n\n" +
-									"If you could, please email this error message to the developer (Evan@ShatteredPixel.com):\n\n" +
-									"version: " + Game.version + "\n" +
+					TinyFileDialogs.tinyfd_messageBox(title + " 发生错误",
+							"游戏遇到无法恢复的错误并已停止。请保留下面的信息用于问题排查。\n\n" +
+									"版本：" + Game.version + "\n" +
 									exceptionMsg,
 							"ok", "error", false);
 				}

@@ -109,8 +109,7 @@ runtime {
                 imageOptions = ["--icon", file("./src/main/assets/icons/mac.icns"),
                                 "--java-options", "-XstartOnFirstThread",
                                 "--java-options", "-XX:+IgnoreUnrecognizedVMOptions",
-                                //append .apple because com.shatteredpixel.shatteredpixeldungeon was taken =(
-                                "--mac-package-identifier", appPackageName + ".apple"]
+                                "--mac-package-identifier", appBundleId]
             }
         }
     }
@@ -134,6 +133,6 @@ dependencies {
     implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux"
     implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux-arm64"
 
-    implementation project(':services:updates:githubUpdates')
-    implementation project(':services:news:shatteredNews')
+    implementation project(':services:updates:debugUpdates')
+    implementation project(':services:news:debugNews')
 }

@@ -1,27 +1,21 @@
-# Shattered Pixel Dungeon
+# Leo的地牢围攻
 
-[Shattered Pixel Dungeon](https://shatteredpixel.com/shatteredpd/) is an open-source traditional roguelike dungeon crawler with randomized levels and enemies, and hundreds of items to collect and use. It's based on the [source code of Pixel Dungeon](https://github.com/00-Evan/pixel-dungeon-gradle), by [Watabou](https://watabou.itch.io/).
+一款面向 macOS、iPhone 和 iPad 的中文离线 Roguelike 地牢游戏。
 
-Shattered Pixel Dungeon currently compiles for Android, iOS, and Desktop platforms. You can find official releases of the game on:
+当前产品标识：
 
-[![Get it on Google Play](https://shatteredpixel.com/assets/images/badges/gplay.png)](https://play.google.com/store/apps/details?id=com.shatteredpixel.shatteredpixeldungeon)
-[![Download on the App Store](https://shatteredpixel.com/assets/images/badges/appstore.png)](https://apps.apple.com/app/shattered-pixel-dungeon/id1563121109)
-[![Steam](https://shatteredpixel.com/assets/images/badges/steam.png)](https://store.steampowered.com/app/1769170/Shattered_Pixel_Dungeon/)<br>
-[![GOG.com](https://shatteredpixel.com/assets/images/badges/gog.png)](https://www.gog.com/game/shattered_pixel_dungeon)
-[![Itch.io](https://shatteredpixel.com/assets/images/badges/itch.png)](https://shattered-pixel.itch.io/shattered-pixel-dungeon)
-[![Github Releases](https://shatteredpixel.com/assets/images/badges/github.png)](https://github.com/00-Evan/shattered-pixel-dungeon/releases)
+- 游戏名：`Leo的地牢围攻`
+- Apple Bundle ID：`leogameone`
+- 版本：`1.0.0`
+- 首次启动默认语言：简体中文（设置中仅保留简体中文与 English）
+- 当前开发分支：`our-game`
 
-If you like this game, please consider [supporting me on Patreon](https://www.patreon.com/ShatteredPixel)!
+Apple 构建与模拟器运行方式见 [APPLE_DEVELOPMENT.md](APPLE_DEVELOPMENT.md)，新视觉素材的生成提示词和投放目录见 [docs/ARTWORK_GENERATION_BRIEF_ZH.md](docs/ARTWORK_GENERATION_BRIEF_ZH.md)。
 
-There is an official blog for this project at [ShatteredPixel.com](https://www.shatteredpixel.com/blog/).
+## 开源与署名
 
-The game also has a translation project hosted on [Transifex](https://explore.transifex.com/shattered-pixel/shattered-pixel-dungeon/).
+本项目基于 [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) 和 [Pixel Dungeon](https://github.com/00-Evan/pixel-dungeon-gradle) 的开源代码二次开发，继续遵循 GPLv3。原作者、翻译者、音乐、美术和音效署名保留在游戏“关于”页面及源代码版权头中。发布修改版本时必须同时提供对应源代码和 GPLv3 许可证。
 
-Note that **this repository does not accept pull requests!** The code here is provided in hopes that others may find it useful for their own projects, not to allow community contribution. Issue reports of all kinds (bug reports, feature requests, etc.) are welcome.
+## 当前范围
 
-If you'd like to work with the code, you can find the following guides in `/docs`:
-- [Compiling for Android.](docs/getting-started-android.md)
-    - **[If you plan to distribute on Google Play please read the end of this guide.](docs/getting-started-android.md#distributing-your-app)**
-- [Compiling for desktop platforms.](docs/getting-started-desktop.md)
-- [Compiling for iOS.](docs/getting-started-ios.md)
-- [Recommended changes for making your own version.](docs/recommended-changes.md)
+本阶段只验证和维护 macOS、iPhone 与 iPad。Android 模块暂不作为交付目标。

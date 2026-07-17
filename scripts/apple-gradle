@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root=${0:A:h:h}
 jdk_prefix=$(/opt/homebrew/bin/brew --prefix openjdk@17)
-apple_cache_root="$(getconf DARWIN_USER_CACHE_DIR)/our-game-gradle"
+apple_cache_root="$(getconf DARWIN_USER_CACHE_DIR)/leogameone-gradle"
 
 export JAVA_HOME="$jdk_prefix/libexec/openjdk.jdk/Contents/Home"
 export PATH="$jdk_prefix/bin:$PATH"

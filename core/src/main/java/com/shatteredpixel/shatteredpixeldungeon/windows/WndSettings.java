@@ -51,7 +51,6 @@ import com.watabou.utils.Random;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
 
 public class WndSettings extends WndTabbed {
 
@@ -1054,12 +1053,9 @@ public class WndSettings extends WndTabbed {
 			sep1 = new ColorBlock(1, 1, 0xFF000000);
 			add(sep1);
 
-			final ArrayList<Languages> langs = new ArrayList<>(Arrays.asList(Languages.values()));
-
-			Languages nativeLang = Languages.matchLocale(Locale.getDefault());
-			langs.remove(nativeLang);
-			//move the native language to the top.
-			langs.add(0, nativeLang);
+			final ArrayList<Languages> langs = new ArrayList<>(Arrays.asList(
+					Languages.CHI_SMPL,
+					Languages.ENGLISH));
 
 			final Languages currLang = Messages.lang();
 
