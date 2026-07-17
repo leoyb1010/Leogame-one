@@ -7,6 +7,11 @@ buildscript {
     }
 }
 
+def appleBuildRoot = System.getenv('APPLE_BUILD_ROOT')
+if (appleBuildRoot) {
+    layout.buildDirectory = file("${appleBuildRoot}/ios")
+}
+
 apply plugin: "java"
 apply plugin: "robovm"
 

@@ -2,6 +2,11 @@ plugins {
     id 'org.beryx.runtime' version '2.0.1'
 }
 
+def appleBuildRoot = System.getenv('APPLE_BUILD_ROOT')
+if (appleBuildRoot) {
+    layout.buildDirectory = file("${appleBuildRoot}/desktop")
+}
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
 
@@ -13,6 +18,7 @@ processResources {
 }
 
 def osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+def osArch = System.getProperty('os.arch').toLowerCase(Locale.ROOT)
 
 tasks.register('debug', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
@@ -29,13 +35,7 @@ tasks.register('debug', JavaExec) {
     }
 }
 
-tasks.register('release', Jar) {
-    //FIXME this is now needed as of gradle 7.0, due to our weird sourceSets setup. Should see if there's a better way to do this
-    setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE)
-    from sourceSets.main.output
-    dependsOn configurations.runtimeClasspath
-    from { configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) } }
-
+tasks.withType(Jar).configureEach {
     manifest {
         attributes 'Main-Class': appMainClass
         attributes 'Specification-Title': appName
@@ -43,6 +43,14 @@ tasks.register('release', Jar) {
         attributes 'Specification-Version': appVersionName
         attributes 'Implementation-Version': appVersionCode
     }
+}
+
+tasks.register('release', Jar) {
+    //FIXME this is now needed as of gradle 7.0, due to our weird sourceSets setup. Should see if there's a better way to do this
+    setDuplicatesStrategy(DuplicatesStrategy.EXCLUDE)
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
+    from { configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) } }
 }
 installDist.dependsOn release
 startScripts.dependsOn release
@@ -91,11 +99,13 @@ runtime {
         }
     } else if (osName.contains('mac')) {
         //This JDK officially supports MacOS 12 (2021), but internals suggest support for 10.12 (2016)
+        def macJdkArch = osArch == 'aarch64' || osArch == 'arm64' ? 'aarch64' : 'x64'
+        def macJdkHome = layout.buildDirectory.dir('jdks/mac/jdk-17.0.17+10/Contents/Home').get().asFile
         targetPlatform("mac") {
-            jdkHome = jdkDownload("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.17%2B10/OpenJDK17U-jdk_x64_mac_hotspot_17.0.17_10.tar.gz")
-            javaHome = file("./build/jdks/mac/jdk-17.0.17+10/Contents/Home/").getAbsolutePath()
+            jdkHome = jdkDownload("https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.17%2B10/OpenJDK17U-jdk_${macJdkArch}_mac_hotspot_17.0.17_10.tar.gz")
+            javaHome = macJdkHome.getAbsolutePath()
             jpackage {
-                jpackageHome = file("./build/jdks/mac/jdk-17.0.17+10/Contents/Home/")
+                jpackageHome = macJdkHome
                 imageOptions = ["--icon", file("./src/main/assets/icons/mac.icns"),
                                 "--java-options", "-XstartOnFirstThread",
                                 "--java-options", "-XX:+IgnoreUnrecognizedVMOptions",

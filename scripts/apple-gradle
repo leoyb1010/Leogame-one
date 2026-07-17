@@ -1,0 +1,13 @@
+#!/bin/zsh
+set -euo pipefail
+
+project_root=${0:A:h:h}
+jdk_prefix=$(/opt/homebrew/bin/brew --prefix openjdk@17)
+apple_cache_root="$(getconf DARWIN_USER_CACHE_DIR)/our-game-gradle"
+
+export JAVA_HOME="$jdk_prefix/libexec/openjdk.jdk/Contents/Home"
+export PATH="$jdk_prefix/bin:$PATH"
+export APPLE_BUILD_ROOT="$apple_cache_root"
+
+cd "$project_root"
+exec ./gradlew "$@"
