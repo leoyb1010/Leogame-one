@@ -1,5 +1,5 @@
 /*
- * Leo's Dungeon Siege offline news adapter.
+ * Escape from Bukov offline news adapter.
  * Copyright (C) 2026 Leo Yuan
  *
  * This program is free software: you can redistribute it and/or modify

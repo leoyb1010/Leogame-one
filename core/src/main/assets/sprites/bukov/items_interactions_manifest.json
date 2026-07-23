@@ -1,0 +1,449 @@
+{
+  "schemaVersion": 1,
+  "atlas": "sprites/bukov/items_interactions.png",
+  "width": 1152,
+  "height": 16,
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "frameCount": 72,
+  "colorType": "RGBA",
+  "uniqueRgbaColors": 20,
+  "opaquePixels": 7077,
+  "translucentPixels": 84,
+  "transparentPixels": 11271,
+  "sha256": "24889647037db162f70b99dd5fa9ae77d3c0b91cd24a438416ccb5d68b3499fe",
+  "entries": [
+    {
+      "definitionId": "firearm:needle_9",
+      "apiName": "FIREARM_NEEDLE_9",
+      "category": "firearm",
+      "index": 0
+    },
+    {
+      "definitionId": "firearm:shuttle_9",
+      "apiName": "FIREARM_SHUTTLE_9",
+      "category": "firearm",
+      "index": 1
+    },
+    {
+      "definitionId": "firearm:ward_556",
+      "apiName": "FIREARM_WARD_556",
+      "category": "firearm",
+      "index": 2
+    },
+    {
+      "definitionId": "firearm:mountain_762",
+      "apiName": "FIREARM_MOUNTAIN_762",
+      "category": "firearm",
+      "index": 3
+    },
+    {
+      "definitionId": "firearm:bolt_12",
+      "apiName": "FIREARM_BOLT_12",
+      "category": "firearm",
+      "index": 4
+    },
+    {
+      "definitionId": "firearm:longstreet_762",
+      "apiName": "FIREARM_LONGSTREET_762",
+      "category": "firearm",
+      "index": 5
+    },
+    {
+      "definitionId": "firearm:sentinel_9",
+      "apiName": "FIREARM_SENTINEL_9",
+      "category": "firearm",
+      "index": 6
+    },
+    {
+      "definitionId": "firearm:sparrow_9",
+      "apiName": "FIREARM_SPARROW_9",
+      "category": "firearm",
+      "index": 7
+    },
+    {
+      "definitionId": "firearm:hive_9",
+      "apiName": "FIREARM_HIVE_9",
+      "category": "firearm",
+      "index": 8
+    },
+    {
+      "definitionId": "firearm:whisper_9",
+      "apiName": "FIREARM_WHISPER_9",
+      "category": "firearm",
+      "index": 9
+    },
+    {
+      "definitionId": "firearm:jackal_9",
+      "apiName": "FIREARM_JACKAL_9",
+      "category": "firearm",
+      "index": 10
+    },
+    {
+      "definitionId": "firearm:river_556",
+      "apiName": "FIREARM_RIVER_556",
+      "category": "firearm",
+      "index": 11
+    },
+    {
+      "definitionId": "firearm:foundry_762",
+      "apiName": "FIREARM_FOUNDRY_762",
+      "category": "firearm",
+      "index": 12
+    },
+    {
+      "definitionId": "firearm:carbine_556",
+      "apiName": "FIREARM_CARBINE_556",
+      "category": "firearm",
+      "index": 13
+    },
+    {
+      "definitionId": "firearm:breaker_12",
+      "apiName": "FIREARM_BREAKER_12",
+      "category": "firearm",
+      "index": 14
+    },
+    {
+      "definitionId": "firearm:rainstorm_12",
+      "apiName": "FIREARM_RAINSTORM_12",
+      "category": "firearm",
+      "index": 15
+    },
+    {
+      "definitionId": "firearm:watchtower_556",
+      "apiName": "FIREARM_WATCHTOWER_556",
+      "category": "firearm",
+      "index": 16
+    },
+    {
+      "definitionId": "firearm:frontier_762",
+      "apiName": "FIREARM_FRONTIER_762",
+      "category": "firearm",
+      "index": 17
+    },
+    {
+      "definitionId": "ammo:ammo_9_training",
+      "apiName": "AMMO_9_TRAINING",
+      "category": "ammunition",
+      "index": 18
+    },
+    {
+      "definitionId": "ammo:ammo_9_standard",
+      "apiName": "AMMO_9_STANDARD",
+      "category": "ammunition",
+      "index": 19
+    },
+    {
+      "definitionId": "ammo:ammo_9_subsonic",
+      "apiName": "AMMO_9_SUBSONIC",
+      "category": "ammunition",
+      "index": 20
+    },
+    {
+      "definitionId": "ammo:ammo_556_standard",
+      "apiName": "AMMO_556_STANDARD",
+      "category": "ammunition",
+      "index": 21
+    },
+    {
+      "definitionId": "ammo:ammo_556_armor_piercing",
+      "apiName": "AMMO_556_ARMOR_PIERCING",
+      "category": "ammunition",
+      "index": 22
+    },
+    {
+      "definitionId": "ammo:ammo_762_standard",
+      "apiName": "AMMO_762_STANDARD",
+      "category": "ammunition",
+      "index": 23
+    },
+    {
+      "definitionId": "ammo:ammo_762_expanding",
+      "apiName": "AMMO_762_EXPANDING",
+      "category": "ammunition",
+      "index": 24
+    },
+    {
+      "definitionId": "ammo:ammo_12g_buckshot",
+      "apiName": "AMMO_12G_BUCKSHOT",
+      "category": "ammunition",
+      "index": 25
+    },
+    {
+      "definitionId": "armor:soft_vest",
+      "apiName": "ARMOR_SOFT_VEST",
+      "category": "armor",
+      "index": 26
+    },
+    {
+      "definitionId": "armor:patrol_vest",
+      "apiName": "ARMOR_PATROL_VEST",
+      "category": "armor",
+      "index": 27
+    },
+    {
+      "definitionId": "armor:ceramic_rig",
+      "apiName": "ARMOR_CERAMIC_RIG",
+      "category": "armor",
+      "index": 28
+    },
+    {
+      "definitionId": "backpack:scout_pack",
+      "apiName": "BACKPACK_SCOUT_PACK",
+      "category": "backpack",
+      "index": 29
+    },
+    {
+      "definitionId": "backpack:field_pack",
+      "apiName": "BACKPACK_FIELD_PACK",
+      "category": "backpack",
+      "index": 30
+    },
+    {
+      "definitionId": "bandage",
+      "apiName": "MEDICAL_BANDAGE",
+      "category": "medical_tool",
+      "index": 31
+    },
+    {
+      "definitionId": "painkiller",
+      "apiName": "MEDICAL_PAINKILLER",
+      "category": "medical_tool",
+      "index": 32
+    },
+    {
+      "definitionId": "first_aid",
+      "apiName": "MEDICAL_FIRST_AID",
+      "category": "medical_tool",
+      "index": 33
+    },
+    {
+      "definitionId": "tourniquet",
+      "apiName": "MEDICAL_TOURNIQUET",
+      "category": "medical_tool",
+      "index": 34
+    },
+    {
+      "definitionId": "antiseptic",
+      "apiName": "MEDICAL_ANTISEPTIC",
+      "category": "medical_tool",
+      "index": 35
+    },
+    {
+      "definitionId": "splint",
+      "apiName": "MEDICAL_SPLINT",
+      "category": "medical_tool",
+      "index": 36
+    },
+    {
+      "definitionId": "stim",
+      "apiName": "MEDICAL_STIM",
+      "category": "medical_tool",
+      "index": 37
+    },
+    {
+      "definitionId": "tool_set",
+      "apiName": "TOOL_SET",
+      "category": "medical_tool",
+      "index": 38
+    },
+    {
+      "definitionId": "canned_food",
+      "apiName": "LOOT_CANNED_FOOD",
+      "category": "loot_mission",
+      "index": 39
+    },
+    {
+      "definitionId": "water_filter",
+      "apiName": "LOOT_WATER_FILTER",
+      "category": "loot_mission",
+      "index": 40
+    },
+    {
+      "definitionId": "bolts",
+      "apiName": "LOOT_BOLTS",
+      "category": "loot_mission",
+      "index": 41
+    },
+    {
+      "definitionId": "scrap_metal",
+      "apiName": "LOOT_SCRAP_METAL",
+      "category": "loot_mission",
+      "index": 42
+    },
+    {
+      "definitionId": "cloth_roll",
+      "apiName": "LOOT_CLOTH_ROLL",
+      "category": "loot_mission",
+      "index": 43
+    },
+    {
+      "definitionId": "battery",
+      "apiName": "LOOT_BATTERY",
+      "category": "loot_mission",
+      "index": 44
+    },
+    {
+      "definitionId": "ceramic_shard",
+      "apiName": "LOOT_CERAMIC_SHARD",
+      "category": "loot_mission",
+      "index": 45
+    },
+    {
+      "definitionId": "rubber_hose",
+      "apiName": "LOOT_RUBBER_HOSE",
+      "category": "loot_mission",
+      "index": 46
+    },
+    {
+      "definitionId": "sealed_coffee",
+      "apiName": "LOOT_SEALED_COFFEE",
+      "category": "loot_mission",
+      "index": 47
+    },
+    {
+      "definitionId": "copper_wire",
+      "apiName": "LOOT_COPPER_WIRE",
+      "category": "loot_mission",
+      "index": 48
+    },
+    {
+      "definitionId": "electric_motor",
+      "apiName": "LOOT_ELECTRIC_MOTOR",
+      "category": "loot_mission",
+      "index": 49
+    },
+    {
+      "definitionId": "bearing",
+      "apiName": "LOOT_BEARING",
+      "category": "loot_mission",
+      "index": 50
+    },
+    {
+      "definitionId": "circuit_board",
+      "apiName": "LOOT_CIRCUIT_BOARD",
+      "category": "loot_mission",
+      "index": 51
+    },
+    {
+      "definitionId": "fuel_can",
+      "apiName": "LOOT_FUEL_CAN",
+      "category": "loot_mission",
+      "index": 52
+    },
+    {
+      "definitionId": "welding_rod",
+      "apiName": "LOOT_WELDING_ROD",
+      "category": "loot_mission",
+      "index": 53
+    },
+    {
+      "definitionId": "pressure_gauge",
+      "apiName": "LOOT_PRESSURE_GAUGE",
+      "category": "loot_mission",
+      "index": 54
+    },
+    {
+      "definitionId": "relay_module",
+      "apiName": "LOOT_RELAY_MODULE",
+      "category": "loot_mission",
+      "index": 55
+    },
+    {
+      "definitionId": "copper_coil",
+      "apiName": "LOOT_COPPER_COIL",
+      "category": "loot_mission",
+      "index": 56
+    },
+    {
+      "definitionId": "machine_oil",
+      "apiName": "LOOT_MACHINE_OIL",
+      "category": "loot_mission",
+      "index": 57
+    },
+    {
+      "definitionId": "gold_watch",
+      "apiName": "LOOT_GOLD_WATCH",
+      "category": "loot_mission",
+      "index": 58
+    },
+    {
+      "definitionId": "encrypted_drive",
+      "apiName": "LOOT_ENCRYPTED_DRIVE",
+      "category": "loot_mission",
+      "index": 59
+    },
+    {
+      "definitionId": "antique_coin",
+      "apiName": "LOOT_ANTIQUE_COIN",
+      "category": "loot_mission",
+      "index": 60
+    },
+    {
+      "definitionId": "camera_lens",
+      "apiName": "LOOT_CAMERA_LENS",
+      "category": "loot_mission",
+      "index": 61
+    },
+    {
+      "definitionId": "military_chip",
+      "apiName": "LOOT_MILITARY_CHIP",
+      "category": "loot_mission",
+      "index": 62
+    },
+    {
+      "definitionId": "radio_crystal",
+      "apiName": "LOOT_RADIO_CRYSTAL",
+      "category": "loot_mission",
+      "index": 63
+    },
+    {
+      "definitionId": "optical_sensor",
+      "apiName": "LOOT_OPTICAL_SENSOR",
+      "category": "loot_mission",
+      "index": 64
+    },
+    {
+      "definitionId": "officer_badge",
+      "apiName": "LOOT_OFFICER_BADGE",
+      "category": "loot_mission",
+      "index": 65
+    },
+    {
+      "definitionId": "command_key",
+      "apiName": "LOOT_COMMAND_KEY",
+      "category": "loot_mission",
+      "index": 66
+    },
+    {
+      "definitionId": "prototype_core",
+      "apiName": "LOOT_PROTOTYPE_CORE",
+      "category": "loot_mission",
+      "index": 67
+    },
+    {
+      "definitionId": "mission:maintenance_archive",
+      "apiName": "MISSION_ARCHIVE",
+      "category": "loot_mission",
+      "index": 68
+    },
+    {
+      "definitionId": "interaction:fixed_extraction",
+      "apiName": "FIXED_EXTRACTION",
+      "category": "interaction",
+      "index": 69
+    },
+    {
+      "definitionId": "interaction:conditional_extraction",
+      "apiName": "CONDITIONAL_EXTRACTION",
+      "category": "interaction",
+      "index": 70
+    },
+    {
+      "definitionId": "interaction:pump_station",
+      "apiName": "PUMP_STATION",
+      "category": "interaction",
+      "index": 71
+    }
+  ]
+}

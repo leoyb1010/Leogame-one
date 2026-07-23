@@ -11,12 +11,12 @@ buildscript {
 allprojects {
 
     ext {
-        appName = 'Leo的地牢围攻'
-        appBundleId = 'leogameone'
+        appName = '逃离布科夫'
+        appBundleId = 'com.leoyuan.escapefrombukov'
         appPackageName = 'com.shatteredpixel.shatteredpixeldungeon'
 
-        appVersionCode = 896
-        appVersionName = '1.0.0'
+        appVersionCode = 897
+        appVersionName = '2.0.0'
 
         appJavaCompatibility = JavaVersion.VERSION_11
 

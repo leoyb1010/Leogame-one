@@ -1,0 +1,9 @@
+source,repository,version_or_commit,license,usage,assets_included,status
+Escape from Bukov original work,local repository,current working tree,GPL-3.0-or-later,new Java JSON validation and procedural asset generator sources,yes,integrated pending final release SHA
+Leogame-one,https://github.com/leoyb1010/Leogame-one,99a084d72fc4b399117be0369ccc2bdd41151879,GPL-3.0,sole host project,yes,integrated
+Shattered Pixel Dungeon,https://github.com/00-Evan/shattered-pixel-dungeon,upstream of host,GPL-3.0,upstream engine and existing assets,yes,integrated through host
+gdx-ai,https://github.com/libgdx/gdx-ai,1.8.2,Apache-2.0,design reference,no,no dependency or copied source
+Delver Engine,https://github.com/Interrupt/delverengine,v1.4.0,zlib,mechanics reference,no,no copied source or game data
+Mindustry,https://github.com/Anuken/Mindustry,v159.7,GPL-3.0,architecture reference,no,no Arc dependency or copied source
+Seventh,recorded in approved v2.0 plan,bc0a258e, GPL-2.0,research only,no,excluded for license compatibility risk
+Bukov user artwork,local Unity prototype,44061f43d5635a7f125a5fcd9d7e0926bced6c3e770a9f3c1f694e087d8da83e,user provided,application icon,yes,integrated

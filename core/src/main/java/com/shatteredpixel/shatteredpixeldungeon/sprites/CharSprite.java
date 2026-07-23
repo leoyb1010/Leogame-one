@@ -96,6 +96,16 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	protected Animation die;
 	
 	protected Callback animCallback;
+
+	/*
+	 * Realtime actions use the existing sprite films, but never their Actor
+	 * completion callbacks.  Movement interpolation runs every render frame,
+	 * so it must remember movement without replacing a short combat action.
+	 */
+	private boolean realtimeActionPlaying;
+	private int realtimeActionPriority;
+	private int realtimeActionToken;
+	private boolean realtimeMoving;
 	
 	protected PosTweener motion;
 	
@@ -186,9 +196,102 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			PixelScene.align(Camera.main, ((cell / Dungeon.level.width()) + 1.0f) * csize - height() - csize * perspectiveRaise)
 		);
 	}
+
+	public PointF worldToCamera( float centerX, float centerY ) {
+
+		final int csize = DungeonTilemap.SIZE;
+
+		return new PointF(
+			PixelScene.align( Camera.main, centerX * csize - width() * 0.5f ),
+			PixelScene.align( Camera.main, (centerY + 0.5f) * csize - height() - csize * perspectiveRaise )
+		);
+	}
 	
 	public void place( int cell ) {
 		point( worldToCamera( cell ) );
+	}
+
+	public void place( float centerX, float centerY ) {
+		point( worldToCamera( centerX, centerY ) );
+	}
+
+	public void setRealtimeMoving( boolean moving ) {
+		realtimeMoving = moving;
+		if (realtimeActionPlaying) {
+			return;
+		}
+		Animation target = moving ? run : idle;
+		if (target != null && curAnim != target) {
+			play(target);
+		}
+	}
+
+	/**
+	 * Plays a cosmetic realtime attack without calling Char.onAttackComplete().
+	 * Repeated automatic-fire pulses are ignored until the current film ends.
+	 */
+	public void realtimeAttack( int targetCell ) {
+		playRealtimeAction( attack, targetCell, 1, null );
+	}
+
+	/**
+	 * Plays a cosmetic realtime interaction without spending a host turn.
+	 */
+	public void realtimeOperate( int targetCell ) {
+		playRealtimeAction( operate, targetCell, 2, null );
+	}
+
+	/**
+	 * Generic enemies do not all own a hit film; a short flash is the safe
+	 * common reaction and does not disturb a higher-priority death animation.
+	 */
+	public void realtimeHitReaction() {
+		if (curAnim != die) {
+			flash();
+		}
+	}
+
+	protected synchronized boolean playRealtimeAction(
+			final Animation animation,
+			int targetCell,
+			int priority,
+			final Callback callback ) {
+		if (animation == null || ch == null || curAnim == die) {
+			if (callback != null) callback.call();
+			return false;
+		}
+		if (realtimeActionPlaying && priority <= realtimeActionPriority) {
+			return false;
+		}
+
+		realtimeActionPlaying = true;
+		realtimeActionPriority = priority;
+		final int token = ++realtimeActionToken;
+		turnTo( ch.pos, targetCell );
+		animCallback = new Callback() {
+			@Override
+			public void call() {
+				finishRealtimeAction( token, callback );
+			}
+		};
+		play( animation );
+		return true;
+	}
+
+	private synchronized void finishRealtimeAction(
+			int token, Callback callback ) {
+		if (token != realtimeActionToken) {
+			return;
+		}
+		realtimeActionPlaying = false;
+		realtimeActionPriority = 0;
+		Animation target = realtimeMoving ? run : idle;
+		if (target != null) {
+			play( target );
+		}
+		if (callback != null) {
+			callback.call();
+		}
 	}
 	
 	public void showStatus( int color, String text, Object... args ) {
@@ -308,6 +411,12 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 	}
 
 	public void die() {
+		if (realtimeActionPlaying) {
+			realtimeActionPlaying = false;
+			realtimeActionPriority = 0;
+			realtimeActionToken++;
+			animCallback = null;
+		}
 		sleeping = false;
 		processStateRemoval( State.PARALYSED );
 		play( die );

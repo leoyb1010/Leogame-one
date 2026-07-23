@@ -69,6 +69,9 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.PrisonLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.RegularLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerBossLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.SewerLevel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovOperator;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.VaultLevel;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.secret.SecretRoom;
@@ -284,6 +287,9 @@ public class Dungeon {
 		Badges.reset();
 		
 		GamesInProgress.selectedClass.initHero( hero );
+		if (BukovMode.active()) {
+			BukovOperator.sanitizeHostHero(hero);
+		}
 	}
 
 	public static boolean isChallenged( int mask ) {
@@ -303,6 +309,8 @@ public class Dungeon {
 		if (branch == 0) {
 			switch (depth) {
 				case 1:
+					level = BukovMode.active() ? new BukovLevel() : new SewerLevel();
+					break;
 				case 2:
 				case 3:
 				case 4:
@@ -811,6 +819,9 @@ public class Dungeon {
 		
 		hero = null;
 		hero = (Hero)bundle.get( HERO );
+		if (BukovMode.active()) {
+			BukovOperator.sanitizeHostHero(hero);
+		}
 		
 		depth = bundle.getInt( DEPTH );
 		branch = bundle.getInt( BRANCH );

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "ammunition": [
+    {
+      "id": "ammo_9_training",
+      "name": "9毫米训练弹",
+      "variant": "TRAINING",
+      "caliber": "9x19",
+      "damageMultiplier": 0.72,
+      "penetrationMultiplier": 0.62,
+      "noiseMultiplier": 0.92,
+      "weightKg": 0.012,
+      "value": 5
+    },
+    {
+      "id": "ammo_9_standard",
+      "name": "9毫米标准弹",
+      "variant": "STANDARD",
+      "caliber": "9x19",
+      "damageMultiplier": 1.0,
+      "penetrationMultiplier": 1.0,
+      "noiseMultiplier": 1.0,
+      "weightKg": 0.012,
+      "value": 12
+    },
+    {
+      "id": "ammo_9_subsonic",
+      "name": "9毫米亚音速弹",
+      "variant": "SUBSONIC",
+      "caliber": "9x19",
+      "damageMultiplier": 0.9,
+      "penetrationMultiplier": 0.86,
+      "noiseMultiplier": 0.58,
+      "weightKg": 0.013,
+      "value": 22
+    },
+    {
+      "id": "ammo_556_standard",
+      "name": "5.56毫米标准弹",
+      "variant": "STANDARD",
+      "caliber": "5.56x45",
+      "damageMultiplier": 1.0,
+      "penetrationMultiplier": 1.0,
+      "noiseMultiplier": 1.0,
+      "weightKg": 0.013,
+      "value": 18
+    },
+    {
+      "id": "ammo_556_armor_piercing",
+      "name": "5.56毫米硬芯弹",
+      "variant": "ARMOR_PIERCING",
+      "caliber": "5.56x45",
+      "damageMultiplier": 0.94,
+      "penetrationMultiplier": 1.42,
+      "noiseMultiplier": 1.08,
+      "weightKg": 0.013,
+      "value": 42
+    },
+    {
+      "id": "ammo_762_standard",
+      "name": "7.62毫米标准弹",
+      "variant": "STANDARD",
+      "caliber": "7.62x39",
+      "damageMultiplier": 1.0,
+      "penetrationMultiplier": 1.0,
+      "noiseMultiplier": 1.0,
+      "weightKg": 0.024,
+      "value": 24
+    },
+    {
+      "id": "ammo_762_expanding",
+      "name": "7.62毫米扩张弹",
+      "variant": "EXPANDING",
+      "caliber": "7.62x39",
+      "damageMultiplier": 1.34,
+      "penetrationMultiplier": 0.68,
+      "noiseMultiplier": 1.04,
+      "weightKg": 0.025,
+      "value": 48
+    },
+    {
+      "id": "ammo_12g_buckshot",
+      "name": "12号鹿弹",
+      "variant": "STANDARD",
+      "caliber": "12g",
+      "damageMultiplier": 1.0,
+      "penetrationMultiplier": 1.0,
+      "noiseMultiplier": 1.0,
+      "weightKg": 0.045,
+      "value": 28
+    }
+  ]
+}

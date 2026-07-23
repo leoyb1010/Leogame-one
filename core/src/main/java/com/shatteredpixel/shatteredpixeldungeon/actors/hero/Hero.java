@@ -78,6 +78,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.Smite;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mimic;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Monk;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Snake;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CellEmitter;
 import com.shatteredpixel.shatteredpixeldungeon.effects.CheckedCell;
@@ -2128,6 +2129,16 @@ public class Hero extends Char {
 	public void die( Object cause ) {
 		
 		curAction = null;
+
+		if (BukovMode.active()) {
+			// Bukov death is a transactional raid outcome. Do not run the host
+			// campaign's Ankh, Bones, scattered-backpack, GAME OVER or
+			// HeroSelect restart path; GameScene settles the raid and returns
+			// to the hideout on the next lifecycle tick.
+			Actor.fixTime();
+			super.die(cause);
+			return;
+		}
 
 		Ankh ankh = null;
 

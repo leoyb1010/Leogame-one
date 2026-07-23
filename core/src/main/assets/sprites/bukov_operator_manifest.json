@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "atlas": "sprites/bukov_operator.png",
+  "width": 384,
+  "height": 128,
+  "frameWidth": 12,
+  "frameHeight": 15,
+  "frameCount": 32,
+  "directions": [
+    {
+      "name": "N",
+      "row": 0,
+      "vector": [
+        0,
+        -1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        6,
+        4
+      ]
+    },
+    {
+      "name": "NE",
+      "row": 1,
+      "vector": [
+        1,
+        -1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        11,
+        4
+      ]
+    },
+    {
+      "name": "E",
+      "row": 2,
+      "vector": [
+        1,
+        0
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        11,
+        8
+      ]
+    },
+    {
+      "name": "SE",
+      "row": 3,
+      "vector": [
+        1,
+        1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        11,
+        12
+      ]
+    },
+    {
+      "name": "S",
+      "row": 4,
+      "vector": [
+        0,
+        1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        6,
+        12
+      ]
+    },
+    {
+      "name": "SW",
+      "row": 5,
+      "vector": [
+        -1,
+        1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        1,
+        12
+      ]
+    },
+    {
+      "name": "W",
+      "row": 6,
+      "vector": [
+        -1,
+        0
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        1,
+        8
+      ]
+    },
+    {
+      "name": "NW",
+      "row": 7,
+      "vector": [
+        -1,
+        -1
+      ],
+      "footAnchor": [
+        6,
+        14
+      ],
+      "muzzleAnchor": [
+        1,
+        4
+      ]
+    }
+  ],
+  "states": [
+    {
+      "name": "idle",
+      "from": 0,
+      "to": 1
+    },
+    {
+      "name": "move",
+      "from": 2,
+      "to": 7
+    },
+    {
+      "name": "aim",
+      "from": 8,
+      "to": 9
+    },
+    {
+      "name": "fire",
+      "from": 10,
+      "to": 12
+    },
+    {
+      "name": "reload",
+      "from": 13,
+      "to": 16
+    },
+    {
+      "name": "hit",
+      "from": 17,
+      "to": 19
+    },
+    {
+      "name": "medical",
+      "from": 20,
+      "to": 23
+    },
+    {
+      "name": "down",
+      "from": 24,
+      "to": 27
+    },
+    {
+      "name": "extract",
+      "from": 28,
+      "to": 31
+    }
+  ],
+  "sha256": "949cc8e15d3dab655d112e261c3a949887d97f2761fa226d50e306cb8030f224"
+}

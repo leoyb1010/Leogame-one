@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "frameWidth": 16,
+  "frameHeight": 18,
+  "frameCount": 16,
+  "actions": {
+    "idle": [
+      0,
+      1
+    ],
+    "attack": [
+      2,
+      3
+    ],
+    "run": [
+      4,
+      7
+    ],
+    "death": [
+      8,
+      10
+    ],
+    "identityOrPhase": [
+      11,
+      15
+    ]
+  },
+  "sheets": [
+    {
+      "asset": "sprites/bukov/scavenger.png",
+      "enemyIds": [
+        "melee_rusher"
+      ],
+      "family": "light-rusher",
+      "tier": "normal",
+      "sha256": "eae031f25d6c3e3a214165d519b774038cb41755f7554750b968263d6cf0fa49"
+    },
+    {
+      "asset": "sprites/bukov/gunner.png",
+      "enemyIds": [
+        "scavenger_gunner"
+      ],
+      "family": "rifle-scavenger",
+      "tier": "normal",
+      "sha256": "5aa3ad420b3341a2711eff398eed0d02cce0f2625dc29ce470d3f3f12e320cbb"
+    },
+    {
+      "asset": "sprites/bukov/armored.png",
+      "enemyIds": [
+        "iron_clasp_guard"
+      ],
+      "family": "heavy-guard",
+      "tier": "elite",
+      "sha256": "1b3719e544bb6cbc9a5ec02a7687867a0cf0d3597f440eda7697ea8399325e0f"
+    },
+    {
+      "asset": "sprites/bukov/captain.png",
+      "enemyIds": [
+        "iron_clasp_captain"
+      ],
+      "family": "command-elite",
+      "tier": "elite",
+      "sha256": "58de6821a1a65257c3507e27c50c5cc9e5b4860bba1dbd28ded908b2a6788c19"
+    },
+    {
+      "asset": "sprites/bukov/drone.png",
+      "enemyIds": [
+        "sensor_doll"
+      ],
+      "family": "sensor-drone",
+      "tier": "normal",
+      "sha256": "51314233eda0b27e044bcaa5538171272a5bf71a5c9ddda7378af5608b5863d7"
+    },
+    {
+      "asset": "sprites/bukov/white_line.png",
+      "enemyIds": [
+        "boss_white_line"
+      ],
+      "family": "white-line-boss",
+      "tier": "boss",
+      "sha256": "3a8bcaf35515566d61d378b54d064d0d14cf4bbd08a4b345097e85720bb40394"
+    },
+    {
+      "asset": "sprites/bukov/alley_scout.png",
+      "enemyIds": [
+        "alley_scout"
+      ],
+      "family": "hooded-scout",
+      "tier": "normal",
+      "sha256": "80df283cbb0424eacc71c4e902582800c0156e6f3c9ea19c3999af8e7a594aa1"
+    },
+    {
+      "asset": "sprites/bukov/depot_shotgunner.png",
+      "enemyIds": [
+        "depot_shotgunner"
+      ],
+      "family": "orange-heavy-shotgun",
+      "tier": "normal",
+      "sha256": "a288ee9bdce732d454bf9e0c5166694155ecf84a18077d1837757ab1dc2331bd"
+    },
+    {
+      "asset": "sprites/bukov/line_rifleman.png",
+      "enemyIds": [
+        "line_rifleman"
+      ],
+      "family": "blue-line-rifle",
+      "tier": "normal",
+      "sha256": "101b580f218b5678f69af23069258d92b8ca5b09faf0f0991f677971bb0a9445"
+    },
+    {
+      "asset": "sprites/bukov/fog_stalker.png",
+      "enemyIds": [
+        "fog_stalker"
+      ],
+      "family": "dark-fog-stalker",
+      "tier": "normal",
+      "sha256": "b2bdbb3c77348ad68bbc06585101efddc49e86b75da2176fc8e482a11d9d3616"
+    },
+    {
+      "asset": "sprites/bukov/signal_operator.png",
+      "enemyIds": [
+        "signal_operator"
+      ],
+      "family": "signal-walker",
+      "tier": "normal",
+      "sha256": "ec48dd2ba3164d74487e11ecffcd4d0bf21efece2b061e1407ad8f9259a93059"
+    },
+    {
+      "asset": "sprites/bukov/iron_clasp_marksman.png",
+      "enemyIds": [
+        "iron_clasp_marksman"
+      ],
+      "family": "long-optic-elite",
+      "tier": "elite",
+      "sha256": "631975f9d514e0b59d10a592a9196a341b8144f8697b66eeada5a5a5d1080f4a"
+    },
+    {
+      "asset": "sprites/bukov/breach_veteran.png",
+      "enemyIds": [
+        "breach_veteran"
+      ],
+      "family": "red-breach-elite",
+      "tier": "elite",
+      "sha256": "dd20ba9fc21085f68894f3daab4f104c4f68a92803288a15b1954709d2ceffd4"
+    }
+  ]
+}

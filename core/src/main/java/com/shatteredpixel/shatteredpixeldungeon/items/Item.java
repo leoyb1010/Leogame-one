@@ -99,6 +99,7 @@ public class Item implements Bundlable {
 	public boolean bones = false;
 
 	public int customNoteID = -1;
+	private String bukovItemUid;
 	
 	public static final Comparator<Item> itemComparator = new Comparator<Item>() {
 		@Override
@@ -298,6 +299,7 @@ public class Item implements Bundlable {
 			Bundle copy = new Bundle();
 			this.storeInBundle(copy);
 			split.restoreFromBundle(copy);
+			split.bukovItemUid = null;
 			split.quantity(amount);
 			quantity -= amount;
 			
@@ -313,6 +315,7 @@ public class Item implements Bundlable {
 		Bundle copy = new Bundle();
 		this.storeInBundle(copy);
 		dupe.restoreFromBundle(copy);
+		dupe.bukovItemUid = null;
 		return dupe;
 	}
 	
@@ -544,6 +547,20 @@ public class Item implements Bundlable {
 		return this;
 	}
 
+	public String bukovItemUid() {
+		return bukovItemUid;
+	}
+
+	public void assignBukovItemUid(String itemUid) {
+		if (itemUid == null || itemUid.trim().isEmpty()) {
+			throw new IllegalArgumentException("itemUid is required");
+		}
+		if (bukovItemUid != null && !bukovItemUid.equals(itemUid)) {
+			throw new IllegalStateException("Bukov item UID cannot change");
+		}
+		bukovItemUid = itemUid;
+	}
+
 	//item's value in gold coins
 	public int value() {
 		return 0;
@@ -583,6 +600,7 @@ public class Item implements Bundlable {
 	private static final String QUICKSLOT		= "quickslotpos";
 	private static final String KEPT_LOST       = "kept_lost";
 	private static final String CUSTOM_NOTE_ID = "custom_note_id";
+	private static final String BUKOV_ITEM_UID = "bukov_item_uid";
 	
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -596,6 +614,7 @@ public class Item implements Bundlable {
 		}
 		bundle.put( KEPT_LOST, keptThoughLostInvent );
 		if (customNoteID != -1)     bundle.put(CUSTOM_NOTE_ID, customNoteID);
+		if (bukovItemUid != null)   bundle.put(BUKOV_ITEM_UID, bukovItemUid);
 	}
 	
 	@Override
@@ -622,6 +641,7 @@ public class Item implements Bundlable {
 
 		keptThoughLostInvent = bundle.getBoolean( KEPT_LOST );
 		if (bundle.contains(CUSTOM_NOTE_ID))    customNoteID = bundle.getInt(CUSTOM_NOTE_ID);
+		if (bundle.contains(BUKOV_ITEM_UID))    assignBukovItemUid(bundle.getString(BUKOV_ITEM_UID));
 	}
 
 	public int targetingPos( Hero user, int dst ){

@@ -16,27 +16,45 @@
                         <rect key="frame" x="0.0" y="0.0" width="1376" height="1032"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="LEO" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Leo-Launch-Mark">
-                                <rect key="frame" x="632" y="482" width="112" height="68"/>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="52"/>
-                                <color key="textColor" red="0.7098039216" green="0.5411764706" blue="0.2705882353" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Bukov-Accent-Line">
+                                <rect key="frame" x="548" y="454" width="280" height="2"/>
+                                <color key="backgroundColor" red="0.7960784314" green="0.3019607843" blue="0.1647058824" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="2" id="Bukov-Line-Height"/>
+                                    <constraint firstAttribute="width" constant="280" id="Bukov-Line-Width"/>
+                                </constraints>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="逃离布科夫" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="Bukov-Launch-Title">
+                                <rect key="frame" x="528" y="474" width="320" height="58"/>
+                                <fontDescription key="fontDescription" type="boldSystem" pointSize="42"/>
+                                <color key="textColor" red="0.9333333333" green="0.9411764706" blue="0.9254901961" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="◆" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="Leo-Launch-Flame">
-                                <rect key="frame" x="676" y="558" width="24" height="30"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="22"/>
-                                <color key="textColor" red="0.1803921569" green="0.6078431373" blue="0.4509803922" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="ESCAPE FROM BUKOV" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="Bukov-Launch-Subtitle">
+                                <rect key="frame" x="548" y="541" width="280" height="25"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="17"/>
+                                <color key="textColor" red="0.5411764706" green="0.6235294118" blue="0.6078431373" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="OFFLINE EXTRACTION" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="Bukov-Launch-Mode">
+                                <rect key="frame" x="598" y="583" width="180" height="18"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="11"/>
+                                <color key="textColor" red="0.7960784314" green="0.3019607843" blue="0.1647058824" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
                         </subviews>
                         <constraints>
-                            <constraint firstItem="Leo-Launch-Mark" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Leo-Mark-CenterX"/>
-                            <constraint firstItem="Leo-Launch-Mark" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-24" id="Leo-Mark-CenterY"/>
-                            <constraint firstItem="Leo-Launch-Flame" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Leo-Flame-CenterX"/>
-                            <constraint firstItem="Leo-Launch-Flame" firstAttribute="top" secondItem="Leo-Launch-Mark" secondAttribute="bottom" constant="8" id="Leo-Flame-Top"/>
+                            <constraint firstItem="Bukov-Launch-Title" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Bukov-Title-CenterX"/>
+                            <constraint firstItem="Bukov-Launch-Title" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-14" id="Bukov-Title-CenterY"/>
+                            <constraint firstItem="Bukov-Accent-Line" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Bukov-Line-CenterX"/>
+                            <constraint firstItem="Bukov-Accent-Line" firstAttribute="bottom" secondItem="Bukov-Launch-Title" secondAttribute="top" constant="-18" id="Bukov-Line-Bottom"/>
+                            <constraint firstItem="Bukov-Launch-Subtitle" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Bukov-Subtitle-CenterX"/>
+                            <constraint firstItem="Bukov-Launch-Subtitle" firstAttribute="top" secondItem="Bukov-Launch-Title" secondAttribute="bottom" constant="9" id="Bukov-Subtitle-Top"/>
+                            <constraint firstItem="Bukov-Launch-Mode" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Bukov-Mode-CenterX"/>
+                            <constraint firstItem="Bukov-Launch-Mode" firstAttribute="top" secondItem="Bukov-Launch-Subtitle" secondAttribute="bottom" constant="14" id="Bukov-Mode-Top"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                        <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <color key="backgroundColor" red="0.02745098039" green="0.05098039216" blue="0.05098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     </view>
                     <extendedEdge key="edgesForExtendedLayout"/>

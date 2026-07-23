@@ -1,122 +1,110 @@
-# Leo的地牢围攻
+# 逃离布科夫 · ESCAPE FROM BUKOV
 
-> 守住最后的火，走完自己的远征。
+> 搜到什么不算本事，能带回来才算。
 
-![Leo的地牢围攻主视觉](artwork/inbox/title/title-background-landscape.png)
+《逃离布科夫》是一款离线单机、俯视角、实时战斗的像素搜打撤游戏。玩家从仓库完成配装，进入程序化地图搜索物资、处理敌人和路线风险，再选择继续深入或及时撤离。成功带出的物品进入长期仓库；行动中死亡则失去本局携带物。
 
-《Leo的地牢围攻》是一款面向 macOS、iPhone 与 iPad 的中文离线 Roguelike 地牢游戏。它基于 GPLv3 开源项目 Shattered Pixel Dungeon 二次开发，并围绕 Leo 的个人审美、中文体验、黑金翡翠狮王视觉和更明确的打击反馈重新设计。
+项目以 Leogame-one 的 GPLv3 代码库为工程基础，继承 Shattered Pixel Dungeon 成熟的地图生成、渲染与跨平台管线，并将玩家主流程重构为实时移动、枪械战斗、搜刮、撤离、结算与长期仓库。兼容源码仍保留原作者版权头和许可证，但不会作为《逃离布科夫》的玩家入口或品牌身份。
 
 [![CI](https://github.com/leoyb1010/Leogame-one/actions/workflows/ci.yml/badge.svg)](https://github.com/leoyb1010/Leogame-one/actions/workflows/ci.yml)
-![Version](https://img.shields.io/badge/version-1.0.0-d4a843)
-![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iPhone%20%7C%20iPad-168f78)
-![Language](https://img.shields.io/badge/default-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-e53935)
-![License](https://img.shields.io/badge/license-GPLv3-5c6bc0)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS-2A6F7B)
+![Mode](https://img.shields.io/badge/combat-realtime-E05A3A)
+![License](https://img.shields.io/badge/license-GPLv3-5C6BC0)
 
-## 这不是简单换皮
+## 游戏内容
 
-- **Leo 专属身份**：游戏名、Apple Bundle ID、远征档案、远征日志、首次授予狮印和版本记录形成统一产品叙事。
-- **中文优先**：首次启动默认简体中文，全局界面中文；设置中可切换 English。
-- **原创主视觉**：黑铁、旧金、翡翠灵火、狮首徽记贯穿标题、按钮、面板、图标和章节插画。
-- **更清晰的战斗反馈**：斩击、突刺、钝击拥有差异化震屏、粒子、材质音和触觉反馈，强度可调。
-- **更利落的操作**：移动视觉动画缩短 25%，不改变回合耗时、敌人速度或平衡数值。
-- **纯离线**：无广告、无强制账号，存档默认只保存在设备本地。
+- 实时移动、鼠标/双摇杆瞄准、半自动与自动射击
+- 6 个程序化地图主题、不同风险路线、搜刮容器与多种撤离条件
+- 18 把枪械、8 种具体弹药，配装按注册表口径校验
+- 13 种敌人：9 普通、3 精英、1 Boss
+- 远征、快速清扫、拾荒者、Boss 合同 4 种 Raid 模式
+- 基地商店买入/出售、长期仓库、配装与行动中交易锁定
+- 72 帧物品/交互图标和 19 个项目原创 PCM 音效
+- 物品 UID、Raid 检查点、成功/死亡幂等结算与长期仓库
+- macOS 与 iOS 共用核心逻辑，固定模拟 120 Hz，并提供高刷新配置
 
-## 当前版本
+## 当前开发状态
 
-| 项目 | 状态 |
-|---|---|
-| 游戏版本 | `1.0.0` |
-| Apple Bundle ID | `leogameone` |
-| 默认语言 | 简体中文 |
-| 可切换语言 | English |
-| macOS | 已构建、已实机验证 |
-| iPhone / iPad | 当前重点支持 |
-| Android | 保留源码，本阶段暂不维护 |
+当前分支正在执行《完整开发执行计划书 v2.0》。标题、基地、商店、行动部署、实时战斗、任务物品、封锁门、搜刮、撤离、结算与长期仓库已进入同一条布科夫玩家路径；内容规模已达到 6 主题、18 枪、13 敌人与 4 模式。
 
-## 视觉预览
+这仍是“待最终平台证据”的候选状态，不等于已经发行验收：最终 SHA 的统一 Gradle、macOS 打包全流程、iOS AOT/模拟器/真机、60/120/144 Hz 帧 pacing、30 分钟稳定性和恢复测试必须按 [最终 QA 模板](docs/bukov/FINAL_QA_REPORT_TEMPLATE.md) 留证。机器可读状态见 [发行清单](docs/bukov/RELEASE_MANIFEST.json)。
 
-| 战士远征 | 下水道区域 |
-|---|---|
-| ![战士](artwork/inbox/splashes/warrior.png) | ![下水道](artwork/inbox/splashes/sewers.png) |
+## 快速构建
 
-原始生成素材位于 `artwork/inbox/`，处理后的透明素材位于 `artwork/processed/alpha/`，游戏运行时资源由 `scripts/process_leo_artwork.py` 生成。源文件权属和派生关系记录在 `artwork/licenses/ASSET_PROVENANCE.csv`。
+环境要求：
 
-## 快速开始
-
-### 环境要求
-
-- Apple Silicon 或 Intel Mac
-- Xcode（包含所需 iOS Simulator Runtime）
+- macOS
 - Homebrew OpenJDK 17
+- 构建 iOS 时需要 Xcode 与对应 Simulator Runtime
 
-### 构建 macOS
-
-```bash
-scripts/apple-gradle :desktop:jpackageImage
-```
-
-### 启动 iPhone / iPad 模拟器
+统一编译与测试：
 
 ```bash
-scripts/apple-gradle :ios:launchIPhoneSimulator
-scripts/apple-gradle :ios:launchIPadSimulator
+./scripts/apple-gradle core:clean desktop:clean core:test desktop:build ios:compileJava --no-daemon
 ```
 
-### 测试与发布门禁
+打包并启动 macOS：
 
 ```bash
-scripts/apple-gradle :core:test :desktop:test :ios:test
-python3 scripts/validate_release.py
-scripts/apple-distribution-audit
+./scripts/apple-gradle desktop:jpackageImage --no-daemon
+open "$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app"
 ```
 
-前两项会验证命中基线、英中文资源、存档攻击数值、移动间隔、iOS 安全区、离线服务与素材台账。最后一项只有在 Developer ID、Apple Distribution、显式 iOS Provisioning Profile 和公证凭据都就绪时才会通过。
+启动 iPhone 模拟器版本：
 
-构建产物统一放在 macOS 用户缓存目录的 `leogameone-gradle/` 下，避免 iCloud/FileProvider 目录造成 Gradle 文件锁与签名异常。完整说明见 [APPLE_DEVELOPMENT.md](APPLE_DEVELOPMENT.md)。
+```bash
+./scripts/apple-gradle ios:launchIPhoneSimulator --no-daemon
+```
 
-## 项目结构
+专项门禁：
+
+```bash
+./scripts/bukov_ui_tokens_check.sh
+python3 ./scripts/bukov_release_manifest_check.py
+python3 ./scripts/bukov_content_scale_gate.py
+./scripts/bukov_audio_gate.sh
+./scripts/bukov_item_atlas_gate.sh
+./scripts/bukov_seed_sweep.sh 10000
+./scripts/bukov_save_stress.sh 100
+./scripts/bukov_performance_smoke.sh 1800
+```
+
+## 目录
 
 ```text
-core/       游戏规则、场景、中文资源、运行时美术
-desktop/    macOS/桌面启动器与图标
-ios/        iPhone/iPad 启动器、Info.plist、AppIcon
-services/   离线禁用的更新与新闻服务适配
-artwork/    Leo 原始素材与透明处理结果
-scripts/    Apple 构建包装器和素材处理管线
-docs/       美术规范、升级路线与开发说明
+core/src/main/java/.../bukov/   布科夫实时战斗、内容、地图、Raid、存档与 UI
+core/src/main/assets/bukov/     枪械、弹药和 UI 令牌等数据
+core/src/test/java/.../bukov/   单元、回归、种子、存档与性能门禁
+desktop/                        macOS/桌面启动器与图标
+ios/                            iPhone/iPad 启动器、Info.plist 与 AppIcon
+artwork/                        原始素材、生成素材和权属记录
+docs/bukov/                     执行基线、实现矩阵、素材清单与验收记录
+scripts/                        Apple 构建包装器与布科夫专项检查
 ```
 
-核心规则层继续沿用稳定的 Java 包名，避免大规模包迁移破坏存档兼容；用户可见产品名和 Apple Bundle ID 已全部独立为 Leo 版本。
+## 开发纪律
 
-`leogameone` 是项目所有者确定的最终 Bundle ID。它通过 Apple 字符集校验并可用于开发签名；首次上传 App Store Connect 前，必须在 Apple Developer 账户中将其注册为显式 App ID，此后不再变更。
-
-## 战斗命中说明
-
-本项目没有提高或降低原始命中率。一级战士对普通下水道老鼠约有 90% 命中率；白蛇是教学型高闪避敌人，正面攻击命中率约 20%，应将它引过门后伏击。Leo 版会在第一次被白蛇闪避时直接显示中文提示，避免误判为输入或命中故障。
+- 固定模拟步长为 120 Hz，渲染帧率不能改变战斗结果。
+- 枪械、弹药、携带物和仓库使用同一物品实例/UID 体系。
+- 撤离和死亡结算必须幂等；同一 Raid 不得重复领取。
+- 地图种子必须满足可达性、替代路线、风险升级和撤离约束。
+- VFX、音频、震屏与 UI 只消费表现事件，不反向修改模拟结果。
+- 所有可见“完成”结论必须同时通过自动测试、打包和实机流程。
 
 ## 文档
 
+- [布科夫实现矩阵](docs/bukov/IMPLEMENTATION_MATRIX.md)
+- [当前里程碑验收](docs/bukov/MILESTONE_ACCEPTANCE_2026-07-23.md)
+- [机器可读发行清单](docs/bukov/RELEASE_MANIFEST.json)
+- [最终 QA 报告模板](docs/bukov/FINAL_QA_REPORT_TEMPLATE.md)
+- [发行来源与许可证审计](docs/bukov/RELEASE_PROVENANCE_AUDIT.md)
+- [美术素材清单](docs/bukov/ART_ASSET_MANIFEST.md)
+- [第三方借鉴边界](docs/THIRD_PARTY_BORROWING.md)
+- [来源台账](docs/SOURCE_PROVENANCE.csv)
 - [Apple 开发与构建](APPLE_DEVELOPMENT.md)
-- [高清素材生成与投放规范](docs/ARTWORK_GENERATION_BRIEF_ZH.md)
-- [个人专属版完整升级路线](docs/NEXT_UPGRADE_RECOMMENDATIONS_ZH.md)
-- [版本记录](CHANGELOG.md)
-- [架构与产品边界](docs/ARCHITECTURE_ZH.md)
-- [贡献指南](CONTRIBUTING.md)
-- [安全说明](SECURITY.md)
 
-## 开源与知识产权边界
+## 开源与权属
 
-代码基于 [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) 与 [Pixel Dungeon](https://github.com/00-Evan/pixel-dungeon-gradle)，继续遵循 [GPLv3](LICENSE.txt)。原作者、翻译者、音乐、美术和音效署名保留在游戏“关于”页面和源码版权头中。
+本项目基于 [Shattered Pixel Dungeon](https://github.com/00-Evan/shattered-pixel-dungeon) 与 [Pixel Dungeon](https://github.com/00-Evan/pixel-dungeon-gradle)，继续遵循 [GPLv3](LICENSE.txt)。原项目作者、翻译、音乐、美术和音效署名必须保留。
 
-`artwork/` 中 Leo 新增的定制素材随本仓库源码发布，具体记录见 [素材权属台账](artwork/licenses/README.md)；第三方原始素材仍遵循各自署名与许可。分发修改版时，必须同步提供对应源码、GPLv3 许可证及必要署名。
-
-## 致谢
-
-- Evan Debenham — Shattered Pixel Dungeon
-- Watabou — Pixel Dungeon
-- Aleksandar Komitov、Lumine Haaristo、Celesti 及原项目所有贡献者
-- Shattered Pixel Dungeon 翻译社区
-
----
-
-为 Leo 制作。每次失败都写进档案，每次深入都算一次自己的远征。
+新增源码与素材的来源、借鉴方式和许可证记录在 `docs/SOURCE_PROVENANCE.csv`、`docs/THIRD_PARTY_BORROWING.md` 与 `artwork/licenses/`。对外分发修改版时，必须同步提供对应源码、GPLv3 许可证及所有必要声明。

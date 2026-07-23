@@ -1,5 +1,5 @@
 /*
- * Leo's Dungeon Siege desktop launcher messages.
+ * Escape from Bukov desktop launcher messages.
  * Copyright (C) 2026 Leo Yuan
  *
  * This program is free software: you can redistribute it and/or modify

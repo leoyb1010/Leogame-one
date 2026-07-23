@@ -132,13 +132,8 @@ public class WelcomeScene extends PixelScene {
 
 					SPDSettings.version(ShatteredPixelDungeon.versionCode);
 					GamesInProgress.selectedClass = null;
-					GamesInProgress.curSlot = GamesInProgress.firstEmpty();
-					if (GamesInProgress.curSlot == -1 || Rankings.INSTANCE.totalNumber > 0){
-						SPDSettings.intro(false);
-						ShatteredPixelDungeon.switchScene(TitleScene.class);
-					} else {
-						ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
-					}
+					SPDSettings.intro(false);
+					ShatteredPixelDungeon.switchScene(TitleScene.class);
 				} else {
 					updateVersion(previousVersion);
 					ShatteredPixelDungeon.switchScene(TitleScene.class);
@@ -175,7 +170,7 @@ public class WelcomeScene extends PixelScene {
 		RenderedTextBlock text = PixelScene.renderTextBlock(6);
 		String message;
 		if (previousVersion == 0 || SPDSettings.intro()) {
-			message = Document.INTROS.pageBody(0);
+			message = Messages.get(this, "bukov_intro");
 		} else if (previousVersion <= ShatteredPixelDungeon.versionCode) {
 			if (previousVersion < LATEST_UPDATE){
 				message = Messages.get(this, "update_intro");

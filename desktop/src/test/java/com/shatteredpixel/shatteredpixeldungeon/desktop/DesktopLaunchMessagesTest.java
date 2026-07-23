@@ -22,4 +22,14 @@ public class DesktopLaunchMessagesTest {
 		assertFalse(english.contains("错误"));
 		assertTrue(chinese.contains("错误"));
 	}
+
+	@Test
+	public void firstThreadErrorsUseBukovProductName() {
+		String english = DesktopLaunchMessages.get(Locale.ENGLISH, "first_thread_required");
+		String chinese = DesktopLaunchMessages.get(Locale.SIMPLIFIED_CHINESE, "first_thread_required");
+		assertTrue(english.contains("Escape from Bukov"));
+		assertFalse(english.contains("Dungeon Siege"));
+		assertTrue(chinese.contains("逃离布科夫"));
+		assertFalse(chinese.contains("Leo"));
+	}
 }

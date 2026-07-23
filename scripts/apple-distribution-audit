@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-expected_bundle_id=leogameone
+expected_bundle_id=com.leoyuan.escapefrombukov
 profile_roots=(
   "$HOME/Library/MobileDevice/Provisioning Profiles"
   "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
@@ -21,7 +21,7 @@ explicit_profile=false
 for profile_root in "${profile_roots[@]}"; do
   [[ -d "$profile_root" ]] || continue
   for profile in "$profile_root"/*.(mobileprovision|provisionprofile)(N); do
-    profile_plist=$(mktemp -t leogameone-profile.XXXXXX)
+    profile_plist=$(mktemp -t bukov-profile.XXXXXX)
     if security cms -D -i "$profile" > "$profile_plist" 2>/dev/null; then
       application_id=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:application-identifier' "$profile_plist" 2>/dev/null || true)
       if [[ "$application_id" == *".$expected_bundle_id" ]]; then

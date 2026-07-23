@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "nameZh": "逃离布科夫",
+    "nameEn": "Escape from Bukov",
+    "bundleId": "com.leoyuan.escapefrombukov",
+    "license": "GPL-3.0-or-later",
+    "releaseState": "candidate_pending_platform_evidence"
+  },
+  "content": {
+    "themes": {
+      "expected": 6,
+      "source": "core/src/main/assets/bukov/content/themes.json"
+    },
+    "firearms": {
+      "expected": 18,
+      "source": "core/src/main/assets/bukov/content/firearms.json"
+    },
+    "enemies": {
+      "expected": 13,
+      "source": "core/src/main/assets/bukov/content/enemies.json",
+      "common": 9,
+      "elite": 3,
+      "boss": 1
+    },
+    "raidModes": {
+      "expected": 4,
+      "source": "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/raid/BukovRaidMode.java",
+      "ids": [
+        "EXPEDITION",
+        "QUICK_SWEEP",
+        "SCAVENGER",
+        "BOSS_CONTRACT"
+      ]
+    },
+    "vendor": {
+      "implemented": true,
+      "sources": [
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/raid/BukovVendorCatalog.java",
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovVendor.java"
+      ]
+    }
+  },
+  "originalAssets": {
+    "itemInteractionFrames": {
+      "expected": 72,
+      "manifest": "core/src/main/assets/sprites/bukov/items_interactions_manifest.json"
+    },
+    "soundEffects": {
+      "expected": 19,
+      "directory": "core/src/main/assets/sounds/bukov",
+      "format": "mono 48 kHz PCM16 WAV"
+    },
+    "provenanceLedger": "artwork/licenses/ASSET_PROVENANCE.csv",
+    "generatorScripts": [
+      "scripts/generate_bukov_enemy_sprites.mjs",
+      "scripts/generate_bukov_item_visuals.mjs",
+      "scripts/generate_bukov_landmarks.mjs",
+      "scripts/generate_bukov_operator_sprite.mjs",
+      "scripts/generate_bukov_sfx.mjs"
+    ]
+  },
+  "platforms": {
+    "macOS": {
+      "implementation": "present",
+      "packageEvidence": "pending_evidence",
+      "interactiveQa": "pending_evidence"
+    },
+    "iOS": {
+      "implementation": "present",
+      "aotEvidence": "pending_evidence",
+      "simulatorQa": "pending_evidence",
+      "deviceQa": "pending_evidence"
+    }
+  },
+  "performance": {
+    "fixedSimulationHz": 120,
+    "highRefreshTargetsHz": [
+      60,
+      120,
+      144
+    ],
+    "cpuGates": [
+      "scripts/bukov_performance_smoke.sh",
+      "scripts/bukov_performance_e2e.sh"
+    ],
+    "packagedGpuFramePacing": "pending_evidence",
+    "thirtyMinuteSoak": "pending_evidence"
+  },
+  "persistence": {
+    "checkpointAndSettlementGates": [
+      "scripts/bukov_save_stress.sh",
+      "scripts/bukov_seed_sweep.sh"
+    ],
+    "freshInstallRecoveryQa": "pending_evidence"
+  },
+  "validation": {
+    "staticCommands": [
+      "python3 scripts/validate_release.py",
+      "python3 scripts/bukov_release_manifest_check.py",
+      "python3 scripts/bukov_content_scale_gate.py",
+      "bash scripts/bukov_audio_gate.sh",
+      "bash scripts/bukov_item_atlas_gate.sh",
+      "bash scripts/bukov_ui_tokens_check.sh"
+    ],
+    "gradleSuite": {
+      "command": "./scripts/apple-gradle core:clean desktop:clean core:test desktop:test desktop:build ios:compileJava --no-daemon",
+      "status": "pending_evidence"
+    }
+  },
+  "evidencePolicy": {
+    "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
+    "currentPlatformClaim": "pending_evidence",
+    "rule": "Only evidence produced from the exact release commit may change pending_evidence to passed."
+  }
+}

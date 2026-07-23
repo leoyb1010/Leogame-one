@@ -2,15 +2,15 @@
 set -euo pipefail
 
 project_root=${0:A:h:h}
-cache_root="$(getconf DARWIN_USER_CACHE_DIR)/leogameone-gradle"
-mac_app="$cache_root/desktop/jpackage/Leo的地牢围攻.app"
+cache_root="$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle"
+mac_app="$cache_root/desktop/jpackage/逃离布科夫.app"
 ios_app="$cache_root/ios/robovm/IOSLauncher.app"
 ios_ipa="$cache_root/ios/robovm/IOSLauncher.ipa"
-notary_archive="$cache_root/desktop/LeoDungeonSiege-notary.zip"
+notary_archive="$cache_root/desktop/EscapeFromBukov-notary.zip"
 
 : "${MAC_SIGNING_IDENTITY:?Set MAC_SIGNING_IDENTITY to the Developer ID Application identity.}"
 : "${IOS_SIGN_IDENTITY:?Set IOS_SIGN_IDENTITY to the Apple Distribution identity.}"
-: "${IOS_PROVISIONING_PROFILE:?Set IOS_PROVISIONING_PROFILE to the explicit leogameone profile name or UUID.}"
+: "${IOS_PROVISIONING_PROFILE:?Set IOS_PROVISIONING_PROFILE to the explicit com.leoyuan.escapefrombukov profile name or UUID.}"
 : "${NOTARY_KEYCHAIN_PROFILE:?Set NOTARY_KEYCHAIN_PROFILE to the saved notarytool profile.}"
 
 cd "$project_root"

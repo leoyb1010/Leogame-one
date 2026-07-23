@@ -88,6 +88,7 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.GuidingLight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.LifeLinkSpell;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.spells.ShieldOfLight;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Brute;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.RealtimeBody;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.CrystalSpire;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.DwarfKing;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Elemental;
@@ -166,6 +167,7 @@ import java.util.LinkedHashSet;
 public abstract class Char extends Actor {
 	
 	public int pos = 0;
+	public RealtimeBody realtimeBody;
 	
 	public CharSprite sprite;
 	
@@ -334,6 +336,17 @@ public abstract class Char extends Actor {
 	protected static final String TAG_HT    = "HT";
 	protected static final String TAG_SHLD  = "SHLD";
 	protected static final String BUFFS	    = "buffs";
+	private static final String REALTIME_BODY = "bukov_realtime_body";
+
+	public RealtimeBody ensureRealtimeBody() {
+		if (realtimeBody == null) {
+			if (Dungeon.level == null) {
+				throw new IllegalStateException("A level is required to create a realtime body");
+			}
+			realtimeBody = new RealtimeBody(pos, Dungeon.level.width(), 0.28f);
+		}
+		return realtimeBody;
+	}
 	
 	@Override
 	public void storeInBundle( Bundle bundle ) {
@@ -344,6 +357,9 @@ public abstract class Char extends Actor {
 		bundle.put( TAG_HP, HP );
 		bundle.put( TAG_HT, HT );
 		bundle.put( BUFFS, buffs );
+		if (realtimeBody != null) {
+			bundle.put(REALTIME_BODY, realtimeBody);
+		}
 	}
 	
 	@Override
@@ -354,6 +370,9 @@ public abstract class Char extends Actor {
 		pos = bundle.getInt( POS );
 		HP = bundle.getInt( TAG_HP );
 		HT = bundle.getInt( TAG_HT );
+		realtimeBody = bundle.contains(REALTIME_BODY)
+				? (RealtimeBody)bundle.get(REALTIME_BODY)
+				: null;
 		
 		for (Bundlable b : bundle.getCollection( BUFFS )) {
 			if (b != null) {

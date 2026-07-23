@@ -53,6 +53,8 @@ import org.robovm.apple.uikit.UITextField;
 import java.io.File;
 
 public class IOSLauncher extends IOSApplication.Delegate {
+	static final int PREFERRED_FRAMES_PER_SECOND = 120;
+
 	@Override
 	protected IOSApplication createApplication() {
 
@@ -102,6 +104,10 @@ public class IOSLauncher extends IOSApplication.Delegate {
 		config.colorFormat = MGLDrawableColorFormat.RGBA8888;
 		config.depthFormat = MGLDrawableDepthFormat.None;
 		config.hdpiMode = HdpiMode.Pixels;
+		// iOS automatically caps this request to the panel's supported rate.
+		// Together with CADisableMinimumFrameDurationOnPhone this enables
+		// ProMotion devices to render at 120 Hz while 60 Hz devices stay safe.
+		config.preferredFramesPerSecond = PREFERRED_FRAMES_PER_SECOND;
 
 		config.hideHomeIndicator = true;
 		config.overrideRingerSwitch = SPDSettings.ignoreSilentMode();

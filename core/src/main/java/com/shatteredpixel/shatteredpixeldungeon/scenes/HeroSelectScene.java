@@ -30,6 +30,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovBranding;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
@@ -142,7 +144,8 @@ public class HeroSelectScene extends PixelScene {
 		fadeRight.angle = 180;
 		add(fadeRight);
 
-		title = PixelScene.renderTextBlock(Messages.get(this, "title"), 12);
+		title = PixelScene.renderTextBlock(Messages.get(
+				this, BukovBranding.messageKey(BukovMode.active(), "title")), 12);
 		title.hardlight(Window.TITLE_COLOR);
 		PixelScene.align(title);
 		add(title);
@@ -173,6 +176,7 @@ public class HeroSelectScene extends PixelScene {
 			@Override
 			protected void onClick() {
 				super.onClick();
+				if (BukovMode.active()) return;
 				HeroClass cls = GamesInProgress.selectedClass;
 				if (cls != null) {
 					Window info = new WndHeroInfo(GamesInProgress.selectedClass);
@@ -229,7 +233,7 @@ public class HeroSelectScene extends PixelScene {
 		updateOptionsColor();
 		btnOptions.visible = false;
 
-		if(!SPDSettings.intro()){
+		if(!SPDSettings.intro() && !BukovMode.active()){
 			add(btnOptions);
 		}
 
@@ -294,7 +298,8 @@ public class HeroSelectScene extends PixelScene {
 			heroDesc.setPos(insets.left, heroName.bottom()+5);
 			add(heroDesc);
 
-			startBtn.text(Messages.titleCase(Messages.get(this, "start")));
+			startBtn.text(Messages.titleCase(Messages.get(
+					this, BukovBranding.messageKey(BukovMode.active(), "start"))));
 			startBtn.setSize(startBtn.reqWidth()+8, 21);
 			startBtn.setPos(insets.left + (leftArea - startBtn.width())/2f, title.top() + uiHeight - startBtn.height());
 			align(startBtn);
@@ -430,12 +435,16 @@ public class HeroSelectScene extends PixelScene {
 
 		if (landscape()) {
 
-			heroName.text(Messages.titleCase(cl.title()));
+			heroName.text(Messages.titleCase(BukovMode.active()
+					? bukovOperatorMessage(cl, false)
+					: cl.title()));
 			heroName.hardlight(Window.TITLE_COLOR);
 			heroName.setPos(insets.left + (leftPortion - heroName.width() - 20)/2f, heroName.top());
 			align(heroName);
 
-			heroDesc.text(cl.shortDesc());
+			heroDesc.text(BukovMode.active()
+					? bukovOperatorMessage(cl, true)
+					: cl.shortDesc());
 			heroDesc.maxWidth(80);
 			heroDesc.setPos(insets.left +(leftPortion - heroDesc.width())/2f, heroName.bottom() + 5);
 			align(heroDesc);
@@ -450,26 +459,30 @@ public class HeroSelectScene extends PixelScene {
 
 			startBtn.visible = startBtn.active = true;
 
-			infoButton.visible = infoButton.active = true;
+			infoButton.visible = infoButton.active = !BukovMode.active();
 			infoButton.setPos(heroName.right(), heroName.top() + (heroName.height() - infoButton.height())/2f);
 			align(infoButton);
 
-			btnOptions.visible = btnOptions.active = !SPDSettings.intro();
+			btnOptions.visible = btnOptions.active =
+					!SPDSettings.intro() && !BukovMode.active();
 
 		} else {
 			title.visible = false;
 
 			startBtn.visible = startBtn.active = true;
-			startBtn.text(Messages.titleCase(cl.title()));
+			startBtn.text(BukovMode.active()
+					? Messages.titleCase(Messages.get(this, "bukov_start"))
+					: Messages.titleCase(cl.title()));
 			startBtn.setSize(startBtn.reqWidth() + 8, 21);
 
 			startBtn.setPos((Camera.main.width - startBtn.width())/2f, (Camera.main.height - insets.bottom - HeroBtn.HEIGHT + 2 - startBtn.height()));
 			PixelScene.align(startBtn);
 
-			infoButton.visible = infoButton.active = true;
+			infoButton.visible = infoButton.active = !BukovMode.active();
 			infoButton.setPos(startBtn.right(), startBtn.top());
 
-			btnOptions.visible = btnOptions.active = !SPDSettings.intro();
+			btnOptions.visible = btnOptions.active =
+					!SPDSettings.intro() && !BukovMode.active();
 			btnOptions.setPos(startBtn.left()-btnOptions.width(), startBtn.top());
 
 			optionsPane.setPos(heroBtns.get(0).left(), startBtn.top() - optionsPane.height() - 2);
@@ -477,6 +490,13 @@ public class HeroSelectScene extends PixelScene {
 		}
 
 		updateOptionsColor();
+	}
+
+	private String bukovOperatorMessage(HeroClass heroClass, boolean description) {
+		String key = "bukov_operator_"
+				+ heroClass.name().toLowerCase(Locale.ENGLISH);
+		if (description) key += "_desc";
+		return Messages.get(this, key);
 	}
 
 	private float uiAlpha;
@@ -582,7 +602,7 @@ public class HeroSelectScene extends PixelScene {
 		public void update() {
 			super.update();
 			if (cl != GamesInProgress.selectedClass){
-				if (!cl.isUnlocked()){
+				if (!cl.isUnlocked() && !BukovMode.active()){
 					icon.brightness(0.1f);
 				} else {
 					icon.brightness(0.6f);
@@ -596,9 +616,9 @@ public class HeroSelectScene extends PixelScene {
 		protected void onClick() {
 			super.onClick();
 
-			if( !cl.isUnlocked() ){
+			if( !cl.isUnlocked() && !BukovMode.active() ){
 				ShatteredPixelDungeon.scene().addToFront( new WndMessage(cl.unlockMsg()));
-			} else if (GamesInProgress.selectedClass == cl) {
+			} else if (GamesInProgress.selectedClass == cl && !BukovMode.active()) {
 				Window w = new WndHeroInfo(cl);
 				if (landscape()){
 					w.offset(Camera.main.width/6, 0);

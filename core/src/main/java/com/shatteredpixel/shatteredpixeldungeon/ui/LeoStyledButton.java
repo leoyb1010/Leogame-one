@@ -12,10 +12,11 @@ package com.shatteredpixel.shatteredpixeldungeon.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
+import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Sample;
 
-/** Title-screen button which uses Leo's lion-and-emerald identity artwork. */
+/** Flat tactical title-screen button used by the Bukov product shell. */
 public class LeoStyledButton extends StyledButton {
 
 	private final Image normal;
@@ -28,8 +29,8 @@ public class LeoStyledButton extends StyledButton {
 	public LeoStyledButton(String label, int size) {
 		super(Chrome.Type.BLANK, label, size);
 		bg.visible = false;
-		normal = new Image(Assets.Interfaces.LEO_BUTTON);
-		pressed = new Image(Assets.Interfaces.LEO_BUTTON_DOWN);
+		normal = new Image(TextureCache.createSolid(0xE0192723));
+		pressed = new Image(TextureCache.createSolid(0xF02E745E));
 		pressed.visible = false;
 		addToBack(pressed);
 		addToBack(normal);

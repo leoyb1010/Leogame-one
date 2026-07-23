@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build runtime and Apple artwork from the Leo source masters.
+"""Build runtime and Apple artwork from the project source masters.
 
 The source images under artwork/inbox are never overwritten. Generated assets are
 deterministic and can be refreshed whenever a master is replaced.
@@ -137,7 +137,7 @@ def main() -> None:
     build_title()
     build_ui()
     build_icons()
-    print("Leo artwork generated successfully.")
+    print("Escape from Bukov artwork generated successfully.")
 
 
 if __name__ == "__main__":

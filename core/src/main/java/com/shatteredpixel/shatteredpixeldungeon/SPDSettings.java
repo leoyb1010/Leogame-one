@@ -303,6 +303,40 @@ public class SPDSettings extends GameSettings {
 
 	public static final String KEY_CONTROLLER_SENS  = "controller_sens";
 	public static final String KEY_MOVE_SENS        = "move_sens";
+	public static final String KEY_BUKOV_UI_SCALE = "bukov_ui_scale";
+	public static final String KEY_BUKOV_REDUCE_MOTION = "bukov_reduce_motion";
+	public static final String KEY_BUKOV_REDUCE_FLASHES = "bukov_reduce_flashes";
+	public static final String KEY_BUKOV_COLORBLIND = "bukov_colorblind";
+	public static final String KEY_BUKOV_SOUND_VISUALIZATION =
+			"bukov_sound_visualization";
+	public static final String KEY_BUKOV_VIBRATION_LEVEL =
+			"bukov_vibration_level";
+	public static final String KEY_BUKOV_DAMAGE_NUMBERS =
+			"bukov_damage_numbers";
+	public static final String KEY_BUKOV_AIM_ASSIST = "bukov_aim_assist";
+	public static final String KEY_BUKOV_LEFT_INNER_DEAD_ZONE =
+			"bukov_left_inner_dead_zone";
+	public static final String KEY_BUKOV_LEFT_OUTER_DEAD_ZONE =
+			"bukov_left_outer_dead_zone";
+	public static final String KEY_BUKOV_RIGHT_INNER_DEAD_ZONE =
+			"bukov_right_inner_dead_zone";
+	public static final String KEY_BUKOV_RIGHT_OUTER_DEAD_ZONE =
+			"bukov_right_outer_dead_zone";
+	public static final String KEY_BUKOV_AIM_CURVE = "bukov_aim_curve";
+	public static final String KEY_BUKOV_TRIGGER_PRESS =
+			"bukov_trigger_press";
+	public static final String KEY_BUKOV_TRIGGER_RELEASE =
+			"bukov_trigger_release";
+	public static final String KEY_BUKOV_MASTER_VOLUME =
+			"bukov_master_volume";
+	public static final String KEY_BUKOV_MUSIC_VOLUME =
+			"bukov_music_volume";
+	public static final String KEY_BUKOV_SFX_VOLUME =
+			"bukov_sfx_volume";
+	public static final String KEY_BUKOV_AMBIENCE_VOLUME =
+			"bukov_ambience_volume";
+	public static final String KEY_BUKOV_PERFORMANCE_PROFILE =
+			"bukov_performance_profile";
 
 	public static void controllerPointerSensitivity( int value ){
 		put( KEY_CONTROLLER_SENS, value );
@@ -318,6 +352,205 @@ public class SPDSettings extends GameSettings {
 
 	public static int movementHoldSensitivity(){
 		return getInt(KEY_MOVE_SENS, 3, 0, 4);
+	}
+
+	public static void bukovUiScale(int value) {
+		put(KEY_BUKOV_UI_SCALE, value);
+	}
+
+	public static int bukovUiScale() {
+		return getInt(KEY_BUKOV_UI_SCALE, 0, 0, 2);
+	}
+
+	public static void bukovReduceMotion(boolean value) {
+		put(KEY_BUKOV_REDUCE_MOTION, value);
+	}
+
+	public static boolean bukovReduceMotion() {
+		return getBoolean(KEY_BUKOV_REDUCE_MOTION, false);
+	}
+
+	public static void bukovReduceFlashes(boolean value) {
+		put(KEY_BUKOV_REDUCE_FLASHES, value);
+	}
+
+	public static boolean bukovReduceFlashes() {
+		return getBoolean(KEY_BUKOV_REDUCE_FLASHES, false);
+	}
+
+	public static void bukovColorblindAssist(boolean value) {
+		put(KEY_BUKOV_COLORBLIND, value);
+	}
+
+	public static boolean bukovColorblindAssist() {
+		return getBoolean(KEY_BUKOV_COLORBLIND, false);
+	}
+
+	public static void bukovSoundVisualization(boolean value) {
+		put(KEY_BUKOV_SOUND_VISUALIZATION, value);
+	}
+
+	public static boolean bukovSoundVisualization() {
+		return getBoolean(KEY_BUKOV_SOUND_VISUALIZATION, false);
+	}
+
+	public static void bukovControllerVibration(int value) {
+		put(KEY_BUKOV_VIBRATION_LEVEL, value);
+		vibration(value > 0);
+	}
+
+	public static int bukovControllerVibration() {
+		if (!contains(KEY_BUKOV_VIBRATION_LEVEL)) {
+			return vibration() ? 2 : 0;
+		}
+		return getInt(KEY_BUKOV_VIBRATION_LEVEL, 2, 0, 2);
+	}
+
+	public static void bukovDamageNumbers(int value) {
+		put(KEY_BUKOV_DAMAGE_NUMBERS, value);
+	}
+
+	public static int bukovDamageNumbers() {
+		return getInt(KEY_BUKOV_DAMAGE_NUMBERS, 1, 0, 2);
+	}
+
+	public static void bukovAimAssist(int value) {
+		put(KEY_BUKOV_AIM_ASSIST, value);
+	}
+
+	public static int bukovAimAssist() {
+		return getInt(KEY_BUKOV_AIM_ASSIST, 2, 0, 2);
+	}
+
+	public static void bukovLeftInnerDeadZone(int percent) {
+		requireBukovRange(percent, 10, 25, "left inner dead zone");
+		put(KEY_BUKOV_LEFT_INNER_DEAD_ZONE, percent);
+	}
+
+	public static int bukovLeftInnerDeadZone() {
+		return getInt(KEY_BUKOV_LEFT_INNER_DEAD_ZONE, 16, 10, 25);
+	}
+
+	public static void bukovLeftOuterDeadZone(int percent) {
+		requireBukovRange(percent, 90, 100, "left outer dead zone");
+		put(KEY_BUKOV_LEFT_OUTER_DEAD_ZONE, percent);
+	}
+
+	public static int bukovLeftOuterDeadZone() {
+		return getInt(KEY_BUKOV_LEFT_OUTER_DEAD_ZONE, 96, 90, 100);
+	}
+
+	public static void bukovRightInnerDeadZone(int percent) {
+		requireBukovRange(percent, 10, 25, "right inner dead zone");
+		put(KEY_BUKOV_RIGHT_INNER_DEAD_ZONE, percent);
+	}
+
+	public static int bukovRightInnerDeadZone() {
+		return getInt(KEY_BUKOV_RIGHT_INNER_DEAD_ZONE, 16, 10, 25);
+	}
+
+	public static void bukovRightOuterDeadZone(int percent) {
+		requireBukovRange(percent, 90, 100, "right outer dead zone");
+		put(KEY_BUKOV_RIGHT_OUTER_DEAD_ZONE, percent);
+	}
+
+	public static int bukovRightOuterDeadZone() {
+		return getInt(KEY_BUKOV_RIGHT_OUTER_DEAD_ZONE, 96, 90, 100);
+	}
+
+	public static void bukovAimCurve(int value) {
+		put(KEY_BUKOV_AIM_CURVE, value);
+	}
+
+	public static int bukovAimCurve() {
+		return getInt(KEY_BUKOV_AIM_CURVE, 1, 0, 1);
+	}
+
+	public static void bukovTriggerThresholds(
+			int pressPercent,
+			int releasePercent) {
+		if (pressPercent < 55
+				|| pressPercent > 75
+				|| releasePercent < 35
+				|| releasePercent > 55
+				|| releasePercent >= pressPercent) {
+			throw new IllegalArgumentException(
+					"trigger release threshold must be below press threshold");
+		}
+		put(KEY_BUKOV_TRIGGER_PRESS, pressPercent);
+		put(KEY_BUKOV_TRIGGER_RELEASE, releasePercent);
+	}
+
+	public static int bukovTriggerPress() {
+		return getInt(KEY_BUKOV_TRIGGER_PRESS, 65, 55, 75);
+	}
+
+	public static int bukovTriggerRelease() {
+		return getInt(KEY_BUKOV_TRIGGER_RELEASE, 45, 35, 55);
+	}
+
+	public static void bukovMasterVolume(int value) {
+		requireBukovRange(value, 0, 10, "master volume");
+		put(KEY_BUKOV_MASTER_VOLUME, value);
+	}
+
+	public static int bukovMasterVolume() {
+		return getInt(KEY_BUKOV_MASTER_VOLUME, 10, 0, 10);
+	}
+
+	public static void bukovMusicVolume(int value) {
+		requireBukovRange(value, 0, 10, "music volume");
+		put(KEY_BUKOV_MUSIC_VOLUME, value);
+	}
+
+	public static int bukovMusicVolume() {
+		return getInt(KEY_BUKOV_MUSIC_VOLUME, 8, 0, 10);
+	}
+
+	public static void bukovSfxVolume(int value) {
+		requireBukovRange(value, 0, 10, "SFX volume");
+		put(KEY_BUKOV_SFX_VOLUME, value);
+	}
+
+	public static int bukovSfxVolume() {
+		return getInt(KEY_BUKOV_SFX_VOLUME, 10, 0, 10);
+	}
+
+	public static void bukovAmbienceVolume(int value) {
+		requireBukovRange(value, 0, 10, "ambience volume");
+		put(KEY_BUKOV_AMBIENCE_VOLUME, value);
+	}
+
+	public static int bukovAmbienceVolume() {
+		return getInt(KEY_BUKOV_AMBIENCE_VOLUME, 8, 0, 10);
+	}
+
+	public static void bukovPerformanceProfile(int value) {
+		requireBukovRange(value, 0, 2, "performance profile");
+		put(KEY_BUKOV_PERFORMANCE_PROFILE, value);
+	}
+
+	/** Defaults to high frame rate without changing the fixed simulation step. */
+	public static int bukovPerformanceProfile() {
+		return getInt(KEY_BUKOV_PERFORMANCE_PROFILE, 2, 0, 2);
+	}
+
+	public static float bukovVolumeGain(int value) {
+		requireBukovRange(value, 0, 10, "volume");
+		float normalized = value / 10f;
+		return normalized * normalized;
+	}
+
+	private static void requireBukovRange(
+			int value,
+			int minimum,
+			int maximum,
+			String label) {
+		if (value < minimum || value > maximum) {
+			throw new IllegalArgumentException(
+					label + " must be between "
+							+ minimum + " and " + maximum);
+		}
 	}
 
 	//Connectivity

@@ -42,6 +42,10 @@ public class Assets {
 		public static final String TILES_CAVES  = "environment/tiles_caves.png";
 		public static final String TILES_CITY   = "environment/tiles_city.png";
 		public static final String TILES_HALLS  = "environment/tiles_halls.png";
+		public static final String TILES_BUKOV_FOG_DEPOT =
+				"environment/bukov/tiles_fog_depot.png";
+		public static final String BUKOV_FIRST_RAID_LANDMARKS =
+				"environment/bukov/first_raid_landmarks.png";
 
 		public static final String TILES_CAVES_CRYSTAL  = "environment/tiles_caves_crystal.png";
 		public static final String TILES_CAVES_GNOLL    = "environment/tiles_caves_gnoll.png";
@@ -51,6 +55,8 @@ public class Assets {
 		public static final String WATER_CAVES  = "environment/water2.png";
 		public static final String WATER_CITY   = "environment/water3.png";
 		public static final String WATER_HALLS  = "environment/water4.png";
+		public static final String WATER_BUKOV_FOG_DEPOT =
+				"environment/bukov/water_fog_depot.png";
 
 		public static final String WEAK_FLOOR       = "environment/custom_tiles/weak_floor.png";
 		public static final String SEWER_BOSS       = "environment/custom_tiles/sewer_boss.png";
@@ -228,6 +234,50 @@ public class Assets {
 		public static final String SHEEP    = "sounds/sheep.mp3";
 		public static final String MINE    = "sounds/mine.mp3";
 
+		public static class Bukov {
+			public static final String GUNSHOT_PLAYER =
+					"sounds/bukov/gunshot_player.wav";
+			public static final String GUNSHOT_ENEMY =
+					"sounds/bukov/gunshot_enemy.wav";
+			public static final String BULLET_HIT =
+					"sounds/bukov/bullet_hit.wav";
+			public static final String CONTACT_HIT =
+					"sounds/bukov/contact_hit.wav";
+			public static final String DRY_FIRE =
+					"sounds/bukov/dry_fire.wav";
+			public static final String RELOAD_START =
+					"sounds/bukov/reload_start.wav";
+			public static final String RELOAD_FINISH =
+					"sounds/bukov/reload_finish.wav";
+			public static final String LOOT_PICKUP =
+					"sounds/bukov/loot_pickup.wav";
+			public static final String SEARCH_COMPLETE =
+					"sounds/bukov/search_complete.wav";
+			public static final String GATE_UNLOCK =
+					"sounds/bukov/gate_unlock.wav";
+			public static final String EXTRACTION_START =
+					"sounds/bukov/extraction_start.wav";
+			public static final String EXTRACTION_COMPLETE =
+					"sounds/bukov/extraction_complete.wav";
+			public static final String UI_FOCUS =
+					"sounds/bukov/ui_focus.wav";
+			public static final String UI_CONFIRM =
+					"sounds/bukov/ui_confirm.wav";
+			public static final String UI_CANCEL =
+					"sounds/bukov/ui_cancel.wav";
+			public static final String UI_ERROR =
+					"sounds/bukov/ui_error.wav";
+			public static final String AMBIENCE_CALM =
+					"sounds/bukov/ambience_calm.wav";
+			public static final String AMBIENCE_TENSE =
+					"sounds/bukov/ambience_tense.wav";
+			public static final String AMBIENCE_COMBAT =
+					"sounds/bukov/ambience_combat.wav";
+
+			private Bukov() {
+			}
+		}
+
 		public static final String[] all = new String[]{
 				CLICK, BADGE, GOLD,
 
@@ -239,7 +289,15 @@ public class Assets {
 				DESCEND, EAT, READ, LULLABY, DRINK, SHATTER, ZAP, LIGHTNING, LEVELUP, DEATH,
 				CHALLENGE, CURSED, TRAP, EVOKE, TOMB, ALERT, MELD, BOSS, BLAST, PLANT, RAY, BEACON,
 				TELEPORT, CHARMS, MASTERY, PUFF, ROCKS, BURNING, FALLING, GHOST, SECRET, BONES,
-				BEE, DEGRADE, MIMIC, DEBUFF, CHARGEUP, GAS, CHAINS, SCAN, SHEEP, MINE
+				BEE, DEGRADE, MIMIC, DEBUFF, CHARGEUP, GAS, CHAINS, SCAN, SHEEP, MINE,
+
+				Bukov.GUNSHOT_PLAYER, Bukov.GUNSHOT_ENEMY, Bukov.BULLET_HIT,
+				Bukov.CONTACT_HIT,
+				Bukov.DRY_FIRE, Bukov.RELOAD_START, Bukov.RELOAD_FINISH,
+				Bukov.LOOT_PICKUP, Bukov.SEARCH_COMPLETE, Bukov.GATE_UNLOCK,
+				Bukov.EXTRACTION_START, Bukov.EXTRACTION_COMPLETE,
+				Bukov.UI_FOCUS, Bukov.UI_CONFIRM, Bukov.UI_CANCEL,
+				Bukov.UI_ERROR
 		};
 	}
 
@@ -256,6 +314,19 @@ public class Assets {
 		public static final String CAVES    = "splashes/caves.jpg";
 		public static final String CITY     = "splashes/city.jpg";
 		public static final String HALLS    = "splashes/halls.jpg";
+
+		public static class Bukov {
+			public static final String FIRST_RAID =
+					"splashes/bukov/first_raid_portrait.png";
+			public static final String TITLE_LANDSCAPE =
+					"splashes/bukov/title_landscape.png";
+			public static final String TITLE_PORTRAIT =
+					"splashes/bukov/title_portrait.png";
+			public static final String TITLE_INDUSTRIAL_LANDSCAPE_V2 =
+					"splashes/bukov/title_industrial_landscape_v2.png";
+			public static final String TITLE_INDUSTRIAL_PORTRAIT_V2 =
+					"splashes/bukov/title_industrial_portrait_v2.png";
+		}
 
 		public static class Title {
 			public static final String LEO_LANDSCAPE = "splashes/title/leo_landscape.jpg";
@@ -275,6 +346,27 @@ public class Assets {
 		public static final String WARRIOR  = "sprites/warrior.png";
 		public static final String MAGE     = "sprites/mage.png";
 		public static final String ROGUE    = "sprites/rogue.png";
+		public static final String BUKOV_OPERATOR = "sprites/bukov_operator.png";
+		public static final String BUKOV_SCAVENGER = "sprites/bukov/scavenger.png";
+		public static final String BUKOV_GUNNER    = "sprites/bukov/gunner.png";
+		public static final String BUKOV_ARMORED   = "sprites/bukov/armored.png";
+		public static final String BUKOV_CAPTAIN   = "sprites/bukov/captain.png";
+		public static final String BUKOV_DRONE     = "sprites/bukov/drone.png";
+		public static final String BUKOV_WHITE_LINE= "sprites/bukov/white_line.png";
+		public static final String BUKOV_ALLEY_SCOUT =
+				"sprites/bukov/alley_scout.png";
+		public static final String BUKOV_DEPOT_SHOTGUNNER =
+				"sprites/bukov/depot_shotgunner.png";
+		public static final String BUKOV_LINE_RIFLEMAN =
+				"sprites/bukov/line_rifleman.png";
+		public static final String BUKOV_FOG_STALKER =
+				"sprites/bukov/fog_stalker.png";
+		public static final String BUKOV_SIGNAL_OPERATOR =
+				"sprites/bukov/signal_operator.png";
+		public static final String BUKOV_IRON_CLASP_MARKSMAN =
+				"sprites/bukov/iron_clasp_marksman.png";
+		public static final String BUKOV_BREACH_VETERAN =
+				"sprites/bukov/breach_veteran.png";
 		public static final String HUNTRESS = "sprites/huntress.png";
 		public static final String DUELIST  = "sprites/duelist.png";
 		public static final String CLERIC   = "sprites/cleric.png";

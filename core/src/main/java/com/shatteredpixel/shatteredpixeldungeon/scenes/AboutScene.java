@@ -65,16 +65,16 @@ public class AboutScene extends PixelScene {
 		Component content = list.content();
 		content.clear();
 
-		//*** Leo's Dungeon Assault Credits ***
+		//*** Escape from Bukov Credits ***
 
-		CreditsBlock leo = new CreditsBlock(true, Window.TITLE_COLOR,
-				Messages.get(this, "leo_title"),
+		CreditsBlock bukov = new CreditsBlock(true, Window.TITLE_COLOR,
+				Messages.get(this, "bukov_title"),
 				null,
-				Messages.get(this, "leo_body"),
+				Messages.get(this, "bukov_body"),
 				null,
 				null);
-		leo.setRect((w - fullWidth)/2f, insets.top + 6, 120, 0);
-		content.add(leo);
+		bukov.setRect((w - fullWidth)/2f, insets.top + 6, 120, 0);
+		content.add(bukov);
 
 		//*** Shattered Pixel Dungeon Credits (required attribution) ***
 
@@ -84,7 +84,7 @@ public class AboutScene extends PixelScene {
 				Messages.get(this, "shpx_body"),
 				"ShatteredPixel.com",
 				"https://ShatteredPixel.com");
-		shpx.setRect((w - fullWidth)/2f, leo.bottom() + 12, 120, 0);
+		shpx.setRect((w - fullWidth)/2f, bukov.bottom() + 12, 120, 0);
 		content.add(shpx);
 
 		CreditsBlock alex = new CreditsBlock(false, Window.SHPX_COLOR,

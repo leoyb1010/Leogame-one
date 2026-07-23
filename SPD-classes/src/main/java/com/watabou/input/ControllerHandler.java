@@ -110,7 +110,21 @@ public class ControllerHandler implements ControllerListener {
 
 	@Override
 	public void disconnected(Controller controller) {
-
+		leftStickPosition.set(0f, 0f);
+		rightStickPosition.set(0f, 0f);
+		if (L2Pressed) {
+			KeyEvent.addKeyEvent(
+					new KeyEvent(Input.Keys.BUTTON_L2, false));
+		}
+		if (R2Pressed) {
+			KeyEvent.addKeyEvent(
+					new KeyEvent(Input.Keys.BUTTON_R2, false));
+		}
+		L2Trigger = 0f;
+		R2Trigger = 0f;
+		L2Pressed = false;
+		R2Pressed = false;
+		controllerActive = false;
 	}
 
 	@Override
@@ -142,6 +156,37 @@ public class ControllerHandler implements ControllerListener {
 
 	private float L2Trigger = 0f;
 	private float R2Trigger = 0f;
+	private boolean L2Pressed = false;
+	private boolean R2Pressed = false;
+
+	private static float triggerPressThreshold = 0.65f;
+	private static float triggerReleaseThreshold = 0.45f;
+
+	public static void configureTriggerThresholds(
+			float pressThreshold,
+			float releaseThreshold) {
+		if (Float.isNaN(pressThreshold)
+				|| Float.isInfinite(pressThreshold)
+				|| Float.isNaN(releaseThreshold)
+				|| Float.isInfinite(releaseThreshold)
+				|| releaseThreshold < 0f
+				|| pressThreshold < 0f
+				|| pressThreshold > 1f
+				|| releaseThreshold >= pressThreshold) {
+			throw new IllegalArgumentException(
+					"trigger thresholds require 0 <= release < press <= 1");
+		}
+		triggerPressThreshold = pressThreshold;
+		triggerReleaseThreshold = releaseThreshold;
+	}
+
+	public static float triggerPressThreshold() {
+		return triggerPressThreshold;
+	}
+
+	public static float triggerReleaseThreshold() {
+		return triggerReleaseThreshold;
+	}
 
 	@Override
 	public boolean axisMoved(Controller controller, int axisCode, float value) {
@@ -155,23 +200,27 @@ public class ControllerHandler implements ControllerListener {
 		//L2 and R2 triggers on Desktop
 		else if (axisCode == 4 && Gdx.app.getType() == Application.ApplicationType.Desktop && L2Trigger != value) {
 
-			if (value == 1){
+			if (!L2Pressed && value >= triggerPressThreshold){
 				KeyEvent.addKeyEvent(new KeyEvent(Input.Keys.BUTTON_L2, true));
 				controllerActive = true;
-			} else if (value == 0){
+				L2Pressed = true;
+			} else if (L2Pressed && value <= triggerReleaseThreshold){
 				KeyEvent.addKeyEvent(new KeyEvent(Input.Keys.BUTTON_L2, false));
 				controllerActive = true;
+				L2Pressed = false;
 			}
 			L2Trigger = value;
 
 		} else if (axisCode == 5 && Gdx.app.getType() == Application.ApplicationType.Desktop && R2Trigger != value){
 
-			if (value == 1){
+			if (!R2Pressed && value >= triggerPressThreshold){
 				KeyEvent.addKeyEvent(new KeyEvent(Input.Keys.BUTTON_R2, true));
 				controllerActive = true;
-			} else if (value == 0){
+				R2Pressed = true;
+			} else if (R2Pressed && value <= triggerReleaseThreshold){
 				KeyEvent.addKeyEvent(new KeyEvent(Input.Keys.BUTTON_R2, false));
 				controllerActive = true;
+				R2Pressed = false;
 			}
 			R2Trigger = value;
 

@@ -129,6 +129,11 @@ public class DesktopLauncher {
 		Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
 		
 		config.setTitle( title );
+		// Follow the active monitor instead of imposing a legacy 60 FPS cap.
+		// VSync prevents tearing; foregroundFPS=0 lets 120/144 Hz panels run at
+		// their native refresh while the fixed-step raid simulation stays 120 Hz.
+		config.useVsync(true);
+		config.setForegroundFPS(0);
 
 		//if I were implementing this from scratch I would use the full implementation title for saves
 		// (e.g. /.shatteredpixel/shatteredpixeldungeon), but we have too much existing save

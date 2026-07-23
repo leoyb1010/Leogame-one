@@ -1,6 +1,6 @@
 # Apple development
 
-Leo的地牢围攻 currently targets macOS, iPhone, and iPad. The Android module remains outside the current delivery scope.
+Escape from Bukov currently targets macOS, iPhone, and iPad. The Android module remains outside the current delivery scope.
 
 ## Requirements
 
@@ -20,10 +20,10 @@ scripts/apple-gradle :ios:launchIPhoneSimulator
 scripts/apple-gradle :ios:launchIPadSimulator
 ```
 
-Build products are stored under the macOS per-user cache directory in `leogameone-gradle/`.
+Build products are stored under the macOS per-user cache directory in `escape-from-bukov-gradle/`.
 The macOS application packager automatically selects an arm64 JDK on Apple Silicon and an x64 JDK on Intel Macs.
 
-The Apple application name is `Leo的地牢围攻`, the Bundle ID is `leogameone`, and first launch defaults to Simplified Chinese. Upstream news and release-update feeds are disabled until Leo-owned endpoints exist.
+The Apple application name is `逃离布科夫`, the Bundle ID is `com.leoyuan.escapefrombukov`, and first launch defaults to Simplified Chinese. Upstream news and release-update feeds are disabled until project-owned endpoints exist.
 
 Artwork intake requirements are documented in `docs/ARTWORK_GENERATION_BRIEF_ZH.md`.
 
@@ -40,7 +40,7 @@ An IPA produced with an Apple Development certificate is limited to registered d
 The distribution gate requires:
 
 - A `Developer ID Application` certificate for macOS signing.
-- An `Apple Distribution` certificate and explicit `leogameone` provisioning profile.
+- An `Apple Distribution` certificate and explicit `com.leoyuan.escapefrombukov` provisioning profile.
 - Notarization credentials saved with `xcrun notarytool store-credentials`; pass the profile name in `NOTARY_KEYCHAIN_PROFILE`.
 
-Development builds remain available for Leo's own devices, but the workflow no longer reports a development-signed build as publicly distributable.
+Development builds remain available for the project owner's own devices, but the workflow never reports a development-signed build as publicly distributable.

@@ -1,0 +1,83 @@
+package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
+
+import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovOperator;
+import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+/** Prevents the primary Bukov path from falling back into classic game UI. */
+public class BukovEntryFlowGuardTest {
+
+	@Test
+	public void operatorUsesOneStableHostClass() {
+		assertEquals(HeroClass.ROGUE, BukovOperator.HOST_CLASS);
+	}
+
+	@Test
+	public void titleDeployCallbackUsesOnlyBukovDeploymentScene() throws Exception {
+		String title = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/TitleScene.java");
+		String bukovEntry = between(
+				title,
+				"private void deployRaid()",
+				"private void openClassicMode()");
+
+		assertTrue(bukovEntry.contains("BukovDeploymentScene.class"));
+		assertTrue(bukovEntry.contains("new WndBukovHub"));
+		assertFalse(bukovEntry.contains("HeroSelectScene.class"));
+		assertFalse(bukovEntry.contains("InterlevelScene.class"));
+	}
+
+	@Test
+	public void everyPlayerVisiblePrimaryTitleActionRoutesToBukov()
+			throws Exception {
+		String title = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/TitleScene.java");
+		String visibleActions = between(
+				title,
+				"btnContinue = new TacticalTitleButton",
+				"version = new BitmapText");
+
+		assertTrue(visibleActions.contains("openBukovMode()"));
+		assertTrue(visibleActions.contains("deployRaid()"));
+		assertFalse(visibleActions.contains("HeroSelectScene.class"));
+		assertFalse(visibleActions.contains("BukovMode.leave()"));
+	}
+
+	@Test
+	public void deploymentCreatesOrRestoresBukovLevelDirectly() throws Exception {
+		String deployment = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/BukovDeploymentScene.java");
+
+		assertTrue(deployment.contains("BukovOperator.prepareNewRaid()"));
+		assertTrue(deployment.contains("BukovOperator.normalize(Dungeon.hero)"));
+		assertTrue(deployment.contains("Dungeon.loadGame(BukovMode.SAVE_SLOT)"));
+		assertTrue(deployment.contains("Dungeon.newLevel()"));
+		assertTrue(deployment.contains("instanceof BukovLevel"));
+		assertTrue(deployment.contains("Assets.Splashes.Bukov.FIRST_RAID"));
+		assertFalse(deployment.contains("HeroSelectScene"));
+		assertFalse(deployment.contains("InterlevelScene"));
+	}
+
+	private static String between(String source, String start, String end) {
+		int from = source.indexOf(start);
+		int to = source.indexOf(end, from);
+		if (from < 0 || to < 0) {
+			throw new AssertionError("Flow boundary not found");
+		}
+		return source.substring(from, to);
+	}
+
+	private static String source(String path) throws Exception {
+		return new String(
+				Files.readAllBytes(Paths.get(path)),
+				StandardCharsets.UTF_8);
+	}
+}

@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.tiles;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NoosaScript;
@@ -57,6 +58,33 @@ public class FogOfWar extends Image {
 			0xFF000000
 			}};
 
+	/**
+	 * Bukov keeps explored ground readable during realtime navigation. The
+	 * overlay is deliberately tinted like cold industrial ambient light
+	 * instead of turning previously-cleared rooms back into black voids.
+	 */
+	private static final int BUKOV_FOG_COLORS[][] = new int[][]{{
+			//visible
+			0x00000000,
+			0x00000000,
+			0x00000000
+			}, {
+			//visited
+			0x7810181B,
+			0x58131D20,
+			0x3C172124
+			}, {
+			//mapped
+			0x88172428,
+			0x681A2A2E,
+			0x481E3034
+			}, {
+			//invisible
+			0xF20A0E10,
+			0xEB0B1012,
+			0xE20D1214
+			}};
+
 	private static final int VISIBLE    =   0;
 	private static final int VISITED    =   1;
 	private static final int MAPPED     =   2;
@@ -71,6 +99,8 @@ public class FogOfWar extends Image {
 	
 	private int width2;
 	private int height2;
+	private final int[][] fogColors;
+	private final String cacheKey;
 
 	private volatile ArrayList<Rect> toUpdate;
 	private volatile ArrayList<Rect> updating;
@@ -86,8 +116,13 @@ public class FogOfWar extends Image {
 	*/
 	
 	public FogOfWar( int mapWidth, int mapHeight ) {
+		this(mapWidth, mapHeight, false);
+	}
+
+	public FogOfWar( int mapWidth, int mapHeight, boolean bukovPalette ) {
 
 		super();
+		fogColors = bukovPalette ? BUKOV_FOG_COLORS : FOG_COLORS;
 
 		this.mapWidth = mapWidth;
 		this.mapHeight = mapHeight;
@@ -110,8 +145,15 @@ public class FogOfWar extends Image {
 		width = width2 * size;
 		height = height2 * size;
 
-		String key = "FogOfWar" + width2 + "x" + height2;
-		texture(TextureCache.create(key, width2, height2));
+		cacheKey = "FogOfWar:" + width2 + "x" + height2
+				+ (bukovPalette ? ":bukov" : ":classic");
+		texture(TextureCache.create(cacheKey, width2, height2));
+		if (bukovPalette) {
+			// The mask is authored at two pixels per tile. Linear filtering
+			// turns that deliberately low-resolution mask into a full-screen
+			// blur when it is enlarged to world scale.
+			texture.filter(SmartTexture.NEAREST, SmartTexture.NEAREST);
+		}
 
 		//sets contents to all black
 		texture.bitmap.setColor( 0x000000FF );
@@ -202,7 +244,7 @@ public class FogOfWar extends Image {
 						//we skip filling cells here if it isn't a full update
 						// because they must already be dark
 						if (fullUpdate)
-							fillCell(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+							fillCell(fog, j, i, fogColors[INVISIBLE][brightness]);
 						cell++;
 						continue;
 					}
@@ -212,7 +254,7 @@ public class FogOfWar extends Image {
 						
 						//always dark if nothing is beneath them
 						if (cell + mapWidth >= mapLength) {
-							fillCell(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+							fillCell(fog, j, i, fogColors[INVISIBLE][brightness]);
 							
 						//internal wall tiles, need to check both the left and right side,
 						// to account for only one half of them being seen
@@ -226,17 +268,17 @@ public class FogOfWar extends Image {
 									
 									//if below-left is also a wall, then we should be dark no matter what.
 									if (wall(cell + mapWidth - 1)) {
-										fillLeft(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+										fillLeft(fog, j, i, fogColors[INVISIBLE][brightness]);
 									} else {
-										fillLeft(fog, j, i, FOG_COLORS[Math.max(getCellFog(cell), Math.max(getCellFog(cell + mapWidth - 1), getCellFog(cell - 1)))][brightness]);
+										fillLeft(fog, j, i, fogColors[Math.max(getCellFog(cell), Math.max(getCellFog(cell + mapWidth - 1), getCellFog(cell - 1)))][brightness]);
 									}
 									
 								} else {
-									fillLeft(fog, j, i, FOG_COLORS[Math.max(getCellFog(cell), getCellFog(cell - 1))][brightness]);
+									fillLeft(fog, j, i, fogColors[Math.max(getCellFog(cell), getCellFog(cell - 1))][brightness]);
 								}
 								
 							} else {
-								fillLeft(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+								fillLeft(fog, j, i, fogColors[INVISIBLE][brightness]);
 							}
 							
 							//right side
@@ -247,28 +289,28 @@ public class FogOfWar extends Image {
 									
 									//if below-right is also a wall, then we should be dark no matter what.
 									if (wall(cell + mapWidth + 1)) {
-										fillRight(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+										fillRight(fog, j, i, fogColors[INVISIBLE][brightness]);
 									} else {
-										fillRight(fog, j, i, FOG_COLORS[Math.max(getCellFog(cell), Math.max(getCellFog(cell + mapWidth + 1), getCellFog(cell + 1)))][brightness]);
+										fillRight(fog, j, i, fogColors[Math.max(getCellFog(cell), Math.max(getCellFog(cell + mapWidth + 1), getCellFog(cell + 1)))][brightness]);
 									}
 									
 								} else {
-									fillRight(fog, j, i, FOG_COLORS[Math.max(getCellFog(cell), getCellFog(cell + 1))][brightness]);
+									fillRight(fog, j, i, fogColors[Math.max(getCellFog(cell), getCellFog(cell + 1))][brightness]);
 								}
 								
 							} else {
-								fillRight(fog, j, i, FOG_COLORS[INVISIBLE][brightness]);
+								fillRight(fog, j, i, fogColors[INVISIBLE][brightness]);
 							}
 							
 						//camera-facing wall tiles
 						//darkest between themselves and the tile below them
 						} else {
-							fillCell(fog, j, i, FOG_COLORS[Math.max(getCellFog(cell), getCellFog(cell + mapWidth))][brightness]);
+							fillCell(fog, j, i, fogColors[Math.max(getCellFog(cell), getCellFog(cell + mapWidth))][brightness]);
 						}
 						
 					//other tiles, just their direct value
 					} else {
-						fillCell(fog, j, i, FOG_COLORS[getCellFog(cell)][brightness]);
+						fillCell(fog, j, i, fogColors[getCellFog(cell)][brightness]);
 					}
 					
 					cell++;
@@ -332,7 +374,7 @@ public class FogOfWar extends Image {
 	public void destroy() {
 		super.destroy();
 		if (texture != null){
-			TextureCache.remove(FogOfWar.class);
+			TextureCache.remove(cacheKey);
 		}
 	}
 }
