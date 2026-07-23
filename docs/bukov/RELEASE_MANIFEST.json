@@ -66,8 +66,8 @@
       "implementation": "present",
       "packageEvidence": {
         "status": "passed",
-        "artifact": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app",
-        "binary": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫.app/Contents/MacOS/逃离布科夫",
         "binarySha256": "019ca17a15b4588f8e33afe02c33efc4cce1b8cad6dbdad2c37f1dd07a91f3b7",
         "builtAt": "2026-07-24T04:14:00+08:00",
         "log": "build/evidence/final-qa/macos-jpackage-final.log"
@@ -82,8 +82,8 @@
       "implementation": "present",
       "aotEvidence": {
         "status": "passed",
-        "artifact": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app",
-        "binary": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app/IOSLauncher",
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-iOS-Simulator.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-iOS-Simulator.app/IOSLauncher",
         "binarySha256": "56124e7d6bdfcbfb0d0e1a3388c3267d176e3c605a1c49ed7b0f625d34081738",
         "builtAt": "2026-07-24T04:15:45+08:00",
         "log": "build/evidence/final-qa/ios-simulator-final.log"

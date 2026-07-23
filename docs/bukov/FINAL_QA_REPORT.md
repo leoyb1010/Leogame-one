@@ -20,8 +20,9 @@
 
 构建产物：
 
-- macOS：`/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app`
-- iOS Simulator：`/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app`
+- macOS：`/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫.app`
+- macOS 压缩包：`/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-v2.0-macOS.zip`
+- iOS Simulator：`/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-iOS-Simulator.app`
 - 原始日志与截图：`build/evidence/final-qa/`
 
 ## 2. 自动门禁
