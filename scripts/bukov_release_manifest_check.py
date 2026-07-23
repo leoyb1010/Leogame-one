@@ -7,6 +7,7 @@ import csv
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -119,36 +120,76 @@ def check_license_and_evidence(manifest: dict) -> None:
     )
     require("GNU GENERAL PUBLIC LICENSE" in license_text, "GPL license text missing")
 
-    required_pending = (
-        manifest["platforms"]["macOS"]["packageEvidence"],
-        manifest["platforms"]["macOS"]["interactiveQa"],
-        manifest["platforms"]["iOS"]["aotEvidence"],
-        manifest["platforms"]["iOS"]["simulatorQa"],
-        manifest["platforms"]["iOS"]["deviceQa"],
-        manifest["performance"]["packagedGpuFramePacing"],
-        manifest["performance"]["thirtyMinuteSoak"],
-        manifest["persistence"]["freshInstallRecoveryQa"],
-        manifest["validation"]["gradleSuite"]["status"],
-        manifest["evidencePolicy"]["currentPlatformClaim"],
+    release_commit = manifest["product"]["releaseSourceCommit"]
+    require(
+        re.fullmatch(r"[0-9a-f]{40}", release_commit) is not None,
+        "release source commit must be a full SHA-1",
+    )
+    commit_probe = subprocess.run(
+        ["git", "cat-file", "-e", f"{release_commit}^{{commit}}"],
+        cwd=ROOT,
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    require(commit_probe.returncode == 0, "release source commit is not present")
+
+    mac = manifest["platforms"]["macOS"]
+    ios = manifest["platforms"]["iOS"]
+    require(mac["packageEvidence"]["status"] == "passed", "macOS package not passed")
+    require(mac["interactiveQa"]["status"] == "passed", "macOS QA not passed")
+    require(ios["aotEvidence"]["status"] == "passed", "iOS AOT not passed")
+    require(ios["simulatorQa"]["status"] == "passed", "iOS simulator QA not passed")
+    require(
+        ios["deviceQa"]["status"] == "not_run",
+        "physical iOS evidence must be explicit when not run",
     )
     require(
-        all(value == "pending_evidence" for value in required_pending),
-        "unverified platform evidence must remain pending_evidence",
+        manifest["validation"]["gradleSuite"]["status"] == "passed",
+        "Gradle suite not passed",
     )
+    require(
+        manifest["validation"]["gradleSuite"]["sourceCommit"] == release_commit,
+        "Gradle suite is not bound to the release source commit",
+    )
+    require(
+        manifest["evidencePolicy"]["currentPlatformClaim"]
+        == "passed_mac_and_ios_simulator",
+        "platform claim must match the verified personal-build scope",
+    )
+
+    for label, evidence in (
+        ("macOS", mac["packageEvidence"]),
+        ("iOS", ios["aotEvidence"]),
+    ):
+        binary = Path(evidence["binary"])
+        require(binary.is_file(), f"{label} evidence binary is missing")
+        digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+        require(
+            digest == evidence["binarySha256"],
+            f"{label} evidence binary SHA-256 mismatch",
+        )
+
     qa_template = ROOT / manifest["evidencePolicy"]["qaTemplate"]
     require(qa_template.is_file(), "final QA template is missing")
     qa_text = qa_template.read_text(encoding="utf-8")
     for token in ("Release commit SHA", "macOS", "iOS", "PENDING EVIDENCE"):
         require(token in qa_text, f"QA template missing field: {token}")
 
+    qa_report = ROOT / manifest["evidencePolicy"]["qaReport"]
+    require(qa_report.is_file(), "final QA report is missing")
+    report_text = qa_report.read_text(encoding="utf-8")
+    for token in (release_commit, "PASS", "macOS", "iOS", "NOT RUN"):
+        require(token in report_text, f"final QA report missing field: {token}")
+
 
 def main() -> None:
     manifest = load_json("docs/bukov/RELEASE_MANIFEST.json")
-    require(manifest.get("schemaVersion") == 1, "unsupported release manifest schema")
+    require(manifest.get("schemaVersion") == 2, "unsupported release manifest schema")
     require(
         manifest["product"]["releaseState"]
-        == "candidate_pending_platform_evidence",
-        "release state must not overclaim completion",
+        == "personal_build_validated_mac_and_ios_simulator",
+        "release state must match the validated personal-build scope",
     )
     check_content(manifest)
     check_assets(manifest)
@@ -156,7 +197,7 @@ def main() -> None:
     print(
         "Bukov release manifest: PASS "
         "(6 themes, 18 firearms, 13 enemies, 4 modes, "
-        "72 icon frames, 19 SFX; platform evidence pending)"
+        "72 icon frames, 19 SFX; macOS + iOS simulator evidence verified)"
     )
 
 

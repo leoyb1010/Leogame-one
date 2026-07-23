@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": {
     "nameZh": "逃离布科夫",
     "nameEn": "Escape from Bukov",
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
-    "releaseState": "candidate_pending_platform_evidence"
+    "releaseState": "personal_build_validated_mac_and_ios_simulator",
+    "releaseSourceCommit": "327d69d6484f80faf73365636b391a410bbaccaa"
   },
   "content": {
     "themes": {
@@ -63,14 +64,45 @@
   "platforms": {
     "macOS": {
       "implementation": "present",
-      "packageEvidence": "pending_evidence",
-      "interactiveQa": "pending_evidence"
+      "packageEvidence": {
+        "status": "passed",
+        "artifact": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app",
+        "binary": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "binarySha256": "019ca17a15b4588f8e33afe02c33efc4cce1b8cad6dbdad2c37f1dd07a91f3b7",
+        "builtAt": "2026-07-24T04:14:00+08:00",
+        "log": "build/evidence/final-qa/macos-jpackage-final.log"
+      },
+      "interactiveQa": {
+        "status": "passed",
+        "evidenceDirectory": "build/evidence/final-qa",
+        "report": "docs/bukov/FINAL_QA_REPORT.md"
+      }
     },
     "iOS": {
       "implementation": "present",
-      "aotEvidence": "pending_evidence",
-      "simulatorQa": "pending_evidence",
-      "deviceQa": "pending_evidence"
+      "aotEvidence": {
+        "status": "passed",
+        "artifact": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app",
+        "binary": "/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app/IOSLauncher",
+        "binarySha256": "56124e7d6bdfcbfb0d0e1a3388c3267d176e3c605a1c49ed7b0f625d34081738",
+        "builtAt": "2026-07-24T04:15:45+08:00",
+        "log": "build/evidence/final-qa/ios-simulator-final.log"
+      },
+      "simulatorQa": {
+        "status": "passed",
+        "runtime": "iOS 26.5",
+        "device": "Codex Test iPhone 17 Pro",
+        "deviceId": "50D8337F-7AFD-4AAE-AB44-318BCDC02AF6",
+        "orientations": [
+          "portrait",
+          "landscape"
+        ],
+        "evidenceDirectory": "build/evidence/final-qa"
+      },
+      "deviceQa": {
+        "status": "not_run",
+        "reason": "No physical iOS device was placed in scope; simulator validation is the delivery target for this personal single-player build."
+      }
     }
   },
   "performance": {
@@ -84,15 +116,28 @@
       "scripts/bukov_performance_smoke.sh",
       "scripts/bukov_performance_e2e.sh"
     ],
-    "packagedGpuFramePacing": "pending_evidence",
-    "thirtyMinuteSoak": "pending_evidence"
+    "packagedGpuFramePacing": {
+      "status": "manual_pass",
+      "scope": "macOS package and iOS simulator",
+      "limitation": "No instrumented P50/P95/P99 GPU frame-time capture was performed."
+    },
+    "thirtyMinuteSoak": {
+      "status": "passed_simulation",
+      "durationSeconds": 1800,
+      "log": "build/evidence/final-qa/performance-e2e-1800.log",
+      "limitation": "Automated 30-minute-equivalent simulation gate, not a wall-clock packaged-app thermal soak."
+    }
   },
   "persistence": {
     "checkpointAndSettlementGates": [
       "scripts/bukov_save_stress.sh",
       "scripts/bukov_seed_sweep.sh"
     ],
-    "freshInstallRecoveryQa": "pending_evidence"
+    "freshInstallRecoveryQa": {
+      "status": "passed",
+      "scope": "macOS fresh profile plus iOS simulator resume",
+      "evidenceDirectory": "build/evidence/final-qa"
+    }
   },
   "validation": {
     "staticCommands": [
@@ -104,13 +149,27 @@
       "bash scripts/bukov_ui_tokens_check.sh"
     ],
     "gradleSuite": {
-      "command": "./scripts/apple-gradle core:clean desktop:clean core:test desktop:test desktop:build ios:compileJava --no-daemon",
-      "status": "pending_evidence"
+      "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
+      "status": "passed",
+      "sourceCommit": "327d69d6484f80faf73365636b391a410bbaccaa",
+      "tests": {
+        "core": 520,
+        "desktop": 2,
+        "ios": 6,
+        "failures": 0
+      },
+      "log": "build/evidence/final-qa/release-commit-gradle-suite.log"
     }
   },
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
-    "currentPlatformClaim": "pending_evidence",
-    "rule": "Only evidence produced from the exact release commit may change pending_evidence to passed."
+    "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
+    "currentPlatformClaim": "passed_mac_and_ios_simulator",
+    "rule": "Passed claims are bound to releaseSourceCommit and the local evidence directory.",
+    "knownLimitations": [
+      "Physical iOS device QA was not run.",
+      "Three-person blind usability testing was not run.",
+      "Instrumented packaged-app GPU percentile capture was not run."
+    ]
   }
 }
