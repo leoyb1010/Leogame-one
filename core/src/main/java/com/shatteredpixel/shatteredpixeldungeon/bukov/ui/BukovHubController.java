@@ -2,12 +2,14 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCheckpoint;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovVendorCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.SettlementReceipt;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 
@@ -105,6 +107,45 @@ public final class BukovHubController {
 		saves.saveProfile(profile);
 	}
 
+	/**
+	 * Cycles only the four economic actions. Training is a permanent, explicit
+	 * destination in the hideout and must never appear to be a random contract.
+	 */
+	public void cycleFormalRaidMode() throws IOException {
+		requireEditableLoadout();
+		BukovRaidMode current = profile.selectedRaidMode();
+		BukovRaidMode next;
+		switch (current) {
+			case EXPEDITION:
+				next = BukovRaidMode.QUICK_SWEEP;
+				break;
+			case QUICK_SWEEP:
+				next = BukovRaidMode.SCAVENGER;
+				break;
+			case SCAVENGER:
+				next = BukovRaidMode.BOSS_CONTRACT;
+				break;
+			default:
+				next = BukovRaidMode.EXPEDITION;
+				break;
+		}
+		selectRaidMode(next);
+	}
+
+	public void selectTrainingGround() throws IOException {
+		selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+	}
+
+	public BukovRaidMode selectedRaidMode() {
+		return activeCheckpoint == null
+				? profile.selectedRaidMode()
+				: activeCheckpoint.session().raidMode();
+	}
+
+	public boolean hasActiveRaid() {
+		return activeCheckpoint != null;
+	}
+
 	public void selectRaidMode(BukovRaidMode mode) throws IOException {
 		requireEditableLoadout();
 		profile.selectRaidMode(mode);
@@ -164,6 +205,24 @@ public final class BukovHubController {
 			throw new IllegalStateException(state.deploymentBlockReason);
 		}
 		saves.saveProfile(profile);
+	}
+
+	/**
+	 * Settles the active checkpoint as a failed action. Host save deletion is a
+	 * scene-level concern and happens only after this durable settlement
+	 * succeeds.
+	 */
+	public RaidResult abandonActiveRaid() throws IOException {
+		if (activeCheckpoint == null) {
+			throw new IllegalStateException("当前没有可放弃的行动");
+		}
+		BukovRaidCoordinator raid = BukovRaidCoordinator.resume(saves);
+		if (raid == null) {
+			throw new IllegalStateException("行动检查点已经结束");
+		}
+		RaidResult result = raid.settleDeath();
+		profile = saves.loadProfile();
+		return result;
 	}
 
 	public String summary() {

@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveService;
 import org.junit.Test;
@@ -75,6 +76,51 @@ public class BukovHubControllerTest {
 		assertTrue(hub.viewModel().raidModeSummary.contains("无仓库损失"));
 		assertEquals(0, hub.viewModel().selectedCount);
 		assertTrue(hub.viewModel().canDeploy);
+	}
+
+	@Test
+	public void trainingIsDirectWhileFormalCycleNeverDependsOnIt()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+
+		hub.selectTrainingGround();
+		assertEquals(
+				BukovRaidMode.TRAINING_GROUND,
+				hub.selectedRaidMode());
+		assertEquals(0, hub.viewModel().selectedCount);
+
+		hub.cycleFormalRaidMode();
+		assertEquals(BukovRaidMode.EXPEDITION, hub.selectedRaidMode());
+		hub.cycleFormalRaidMode();
+		assertEquals(BukovRaidMode.QUICK_SWEEP, hub.selectedRaidMode());
+		hub.cycleFormalRaidMode();
+		assertEquals(BukovRaidMode.SCAVENGER, hub.selectedRaidMode());
+		hub.cycleFormalRaidMode();
+		assertEquals(BukovRaidMode.BOSS_CONTRACT, hub.selectedRaidMode());
+		hub.cycleFormalRaidMode();
+		assertEquals(BukovRaidMode.EXPEDITION, hub.selectedRaidMode());
+	}
+
+	@Test
+	public void activeRaidCanOnlyBeAbandonedThroughDurableSettlement()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		new BukovHubController(saves);
+		BukovRaidCoordinator.start(
+				saves,
+				13L,
+				"hub-abandon",
+				40f,
+				Collections.singletonList(ExtractionState.basic()));
+
+		BukovHubController hub = new BukovHubController(saves);
+		assertTrue(hub.hasActiveRaid());
+		assertEquals(
+				RaidOutcome.DEATH,
+				hub.abandonActiveRaid().outcome());
+		assertTrue(saves.loadRaidCheckpoint() == null);
+		assertTrue(saves.loadProfile().isSettled("hub-abandon"));
 	}
 
 	@Test

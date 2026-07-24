@@ -209,7 +209,19 @@ public enum BukovRaidMode {
 		});
 		if ((this == QUICK_SWEEP || this == TRAINING_GROUND)
 				&& regular.size() > 2) {
-			regular = new ArrayList<>(regular.subList(0, 2));
+			List<BukovContainerDefinition> compact =
+					new ArrayList<>(regular.subList(0, 2));
+			// The authored first-raid route ends in one high-value search.
+			// Compact modes may shorten side-loot, but must never prune that
+			// critical-path cache and leave only the archive plus filler.
+			if (!containsLootTable(compact, "high_value")) {
+				BukovContainerDefinition critical =
+						firstWithLootTable(regular, "high_value");
+				if (critical != null) {
+					compact.set(compact.size() - 1, critical);
+				}
+			}
+			regular = compact;
 		}
 		List<BukovContainerDefinition> result = new ArrayList<>();
 		for (BukovContainerDefinition definition : regular) {
@@ -231,10 +243,30 @@ public enum BukovRaidMode {
 					definition.lootTableId,
 					rolls,
 					clampSearch(search),
-					definition.locked));
+					definition.locked
+							|| !trainingGround()
+									&& "high_value".equals(
+											definition.lootTableId)));
 		}
 		result.addAll(mission);
 		return Collections.unmodifiableList(result);
+	}
+
+	private static boolean containsLootTable(
+			List<BukovContainerDefinition> definitions,
+			String lootTableId) {
+		return firstWithLootTable(definitions, lootTableId) != null;
+	}
+
+	private static BukovContainerDefinition firstWithLootTable(
+			List<BukovContainerDefinition> definitions,
+			String lootTableId) {
+		for (BukovContainerDefinition definition : definitions) {
+			if (lootTableId.equals(definition.lootTableId)) {
+				return definition;
+			}
+		}
+		return null;
 	}
 
 	private static float clampSearch(float value) {

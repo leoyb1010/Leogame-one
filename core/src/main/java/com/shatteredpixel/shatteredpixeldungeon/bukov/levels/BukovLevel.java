@@ -19,6 +19,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.painters.BukovPaint
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.rooms.BukovEntranceRoom;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.rooms.BukovExtractionAnchorRoom;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.map.BukovRoomGraphAdapter;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
@@ -320,6 +321,7 @@ public class BukovLevel extends RegularLevel {
 			return false;
 		}
 		theme.applyLootWeights(raidLayout);
+		enforceFirstRaidCriticalLoot();
 		applyBaselineMarker(false);
 		BukovSemanticVisualLayer.apply(this, raidLayout, theme);
 		BukovAnchorPlanner.Result dressedTraversal =
@@ -383,6 +385,23 @@ public class BukovLevel extends RegularLevel {
 
 	public BukovRaidLayout.MissionGate missionGate() {
 		return raidLayout == null ? null : raidLayout.missionGate();
+	}
+
+	/**
+	 * Returns the deterministic cache that completes the first-raid contract.
+	 * The room graph remains generated, but the mission cache is never allowed
+	 * to disappear behind theme weighting.
+	 */
+	public BukovRaidLayout.LootAnchor missionHighValueAnchor() {
+		if (raidLayout == null) return null;
+		for (BukovRaidLayout.LootAnchor anchor : raidLayout.lootAnchors) {
+			BukovRaidLayout.Mark mark = raidLayout.mark(anchor.roomId);
+			if (mark != null
+					&& mark.zone == BukovRaidLayout.Zone.HIGH_VALUE) {
+				return anchor;
+			}
+		}
+		return null;
 	}
 
 	public List<BukovEnemySpawnPlanner.SpawnPoint> enemySpawnPoints() {
@@ -559,6 +578,16 @@ public class BukovLevel extends RegularLevel {
 		} else {
 			map[baseline.interactionCell] = Terrain.EXIT;
 		}
+	}
+
+	private void enforceFirstRaidCriticalLoot() {
+		BukovRaidLayout.LootAnchor critical = missionHighValueAnchor();
+		if (critical == null) {
+			throw new IllegalStateException(
+					"Bukov first raid is missing its high-value objective cache");
+		}
+		critical.lootTableId =
+				FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID;
 	}
 
 	private int[] extractionCells() {

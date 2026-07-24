@@ -234,8 +234,7 @@ public final class BukovDeploymentScene extends PixelScene {
 				@Override
 				public void onBackPressed() {
 					super.onBackPressed();
-					BukovMode.requestHub();
-					ShatteredPixelDungeon.switchScene(TitleScene.class);
+					ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 				}
 			});
 		}

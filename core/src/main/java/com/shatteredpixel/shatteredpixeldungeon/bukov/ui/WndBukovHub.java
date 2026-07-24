@@ -1,7 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
@@ -247,7 +246,7 @@ public final class WndBukovHub extends Window {
 				half,
 				!viewModel.canDeploy ? "accent.danger" : "accent.extract");
 		addAction(
-				"返回标题",
+				"返回藏身处",
 				BukovHubFocusModel.ACTION_BACK,
 				MARGIN + half + GAP,
 				y,
@@ -433,7 +432,6 @@ public final class WndBukovHub extends Window {
 					break;
 				default:
 					hide();
-					BukovMode.leave();
 					break;
 			}
 		} catch (IOException | RuntimeException error) {

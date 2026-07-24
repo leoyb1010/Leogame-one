@@ -1127,7 +1127,7 @@ public class GameScene extends PixelScene {
 				ShatteredPixelDungeon.reportException(e);
 				GLog.n(Messages.get(GameScene.class, "bukov_save_init_failed"));
 				bukovSettlementTransition = true;
-				ShatteredPixelDungeon.switchScene(TitleScene.class);
+				ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 				return false;
 			}
 			}
@@ -1349,8 +1349,7 @@ public class GameScene extends PixelScene {
 				bukovRealtime = null;
 			}
 			disposeBukovCombatPresentation();
-			BukovMode.requestHub();
-			ShatteredPixelDungeon.switchScene(TitleScene.class);
+			ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 		}
 
 		private void finishBukovHostSave(
@@ -1374,8 +1373,7 @@ public class GameScene extends PixelScene {
 					new WndBukovSettlement.ReturnToHideout() {
 						@Override
 						public void run() {
-							BukovMode.requestHub();
-							ShatteredPixelDungeon.switchScene(TitleScene.class);
+							ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 						}
 					},
 					new WndBukovSettlement.RepeatLastLoadout() {
@@ -1402,8 +1400,7 @@ public class GameScene extends PixelScene {
 					bukovRealtime.dispose();
 					bukovRealtime = null;
 				}
-				BukovMode.requestHub();
-				ShatteredPixelDungeon.switchScene(TitleScene.class);
+				ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 			} catch (IOException | RuntimeException error) {
 				ShatteredPixelDungeon.reportException(error);
 				playBukovUiCue(BukovUiSoundPlayer.Cue.ERROR);

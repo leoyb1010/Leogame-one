@@ -159,6 +159,15 @@ public final class BukovSearchableContainer implements Bundlable {
 		return true;
 	}
 
+	boolean lock() {
+		if (state != State.UNSEARCHED) {
+			return false;
+		}
+		state = State.LOCKED;
+		progressSeconds = 0f;
+		return true;
+	}
+
 	public boolean begin() {
 		if (state != State.UNSEARCHED && state != State.INTERRUPTED) {
 			return false;

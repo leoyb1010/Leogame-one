@@ -271,6 +271,32 @@ public final class BukovRaidCoordinator {
 		return checkpoint.eventCompleted(eventId);
 	}
 
+	public boolean firstRaidMissionActive() {
+		if (session().raidMode().trainingGround()) return false;
+		return checkpoint.container(FirstRaidMission.ARCHIVE_CONTAINER_ID) != null
+				&& hasContainerLootTable(
+						FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID);
+	}
+
+	public FirstRaidMission.Stage firstRaidStage() {
+		if (!firstRaidMissionActive()) {
+			return FirstRaidMission.Stage.EXTRACT;
+		}
+		return FirstRaidMission.stage(
+				checkpoint.eventCompleted(FirstRaidMission.EVENT_ID),
+				checkpoint.eventCompleted(
+						FirstRaidMission.HIGH_VALUE_EVENT_ID));
+	}
+
+	public String firstRaidObjective() {
+		return FirstRaidMission.objective(firstRaidStage());
+	}
+
+	public boolean firstRaidConditionalExtractionUnlocked() {
+		return !firstRaidMissionActive()
+				|| firstRaidStage() == FirstRaidMission.Stage.EXTRACT;
+	}
+
 	public RealtimeStatusState realtimeStatus() {
 		return checkpoint.playerStatus();
 	}
@@ -312,9 +338,18 @@ public final class BukovRaidCoordinator {
 		if (!checkpoint.completeEvent(eventId)) {
 			return false;
 		}
+		List<BukovSearchableContainer> unlockedMissionContainers =
+				Collections.emptyList();
+		if (FirstRaidMission.EVENT_ID.equals(eventId)) {
+			unlockedMissionContainers = unlockHighValueContainers();
+		}
 		try {
 			saves.saveRaidCheckpoint(checkpoint);
 		} catch (IOException failure) {
+			for (BukovSearchableContainer container :
+					unlockedMissionContainers) {
+				container.lock();
+			}
 			checkpoint.removeCompletedEvent(eventId);
 			throw failure;
 		}
@@ -386,7 +421,10 @@ public final class BukovRaidCoordinator {
 				throw new IllegalStateException(
 						"Checkpoint container definition changed: "
 								+ definition.containerId);
-			}
+				}
+		}
+		if (checkpoint.eventCompleted(FirstRaidMission.EVENT_ID)) {
+			changed |= !unlockHighValueContainers().isEmpty();
 		}
 		if (changed) saves.saveRaidCheckpoint(checkpoint);
 		return changed;
@@ -394,7 +432,16 @@ public final class BukovRaidCoordinator {
 
 	public boolean unlockContainer(String containerId) {
 		ensureOpen();
-		return requireContainer(containerId).unlock();
+		BukovSearchableContainer container =
+				requireContainer(containerId);
+		if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+					container.lootTableId())
+				&& firstRaidMissionActive()
+				&& !checkpoint.eventCompleted(
+						FirstRaidMission.EVENT_ID)) {
+			return false;
+		}
+		return container.unlock();
 	}
 
 	public boolean beginContainerSearch(String containerId) {
@@ -428,13 +475,24 @@ public final class BukovRaidCoordinator {
 			boolean reloading,
 			BukovLootTable lootTable) {
 		ensureOpen();
-		return requireContainer(containerId).update(
+		BukovSearchableContainer container =
+				requireContainer(containerId);
+		BukovSearchableContainer.UpdateResult result = container.update(
 				deltaSeconds,
 				insideRange,
 				moving,
 				damaged,
 				reloading,
 				lootTable);
+		if (result == BukovSearchableContainer.UpdateResult.COMPLETED
+				&& FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+						container.lootTableId())) {
+			// Saved by the same critical-state checkpoint that persists the
+			// searched container and its exact rolled contents.
+			checkpoint.completeEvent(
+					FirstRaidMission.HIGH_VALUE_EVENT_ID);
+		}
+		return result;
 	}
 
 	public int releaseContainerContents(String containerId, Heap heap) {
@@ -484,6 +542,10 @@ public final class BukovRaidCoordinator {
 
 	public boolean beginExtraction(String extractionId) {
 		ensureOpen();
+		if (FirstRaidMission.CONDITIONAL_EXTRACTION_ID.equals(extractionId)
+				&& !firstRaidConditionalExtractionUnlocked()) {
+			return false;
+		}
 		if (checkpoint.activeExtractionId() != null) {
 			return checkpoint.activeExtractionId().equals(extractionId);
 		}
@@ -583,6 +645,27 @@ public final class BukovRaidCoordinator {
 			throw new IllegalArgumentException("Unknown container: " + containerId);
 		}
 		return container;
+	}
+
+	private boolean hasContainerLootTable(String lootTableId) {
+		for (BukovSearchableContainer container : checkpoint.containers()) {
+			if (lootTableId.equals(container.lootTableId())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private List<BukovSearchableContainer> unlockHighValueContainers() {
+		List<BukovSearchableContainer> unlocked = new ArrayList<>();
+		for (BukovSearchableContainer container : checkpoint.containers()) {
+			if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+						container.lootTableId())
+					&& container.unlock()) {
+				unlocked.add(container);
+			}
+		}
+		return unlocked;
 	}
 
 	private void ensureOpen() {

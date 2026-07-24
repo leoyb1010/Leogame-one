@@ -64,8 +64,12 @@ public class BukovRaidModePolicyParameterizedTest {
 		assertEquals(configuredContainerCount, first.size());
 		assertEquals(fingerprint(first), fingerprint(second));
 		assertTrue(fingerprint(first).contains("Q01:mission_archive:1"));
+		assertTrue(fingerprint(first).contains(":high_value:"));
 		for (BukovContainerDefinition definition : first) {
 			if ("mission_archive".equals(definition.lootTableId)) continue;
+			if ("high_value".equals(definition.lootTableId)) {
+				assertTrue(definition.locked);
+			}
 			if (mode == BukovRaidMode.SCAVENGER) {
 				assertEquals(1, definition.rolls);
 			}

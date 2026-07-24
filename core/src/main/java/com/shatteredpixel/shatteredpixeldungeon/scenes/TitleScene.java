@@ -14,20 +14,16 @@
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovHub;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.input.GameAction;
 import com.watabou.noosa.BitmapText;
@@ -37,7 +33,6 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
-import com.watabou.utils.Callback;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.RectF;
 
@@ -179,7 +174,7 @@ public class TitleScene extends PixelScene {
 					SPDAction.TAG_ATTACK) {
 				@Override
 				protected void activate() {
-					deployRaid();
+					openBukovMode();
 				}
 			};
 			btnContinue.setRect(
@@ -285,14 +280,6 @@ public class TitleScene extends PixelScene {
 		return block;
 	}
 
-	private void deployRaid() {
-		BukovMode.enter();
-		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
-		Dungeon.hero = null;
-		Dungeon.daily = Dungeon.dailyReplay = false;
-		ShatteredPixelDungeon.switchScene(BukovDeploymentScene.class);
-	}
-
 	private static boolean hasActiveRaid() {
 		if (!GamesInProgress.gameExists(BukovMode.SAVE_SLOT)) {
 			return false;
@@ -309,21 +296,7 @@ public class TitleScene extends PixelScene {
 	private void openBukovMode() {
 		BukovMode.enter();
 		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
-		try {
-			BukovHubController hub =
-					new BukovHubController(
-							BukovSaveServices.platformDefault());
-			addToFront(new WndBukovHub(hub, new Callback() {
-				@Override
-				public void call() {
-					deployRaid();
-				}
-			}));
-		} catch (Exception error) {
-			ShatteredPixelDungeon.reportException(error);
-			addToFront(new WndMessage(
-					"基地读取失败：\n" + error.getMessage()));
-		}
+		ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 	}
 
 	/**

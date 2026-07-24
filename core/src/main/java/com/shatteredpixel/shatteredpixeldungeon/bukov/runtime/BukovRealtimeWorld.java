@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyTier;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.FirstRaidEnemySpawnDirector;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.GridLineOfSight;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyTactics;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignal;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignalSource;
@@ -398,6 +399,9 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public String raidObjective() {
+		if (raid != null && raid.firstRaidMissionActive()) {
+			return raid.firstRaidObjective();
+		}
 		return missionGateUnlocked
 				? FirstRaidMission.UNLOCKED_OBJECTIVE
 				: FirstRaidMission.LOCKED_OBJECTIVE;
@@ -459,7 +463,7 @@ public final class BukovRealtimeWorld
 		int availableExtractions = 0;
 		for (ExtractionState extraction : raid.extractions()) {
 			if (!extraction.completed()
-					&& extraction.availableAt(elapsed)) {
+					&& extractionAvailable(extraction, elapsed)) {
 				availableExtractions++;
 			}
 		}
@@ -474,11 +478,11 @@ public final class BukovRealtimeWorld
 						BukovRaidHudState.Cue.EXTRACTION,
 						activeCell,
 						"撤离 " + activeExtractionId,
-						active.availableAt(elapsed));
+						extractionAvailable(active, elapsed));
 				target.extraction(
 						availableExtractions,
 						activeExtractionId,
-						active.availableAt(elapsed),
+						extractionAvailable(active, elapsed),
 						true,
 						active.progressFraction(),
 						active.interactionSeconds());
@@ -496,7 +500,7 @@ public final class BukovRealtimeWorld
 				availableExtractions,
 				extractionHere == null ? null : extractionHere.extractionId(),
 				extractionHere != null
-						&& extractionHere.availableAt(elapsed),
+						&& extractionAvailable(extractionHere, elapsed),
 				false,
 				0f,
 				extractionHere == null
@@ -530,12 +534,12 @@ public final class BukovRealtimeWorld
 					BukovRaidHudState.Cue.EXTRACTION,
 					resolveExtractionCell(extractionHere.extractionId()),
 					"撤离 " + extractionHere.extractionId(),
-					extractionHere.availableAt(elapsed));
+					extractionAvailable(extractionHere, elapsed));
 			target.interaction(
-					extractionHere.availableAt(elapsed)
+					extractionAvailable(extractionHere, elapsed)
 							? BukovRaidHudState.Interaction.EXTRACT
 							: BukovRaidHudState.Interaction.LOCKED,
-					extractionHere.availableAt(elapsed)
+					extractionAvailable(extractionHere, elapsed)
 							? "开始撤离" : "撤离点未开放",
 					0f,
 					extractionHere.interactionSeconds());
@@ -833,6 +837,18 @@ public final class BukovRealtimeWorld
 					heroBody.y,
 					enemy.engagementRange()
 			);
+			enemy.tactics.step(
+					dt,
+					enemy.brain.seesPlayer(),
+					enemy.body.x,
+					enemy.body.y,
+					heroBody.x,
+					heroBody.y,
+					enemy.engagementRange(),
+					enemy.brain.desiredX(),
+					enemy.brain.desiredY(),
+					enemy.tacticalIntent
+			);
 			if (enemy.bossState != null) {
 				enemy.bossState.update(dt);
 				if (enemy.brain.seesPlayer()
@@ -1118,6 +1134,11 @@ public final class BukovRealtimeWorld
 							nextAudioPitch(1f, 0.02f)
 					);
 					releaseCompletedContainer(active.containerId);
+					if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+							active.lootTableId)) {
+						showHeroStatus(
+								"高价值物资已确认，条件撤离许可已解锁");
+					}
 					return;
 				}
 			}
@@ -2320,9 +2341,11 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		float speed = enemy.movementSpeed();
-		float deltaX = enemy.brain.desiredX() * speed * dt;
-		float deltaY = enemy.brain.desiredY() * speed * dt;
+		announceEnemyManeuver(enemy);
+		float speed = enemy.movementSpeed()
+				* enemy.tacticalIntent.speedMultiplier();
+		float deltaX = enemy.tacticalIntent.desiredX() * speed * dt;
+		float deltaY = enemy.tacticalIntent.desiredY() * speed * dt;
 		float originalX = enemy.body.x;
 		float originalY = enemy.body.y;
 		enemy.body.velocityX = dt > 0f ? deltaX / dt : 0f;
@@ -2342,6 +2365,33 @@ public final class BukovRealtimeWorld
 		int nextCell = enemy.body.cell(Dungeon.level.width());
 		if (nextCell != enemy.mob.pos) {
 			enemy.mob.pos = nextCell;
+		}
+	}
+
+	private void announceEnemyManeuver(EnemyRuntime enemy) {
+		RealtimeEnemyTactics.Maneuver maneuver =
+				enemy.tacticalIntent.maneuver();
+		if (maneuver == enemy.previousTacticalManeuver) return;
+		enemy.previousTacticalManeuver = maneuver;
+		if (!enemy.brain.seesPlayer()) return;
+		switch (maneuver) {
+			case ANCHOR_AND_SUPPRESS:
+				showEnemyStatus(enemy, CharSprite.WARNING, "火力压制");
+				break;
+			case FLANK_LEFT:
+				showEnemyStatus(enemy, CharSprite.WARNING, "左侧迂回");
+				break;
+			case FLANK_RIGHT:
+				showEnemyStatus(enemy, CharSprite.WARNING, "右侧迂回");
+				break;
+			case DASH:
+				showEnemyStatus(enemy, CharSprite.NEGATIVE, "突进");
+				break;
+			case RETREAT:
+				showEnemyStatus(enemy, CharSprite.NEUTRAL, "战术换位");
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -3056,11 +3106,32 @@ public final class BukovRealtimeWorld
 			}
 		}
 
+		if (raid.firstRaidMissionActive()
+				&& raid.firstRaidStage()
+						== FirstRaidMission.Stage.SECURE_HIGH_VALUE_CACHE) {
+			for (BukovRaidCoordinator.ContainerSnapshot container :
+					raid.containers()) {
+				if (!FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+							container.lootTableId)
+						|| container.contentsReleased) {
+					continue;
+				}
+				pointHudNavigation(
+						target,
+						BukovRaidHudState.Cue.MISSION,
+						container.cell,
+						"搜查高价值仓",
+						container.state
+								!= BukovSearchableContainer.State.LOCKED);
+				return;
+			}
+		}
+
 		ExtractionState nearest = null;
 		float nearestDistanceSquared = Float.MAX_VALUE;
 		for (ExtractionState extraction : raid.extractions()) {
 			if (extraction.completed()
-					|| !extraction.availableAt(elapsed)) {
+					|| !extractionAvailable(extraction, elapsed)) {
 				continue;
 			}
 			int cell = resolveExtractionCell(extraction.extractionId());
@@ -3078,6 +3149,18 @@ public final class BukovRealtimeWorld
 					"撤离 " + nearest.extractionId(),
 					true);
 		}
+	}
+
+	private boolean extractionAvailable(
+			ExtractionState extraction,
+			float elapsed) {
+		if (extraction == null || !extraction.availableAt(elapsed)) {
+			return false;
+		}
+		return !FirstRaidMission.CONDITIONAL_EXTRACTION_ID.equals(
+					extraction.extractionId())
+				|| raid == null
+				|| raid.firstRaidConditionalExtractionUnlocked();
 	}
 
 	private void readThreatHudState(BukovRaidHudState target) {
@@ -3699,6 +3782,8 @@ public final class BukovRealtimeWorld
 		private final Mob mob;
 		private final RealtimeBody body;
 		private final RealtimeEnemyBrain brain;
+		private final RealtimeEnemyTactics tactics;
+		private final RealtimeEnemyTactics.Intent tacticalIntent;
 		private final int stableId;
 		private final EnemyArchetypeDefinition definition;
 		private final EnemyRangedCombatController.Config rangedConfig;
@@ -3706,6 +3791,8 @@ public final class BukovRealtimeWorld
 		private EnemyRangedCombatController rangedCombat;
 		private EnemyRangedCombatIntent rangedIntent;
 		private EnemyRangedCombatIntent.Action previousRangedAction;
+		private RealtimeEnemyTactics.Maneuver previousTacticalManeuver =
+				RealtimeEnemyTactics.Maneuver.FOLLOW_BRAIN;
 		private boolean present;
 		private boolean moving;
 		private boolean broadcastedContact;
@@ -3720,6 +3807,10 @@ public final class BukovRealtimeWorld
 			body = mob.ensureRealtimeBody();
 			stableId = mob.id();
 			brain = new RealtimeEnemyBrain(stableId);
+			tactics = new RealtimeEnemyTactics(
+					RealtimeEnemyTactics.profileFor(definition),
+					stableId);
+			tacticalIntent = new RealtimeEnemyTactics.Intent();
 			String definitionId =
 					definition == null ? "" : definition.id;
 			boolean matchingSnapshot = restoredState != null
@@ -3729,12 +3820,20 @@ public final class BukovRealtimeWorld
 			}
 			if (definition != null
 					&& definition.weaponDefinitionId != null) {
+				boolean suppressor = tactics.profile()
+						== RealtimeEnemyTactics.Profile.SUPPRESSOR;
+				boolean flanker = tactics.profile()
+						== RealtimeEnemyTactics.Profile.FLANKER;
 				rangedConfig = new EnemyRangedCombatController.Config(
-						definition.tier == EnemyTier.ELITE ? 6 : 5,
-						definition.tier == EnemyTier.ELITE ? 180f : 150f,
-						1.6f,
+						suppressor ? 8
+								: definition.tier == EnemyTier.ELITE ? 6 : 5,
+						suppressor ? 240f
+								: flanker ? 180f : 150f,
+						suppressor ? 1.85f : 1.6f,
 						definition.engagementRange,
-						definition.tier == EnemyTier.ELITE ? 0.3f : 0.45f,
+						suppressor ? 0.22f
+								: definition.tier == EnemyTier.ELITE
+										? 0.3f : 0.45f,
 						definition.minimumDamage,
 						definition.maximumDamage);
 				enableRangedCombat();

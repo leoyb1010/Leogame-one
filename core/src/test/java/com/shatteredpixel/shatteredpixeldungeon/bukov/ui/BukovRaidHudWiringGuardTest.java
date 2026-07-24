@@ -26,7 +26,10 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(world.contains("fireControl.reloadRemaining()"));
 		assertTrue(world.contains("medicalStatus.bleedingPerSecond()"));
 		assertTrue(world.contains("active.progressFraction()"));
-		assertTrue(world.contains("extractionHere.availableAt(elapsed)"));
+		assertTrue(world.contains(
+				"extractionAvailable(extractionHere, elapsed)"));
+		assertTrue(world.contains(
+				"raid.firstRaidConditionalExtractionUnlocked()"));
 		assertTrue(world.contains("selectVisibleLootHeap("));
 		assertTrue(world.contains("target.sound(keySoundVisual)"));
 		assertTrue(world.contains("target.hit("));

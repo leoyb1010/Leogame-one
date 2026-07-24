@@ -21,17 +21,22 @@ public class BukovEntryFlowGuardTest {
 	}
 
 	@Test
-	public void titleDeployCallbackUsesOnlyBukovDeploymentScene() throws Exception {
+	public void titleEntryRoutesOnlyToDedicatedBukovHubScene() throws Exception {
 		String title = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/TitleScene.java");
 		String bukovEntry = between(
 				title,
-				"private void deployRaid()",
+				"private void openBukovMode()",
 				"private void openClassicMode()");
 
-		assertTrue(bukovEntry.contains("BukovDeploymentScene.class"));
-		assertTrue(bukovEntry.contains("new WndBukovHub"));
+		assertTrue(bukovEntry.contains("BukovMode.enter()"));
+		assertTrue(bukovEntry.contains(
+				"GamesInProgress.curSlot = BukovMode.SAVE_SLOT"));
+		assertTrue(bukovEntry.contains("BukovHubScene.class"));
+		assertFalse(bukovEntry.contains("BukovDeploymentScene.class"));
+		assertFalse(bukovEntry.contains("new WndBukovHub"));
 		assertFalse(bukovEntry.contains("HeroSelectScene.class"));
+		assertFalse(bukovEntry.contains("StartScene.class"));
 		assertFalse(bukovEntry.contains("InterlevelScene.class"));
 	}
 
@@ -45,10 +50,31 @@ public class BukovEntryFlowGuardTest {
 				"btnContinue = new TacticalTitleButton",
 				"version = new BitmapText");
 
-		assertTrue(visibleActions.contains("openBukovMode()"));
-		assertTrue(visibleActions.contains("deployRaid()"));
+		assertEquals(2, occurrences(visibleActions, "openBukovMode();"));
+		assertFalse(visibleActions.contains("BukovDeploymentScene.class"));
 		assertFalse(visibleActions.contains("HeroSelectScene.class"));
+		assertFalse(visibleActions.contains("StartScene.class"));
+		assertFalse(visibleActions.contains("InterlevelScene.class"));
 		assertFalse(visibleActions.contains("BukovMode.leave()"));
+	}
+
+	@Test
+	public void hubDeployCallbackUsesOnlyBukovDeploymentScene()
+			throws Exception {
+		String hub = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/BukovHubScene.java");
+		String deploy = between(
+				hub,
+				"private void deploy()",
+				"private void confirmAbandon()");
+
+		assertTrue(deploy.contains("controller.confirmDeployment()"));
+		assertTrue(deploy.contains(
+				"BukovMode.prepareRaidMode(controller.selectedRaidMode())"));
+		assertTrue(deploy.contains("BukovDeploymentScene.class"));
+		assertFalse(deploy.contains("HeroSelectScene.class"));
+		assertFalse(deploy.contains("StartScene.class"));
+		assertFalse(deploy.contains("InterlevelScene.class"));
 	}
 
 	@Test
@@ -73,6 +99,16 @@ public class BukovEntryFlowGuardTest {
 			throw new AssertionError("Flow boundary not found");
 		}
 		return source.substring(from, to);
+	}
+
+	private static int occurrences(String source, String value) {
+		int count = 0;
+		int from = 0;
+		while ((from = source.indexOf(value, from)) >= 0) {
+			count++;
+			from += value.length();
+		}
+		return count;
 	}
 
 	private static String source(String path) throws Exception {
