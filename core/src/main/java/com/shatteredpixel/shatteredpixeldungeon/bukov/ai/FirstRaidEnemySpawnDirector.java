@@ -36,6 +36,7 @@ public final class FirstRaidEnemySpawnDirector {
 		public final boolean firstRaid;
 		public final int distanceFromSpawnRooms;
 		public final boolean insidePlayerFieldOfView;
+		public final boolean allowVisibleInitialContact;
 		public final boolean mandatorySingleRoute;
 		public final boolean bossArena;
 
@@ -43,6 +44,23 @@ public final class FirstRaidEnemySpawnDirector {
 					   boolean firstRaid,
 					   int distanceFromSpawnRooms,
 					   boolean insidePlayerFieldOfView,
+					   boolean mandatorySingleRoute,
+					   boolean bossArena) {
+			this(
+					elapsedSeconds,
+					firstRaid,
+					distanceFromSpawnRooms,
+					insidePlayerFieldOfView,
+					false,
+					mandatorySingleRoute,
+					bossArena);
+		}
+
+		public Context(float elapsedSeconds,
+					   boolean firstRaid,
+					   int distanceFromSpawnRooms,
+					   boolean insidePlayerFieldOfView,
+					   boolean allowVisibleInitialContact,
 					   boolean mandatorySingleRoute,
 					   boolean bossArena) {
 			if (elapsedSeconds < 0f || !com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers.isFinite(elapsedSeconds)) {
@@ -59,6 +77,7 @@ public final class FirstRaidEnemySpawnDirector {
 			this.firstRaid = firstRaid;
 			this.distanceFromSpawnRooms = distanceFromSpawnRooms;
 			this.insidePlayerFieldOfView = insidePlayerFieldOfView;
+			this.allowVisibleInitialContact = allowVisibleInitialContact;
 			this.mandatorySingleRoute = mandatorySingleRoute;
 			this.bossArena = bossArena;
 		}
@@ -72,7 +91,8 @@ public final class FirstRaidEnemySpawnDirector {
 					"definition, context, and counts are required"
 			);
 		}
-		if (context.insidePlayerFieldOfView
+		if ((context.insidePlayerFieldOfView
+						&& !context.allowVisibleInitialContact)
 				|| context.elapsedSeconds < definition.minimumSpawnSeconds
 				|| context.distanceFromSpawnRooms
 				< definition.minimumDistanceFromSpawnRooms) {

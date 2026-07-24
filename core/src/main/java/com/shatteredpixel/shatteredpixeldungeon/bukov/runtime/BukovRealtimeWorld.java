@@ -129,6 +129,12 @@ public final class BukovRealtimeWorld
 	private static final float HIT_DIRECTION_LIFETIME_SECONDS = 0.85f;
 	private static final PointF ZERO_CAMERA_SHIFT = new PointF();
 
+	private enum SpawnVisibility {
+		OFFSCREEN_ONLY,
+		VISIBLE_REQUIRED,
+		ANY_SAFE
+	}
+
 	private final Hero hero;
 	private final BukovRaidCoordinator raid;
 	private final BukovRaidPersistence persistence;
@@ -2386,14 +2392,63 @@ public final class BukovRealtimeWorld
 	}
 
 	private void spawnInitialEnemies() {
-		if (raid == null || raid.session().initialEnemySpawnCompleted()) return;
-		for (int i = 0; i < raidMode.initialEnemyCount; i++) {
-			if (!attemptEnemySpawn()) break;
+		if (raid == null) return;
+		int liveEnemies = activeNonBossEnemies();
+		if (!InitialEnemyRosterPolicy.shouldPopulate(
+				raid.session().initialEnemySpawnCompleted(),
+				liveEnemies,
+				raid.session().killCount(),
+				raidMode.initialEnemyCount)) {
+			return;
 		}
-		// Empty maps and fully rejected spawn plans are completed too. Otherwise
-		// every resume would retry and eventually duplicate or reroll enemies.
-		raid.session().markInitialEnemySpawnCompleted();
-		checkpointRuntimeCombatState();
+		boolean visibleContact =
+				InitialEnemyRosterPolicy.needsVisibleContact(
+						raidMode,
+						raid.session().raidOrdinal(),
+						liveEnemies);
+		boolean changed = false;
+		while (liveEnemies < raidMode.initialEnemyCount) {
+			boolean spawned;
+			if (visibleContact) {
+				spawned = attemptEnemySpawn(
+						SpawnVisibility.VISIBLE_REQUIRED,
+						false);
+				if (!spawned) {
+					spawned = attemptVisibleInitialContactSpawn();
+				}
+				if (!spawned) {
+					spawned = attemptEnemySpawn(
+							SpawnVisibility.ANY_SAFE,
+							false);
+				}
+				visibleContact = false;
+			} else {
+				spawned = attemptEnemySpawn(
+						SpawnVisibility.OFFSCREEN_ONLY,
+						false);
+				if (!spawned) {
+					// Large training/first-raid FOVs can cover every authored
+					// spawn point. Initial population must still exist.
+					spawned = attemptEnemySpawn(
+							SpawnVisibility.ANY_SAFE,
+							false);
+				}
+			}
+			if (!spawned) break;
+			changed = true;
+			liveEnemies = activeNonBossEnemies();
+		}
+		if (changed) {
+			refreshEnemiesAndTargets();
+		}
+		if (InitialEnemyRosterPolicy.completed(
+				liveEnemies,
+				raidMode.initialEnemyCount)) {
+			raid.session().markInitialEnemySpawnCompleted();
+		}
+		if (changed || raid.session().initialEnemySpawnCompleted()) {
+			checkpointRuntimeCombatState();
+		}
 	}
 
 	private void updateEnemySpawning() {
@@ -2403,18 +2458,37 @@ public final class BukovRealtimeWorld
 		}
 		nextEnemySpawnSeconds = nextSpawnBoundary(
 				raid.session().elapsedSeconds);
-		boolean spawned = attemptEnemySpawn();
+		if (InitialEnemyRosterPolicy.shouldPopulate(
+				raid.session().initialEnemySpawnCompleted(),
+				activeNonBossEnemies(),
+				raid.session().killCount(),
+				raidMode.initialEnemyCount)) {
+			spawnInitialEnemies();
+			return;
+		}
+		boolean spawned = attemptEnemySpawn(
+				SpawnVisibility.OFFSCREEN_ONLY);
 		checkpointRuntimeCombatState();
 		if (spawned) {
 			refreshEnemiesAndTargets();
 		}
 	}
 
-	private boolean attemptEnemySpawn() {
+	private boolean attemptEnemySpawn(SpawnVisibility visibility) {
+		return attemptEnemySpawn(visibility, true);
+	}
+
+	private boolean attemptEnemySpawn(
+			SpawnVisibility visibility,
+			boolean allowBoss) {
+		if (visibility == null) {
+			throw new IllegalArgumentException(
+					"spawn visibility is required");
+		}
 		if (enemySpawnPoints.isEmpty()) return false;
 		float elapsed = raid.session().elapsedSeconds;
 		long spawnEpoch = raid.session().claimEnemySpawnEpoch();
-		if (attemptWhiteLineSpawn(elapsed)) return true;
+		if (allowBoss && attemptWhiteLineSpawn(elapsed)) return true;
 		int start = (int)com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
 				.remainderUnsigned(
 				Dungeon.seed + spawnEpoch * 0x9E3779B97F4A7C15L,
@@ -2423,11 +2497,19 @@ public final class BukovRealtimeWorld
 			BukovEnemySpawnPlanner.SpawnPoint point =
 					enemySpawnPoints.get((start + offset)
 							% enemySpawnPoints.size());
+			boolean insidePlayerFieldOfView =
+					point.cell >= 0
+							&& point.cell < Dungeon.level.length()
+							&& Dungeon.level.heroFOV[point.cell];
 			if (point.cell < 0
 					|| point.cell >= Dungeon.level.length()
-					|| Dungeon.level.heroFOV[point.cell]
+					|| visibility == SpawnVisibility.OFFSCREEN_ONLY
+							&& insidePlayerFieldOfView
+					|| visibility == SpawnVisibility.VISIBLE_REQUIRED
+							&& !insidePlayerFieldOfView
 					|| Actor.findChar(point.cell) != null
 					|| tooCloseToHero(point.cell)
+					|| point.bossArena && !allowBoss
 					|| (point.bossArena && whiteLineResolved())) {
 				continue;
 			}
@@ -2462,7 +2544,8 @@ public final class BukovRealtimeWorld
 							elapsed,
 							firstRaid,
 							point.distanceFromSpawnRooms,
-							false,
+							insidePlayerFieldOfView,
+							visibility != SpawnVisibility.OFFSCREEN_ONLY,
 							point.mandatorySingleRoute,
 							point.bossArena);
 				selected = FirstRaidEnemySpawnDirector
@@ -2501,6 +2584,75 @@ public final class BukovRealtimeWorld
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * The onboarding contact must be visible, reachable, and already inside
+	 * perception range. Authored room spawn points remain preferred; this is a
+	 * bounded fallback for open training maps and legacy layouts whose room
+	 * semantics contain no currently visible spawn point.
+	 */
+	private boolean attemptVisibleInitialContactSpawn() {
+		if (raid == null) return false;
+		EnemyArchetypeDefinition contact = enemyArchetypes.require(
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER);
+		if (activeEnemyCount(contact.id)
+				>= (raid.session().raidOrdinal() == 1
+						? contact.firstRaidMaximumActive
+						: contact.maximumActive)) {
+			return false;
+		}
+		int bestCell = -1;
+		float bestDistanceError = Float.POSITIVE_INFINITY;
+		float maximumDistance = Math.min(
+				contact.perceptionRange,
+				contact.engagementRange + 1f);
+		float desiredDistance = Math.max(
+				MINIMUM_PLAYER_SPAWN_DISTANCE_TILES,
+				maximumDistance - 0.5f);
+		int width = Dungeon.level.width();
+		for (int cell = 0; cell < Dungeon.level.length(); cell++) {
+			if (!Dungeon.level.heroFOV[cell]
+					|| Actor.findChar(cell) != null
+					|| cell == extractionCell
+					|| cell == pumpCell
+					|| cell == missionGateCell) {
+				continue;
+			}
+			int x = cell % width;
+			int y = cell / width;
+			if (collisionMap.blocked(x, y)) continue;
+			float centerX = x + 0.5f;
+			float centerY = y + 0.5f;
+			float deltaX = centerX - heroBody.x;
+			float deltaY = centerY - heroBody.y;
+			float distance = (float)Math.sqrt(
+					deltaX * deltaX + deltaY * deltaY);
+			if (distance < MINIMUM_PLAYER_SPAWN_DISTANCE_TILES
+					|| distance > maximumDistance
+					|| !GridLineOfSight.visible(
+							heroBody.x,
+							heroBody.y,
+							centerX,
+							centerY,
+							maximumDistance,
+							collisionMap)) {
+				continue;
+			}
+			float error = Math.abs(distance - desiredDistance);
+			if (error < bestDistanceError
+					|| error == bestDistanceError
+							&& (bestCell < 0 || cell < bestCell)) {
+				bestCell = cell;
+				bestDistanceError = error;
+			}
+		}
+		if (bestCell < 0) return false;
+		BukovHostMob mob = new BukovHostMob().configure(contact);
+		mob.pos = bestCell;
+		mob.state = mob.WANDERING;
+		GameScene.add(mob);
+		return true;
 	}
 
 	private boolean attemptWhiteLineSpawn(float elapsed) {

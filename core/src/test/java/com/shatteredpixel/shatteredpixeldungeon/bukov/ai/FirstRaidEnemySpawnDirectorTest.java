@@ -88,6 +88,39 @@ public class FirstRaidEnemySpawnDirectorTest {
 	}
 
 	@Test
+	public void explicitOnboardingContactMaySpawnInsidePlayerFov() {
+		EnemyArchetypeDefinition gunner = definition(
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER,
+				EnemyTier.COMMON,
+				38,
+				0f,
+				0f,
+				false,
+				false);
+		FirstRaidEnemySpawnDirector.Context protectedContext =
+				context(0f, true, true, false, false);
+		FirstRaidEnemySpawnDirector.Context onboardingContext =
+				new FirstRaidEnemySpawnDirector.Context(
+						0f,
+						true,
+						5,
+						true,
+						true,
+						false,
+						false);
+
+		assertFalse(FirstRaidEnemySpawnDirector.eligible(
+				gunner, protectedContext, NONE));
+		assertTrue(FirstRaidEnemySpawnDirector.eligible(
+				gunner, onboardingContext, NONE));
+		assertSame(gunner, FirstRaidEnemySpawnDirector.select(
+				Collections.singletonList(gunner),
+				onboardingContext,
+				NONE,
+				7L));
+	}
+
+	@Test
 	public void firstRaidActiveCapPreventsPressureSpike() {
 		EnemyArchetypeDefinition enemy = definition(
 				FirstRaidEnemySpawnDirector.FIRST_GUNNER,

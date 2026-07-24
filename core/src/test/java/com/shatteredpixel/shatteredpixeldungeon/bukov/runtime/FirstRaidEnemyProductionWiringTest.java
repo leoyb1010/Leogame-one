@@ -86,6 +86,14 @@ public class FirstRaidEnemyProductionWiringTest {
 		assertTrue(source.contains("updateWhiteLineOffense("));
 		assertTrue(source.contains("releaseEnemyLoot("));
 		assertTrue(source.contains("bypassWhiteLineForExtraction("));
+		assertTrue(source.contains(
+				"InitialEnemyRosterPolicy.shouldPopulate("));
+		assertTrue(source.contains(
+				"SpawnVisibility.VISIBLE_REQUIRED"));
+		assertTrue(source.contains(
+				"attemptVisibleInitialContactSpawn()"));
+		assertTrue(source.contains(
+				"raid.session().markInitialEnemySpawnCompleted();"));
 	}
 
 	private static String label(EnemyRole role) {
