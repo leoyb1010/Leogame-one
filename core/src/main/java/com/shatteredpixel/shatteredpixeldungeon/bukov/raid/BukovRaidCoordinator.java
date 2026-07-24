@@ -21,6 +21,10 @@ import java.util.List;
  */
 public final class BukovRaidCoordinator {
 
+	static final String TRAINING_FIREARM_DEFINITION = "firearm:needle_9";
+	static final String TRAINING_AMMO_DEFINITION = "ammo:ammo_9_training";
+	static final int TRAINING_AMMO_QUANTITY = 120;
+
 	public static final class ContainerSnapshot {
 		public final String containerId;
 		public final int cell;
@@ -168,6 +172,8 @@ public final class BukovRaidCoordinator {
 							"Loadout exceeds raid capacity: " + itemUid);
 				}
 			}
+		} else if (raidMode.trainingGround()) {
+			grantTrainingLoadout(carried, raidId);
 		}
 		profile.loadout().clear();
 		BukovRaidCheckpoint checkpoint = new BukovRaidCheckpoint(
@@ -714,6 +720,39 @@ public final class BukovRaidCoordinator {
 		}
 		if (settlement == null) {
 			throw new IllegalArgumentException("settlement is required");
+		}
+	}
+
+	private static void grantTrainingLoadout(
+			LootTransaction carried,
+			String raidId) {
+		addTrainingItem(carried, new RaidItem(
+				"training:" + raidId + ":needle_9",
+				TRAINING_FIREARM_DEFINITION,
+				1,
+				0.90f,
+				0,
+				false,
+				false,
+				1f));
+		addTrainingItem(carried, new RaidItem(
+				"training:" + raidId + ":ammo_9",
+				TRAINING_AMMO_DEFINITION,
+				TRAINING_AMMO_QUANTITY,
+				0.012f,
+				0,
+				false,
+				false,
+				1f));
+	}
+
+	private static void addTrainingItem(
+			LootTransaction carried,
+			RaidItem item) {
+		if (carried.pickup(item) != LootTransaction.PickupResult.ADDED) {
+			throw new IllegalStateException(
+					"Training loadout exceeds raid capacity: "
+							+ item.itemUid());
 		}
 	}
 

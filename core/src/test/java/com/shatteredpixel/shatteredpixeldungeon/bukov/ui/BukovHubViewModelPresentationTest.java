@@ -104,6 +104,18 @@ public class BukovHubViewModelPresentationTest {
 	}
 
 	@Test
+	public void emptyFormalLoadoutPointsToEquipmentOrFreeTraining() {
+		BukovProfile profile = new BukovProfile();
+
+		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
+
+		assertFalse(model.canDeploy);
+		assertTrue(model.deploymentBlockReason.contains("正式行动"));
+		assertTrue(model.deploymentBlockReason.contains("配装"));
+		assertTrue(model.deploymentBlockReason.contains("演练场"));
+	}
+
+	@Test
 	public void everyAuthoredFirearmUsesRegistryCaliberForDeployment()
 			throws Exception {
 		FirearmRegistry firearms = new FirearmRegistry();

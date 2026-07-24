@@ -46,10 +46,12 @@ public class BukovBallisticFxTest {
 	}
 
 	@Test
-	public void tracerHasBriefMonotonicFadeAndHardExpiry() {
+	public void tracerHasReadableResidualWindowAndHardExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
 
-		assertTrue(duration >= 0.22f && duration <= 0.28f);
+		assertTrue(duration >= 0.50f && duration <= 0.58f);
+		assertTrue(BukovTracerFx.TRAVEL_SECONDS >= 0.24f);
+		assertTrue(BukovTracerFx.TRAVEL_SECONDS < duration);
 		assertEquals(1f, BukovTracerFx.alphaAt(0f, duration), 0f);
 		assertEquals(0.5f, BukovTracerFx.alphaAt(duration * 0.5f, duration), 0.0001f);
 		assertEquals(0f, BukovTracerFx.alphaAt(duration, duration), 0f);
@@ -60,24 +62,73 @@ public class BukovBallisticFxTest {
 
 	@Test
 	public void brightProjectileHeadTraversesTheWholeHitscanTrace() {
-		float duration = BukovTracerFx.DURATION_SECONDS;
+		float travelDuration = BukovTracerFx.TRAVEL_SECONDS;
 
-		assertEquals(0f, BukovTracerFx.travelProgressAt(0f, duration), 0f);
+		assertEquals(0f, BukovTracerFx.travelProgressAt(0f, travelDuration), 0f);
 		assertEquals(
 				0.5f,
-				BukovTracerFx.travelProgressAt(duration * 0.5f, duration),
+				BukovTracerFx.travelProgressAt(travelDuration * 0.5f, travelDuration),
 				0.0001f);
-		assertEquals(1f, BukovTracerFx.travelProgressAt(duration, duration), 0f);
-		assertEquals(1f, BukovTracerFx.travelProgressAt(duration * 2f, duration), 0f);
-		assertEquals(0f, BukovTracerFx.travelProgressAt(Float.NaN, duration), 0f);
+		assertEquals(1f, BukovTracerFx.travelProgressAt(
+				travelDuration,
+				travelDuration), 0f);
+		assertEquals(1f, BukovTracerFx.travelProgressAt(
+				travelDuration * 2f,
+				travelDuration), 0f);
+		assertEquals(0f, BukovTracerFx.travelProgressAt(
+				Float.NaN,
+				travelDuration), 0f);
+	}
+
+	@Test
+	public void tracerDrawStateStaysVisibleAtSixtyAndOneHundredTwentyFps() {
+		float frame120 = 1f / 120f;
+		float frame60 = 1f / 60f;
+
+		assertTrue(BukovTracerFx.travelProgressAt(
+				frame120,
+				BukovTracerFx.TRAVEL_SECONDS) > 0f);
+		assertTrue(BukovTracerFx.travelProgressAt(
+				frame60,
+				BukovTracerFx.TRAVEL_SECONDS) > 0f);
+		assertEquals(1f, BukovTracerFx.trailAlphaAt(frame120), 0f);
+		assertEquals(1f, BukovTracerFx.trailAlphaAt(frame60), 0f);
+		assertEquals(1f, BukovTracerFx.headAlphaAt(
+				BukovTracerFx.TRAVEL_SECONDS), 0f);
+		assertTrue(BukovTracerFx.trailAlphaAt(0.45f) > 0f);
+		assertTrue(BukovTracerFx.headAlphaAt(0.45f) > 0f);
+		assertEquals(0f, BukovTracerFx.trailAlphaAt(
+				BukovTracerFx.DURATION_SECONDS), 0f);
+		assertEquals(0f, BukovTracerFx.headAlphaAt(
+				BukovTracerFx.DURATION_SECONDS), 0f);
+	}
+
+	@Test
+	public void tracerColorsAndOutlinedHeadAreActuallyOpaqueAndReadable() {
+		assertEquals(0xFF, BukovTracerFx.FRIENDLY_COLOR >>> 24);
+		assertEquals(0xFF, BukovTracerFx.HOSTILE_COLOR >>> 24);
+		assertEquals(0xFF, BukovTracerFx.HEAD_OUTLINE_COLOR >>> 24);
+
+		float coreThickness = BukovTracerFx.plan(
+				new PointF(0f, 0f),
+				new PointF(16f, 0f),
+				1f).coreThickness();
+		assertTrue(BukovTracerFx.headWidthFor(coreThickness) >= 8f);
+		assertTrue(BukovTracerFx.headHeightFor(coreThickness) >= 3.2f);
+		assertTrue(BukovTracerFx.outlineWidthFor(coreThickness)
+				> BukovTracerFx.headWidthFor(coreThickness));
+		assertTrue(BukovTracerFx.outlineHeightFor(coreThickness)
+				> BukovTracerFx.headHeightFor(coreThickness));
 	}
 
 	@Test
 	public void firstFrameHitchStillPresentsTheTracerEndpointBeforeExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
-		float hitchAge = 0.30f;
+		float hitchAge = 0.65f;
 
-		assertEquals(1f, BukovTracerFx.travelProgressAt(hitchAge, duration), 0f);
+		assertEquals(1f, BukovTracerFx.travelProgressAt(
+				hitchAge,
+				BukovTracerFx.TRAVEL_SECONDS), 0f);
 		assertFalse(BukovTracerFx.shouldExpireAfterUpdate(
 				hitchAge,
 				duration,

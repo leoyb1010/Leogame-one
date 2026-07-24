@@ -24,7 +24,7 @@ public class BukovMaintenanceCacheProductionWiringTest {
 				"BukovFirstRaidLootTables.MAINTENANCE_KEY_DEFINITION_ID"));
 		assertTrue(world.contains("raid.loot())"));
 		assertTrue(world.contains("\"需要维修钥匙\""));
-		assertTrue(world.contains("\"按E解锁 · 维修钥匙\""));
+		assertTrue(world.contains("\"使用维修钥匙解锁\""));
 		assertTrue(world.contains(
 				"BukovFirstRaidLootTables.maintenanceKeyDrops("));
 	}

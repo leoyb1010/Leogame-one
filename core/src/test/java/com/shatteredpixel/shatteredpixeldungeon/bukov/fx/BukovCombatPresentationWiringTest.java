@@ -83,17 +83,27 @@ public class BukovCombatPresentationWiringTest {
 
 		int muzzle = playerFire.indexOf("combatFx.muzzle(");
 		int shell = playerFire.indexOf("combatFx.shell(", muzzle);
-		int tracer = playerFire.indexOf("combatFx.tracer(", shell);
-		int impact = playerFire.indexOf("combatFx.impact(", tracer);
+		int resolver = playerFire.indexOf("resolvePlayerShot(", shell);
+		int impact = playerFire.indexOf("combatFx.impact(", resolver);
 		int targetFilter = playerFire.indexOf(
 				"Char target = charsByBody.get(shotHit.body);", impact);
 		assertTrue(muzzle >= 0);
 		assertTrue(shell > muzzle);
-		assertTrue(tracer > shell);
-		assertTrue(impact > tracer);
+		assertTrue(resolver > shell);
+		assertTrue(impact > resolver);
 		// The impact must be emitted before target filtering so a wall stop is
 		// just as readable as an enemy hit.
 		assertTrue(targetFilter > impact);
+
+		int resolverStart = world.indexOf(
+				"static void resolvePlayerShot(");
+		int resolverEnd = world.indexOf(
+				"public FireControl.AmmoSelection requestAmmo(", resolverStart);
+		String resolverBody = world.substring(resolverStart, resolverEnd);
+		int cast = resolverBody.indexOf("HitscanResolver.cast(");
+		int tracer = resolverBody.indexOf("combatFx.tracer(", cast);
+		assertTrue(cast >= 0);
+		assertTrue(tracer > cast);
 	}
 
 	private static String source(String path) throws Exception {

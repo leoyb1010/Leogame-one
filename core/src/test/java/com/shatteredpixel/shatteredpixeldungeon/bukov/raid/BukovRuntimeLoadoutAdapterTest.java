@@ -123,6 +123,41 @@ public class BukovRuntimeLoadoutAdapterTest {
 	}
 
 	@Test
+	public void trainingDeploymentMaterializesLoadedDisposableWeapon()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = saves.loadProfile();
+		profile.selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+		saves.saveProfile(profile);
+		BukovRaidCoordinator raid = BukovRaidCoordinator.start(
+				saves,
+				91L,
+				"runtime-training",
+				40f,
+				Collections.singletonList(ExtractionState.basic()));
+
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime =
+				adapter().materialize(raid);
+		Hero hero = new Hero();
+		Dungeon.hero = hero;
+		runtime.installOn(hero);
+
+		assertNotNull(runtime.primaryWeapon());
+		assertEquals("needle_9", runtime.primaryWeapon().definitionId());
+		assertEquals(12, runtime.primaryWeapon().magazineAmmo());
+		assertSame(runtime.primaryWeapon(), hero.belongings.weapon);
+		assertSame(runtime.primaryWeapon(), Dungeon.quickslot.getItem(0));
+		assertEquals(1, runtime.reserveAmmo().size());
+		assertEquals(
+				BukovRaidCoordinator.TRAINING_AMMO_QUANTITY - 12,
+				runtime.reserveAmmo().get(0).quantity());
+		assertEquals(
+				"ammo_9_training",
+				runtime.reserveAmmo().get(0).definitionId());
+		assertEquals(0, saves.loadProfile().stash().distinctItemCount());
+	}
+
+	@Test
 	public void runtimeConsumptionWritesBackBeforeSuccessOrDeath()
 			throws IOException {
 		LootTransaction successLedger = deployedLedger(

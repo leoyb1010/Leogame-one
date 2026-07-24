@@ -15,8 +15,8 @@ import com.watabou.utils.PointF;
 public final class BukovShellFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.30f;
-	private static final int FRIENDLY_COLOR = 0xD6B85F;
-	private static final int HOSTILE_COLOR = 0xA87348;
+	static final int FRIENDLY_COLOR = 0xFFD6B85F;
+	static final int HOSTILE_COLOR = 0xFFA87348;
 
 	private final ShellTrajectory trajectory;
 	private final ColorBlock casing;

@@ -12,6 +12,7 @@ import com.watabou.utils.PointF;
 public final class BukovImpactFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.14f;
+	static final int FRIENDLY_COLOR = 0xFFFFF0B2;
 
 	private final float duration;
 	private float age;
@@ -26,7 +27,7 @@ public final class BukovImpactFx extends Group {
 			return;
 		}
 		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
-		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : 0xFFF0B2;
+		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : FRIENDLY_COLOR;
 		float rayLength = 2.2f + strength * 1.7f;
 		for (int index = 0; index < 4; index++) {
 			add(new SparkRay(impact, rayLength, 0.75f, index * 90f + 45f, color));

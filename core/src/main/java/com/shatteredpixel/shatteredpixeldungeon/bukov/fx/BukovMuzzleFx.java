@@ -12,6 +12,7 @@ import com.watabou.utils.PointF;
 public final class BukovMuzzleFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.12f;
+	static final int FRIENDLY_COLOR = 0xFFFFF1A6;
 
 	private final float duration;
 	private float age;
@@ -34,7 +35,7 @@ public final class BukovMuzzleFx extends Group {
 		}
 		float angle = (float) Math.toDegrees(Math.atan2(direction.y, direction.x));
 		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
-		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : 0xFFF1A6;
+		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : FRIENDLY_COLOR;
 		add(new FlashRay(muzzle, 4.2f * strength, 1.4f, angle, color));
 		add(new FlashRay(muzzle, 2.7f * strength, 0.8f, angle - 24f, color));
 		add(new FlashRay(muzzle, 2.7f * strength, 0.8f, angle + 24f, color));

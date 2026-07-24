@@ -106,7 +106,19 @@ public class BukovDeploymentFlowTest {
 		assertEquals(3, deployed.stash().distinctItemCount());
 		assertEquals(0, deployed.loadout().distinctItemCount());
 		assertEquals(0, deployed.raidsStarted());
-		assertEquals(0, raid.loot().distinctItemCount());
+		assertEquals(2, raid.loot().distinctItemCount());
+		assertEquals(
+				BukovRaidCoordinator.TRAINING_FIREARM_DEFINITION,
+				findByDefinition(
+						raid,
+						BukovRaidCoordinator.TRAINING_FIREARM_DEFINITION)
+						.definitionId());
+		assertEquals(
+				BukovRaidCoordinator.TRAINING_AMMO_QUANTITY,
+				findByDefinition(
+						raid,
+						BukovRaidCoordinator.TRAINING_AMMO_DEFINITION)
+						.quantity());
 		assertEquals(BukovRaidMode.TRAINING_GROUND,
 				raid.session().raidMode());
 
@@ -128,6 +140,37 @@ public class BukovDeploymentFlowTest {
 		assertEquals(0, settled.raidsStarted());
 		assertEquals(0, settled.statistics().deaths());
 		assertTrue(settled.isSettled("training-safe"));
+		for (RaidItem item : settled.stash().items()) {
+			assertFalse(item.itemUid().startsWith("training:"));
+		}
+	}
+
+	@Test
+	public void trainingCheckpointResumeKeepsOneDisposableKit()
+			throws IOException {
+		BukovSaveService saves = preparedProfile();
+		BukovProfile profile = saves.loadProfile();
+		profile.selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+		saves.saveProfile(profile);
+
+		BukovRaidCoordinator started = start(saves, "training-resume");
+		assertEquals(2, started.loot().distinctItemCount());
+		started.saveCheckpoint();
+
+		BukovRaidCoordinator resumed = BukovRaidCoordinator.resume(saves);
+		assertEquals(2, resumed.loot().distinctItemCount());
+		assertEquals(
+				1,
+				findByDefinition(
+						resumed,
+						BukovRaidCoordinator.TRAINING_FIREARM_DEFINITION)
+						.quantity());
+		assertEquals(
+				BukovRaidCoordinator.TRAINING_AMMO_QUANTITY,
+				findByDefinition(
+						resumed,
+						BukovRaidCoordinator.TRAINING_AMMO_DEFINITION)
+						.quantity());
 	}
 
 	private static BukovSaveService preparedProfile() throws IOException {
@@ -152,6 +195,17 @@ public class BukovDeploymentFlowTest {
 	private static void completeExtraction(BukovRaidCoordinator raid) {
 		assertTrue(raid.beginExtraction("E01"));
 		raid.tick(5f, ExtractionState.Interaction.ACTIVE);
+	}
+
+	private static RaidItem findByDefinition(
+			BukovRaidCoordinator raid,
+			String definitionId) {
+		for (RaidItem item : raid.loot().items()) {
+			if (definitionId.equals(item.definitionId())) {
+				return item;
+			}
+		}
+		throw new AssertionError("Missing raid item: " + definitionId);
 	}
 
 	private static final class FailingProfileSaveService

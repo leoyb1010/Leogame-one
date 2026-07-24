@@ -369,7 +369,8 @@ public final class BukovHubViewModel {
 			}
 		}
 		if (primary == null) {
-			return "至少选择一把主武器";
+			return "正式行动至少需要一把主武器；请在配装中选择枪械，"
+					+ "或进入演练场使用免费装备";
 		}
 		for (RaidItem item : selectedItems) {
 			if (compatible(

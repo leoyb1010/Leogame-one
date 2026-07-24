@@ -14,19 +14,18 @@ import com.watabou.utils.PointF;
  */
 public final class BukovTracerFx extends Group {
 
-	/**
-	 * Long enough to survive several frames at both 60 and 120 fps. The old
-	 * 80 ms trace was technically rendered but was easy to miss during normal
-	 * mouse/touch input, which made consumed ammunition look like a failed
-	 * shot.
-	 */
-	public static final float DURATION_SECONDS = 0.24f;
+	/** Fast head travel followed by a short, readable residual streak. */
+	public static final float TRAVEL_SECONDS = 0.28f;
+	public static final float DURATION_SECONDS = 0.54f;
 	// Warm white stays readable against all six blue/green industrial themes.
-	public static final int FRIENDLY_COLOR = 0xFFF1A8;
-	public static final int HOSTILE_COLOR = 0xFF765E;
+	// ColorBlock consumes ARGB, so the alpha byte must be explicit.
+	public static final int FRIENDLY_COLOR = 0xFFFFF1A8;
+	public static final int HOSTILE_COLOR = 0xFFFF765E;
+	static final int HEAD_OUTLINE_COLOR = 0xFF101820;
 
 	private final float duration;
 	private final TraceGeometry geometry;
+	private final BulletHead bulletHeadOutline;
 	private final BulletHead bulletHead;
 	private float age;
 	private boolean hasPresentedTravelFrame;
@@ -35,6 +34,7 @@ public final class BukovTracerFx extends Group {
 		geometry = plan(from, to, intensity);
 		duration = DURATION_SECONDS;
 		if (!geometry.visible()) {
+			bulletHeadOutline = null;
 			bulletHead = null;
 			visible = false;
 			kill();
@@ -58,12 +58,23 @@ public final class BukovTracerFx extends Group {
 				geometry.angleDegrees(),
 				color,
 				1f));
+		bulletHeadOutline = new BulletHead(
+				geometry.fromX(),
+				geometry.fromY(),
+				geometry.angleDegrees(),
+				HEAD_OUTLINE_COLOR,
+				outlineWidthFor(geometry.coreThickness()),
+				outlineHeightFor(geometry.coreThickness()),
+				false);
+		add(bulletHeadOutline);
 		bulletHead = new BulletHead(
 				geometry.fromX(),
 				geometry.fromY(),
 				geometry.angleDegrees(),
 				color,
-				geometry.coreThickness());
+				headWidthFor(geometry.coreThickness()),
+				headHeightFor(geometry.coreThickness()),
+				true);
 		add(bulletHead);
 	}
 
@@ -72,21 +83,27 @@ public final class BukovTracerFx extends Group {
 		super.update();
 		boolean hadPresentedTravelFrame = hasPresentedTravelFrame;
 		age += Game.elapsed;
-		float alpha = alphaAt(age, duration);
+		float trailAlpha = trailAlphaAt(age);
 		for (int index = 0; index < length; index++) {
 			com.watabou.noosa.Gizmo child = members.get(index);
 			if (child instanceof LightLine) {
-				((LightLine) child).fade(alpha);
+				((LightLine) child).fade(trailAlpha);
 			}
 		}
 		if (bulletHead != null) {
-			float progress = travelProgressAt(age, duration);
-			bulletHead.moveTo(
-					geometry.fromX()
-							+ (geometry.toX() - geometry.fromX()) * progress,
-					geometry.fromY()
-							+ (geometry.toY() - geometry.fromY()) * progress);
-			bulletHead.fade(alpha);
+			float progress = travelProgressAt(age, TRAVEL_SECONDS);
+			float headX = geometry.fromX()
+					+ (geometry.toX() - geometry.fromX()) * progress;
+			float headY = geometry.fromY()
+					+ (geometry.toY() - geometry.fromY()) * progress;
+			float headAlpha = headAlphaAt(age);
+			if (age >= duration && !hadPresentedTravelFrame) {
+				headAlpha = Math.max(0.55f, headAlpha);
+			}
+			bulletHeadOutline.moveTo(headX, headY);
+			bulletHeadOutline.fade(headAlpha * 0.9f);
+			bulletHead.moveTo(headX, headY);
+			bulletHead.fade(headAlpha);
 			hasPresentedTravelFrame |= progress > 0f;
 		}
 		if (shouldExpireAfterUpdate(age, duration, hadPresentedTravelFrame)) {
@@ -135,6 +152,48 @@ public final class BukovTracerFx extends Group {
 			return 0f;
 		}
 		return clamp(age / duration, 0f, 1f);
+	}
+
+	static float trailAlphaAt(float age) {
+		if (!finite(age) || age < 0f || age >= DURATION_SECONDS) {
+			return 0f;
+		}
+		if (age <= TRAVEL_SECONDS) {
+			return 1f;
+		}
+		return clamp(
+				1f - (age - TRAVEL_SECONDS) / (DURATION_SECONDS - TRAVEL_SECONDS),
+				0f,
+				1f);
+	}
+
+	static float headAlphaAt(float age) {
+		if (!finite(age) || age < 0f || age >= DURATION_SECONDS) {
+			return 0f;
+		}
+		if (age <= TRAVEL_SECONDS) {
+			return 1f;
+		}
+		// The projectile arrives instantly for gameplay, but the endpoint
+		// remains bright long enough for the eye to connect shot and impact.
+		float residual = trailAlphaAt(age);
+		return clamp(residual * residual, 0f, 1f);
+	}
+
+	static float headWidthFor(float coreThickness) {
+		return Math.max(8f, coreThickness * 4.8f);
+	}
+
+	static float headHeightFor(float coreThickness) {
+		return Math.max(3.2f, coreThickness * 2.2f);
+	}
+
+	static float outlineWidthFor(float coreThickness) {
+		return Math.max(11f, coreThickness * 6.2f);
+	}
+
+	static float outlineHeightFor(float coreThickness) {
+		return Math.max(5f, coreThickness * 3f);
 	}
 
 	/**
@@ -203,18 +262,20 @@ public final class BukovTracerFx extends Group {
 				float y,
 				float angle,
 				int color,
-				float coreThickness) {
-			super(
-					Math.max(6f, coreThickness * 4.4f),
-					Math.max(2.4f, coreThickness * 2f),
-					color);
+				float width,
+				float height,
+				boolean additive) {
+			super(width, height, color);
 			// ColorBlock's source texture is one pixel; the scale holds the
 			// authored size, so 0.5/0.5 is its actual transform origin.
 			origin.set(0.5f, 0.5f);
 			this.x = x - origin.x;
 			this.y = y - origin.y;
 			this.angle = angle;
+			this.additive = additive;
 		}
+
+		private final boolean additive;
 
 		private void moveTo(float centerX, float centerY) {
 			x = centerX - origin.x;
@@ -222,14 +283,18 @@ public final class BukovTracerFx extends Group {
 		}
 
 		private void fade(float alpha) {
-			alpha(Math.max(0.35f, alpha));
+			alpha(clamp(alpha, 0f, 1f));
 		}
 
 		@Override
 		public void draw() {
-			Blending.setLightMode();
+			if (additive) {
+				Blending.setLightMode();
+			}
 			super.draw();
-			Blending.setNormalMode();
+			if (additive) {
+				Blending.setNormalMode();
+			}
 		}
 	}
 
