@@ -568,7 +568,7 @@ public final class BukovRealtimeWorld
 			if (active != null) {
 				target.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
-						"搜索容器",
+						containerSearchLabel(active.lootTableId, true),
 						active.progressFraction,
 						active.searchSeconds);
 				return;
@@ -633,7 +633,10 @@ public final class BukovRealtimeWorld
 							? "使用维修钥匙解锁"
 							: maintenanceLock
 									? "需要维修钥匙"
-							: locked ? "容器已锁定" : "搜索容器",
+							: locked ? "容器已锁定"
+									: containerSearchLabel(
+											nearby.lootTableId,
+											false),
 					0f,
 					nearby.searchSeconds);
 			return;
@@ -647,22 +650,30 @@ public final class BukovRealtimeWorld
 				Dungeon.level.heaps,
 				extractionCell);
 		if (heapCell >= 0) {
+			Heap nearbyHeap = Dungeon.level.heaps.get(heapCell);
 			target.interaction(
 					BukovRaidHudState.Interaction.PICKUP,
-					"拾取物资",
+					heapPickupLabel(nearbyHeap),
 					0f,
 					0f);
 			pointHudNavigation(
 					target,
 					BukovRaidHudState.Cue.PICKUP,
 					heapCell,
-					"可拾取物资",
+					containsMissionArchive(nearbyHeap)
+							? "拾取维修通道档案"
+							: "可拾取物资",
 					true);
 			return;
 		}
 
+		int nearbyGateCell = nearestMissionGateCell(
+				hero.pos,
+				Dungeon.level.width(),
+				Dungeon.level.length(),
+				missionGateCells);
 		if (!missionGateUnlocked
-				&& withinInteractionRange(hero.pos, missionGateCell)) {
+				&& withinInteractionRange(hero.pos, nearbyGateCell)) {
 			target.interaction(
 					BukovRaidHudState.Interaction.LOCKED,
 					"通道锁定 · 先找到维修档案",
@@ -671,7 +682,7 @@ public final class BukovRealtimeWorld
 			pointHudNavigation(
 					target,
 					BukovRaidHudState.Cue.MISSION,
-					missionGateCell,
+					nearbyGateCell,
 					"维修通道",
 					false);
 		}
@@ -1329,7 +1340,11 @@ public final class BukovRealtimeWorld
 							nextAudioPitch(1f, 0.02f)
 					);
 					releaseCompletedContainer(active.containerId);
-					if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+					if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(
+							active.lootTableId)) {
+						showHeroStatus(
+								"档案柜已打开，按E拾取维修通道档案");
+					} else if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
 							active.lootTableId)) {
 						showHeroStatus(
 								"高价值物资已确认，条件撤离许可已解锁");
@@ -1616,7 +1631,7 @@ public final class BukovRealtimeWorld
 					0.9f,
 					1f
 			);
-			showHeroStatus("档案验证成功，维修通道已开放");
+			showHeroStatus("档案验证成功，维修通道已开放 · 前往高价值仓");
 			return true;
 		} catch (IOException failure) {
 			ShatteredPixelDungeon.reportException(failure);
@@ -1888,13 +1903,18 @@ public final class BukovRealtimeWorld
 
 	private boolean movementPointsTowardMissionGate(
 			float requestedX, float requestedY) {
-		if (missionGateCell < 0
+		int targetGateCell = nearestMissionGateCell(
+				hero.pos,
+				Dungeon.level.width(),
+				Dungeon.level.length(),
+				missionGateCells);
+		if (targetGateCell < 0
 				|| requestedX == 0f && requestedY == 0f) {
 			return false;
 		}
 		int width = Dungeon.level.width();
-		float gateX = missionGateCell % width + 0.5f;
-		float gateY = missionGateCell / width + 0.5f;
+		float gateX = targetGateCell % width + 0.5f;
+		float gateY = targetGateCell / width + 0.5f;
 		float toGateX = gateX - heroBody.previousX;
 		float toGateY = gateY - heroBody.previousY;
 		return toGateX * toGateX + toGateY * toGateY <= 3.0625f
@@ -1947,6 +1967,58 @@ public final class BukovRealtimeWorld
 			}
 		}
 		return -1;
+	}
+
+	static int nearestMissionGateCell(
+			int originCell,
+			int width,
+			int length,
+			int[] gateCells) {
+		if (originCell < 0 || originCell >= length || width <= 0
+				|| gateCells == null || gateCells.length == 0) {
+			return -1;
+		}
+		int originX = originCell % width;
+		int originY = originCell / width;
+		int nearest = -1;
+		int nearestDistance = Integer.MAX_VALUE;
+		for (int gateCell : gateCells) {
+			if (gateCell < 0 || gateCell >= length) continue;
+			int distance = Math.max(
+					Math.abs(originX - gateCell % width),
+					Math.abs(originY - gateCell / width));
+			if (distance < nearestDistance) {
+				nearest = gateCell;
+				nearestDistance = distance;
+			}
+		}
+		return nearest;
+	}
+
+	static String containerSearchLabel(
+			String lootTableId,
+			boolean active) {
+		if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(lootTableId)) {
+			return active ? "正在搜索维修间档案柜" : "搜索维修间档案柜";
+		}
+		if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(lootTableId)) {
+			return active ? "正在搜查高价值仓" : "搜查高价值仓";
+		}
+		return active ? "正在搜索容器" : "搜索容器";
+	}
+
+	static String heapPickupLabel(Heap heap) {
+		return containsMissionArchive(heap)
+				? "拾取维修通道档案"
+				: "拾取物资";
+	}
+
+	private static boolean containsMissionArchive(Heap heap) {
+		if (heap == null) return false;
+		for (Item item : heap.items) {
+			if (item instanceof BukovMissionArchive) return true;
+		}
+		return false;
 	}
 
 	private static String formatWeight(float weight) {
@@ -3671,22 +3743,27 @@ public final class BukovRealtimeWorld
 				releaseCompletedContainer(container.containerId);
 			}
 		}
-		ensureReleasedMissionArchiveExists();
+		if (ensureReleasedMissionArchiveExists()) {
+			// The repair changes the host-level heap, not only the raid
+			// checkpoint. Commit both save surfaces now so another interruption
+			// cannot make the unique objective document disappear again.
+			checkpointLootChange();
+		}
 	}
 
-	private void ensureReleasedMissionArchiveExists() {
-		if (missionGateUnlocked || carriesMissionArchive()) return;
+	private boolean ensureReleasedMissionArchiveExists() {
+		if (missionGateUnlocked || carriesMissionArchive()) return false;
 		BukovRaidCoordinator.ContainerSnapshot missionContainer =
 				raid.container(FirstRaidMission.ARCHIVE_CONTAINER_ID);
 		if (missionContainer == null
 				|| missionContainer.state
 						!= BukovSearchableContainer.State.SEARCHED
 				|| !missionContainer.contentsReleased) {
-			return;
+			return false;
 		}
 		for (Heap existing : Dungeon.level.heaps.valueList()) {
 			for (Item item : existing.items) {
-				if (item instanceof BukovMissionArchive) return;
+				if (item instanceof BukovMissionArchive) return false;
 			}
 		}
 
@@ -3715,6 +3792,7 @@ public final class BukovRealtimeWorld
 			heap.sprite.link();
 			heap.sprite.drop();
 		}
+		return true;
 	}
 
 	private void createInteractionMarkers() {

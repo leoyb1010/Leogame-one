@@ -89,6 +89,25 @@ public class LevelCollisionMapDoorTest {
 	}
 
 	@Test
+	public void everyCellOfWideMissionGateChangesCollisionState() {
+		TestLevel level = corridorLevel(Terrain.EMPTY);
+		int first = cell(GATE_X, CORRIDOR_Y);
+		int second = cell(GATE_X + 1, CORRIDOR_Y);
+		int[] gateCells = {first, second};
+		LevelCollisionMap map = new LevelCollisionMap(level);
+
+		assertTrue(MissionGateTerrain.apply(
+				level, gateCells, false, null));
+		assertTrue(map.blocked(GATE_X, CORRIDOR_Y));
+		assertTrue(map.blocked(GATE_X + 1, CORRIDOR_Y));
+
+		assertTrue(MissionGateTerrain.apply(
+				level, gateCells, true, null));
+		assertFalse(map.blocked(GATE_X, CORRIDOR_Y));
+		assertFalse(map.blocked(GATE_X + 1, CORRIDOR_Y));
+	}
+
+	@Test
 	public void enemyRepathsThroughGateAfterMissionUnlock() {
 		TestLevel level = corridorLevel(Terrain.LOCKED_DOOR);
 		int gateCell = cell(GATE_X, CORRIDOR_Y);
