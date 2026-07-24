@@ -79,6 +79,15 @@ public class BukovRaidHudStateTest {
 		state.boss(
 				"白线", 2, 3, "诱饵搜索",
 				67, 100, false, "识别真身", true);
+		state.aim(1f, -1f, true);
+		state.navigation(
+				BukovRaidHudState.Cue.MISSION,
+				-4f,
+				-4f,
+				6f,
+				"维修档案",
+				true);
+		state.threat(3f, 0f, 3f, "拾荒枪手", true);
 
 		state.beginFrame("任务 B", 11f);
 
@@ -93,6 +102,9 @@ public class BukovRaidHudStateTest {
 		assertFalse(state.hitVisible());
 		assertFalse(state.bossActive());
 		assertFalse(state.colorblindAssist());
+		assertFalse(state.aimVisible());
+		assertFalse(state.navigationVisible());
+		assertFalse(state.threatVisible());
 	}
 
 	@Test
@@ -124,5 +136,56 @@ public class BukovRaidHudStateTest {
 				.contains("◇ 弱点开放"));
 		assertTrue(BukovCombatHudFormat.bossObjective(state)
 				.contains("⚠ 建议撤离"));
+	}
+
+	@Test
+	public void aimNavigationAndThreatCarryReadableDirection() {
+		BukovRaidHudState state = new BukovRaidHudState();
+		state.beginFrame("找到维修档案", 5f);
+		state.aim(5f, -5f, true);
+		state.navigation(
+				BukovRaidHudState.Cue.MISSION,
+				-8f,
+				-8f,
+				11.4f,
+				"维修档案",
+				false);
+		state.threat(3f, 0f, 3f, "拾荒枪手", true);
+
+		assertTrue(state.aimVisible());
+		assertEquals(0.7071f, state.aimX(), 0.001f);
+		assertEquals(-0.7071f, state.aimY(), 0.001f);
+		assertTrue(state.firing());
+		assertEquals(
+				BukovRaidHudState.Direction.NW,
+				state.navigationDirection());
+		assertEquals(
+				BukovRaidHudState.Distance.FAR,
+				state.navigationDistance());
+		assertEquals(
+				"◆ ↖ 维修档案 · 远 · 未开放",
+				BukovCombatHudFormat.navigation(state));
+		assertEquals(
+				"⚠ → 拾荒枪手 · 中",
+				BukovCombatHudFormat.threat(state));
+	}
+
+	@Test
+	public void invalidAimAndCueVectorsStayHidden() {
+		BukovRaidHudState state = new BukovRaidHudState();
+		state.beginFrame("任务", 0f);
+		state.aim(Float.NaN, 1f, false);
+		state.navigation(
+				BukovRaidHudState.Cue.PICKUP,
+				0f,
+				0f,
+				1f,
+				"物资",
+				true);
+		state.threat(Float.POSITIVE_INFINITY, 1f, 1f, null, true);
+
+		assertFalse(state.aimVisible());
+		assertFalse(state.navigationVisible());
+		assertFalse(state.threatVisible());
 	}
 }

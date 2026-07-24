@@ -27,11 +27,11 @@ public class BukovSettingsMixPerformanceGuardTest {
 		assertTrue(settings.contains("KEY_BUKOV_PERFORMANCE_PROFILE"));
 		assertTrue(settings.contains(
 				"getInt(KEY_BUKOV_PERFORMANCE_PROFILE, 2, 0, 2)"));
-		assertTrue(window.contains("\"主音量  \""));
-		assertTrue(window.contains("\"音乐音量  \""));
-		assertTrue(window.contains("\"音效音量  \""));
-		assertTrue(window.contains("\"环境声音量  \""));
-		assertTrue(window.contains("\"性能档  \""));
+		assertTrue(window.contains("setCopy(\"主音量\","));
+		assertTrue(window.contains("setCopy(\"音乐音量\","));
+		assertTrue(window.contains("setCopy(\"音效音量\","));
+		assertTrue(window.contains("setCopy(\"环境声音量\","));
+		assertTrue(window.contains("setCopy(\"性能档\","));
 		assertTrue(window.contains("\"高画质\""));
 		assertTrue(window.contains("\"平衡\""));
 		assertTrue(window.contains("\"高帧\""));

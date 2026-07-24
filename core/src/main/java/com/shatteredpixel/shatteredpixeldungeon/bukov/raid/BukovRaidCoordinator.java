@@ -139,7 +139,12 @@ public final class BukovRaidCoordinator {
 		}
 		BukovProfile profile = storedProfile.copy();
 		BukovRaidMode raidMode = profile.selectedRaidMode();
-		int raidOrdinal = profile.beginRaid();
+		// Practice attempts must not advance the four-contract raid counter.
+		// Keep a positive session ordinal for the save schema without mutating
+		// durable economic progress.
+		int raidOrdinal = raidMode.countsTowardEconomyStatistics()
+				? profile.beginRaid()
+				: Math.max(1, profile.raidsStarted());
 		RaidSession session = RaidSession.create(
 				seed,
 				raidId,
@@ -342,8 +347,10 @@ public final class BukovRaidCoordinator {
 			throw new IllegalArgumentException("world definitions are required");
 		}
 		boolean changed = false;
-		changed |= profile.ensureRaidStarted(
-				checkpoint.session().raidOrdinal());
+		if (session().raidMode().countsTowardEconomyStatistics()) {
+			changed |= profile.ensureRaidStarted(
+					checkpoint.session().raidOrdinal());
+		}
 		for (ExtractionState definition : extractionStates) {
 			if (definition == null) {
 				throw new IllegalArgumentException("extraction definition is required");

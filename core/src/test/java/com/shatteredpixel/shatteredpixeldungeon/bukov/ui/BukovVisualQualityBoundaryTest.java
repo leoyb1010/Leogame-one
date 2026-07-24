@@ -31,6 +31,12 @@ public class BukovVisualQualityBoundaryTest {
 		assertTrue(scene.contains("rememberBukovVisibility();"));
 		assertTrue(scene.contains(
 				"Dungeon.level.visited[cell] = true;"));
+		assertTrue(
+				"visited ground must remain materially brighter than unseen space",
+				fog.contains("0x40131D20"));
+		assertTrue(
+				"unseen space must retain a distinct tactical shroud",
+				fog.contains("0xDE0B1012"));
 	}
 
 	@Test
@@ -52,6 +58,14 @@ public class BukovVisualQualityBoundaryTest {
 		assertTrue(world.contains("updateRealtimeCamera(Game.elapsed)"));
 		assertTrue(world.contains("cameraFollow.update("));
 		assertTrue(world.contains("camera.scroll.set("));
+		assertTrue(sceneSource("GameScene.java").contains(
+				"BukovViewport.resolveScroll("));
+	}
+
+	private static String sceneSource(String file) throws Exception {
+		return source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/"
+						+ file);
 	}
 
 	private static String source(String path) throws Exception {

@@ -3,7 +3,6 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.settings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BukovPerformancePolicyTest {
@@ -21,22 +20,18 @@ public class BukovPerformancePolicyTest {
 	}
 
 	@Test
-	public void highFrameRateDeterministicallyReducesPresentationOnly() {
-		assertTrue(BukovPerformancePolicy.renderCombatFx(
-				BukovPerformancePolicy.HIGH_FRAME_RATE,
-				CombatFxEvent.Type.TRACER,
-				2));
-		assertFalse(BukovPerformancePolicy.renderCombatFx(
-				BukovPerformancePolicy.HIGH_FRAME_RATE,
-				CombatFxEvent.Type.TRACER,
-				3));
-		assertTrue(BukovPerformancePolicy.renderCombatFx(
-				BukovPerformancePolicy.HIGH_FRAME_RATE,
-				CombatFxEvent.Type.IMPACT,
-				4));
-		assertFalse(BukovPerformancePolicy.renderCombatFx(
-				BukovPerformancePolicy.HIGH_FRAME_RATE,
-				CombatFxEvent.Type.IMPACT,
-				2));
+	public void everyProfileKeepsCompleteFeedbackForEveryShot() {
+		for (int profile = BukovPerformancePolicy.HIGH_QUALITY;
+				profile <= BukovPerformancePolicy.HIGH_FRAME_RATE;
+				profile++) {
+			for (int sequence = 0; sequence < 16; sequence++) {
+				for (CombatFxEvent.Type type : CombatFxEvent.Type.values()) {
+					assertTrue(BukovPerformancePolicy.renderCombatFx(
+							profile,
+							type,
+							sequence));
+				}
+			}
+		}
 	}
 }

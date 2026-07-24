@@ -7,8 +7,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * The four single-player contracts share one realtime runtime and vary only
- * the pressure, economic exposure, and boss policy.
+ * The four economic contracts share one realtime runtime and vary only the
+ * pressure, economic exposure, and boss policy. Training ground is deliberately
+ * outside that economy: it is a short, repeatable controls-and-ballistics
+ * slice with disposable supplies.
  */
 public enum BukovRaidMode {
 
@@ -27,7 +29,11 @@ public enum BukovRaidMode {
 	BOSS_CONTRACT(
 			"Boss合同", "8-15分钟 · 完整风险 · 白线高权重",
 			8f, 15f, 9f, 8, 3, true, 30f, 1.25f,
-			34, 28, 37, 0.72f, 0.22f, 10);
+			34, 28, 37, 0.72f, 0.22f, 10),
+	TRAINING_GROUND(
+			"演练场", "3-5分钟 · 免费制式装备 · 无仓库损失与经济结算",
+			3f, 5f, 20f, 4, 2, false, Float.MAX_VALUE, 1f,
+			18, 16, 20, 0.22f, 0.55f, 3);
 
 	public final String displayName;
 	public final String summary;
@@ -86,6 +92,7 @@ public enum BukovRaidMode {
 	}
 
 	public float[] pathTunnelChances() {
+		if (this == TRAINING_GROUND) return new float[]{5f, 1f, 0f};
 		if (this == QUICK_SWEEP) return new float[]{4f, 1f, 0f};
 		if (this == SCAVENGER) return new float[]{3f, 2f, 0f};
 		if (this == BOSS_CONTRACT) return new float[]{1f, 2f, 2f};
@@ -93,13 +100,23 @@ public enum BukovRaidMode {
 	}
 
 	public float[] branchTunnelChances() {
+		if (this == TRAINING_GROUND) return new float[]{4f, 1f, 0f};
 		if (this == QUICK_SWEEP) return new float[]{3f, 1f, 0f};
 		if (this == BOSS_CONTRACT) return new float[]{1f, 2f, 1f};
 		return new float[]{1f, 1f, 0f};
 	}
 
 	public boolean usesPlayerLoadout() {
-		return this != SCAVENGER;
+		return this != SCAVENGER && this != TRAINING_GROUND;
+	}
+
+	/** Training attempts never enter the four-mode economy ledger. */
+	public boolean countsTowardEconomyStatistics() {
+		return this != TRAINING_GROUND;
+	}
+
+	public boolean trainingGround() {
+		return this == TRAINING_GROUND;
 	}
 
 	public boolean protectsHighestValueDeploymentOnDeath() {
@@ -190,14 +207,15 @@ public enum BukovRaidMode {
 						: first.containerId.compareTo(second.containerId);
 			}
 		});
-		if (this == QUICK_SWEEP && regular.size() > 2) {
+		if ((this == QUICK_SWEEP || this == TRAINING_GROUND)
+				&& regular.size() > 2) {
 			regular = new ArrayList<>(regular.subList(0, 2));
 		}
 		List<BukovContainerDefinition> result = new ArrayList<>();
 		for (BukovContainerDefinition definition : regular) {
 			int rolls = definition.rolls;
 			float search = definition.searchSeconds;
-			if (this == QUICK_SWEEP) {
+			if (this == QUICK_SWEEP || this == TRAINING_GROUND) {
 				rolls = Math.max(1, rolls - 1);
 				search *= 0.75f;
 			} else if (this == SCAVENGER) {

@@ -25,6 +25,12 @@ public class BukovVisualQualityGuardTest {
 		assertFalse(
 				"Bukov raids must use the normal integer world zoom; maxZoom makes Retina output look low-resolution",
 				source.contains("Camera.main.zoom(maxZoom)"));
+		assertFalse(
+				"Bukov raids must not add another magnification step over the user's integer pixel zoom",
+				source.contains("+ (BukovMode.active() ? 1 : 0)"));
+		assertTrue(
+				"The final camera presentation path must enforce map bounds and physical-pixel alignment",
+				source.contains("BukovViewport.resolveScroll("));
 	}
 
 	@Test

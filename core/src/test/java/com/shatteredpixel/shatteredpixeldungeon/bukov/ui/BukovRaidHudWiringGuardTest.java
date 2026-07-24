@@ -30,6 +30,12 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(world.contains("selectVisibleLootHeap("));
 		assertTrue(world.contains("target.sound(keySoundVisual)"));
 		assertTrue(world.contains("target.hit("));
+		assertTrue(world.contains("target.aim("));
+		assertTrue(world.contains("readNavigationHudState(target, elapsed)"));
+		assertTrue(world.contains("readThreatHudState(target)"));
+		assertTrue(world.contains("BukovRaidHudState.Cue.PICKUP"));
+		assertTrue(world.contains("BukovRaidHudState.Cue.MISSION"));
+		assertTrue(world.contains("BukovRaidHudState.Cue.EXTRACTION"));
 		assertTrue(world.contains("readBossHudState(target)"));
 		assertTrue(world.contains("SPDSettings.bukovDamageNumbers()"));
 		assertTrue(world.contains("shouldShowDamageNumber("));
@@ -44,9 +50,27 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovCombatHudFormat.sound(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.hit(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.bossTitle(live)"));
+		assertTrue(hud.contains("BukovCombatHudFormat.navigation(live)"));
+		assertTrue(hud.contains("BukovCombatHudFormat.threat(live)"));
+		assertTrue(hud.contains("positionReticle(crosshairX, crosshairY)"));
+		assertTrue(hud.contains("camera.width"));
+		assertTrue(hud.contains("camera.height"));
 		assertTrue(hud.contains("live.bossHealthFraction()"));
 		assertFalse(hud.contains("Actor."));
 		assertFalse(hud.contains("Random."));
+	}
+
+	@Test
+	public void combatBarIsShallowAndKeepsWorldSpaceFeedbackOutOfIt()
+			throws Exception {
+		String hud = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java");
+		assertTrue(hud.contains(
+				"availableWidth >= WIDE_THRESHOLD ? 38f : 48f"));
+		assertTrue(hud.contains("layoutCombatOverlay(actualHeight)"));
+		assertTrue(hud.contains("centerY + aimRadius + 14f"));
+		assertFalse(hud.contains(
+				"availableWidth >= WIDE_THRESHOLD ? 60f : 86f"));
 	}
 
 	@Test

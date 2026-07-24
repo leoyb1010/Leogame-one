@@ -279,7 +279,12 @@ public class BukovLevel extends RegularLevel {
 		generationAttempts++;
 		if (!super.build()) return false;
 
-		ThemeDefinition theme = themeForSeed(Dungeon.seedCurDepth());
+		// A fixed bright theme and longer sightline make the training slice a
+		// readable ballistics range rather than another fog-heavy contract.
+		if (raidMode.trainingGround()) viewDistance = 24;
+		ThemeDefinition theme = raidMode.trainingGround()
+				? themeForId("cold_storage")
+				: themeForSeed(Dungeon.seedCurDepth());
 		color1 = theme.primaryColor;
 		color2 = theme.secondaryColor;
 		BukovRoomGraphAdapter.AdaptedMap candidate = BukovRoomGraphAdapter.adapt(
@@ -464,6 +469,7 @@ public class BukovLevel extends RegularLevel {
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
+		if (raidMode.trainingGround()) viewDistance = 24;
 		Bundlable restored = bundle.get(RAID_LAYOUT);
 		if (!(restored instanceof BukovRaidLayout)) {
 			throw new IllegalStateException("Bukov save is missing a valid raid layout");

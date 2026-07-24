@@ -69,8 +69,10 @@ public class BukovGameUiShellGuardTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovPause.java");
 
 		assertTrue(pause.contains("\"继续行动\""));
-		assertTrue(pause.contains("\"设置\""));
+		assertTrue(pause.contains("\"行动设置\""));
 		assertTrue(pause.contains("\"保存并返回藏身处\""));
+		assertTrue(pause.contains("new BukovFocusModel(3, CONTINUE)"));
+		assertTrue(pause.contains("new ActionButton[3]"));
 		assertFalse(pause.contains("WndGame"));
 		assertFalse(pause.contains("WndBag"));
 		assertFalse(pause.contains("WndHero"));

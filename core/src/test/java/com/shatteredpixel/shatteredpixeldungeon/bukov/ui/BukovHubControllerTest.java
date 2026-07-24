@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
@@ -58,6 +59,22 @@ public class BukovHubControllerTest {
 		assertFalse(hub.viewModel().stashItems.get(0).selected);
 		assertFalse(hub.viewModel().canDeploy);
 		assertTrue(hub.viewModel().deploymentBlockReason.contains("主武器"));
+	}
+
+	@Test
+	public void modeCycleReachesRiskFreeTrainingGround() throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.selectRaidMode(BukovRaidMode.BOSS_CONTRACT);
+
+		hub.cycleRaidMode();
+
+		assertEquals(BukovRaidMode.TRAINING_GROUND,
+				saves.loadProfile().selectedRaidMode());
+		assertEquals("演练场", hub.viewModel().raidModeName);
+		assertTrue(hub.viewModel().raidModeSummary.contains("无仓库损失"));
+		assertEquals(0, hub.viewModel().selectedCount);
+		assertTrue(hub.viewModel().canDeploy);
 	}
 
 	@Test

@@ -135,6 +135,18 @@ public final class RaidSettlement {
 			return existing.result(true);
 		}
 
+		if (!raidMode.countsTowardEconomyStatistics()) {
+			return settleTrainingAttempt(
+					profile,
+					carriedLoot,
+					outcome,
+					fingerprint,
+					debriefAvailable,
+					elapsedSeconds,
+					kills,
+					missionCompleted);
+		}
+
 		BukovProfile working = profile.copy();
 		List<String> transferredUids = new ArrayList<>();
 		List<String> lostUids = new ArrayList<>();
@@ -219,6 +231,43 @@ public final class RaidSettlement {
 
 		// Single in-memory commit point. File persistence can atomically write
 		// this resulting profile through a later BukovSaveService adapter.
+		profile.replaceWith(working);
+		return receipt.result(false);
+	}
+
+	/**
+	 * Practice gear and pickups exist only inside the training checkpoint.
+	 * A zero-value receipt is still persisted so interrupted checkpoint
+	 * deletion remains replay-safe, but stash, currency, contracts and the
+	 * four-mode statistics ledger stay byte-for-byte unchanged.
+	 */
+	private static RaidResult settleTrainingAttempt(
+			BukovProfile profile,
+			LootTransaction carriedLoot,
+			RaidOutcome outcome,
+			String fingerprint,
+			boolean debriefAvailable,
+			float elapsedSeconds,
+			int kills,
+			boolean missionCompleted) {
+		BukovProfile working = profile.copy();
+		SettlementReceipt receipt = SettlementReceipt.create(
+				carriedLoot.raidId(),
+				outcome,
+				fingerprint,
+				Collections.<String>emptyList(),
+				Collections.<String>emptyList(),
+				Collections.<SettlementItemSnapshot>emptyList(),
+				Collections.<SettlementItemSnapshot>emptyList(),
+				0L,
+				0L,
+				0L,
+				0L,
+				debriefAvailable,
+				elapsedSeconds,
+				kills,
+				missionCompleted);
+		working.recordSettlement(receipt);
 		profile.replaceWith(working);
 		return receipt.result(false);
 	}

@@ -27,9 +27,9 @@ public final class WndBukovSettings extends Window {
 	private static final int LANDSCAPE_WIDTH = 230;
 	private static final int LANDSCAPE_HEIGHT = 166;
 	private static final int MARGIN = 4;
-	private static final int HEADER_HEIGHT = 23;
-	private static final int FOOTER_HEIGHT = 23;
-	private static final int ROW_HEIGHT = 18;
+	private static final int HEADER_HEIGHT = 32;
+	private static final int FOOTER_HEIGHT = 26;
+	private static final int ROW_HEIGHT = 20;
 	private static final int GAP = 2;
 
 	private static final int[] DEAD_ZONE_INNER = {10, 16, 22};
@@ -71,12 +71,34 @@ public final class WndBukovSettings extends Window {
 	}
 
 	private void build(int windowWidth, int windowHeight) {
+		ColorBlock header = new ColorBlock(
+				windowWidth,
+				HEADER_HEIGHT - 2,
+				tokens.colorWithAlpha("panel.surface", 255));
+		add(header);
+		ColorBlock headerRule = new ColorBlock(
+				windowWidth,
+				1,
+				tokens.color("accent.valuable"));
+		headerRule.y = HEADER_HEIGHT - 3;
+		add(headerRule);
+
+		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
+				"SYSTEM / ACCESSIBILITY / AUDIO", 5);
+		eyebrow.hardlight(tokens.color("text.secondary"));
+		eyebrow.setPos(MARGIN + 2, 4);
+		add(eyebrow);
+
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"行动体验设置  /  RAID SETTINGS", 9);
+				"行动体验设置", 10);
 		title.hardlight(tokens.color("accent.valuable"));
-		title.setRect(MARGIN, 4, windowWidth - MARGIN * 2, 13);
-		title.align(RenderedTextBlock.CENTER_ALIGN);
+		title.setPos(MARGIN + 2, 14);
 		add(title);
+		RenderedTextBlock saved = PixelScene.renderTextBlock(
+				"即时生效 · 本地保存", 6);
+		saved.hardlight(tokens.color("accent.extract"));
+		saved.setPos(windowWidth - MARGIN - saved.width() - 2, 17);
+		add(saved);
 
 		SettingsList list = new SettingsList(windowWidth - MARGIN * 2);
 		scroll = new ScrollPane(list);
@@ -91,9 +113,9 @@ public final class WndBukovSettings extends Window {
 		buttons[Setting.CLOSE.ordinal()] = close;
 		close.setRect(
 				MARGIN,
-				windowHeight - FOOTER_HEIGHT + GAP,
+				windowHeight - FOOTER_HEIGHT + 3,
 				windowWidth - MARGIN * 2,
-				ROW_HEIGHT);
+				ROW_HEIGHT + 1);
 		add(close);
 	}
 
@@ -215,12 +237,16 @@ public final class WndBukovSettings extends Window {
 		private final ColorBlock background;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
-		private final RenderedTextBlock text;
+		private final ColorBlock valueSurface;
+		private final RenderedTextBlock label;
+		private final RenderedTextBlock value;
 
 		private SettingButton(Setting setting) {
 			this.setting = setting;
 			background = new ColorBlock(
-					1, 1, tokens.color("panel.surface"));
+					1,
+					1,
+					tokens.colorWithAlpha("panel.surface", 235));
 			addToBack(background);
 			edge = new ColorBlock(
 					1,
@@ -233,10 +259,25 @@ public final class WndBukovSettings extends Window {
 					1, 1, tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			text = PixelScene.renderTextBlock(7);
-			text.hardlight(tokens.color("text.primary"));
-			text.align(RenderedTextBlock.CENTER_ALIGN);
-			add(text);
+			valueSurface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha(
+							setting == Setting.CLOSE
+									? "accent.extract"
+									: "ink.background",
+							setting == Setting.CLOSE ? 44 : 190));
+			add(valueSurface);
+			label = PixelScene.renderTextBlock(7);
+			label.hardlight(tokens.color("text.primary"));
+			add(label);
+			value = PixelScene.renderTextBlock(7);
+			value.hardlight(tokens.color(
+					setting == Setting.CLOSE
+							? "accent.extract"
+							: "accent.interact"));
+			value.align(RenderedTextBlock.RIGHT_ALIGN);
+			add(value);
 			refreshLabel();
 		}
 
@@ -350,107 +391,117 @@ public final class WndBukovSettings extends Window {
 
 		private void setFocused(boolean focused) {
 			focusEdge.visible = focused;
-			text.hardlight(focused
+			label.hardlight(focused
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+			value.hardlight(focused
+					? tokens.color("text.primary")
+					: setting == Setting.CLOSE
+					? tokens.color("accent.extract")
+					: tokens.color("accent.interact"));
 		}
 
 		private void refreshLabel() {
 			switch (setting) {
 				case REDUCE_MOTION:
-					text.text("减少动效  "
-							+ enabled(SPDSettings.bukovReduceMotion()));
+					setCopy("减少动效",
+							enabled(SPDSettings.bukovReduceMotion()));
 					break;
 				case REDUCE_FLASHES:
-					text.text("降低闪光  "
-							+ enabled(SPDSettings.bukovReduceFlashes()));
+					setCopy("降低闪光",
+							enabled(SPDSettings.bukovReduceFlashes()));
 					break;
 				case COLORBLIND:
-					text.text("色盲辅助  "
-							+ enabled(SPDSettings.bukovColorblindAssist()));
+					setCopy("色盲辅助",
+							enabled(SPDSettings.bukovColorblindAssist()));
 					break;
 				case SOUND_VISUALIZATION:
-					text.text("关键声音视觉化  "
-							+ enabled(SPDSettings.bukovSoundVisualization()));
+					setCopy("关键声音视觉化",
+							enabled(SPDSettings.bukovSoundVisualization()));
 					break;
 				case MASTER:
-					text.text("主音量  "
-							+ volumeLabel(SPDSettings.bukovMasterVolume()));
+					setCopy("主音量",
+							volumeLabel(SPDSettings.bukovMasterVolume()));
 					break;
 				case MUSIC:
-					text.text("音乐音量  "
-							+ volumeLabel(SPDSettings.bukovMusicVolume()));
+					setCopy("音乐音量",
+							volumeLabel(SPDSettings.bukovMusicVolume()));
 					break;
 				case SFX:
-					text.text("音效音量  "
-							+ volumeLabel(SPDSettings.bukovSfxVolume()));
+					setCopy("音效音量",
+							volumeLabel(SPDSettings.bukovSfxVolume()));
 					break;
 				case AMBIENCE:
-					text.text("环境声音量  "
-							+ volumeLabel(SPDSettings.bukovAmbienceVolume()));
+					setCopy("环境声音量",
+							volumeLabel(SPDSettings.bukovAmbienceVolume()));
 					break;
 				case PERFORMANCE:
-					text.text("性能档  "
-							+ performanceLabel(
+					setCopy("性能档",
+							performanceLabel(
 									SPDSettings.bukovPerformanceProfile()));
 					break;
 				case UI_SCALE:
-					text.text("UI 缩放  "
-							+ percentLevel(SPDSettings.bukovUiScale()));
+					setCopy("UI 缩放",
+							percentLevel(SPDSettings.bukovUiScale()));
 					break;
 				case SHAKE:
-					text.text("屏幕震动  "
-							+ scaleLabel(SPDSettings.screenShake(), 4));
+					setCopy("屏幕震动",
+							scaleLabel(SPDSettings.screenShake(), 4));
 					break;
 				case VIBRATION:
-					text.text("手柄震动  "
-							+ threeLevel(
+					setCopy("手柄震动",
+							threeLevel(
 									SPDSettings.bukovControllerVibration()));
 					break;
 				case DAMAGE_NUMBERS:
-					text.text("伤害数字  "
-							+ damageNumbersLabel(
+					setCopy("伤害数字",
+							damageNumbersLabel(
 									SPDSettings.bukovDamageNumbers()));
 					break;
 				case AIM_ASSIST:
-					text.text("辅助瞄准  "
-							+ aimAssistLabel(SPDSettings.bukovAimAssist()));
+					setCopy("辅助瞄准",
+							aimAssistLabel(SPDSettings.bukovAimAssist()));
 					break;
 				case LEFT_DEAD_ZONE:
-					text.text("左摇杆死区  "
-							+ deadZoneLabel(
+					setCopy("左摇杆死区",
+							deadZoneLabel(
 									SPDSettings.bukovLeftInnerDeadZone(),
 									SPDSettings.bukovLeftOuterDeadZone()));
 					break;
 				case RIGHT_DEAD_ZONE:
-					text.text("右摇杆死区  "
-							+ deadZoneLabel(
+					setCopy("右摇杆死区",
+							deadZoneLabel(
 									SPDSettings.bukovRightInnerDeadZone(),
 									SPDSettings.bukovRightOuterDeadZone()));
 					break;
 				case AIM_CURVE:
-					text.text("瞄准曲线  "
-							+ (SPDSettings.bukovAimCurve() == 0
-									? "线性" : "经典 S"));
+					setCopy("瞄准曲线",
+							SPDSettings.bukovAimCurve() == 0
+									? "线性" : "经典 S");
 					break;
 				case TRIGGER:
-					text.text("扳机阈值  "
-							+ SPDSettings.bukovTriggerPress()
+					setCopy("扳机阈值",
+							SPDSettings.bukovTriggerPress()
 							+ "% / "
 							+ SPDSettings.bukovTriggerRelease()
 							+ "%");
 					break;
 				case BRIGHTNESS:
-					text.text("地图亮度  "
-							+ brightnessLabel(SPDSettings.brightness()));
+					setCopy("地图亮度",
+							brightnessLabel(SPDSettings.brightness()));
 					break;
 				case CLOSE:
-					text.text("完成 · 返回");
+					setCopy("完成并返回", "BACK");
 					break;
 				default:
 					throw new IllegalStateException(
 							"Unsupported Bukov setting");
 			}
+		}
+
+		private void setCopy(String labelText, String valueText) {
+			label.text(labelText);
+			value.text(valueText);
 		}
 
 		@Override
@@ -463,12 +514,23 @@ public final class WndBukovSettings extends Window {
 			edge.y = y;
 			edge.size(2f, height);
 			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
-			text.setRect(
-					x + 4f,
+			focusEdge.y = y + height - 2;
+			focusEdge.size(width, 2);
+			float valueWidth = setting == Setting.CLOSE
+					? 48f
+					: Math.min(78f, width * 0.46f);
+			valueSurface.x = x + width - valueWidth - 3f;
+			valueSurface.y = y + 3f;
+			valueSurface.size(valueWidth, height - 6f);
+			label.setRect(
+					x + 6f,
 					y + (height - 9f) / 2f,
-					width - 8f,
+					width - valueWidth - 12f,
+					9f);
+			value.setRect(
+					x + width - valueWidth,
+					y + (height - 9f) / 2f,
+					valueWidth - 7f,
 					9f);
 		}
 	}

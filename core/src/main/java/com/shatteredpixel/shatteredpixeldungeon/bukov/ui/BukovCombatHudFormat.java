@@ -41,6 +41,28 @@ public final class BukovCombatHudFormat {
 				+ (state.bossRetreatWarning() ? " · ⚠ 建议撤离" : "");
 	}
 
+	public static String navigation(BukovRaidHudState state) {
+		if (state == null || !state.navigationVisible()) return "";
+		String label = safe(
+				state.navigationLabel(),
+				cueText(state.navigationCue()));
+		String availability = state.navigationAvailable()
+				? "" : " · 未开放";
+		return cueShape(state.navigationCue()) + " "
+				+ directionShape(state.navigationDirection()) + " "
+				+ label + " · "
+				+ distanceText(state.navigationDistance())
+				+ availability;
+	}
+
+	public static String threat(BukovRaidHudState state) {
+		if (state == null || !state.threatVisible()) return "";
+		return (state.threatUrgent() ? "⚠ " : "△ ")
+				+ directionShape(state.threatDirection()) + " "
+				+ safe(state.threatLabel(), "敌情") + " · "
+				+ distanceText(state.threatDistance());
+	}
+
 	static String directionShape(BukovRaidHudState.Direction direction) {
 		if (direction == null) return "•";
 		switch (direction) {
@@ -89,6 +111,20 @@ public final class BukovCombatHudFormat {
 		if (category == SoundCategory.BOSS_CUE) return "Boss预警";
 		if (category == SoundCategory.EXTRACTION_CUE) return "撤离提示";
 		return "关键声音";
+	}
+
+	private static String cueShape(BukovRaidHudState.Cue cue) {
+		if (cue == BukovRaidHudState.Cue.PICKUP) return "◇";
+		if (cue == BukovRaidHudState.Cue.MISSION) return "◆";
+		if (cue == BukovRaidHudState.Cue.EXTRACTION) return "▣";
+		return "•";
+	}
+
+	private static String cueText(BukovRaidHudState.Cue cue) {
+		if (cue == BukovRaidHudState.Cue.PICKUP) return "可拾取物资";
+		if (cue == BukovRaidHudState.Cue.MISSION) return "任务目标";
+		if (cue == BukovRaidHudState.Cue.EXTRACTION) return "撤离点";
+		return "目标";
 	}
 
 	private static String safe(String value, String fallback) {

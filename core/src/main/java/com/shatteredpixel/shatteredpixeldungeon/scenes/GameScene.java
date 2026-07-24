@@ -74,6 +74,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovRealtimeWorld;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovRaidPersistence;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovViewport;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.RealtimeRaidSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
@@ -316,8 +317,7 @@ public class GameScene extends PixelScene {
 		super.create();
 		Camera.main.zoom(GameMath.gate(
 				minZoom,
-				defaultZoom + SPDSettings.zoom()
-						+ (BukovMode.active() ? 1 : 0),
+				defaultZoom + SPDSettings.zoom(),
 				maxZoom));
 		// The right stick is a realtime aiming input in Bukov. Letting the
 		// legacy controller cursor edge-scroll at the same time fights the
@@ -1562,6 +1562,14 @@ public class GameScene extends PixelScene {
 
 			if (BukovMode.active() && bukovRealtime != null) {
 				bukovRealtime.update(Game.elapsed);
+				/*
+				 * RealtimeWorld owns the smooth camera, while this final
+				 * presentation guard keeps that camera inside the authored
+				 * map, aligned to physical pixels and unable to strand the
+				 * operator outside a safe central viewport if another legacy
+				 * pan/follow caller interferes.
+				 */
+				enforceBukovViewport();
 				updateBukovAudio(Game.elapsed);
 				bukovRealtime.drainCombatFx(bukovFxConsumer);
 				if (bukovCombatPresentation != null) {
@@ -1645,6 +1653,29 @@ public class GameScene extends PixelScene {
 			}
 			toDestroy.clear();
 		}
+	}
+
+	private void enforceBukovViewport() {
+		if (hero == null || Camera.main == null || Dungeon.level == null) {
+			return;
+		}
+		float focusX = hero.x + hero.width() * 0.5f;
+		float focusY = hero.y + hero.height() * 0.5f;
+		Camera camera = Camera.main;
+		camera.scroll.set(
+				BukovViewport.resolveScroll(
+						camera.scroll.x,
+						focusX,
+						camera.width,
+						Dungeon.level.width() * DungeonTilemap.SIZE,
+						camera.zoom),
+				BukovViewport.resolveScroll(
+						camera.scroll.y,
+						focusY,
+						camera.height,
+						Dungeon.level.height() * DungeonTilemap.SIZE,
+						camera.zoom)
+		);
 	}
 
 	private static Point lastOffset = null;
@@ -2311,6 +2342,7 @@ public class GameScene extends PixelScene {
 
 	public static void updateFog(int x, int y, int w, int h){
 		if (scene != null) {
+			rememberBukovVisibility();
 			scene.fog.updateFogArea(x, y, w, h);
 			scene.wallBlocking.updateArea(x, y, w, h);
 		}
@@ -2318,6 +2350,7 @@ public class GameScene extends PixelScene {
 	
 	public static void updateFog( int cell, int radius ){
 		if (scene != null) {
+			rememberBukovVisibility();
 			scene.fog.updateFog( cell, radius );
 			scene.wallBlocking.updateArea( cell, radius );
 		}

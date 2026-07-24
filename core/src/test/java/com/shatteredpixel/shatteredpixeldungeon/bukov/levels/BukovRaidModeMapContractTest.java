@@ -13,7 +13,8 @@ import static org.junit.Assert.assertTrue;
 public class BukovRaidModeMapContractTest {
 
 	@Test
-	public void fourModesOwnDistinctPhysicalMapEnvelopes() {
+	public void fourContractsAndTrainingOwnDistinctPhysicalMapEnvelopes() {
+		assertRange(BukovRaidMode.TRAINING_GROUND, 18, 16, 20);
 		assertRange(BukovRaidMode.QUICK_SWEEP, 22, 18, 24);
 		assertRange(BukovRaidMode.SCAVENGER, 26, 22, 29);
 		assertRange(BukovRaidMode.EXPEDITION, 31, 26, 34);

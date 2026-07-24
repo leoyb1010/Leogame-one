@@ -92,6 +92,44 @@ public class BukovDeploymentFlowTest {
 		assertEquals(0, saves.loadProfile().loadout().distinctItemCount());
 	}
 
+	@Test
+	public void trainingDeploymentLeavesStashAndFormalRaidCounterUntouched()
+			throws IOException {
+		BukovSaveService saves = preparedProfile();
+		BukovProfile profile = saves.loadProfile();
+		profile.selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+		profile.setCurrency(2_400L);
+		saves.saveProfile(profile);
+
+		BukovRaidCoordinator raid = start(saves, "training-safe");
+		BukovProfile deployed = saves.loadProfile();
+		assertEquals(3, deployed.stash().distinctItemCount());
+		assertEquals(0, deployed.loadout().distinctItemCount());
+		assertEquals(0, deployed.raidsStarted());
+		assertEquals(0, raid.loot().distinctItemCount());
+		assertEquals(BukovRaidMode.TRAINING_GROUND,
+				raid.session().raidMode());
+
+		raid.pickup(new RaidItem(
+				"practice-ammo",
+				"ammo:ammo_9_training",
+				18,
+				0.012f,
+				0,
+				true,
+				false,
+				1f));
+		RaidResult result = raid.settleDeath();
+		BukovProfile settled = saves.loadProfile();
+
+		assertEquals(0L, result.lostQuantity());
+		assertEquals(3, settled.stash().distinctItemCount());
+		assertEquals(2_400L, settled.currency());
+		assertEquals(0, settled.raidsStarted());
+		assertEquals(0, settled.statistics().deaths());
+		assertTrue(settled.isSettled("training-safe"));
+	}
+
 	private static BukovSaveService preparedProfile() throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
 		BukovProfile profile = saves.loadProfile();

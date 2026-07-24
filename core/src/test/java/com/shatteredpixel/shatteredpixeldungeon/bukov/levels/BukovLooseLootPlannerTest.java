@@ -1,9 +1,12 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovEnemySpawnPlanner;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovEconomicItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovLootItem;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.watabou.noosa.Game;
 
@@ -30,6 +33,7 @@ public class BukovLooseLootPlannerTest {
 	private int previousBranch;
 	private long previousSeed;
 	private String previousVersion;
+	private BukovRaidMode previousRaidMode;
 
 	@Before
 	public void captureGlobals() {
@@ -37,6 +41,7 @@ public class BukovLooseLootPlannerTest {
 		previousBranch = Dungeon.branch;
 		previousSeed = Dungeon.seed;
 		previousVersion = Game.version;
+		previousRaidMode = BukovMode.raidMode();
 		if (Game.version == null) Game.version = "test";
 	}
 
@@ -46,10 +51,12 @@ public class BukovLooseLootPlannerTest {
 		Dungeon.branch = previousBranch;
 		Dungeon.seed = previousSeed;
 		Game.version = previousVersion;
+		BukovMode.prepareRaidMode(previousRaidMode);
 	}
 
 	@Test
 	public void everyFirstRaidAuthorsFiveVisibleGroundPickupsOutsideSpawn() {
+		BukovMode.prepareRaidMode(BukovRaidMode.EXPEDITION);
 		for (long seed : SEEDS) {
 			Dungeon.depth = 1;
 			Dungeon.branch = 0;
@@ -142,5 +149,43 @@ public class BukovLooseLootPlannerTest {
 			assertTrue("seed=" + seed, foundMedical);
 			assertTrue("seed=" + seed, foundSalvage);
 		}
+	}
+
+	@Test
+	public void trainingGroundKeepsAllSuppliesAndLiveTargetsNearDeployment() {
+		BukovMode.prepareRaidMode(BukovRaidMode.TRAINING_GROUND);
+		Dungeon.depth = 1;
+		Dungeon.branch = 0;
+		Dungeon.seed = 94823742L;
+
+		BukovLevel level = new BukovLevel();
+		level.create();
+		List<BukovLooseLootPlanner.Placement> placements =
+				BukovLooseLootPlanner.plan(
+						level.width(),
+						level.height(),
+						level.passable,
+						level.raidLayout(),
+						level.entrance(),
+						BukovRaidMode.TRAINING_GROUND);
+
+		assertEquals(18, level.raidMode().standardRoomBudget);
+		assertEquals("cold_storage", level.raidLayout().themeId);
+		assertEquals(5, placements.size());
+		for (BukovLooseLootPlanner.Placement placement : placements) {
+			assertTrue(placement.distanceFromDeployment
+					<= BukovLooseLootPlanner.TRAINING_INTRODUCTION_RADIUS);
+		}
+
+		int eligibleTargetCells = 0;
+		for (BukovEnemySpawnPlanner.SpawnPoint point :
+				level.enemySpawnPoints()) {
+			if (!point.bossArena
+					&& point.distanceFromSpawnRooms >= 3) {
+				eligibleTargetCells++;
+			}
+		}
+		assertTrue(eligibleTargetCells
+				>= BukovRaidMode.TRAINING_GROUND.initialEnemyCount);
 	}
 }

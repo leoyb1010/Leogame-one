@@ -207,6 +207,9 @@ public final class BukovRoomGraphAdapter {
 			diagnostics.add("NO_HIGH_VALUE_ROOM_AT_DISTANCE_4");
 		}
 
+		int requiredSpawns = raidMode.trainingGround() ? 1
+				: raidMode == BukovRaidMode.QUICK_SWEEP
+						|| raidMode == BukovRaidMode.SCAVENGER ? 2 : 3;
 		List<BukovRaidLayout.Mark> spawns = chooseSpawnCandidates(
 				rooms,
 				marksById,
@@ -214,11 +217,8 @@ public final class BukovRoomGraphAdapter {
 				entrance,
 				originalExit,
 				highValue,
-				raidMode == BukovRaidMode.QUICK_SWEEP
-						|| raidMode == BukovRaidMode.SCAVENGER ? 2 : 3,
+				requiredSpawns,
 				seed);
-		int requiredSpawns = raidMode == BukovRaidMode.QUICK_SWEEP
-				|| raidMode == BukovRaidMode.SCAVENGER ? 2 : 3;
 		if (spawns.size() < requiredSpawns) {
 			diagnostics.add("FEWER_THAN_MODE_SAFE_SPAWN_CANDIDATES:"
 					+ requiredSpawns);
@@ -539,14 +539,18 @@ public final class BukovRoomGraphAdapter {
 			if (!reserved.contains(mark.roomId())) mark.zone = BukovRaidLayout.Zone.TRANSIT;
 		}
 
-		int hazardTarget = raidMode == BukovRaidMode.BOSS_CONTRACT ? 3
+		int hazardTarget = raidMode.trainingGround() ? 0
+				: raidMode == BukovRaidMode.BOSS_CONTRACT ? 3
 				: raidMode == BukovRaidMode.QUICK_SWEEP ? 1 : 2;
-		int medicalTarget = raidMode == BukovRaidMode.QUICK_SWEEP
+		int medicalTarget = raidMode.trainingGround() ? 2
+				: raidMode == BukovRaidMode.QUICK_SWEEP
 				|| raidMode == BukovRaidMode.BOSS_CONTRACT ? 1 : 2;
-		int lowLootTarget = raidMode == BukovRaidMode.QUICK_SWEEP ? 4
+		int lowLootTarget = raidMode.trainingGround() ? 3
+				: raidMode == BukovRaidMode.QUICK_SWEEP ? 4
 				: raidMode == BukovRaidMode.SCAVENGER ? 5
 				: raidMode == BukovRaidMode.BOSS_CONTRACT ? 4 : 6;
-		int combatTarget = raidMode == BukovRaidMode.QUICK_SWEEP ? 3
+		int combatTarget = raidMode.trainingGround() ? 4
+				: raidMode == BukovRaidMode.QUICK_SWEEP ? 3
 				: raidMode == BukovRaidMode.SCAVENGER ? 4
 				: raidMode == BukovRaidMode.BOSS_CONTRACT ? 6 : 5;
 

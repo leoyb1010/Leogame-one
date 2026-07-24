@@ -67,7 +67,9 @@ public final class WndBukovVendor extends Window {
 			int selectedItem,
 			String notice) {
 		super(0, 0, new NinePatch(
-				TextureCache.createSolid(0xFF0E171A), 0));
+				TextureCache.createSolid(
+						BukovUiTokens.loadDefault().colorWithAlpha(
+								"ink.background", 255)), 0));
 		if (controller == null || close == null) {
 			throw new IllegalArgumentException(
 					"controller and close callback are required");
@@ -108,6 +110,18 @@ public final class WndBukovVendor extends Window {
 	}
 
 	private void build(int windowWidth, int windowHeight) {
+		ColorBlock header = new ColorBlock(
+				windowWidth,
+				38,
+				tokens.colorWithAlpha("panel.surface", 255));
+		add(header);
+		ColorBlock headerRule = new ColorBlock(
+				windowWidth,
+				1,
+				tokens.color("accent.valuable"));
+		headerRule.y = 37;
+		add(headerRule);
+
 		RenderedTextBlock eyebrow = text(
 				"TRADING POST / " + tab.name(),
 				6,
@@ -116,7 +130,7 @@ public final class WndBukovVendor extends Window {
 		add(eyebrow);
 
 		RenderedTextBlock cash = text(
-				"现金  " + viewModel.currency,
+				"现金余额  " + viewModel.currency,
 				8,
 				tokens.color("accent.valuable"));
 		cash.setPos(windowWidth - MARGIN - cash.width(), 3);
@@ -139,7 +153,7 @@ public final class WndBukovVendor extends Window {
 				viewModel.tradingLocked
 						? tokens.color("accent.danger")
 						: tokens.color("text.secondary"));
-		hint.setPos(MARGIN, 29);
+		hint.setPos(MARGIN, 28);
 		add(hint);
 
 		int listTop = 40;
@@ -485,8 +499,10 @@ public final class WndBukovVendor extends Window {
 	private final class StockRow extends Button {
 
 		private final int itemIndex;
+		private final ColorBlock background;
 		private final ColorBlock selection;
 		private final ColorBlock focusEdge;
+		private final ColorBlock divider;
 		private final RenderedTextBlock name;
 		private final RenderedTextBlock metrics;
 		private final RenderedTextBlock price;
@@ -494,13 +510,25 @@ public final class WndBukovVendor extends Window {
 
 		private StockRow(int itemIndex) {
 			this.itemIndex = itemIndex;
+			background = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.surface", 220));
+			addToBack(background);
 			selection = new ColorBlock(
-					1, 1, tokens.color("accent.valuable"));
+					1,
+					1,
+					tokens.colorWithAlpha("accent.valuable", 42));
 			add(selection);
 			focusEdge = new ColorBlock(
 					1, 1, tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			divider = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.border", 145));
+			add(divider);
 
 			String rowName;
 			int quantity;
@@ -568,12 +596,18 @@ public final class WndBukovVendor extends Window {
 		@Override
 		protected void layout() {
 			super.layout();
+			background.x = x;
+			background.y = y;
+			background.size(width, height);
 			selection.x = x;
 			selection.y = y;
-			selection.size(2, height);
+			selection.size(width, height);
 			focusEdge.x = x;
 			focusEdge.y = y + height - 1;
-			focusEdge.size(width, 1);
+			focusEdge.size(width, 2);
+			divider.x = x + 4;
+			divider.y = y + height - 1;
+			divider.size(width - 8, 1);
 			price.setPos(x + width - price.width() - 3, y + 5);
 			float copyWidth = Math.max(
 					1,
@@ -602,7 +636,16 @@ public final class WndBukovVendor extends Window {
 			this.action = action;
 			this.enabled = enabled;
 			surface = new ColorBlock(
-					1, 1, tokens.color("panel.surface"));
+					1,
+					1,
+					tokens.colorWithAlpha(
+							action == BukovVendorFocusModel.ACTION_TRADE
+									? tab == Tab.BUY
+											? "accent.valuable"
+											: "accent.extract"
+									: "panel.surface",
+							action == BukovVendorFocusModel.ACTION_TRADE
+									&& enabled ? 40 : 255));
 			addToBack(surface);
 			edge = new ColorBlock(
 					1, 1,
@@ -648,8 +691,8 @@ public final class WndBukovVendor extends Window {
 			edge.y = y;
 			edge.size(2, height);
 			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
+			focusEdge.y = y + height - 2;
+			focusEdge.size(width, 2);
 			label.setPos(
 					x + (width - label.width()) / 2f,
 					y + (height - label.height()) / 2f);

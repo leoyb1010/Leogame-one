@@ -128,10 +128,21 @@ public final class WndBukovBackpack extends Window {
 	}
 
 	private void build(int windowWidth, int windowHeight) {
+		ColorBlock header = new ColorBlock(
+				windowWidth,
+				HEADER_HEIGHT - 1,
+				tokens.colorWithAlpha("panel.surface", 255));
+		add(header);
+		ColorBlock headerRule = new ColorBlock(
+				windowWidth,
+				1,
+				tokens.color("accent.valuable"));
+		headerRule.y = HEADER_HEIGHT - 2;
+		add(headerRule);
 		RenderedTextBlock title = text(
 				"行动背包",
 				11,
-				tokens.color("text.primary"));
+				tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 3);
 		add(title);
 
@@ -142,8 +153,15 @@ public final class WndBukovBackpack extends Window {
 		code.setPos(windowWidth - MARGIN - code.width(), 5);
 		add(code);
 
+		ColorBlock totalsSurface = new ColorBlock(
+				windowWidth - MARGIN * 2,
+				11,
+				tokens.colorWithAlpha("ink.background", 190));
+		totalsSurface.x = MARGIN;
+		totalsSurface.y = 18;
+		add(totalsSurface);
 		totals = text("", 7, tokens.color("accent.valuable"));
-		totals.setRect(MARGIN, 19, windowWidth - MARGIN * 2, 10);
+		totals.setRect(MARGIN + 3, 20, windowWidth - MARGIN * 2 - 6, 8);
 		add(totals);
 		updateTotals();
 
@@ -153,13 +171,28 @@ public final class WndBukovBackpack extends Window {
 		createList(windowWidth, listHeight);
 
 		float footerY = HEADER_HEIGHT + listHeight + GAP;
+		ColorBlock detailSurface = new ColorBlock(
+				windowWidth - MARGIN * 2,
+				31,
+				tokens.colorWithAlpha("panel.surface", 210));
+		detailSurface.x = MARGIN;
+		detailSurface.y = footerY;
+		add(detailSurface);
+		ColorBlock detailEdge = new ColorBlock(
+				2,
+				31,
+				tokens.color("accent.interact"));
+		detailEdge.x = MARGIN;
+		detailEdge.y = footerY;
+		add(detailEdge);
 		detail = text("", 7, tokens.color("text.secondary"));
-		detail.setRect(MARGIN, footerY, windowWidth - MARGIN * 2, 22);
+		detail.setRect(MARGIN + 5, footerY + 3,
+				windowWidth - MARGIN * 2 - 9, 18);
 		add(detail);
 
 		feedback = text("", 6, tokens.color("accent.interact"));
-		feedback.setRect(MARGIN, footerY + 22,
-				windowWidth - MARGIN * 2, 9);
+		feedback.setRect(MARGIN + 5, footerY + 21,
+				windowWidth - MARGIN * 2 - 9, 8);
 		add(feedback);
 
 		float actionY = footerY + 32;
@@ -502,7 +535,10 @@ public final class WndBukovBackpack extends Window {
 
 		private final BukovBackpackViewModel.ItemRow item;
 		private final int itemIndex;
+		private final ColorBlock background;
+		private final ColorBlock stateSurface;
 		private final ColorBlock edge;
+		private final ColorBlock divider;
 		private final RenderedTextBlock category;
 		private final BukovItemSprite icon;
 		private final RenderedTextBlock title;
@@ -515,9 +551,25 @@ public final class WndBukovBackpack extends Window {
 				int itemIndex) {
 			this.item = item;
 			this.itemIndex = itemIndex;
+			background = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.surface", 210));
+			addToBack(background);
+			stateSurface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.extract", 30));
+			stateSurface.visible = false;
+			addToBack(stateSurface);
 			edge = new ColorBlock(1, 1,
 					tokens.color("text.disabled"));
 			add(edge);
+			divider = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.border", 145));
+			add(divider);
 			category = text(
 					item.category.code,
 					6,
@@ -551,6 +603,10 @@ public final class WndBukovBackpack extends Window {
 		}
 
 		private void updateState() {
+			stateSurface.visible = focused || selected;
+			stateSurface.hardlight(focused
+					? tokens.color("accent.interact")
+					: tokens.color("accent.extract"));
 			edge.hardlight(focused
 					? tokens.color("accent.interact")
 					: selected
@@ -575,9 +631,18 @@ public final class WndBukovBackpack extends Window {
 		@Override
 		protected void layout() {
 			super.layout();
+			background.x = x;
+			background.y = y;
+			background.size(width, height);
+			stateSurface.x = x;
+			stateSurface.y = y;
+			stateSurface.size(width, height);
 			edge.x = x;
 			edge.y = y;
 			edge.size(2, height);
+			divider.x = x + 4;
+			divider.y = y + height - 1;
+			divider.size(width - 8, 1);
 			category.setPos(x + 5, y + 4);
 			icon.x = x + 18;
 			icon.y = y + 2;
@@ -600,7 +665,11 @@ public final class WndBukovBackpack extends Window {
 		private TacticalButton(String value, Action action) {
 			this.action = action;
 			surface = new ColorBlock(1, 1,
-					tokens.color("panel.surface"));
+					tokens.colorWithAlpha(
+							action == Action.CLOSE
+									? "accent.extract"
+									: "panel.surface",
+							action == Action.CLOSE ? 36 : 255));
 			addToBack(surface);
 			edge = new ColorBlock(1, 1,
 					action == Action.CLOSE
@@ -658,8 +727,8 @@ public final class WndBukovBackpack extends Window {
 			edge.y = y;
 			edge.size(2, height);
 			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
+			focusEdge.y = y + height - 2;
+			focusEdge.size(width, 2);
 			label.setRect(
 					x + 3,
 					y + (height - 9) / 2f,

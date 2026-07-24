@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -90,6 +91,53 @@ public class BukovModeSettlementPolicyTest {
 			fail("mode change must alter settlement fingerprint");
 		} catch (IllegalStateException expected) {
 			assertTrue(expected.getMessage().contains("payload changed"));
+		}
+	}
+
+	@Test
+	public void trainingSettlementNeverMutatesStashContractsOrStatistics() {
+		for (RaidOutcome outcome : RaidOutcome.values()) {
+			BukovProfile profile = new BukovProfile();
+			profile.setCurrency(7_500L);
+			profile.stash().deposit(item(
+					"safe-" + outcome.name(), 900, false));
+			LootTransaction loot = new LootTransaction(
+					"training-" + outcome.name(), 40f);
+			loot.pickup(item(
+					"practice-" + outcome.name(), 1_600, true));
+
+			RaidResult result = new RaidSettlement().settle(
+					profile,
+					loot,
+					outcome,
+					180f,
+					4,
+					true,
+					BukovRaidMode.TRAINING_GROUND);
+
+			assertEquals(1, profile.stash().distinctItemCount());
+			assertTrue(profile.stash().contains(
+					"safe-" + outcome.name()));
+			assertEquals(7_500L, profile.currency());
+			assertEquals(0, profile.statistics().successfulRaids());
+			assertEquals(0, profile.statistics().deaths());
+			assertEquals(0L, profile.statistics().extractedValue());
+			assertEquals(0L, profile.statistics().lostValue());
+			assertFalse(profile.completedContracts().contains(
+					FirstRaidMission.EVENT_ID));
+			assertEquals(0L, result.transferredQuantity());
+			assertEquals(0L, result.lostQuantity());
+
+			RaidResult replay = new RaidSettlement().settle(
+					profile,
+					loot,
+					outcome,
+					180f,
+					4,
+					true,
+					BukovRaidMode.TRAINING_GROUND);
+			assertTrue(replay.replayed());
+			assertEquals(1, profile.stash().distinctItemCount());
 		}
 	}
 

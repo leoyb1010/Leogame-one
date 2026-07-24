@@ -47,7 +47,7 @@ public class BukovBallisticFxTest {
 	public void tracerHasBriefMonotonicFadeAndHardExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
 
-		assertTrue(duration >= 0.05f && duration <= 0.10f);
+		assertTrue(duration >= 0.14f && duration <= 0.20f);
 		assertEquals(1f, BukovTracerFx.alphaAt(0f, duration), 0f);
 		assertEquals(0.5f, BukovTracerFx.alphaAt(duration * 0.5f, duration), 0.0001f);
 		assertEquals(0f, BukovTracerFx.alphaAt(duration, duration), 0f);
@@ -57,11 +57,25 @@ public class BukovBallisticFxTest {
 	}
 
 	@Test
+	public void brightProjectileHeadTraversesTheWholeHitscanTrace() {
+		float duration = BukovTracerFx.DURATION_SECONDS;
+
+		assertEquals(0f, BukovTracerFx.travelProgressAt(0f, duration), 0f);
+		assertEquals(
+				0.5f,
+				BukovTracerFx.travelProgressAt(duration * 0.5f, duration),
+				0.0001f);
+		assertEquals(1f, BukovTracerFx.travelProgressAt(duration, duration), 0f);
+		assertEquals(1f, BukovTracerFx.travelProgressAt(duration * 2f, duration), 0f);
+		assertEquals(0f, BukovTracerFx.travelProgressAt(Float.NaN, duration), 0f);
+	}
+
+	@Test
 	public void supportingFxStayWithinReadableCombatWindow() {
-		assertTrue(BukovMuzzleFx.DURATION_SECONDS >= 0.05f);
-		assertTrue(BukovMuzzleFx.DURATION_SECONDS <= 0.10f);
-		assertTrue(BukovImpactFx.DURATION_SECONDS >= 0.05f);
-		assertTrue(BukovImpactFx.DURATION_SECONDS <= 0.10f);
+		assertTrue(BukovMuzzleFx.DURATION_SECONDS >= 0.10f);
+		assertTrue(BukovMuzzleFx.DURATION_SECONDS <= 0.16f);
+		assertTrue(BukovImpactFx.DURATION_SECONDS >= 0.12f);
+		assertTrue(BukovImpactFx.DURATION_SECONDS <= 0.18f);
 		assertFalse(BukovTracerFx.FRIENDLY_COLOR == BukovTracerFx.HOSTILE_COLOR);
 	}
 }

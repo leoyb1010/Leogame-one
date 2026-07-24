@@ -19,24 +19,22 @@ public final class BukovPerformancePolicy {
 		if (type == null) {
 			return false;
 		}
-		int safeSequence = Math.max(0, sequence);
+		if (profile < HIGH_QUALITY || profile > HIGH_FRAME_RATE) {
+			throw new IllegalArgumentException(
+					"unknown Bukov performance profile: " + profile);
+		}
+		// Muzzle, tracer and endpoint impact form one small feedback packet for
+		// a hitscan round. Sampling any member made valid shots appear broken
+		// in the default high-frame-rate profile. These effects are pooled and
+		// made from a handful of ColorBlocks, so every profile keeps the packet
+		// intact; heavier atmosphere remains the correct load-shedding target.
 		switch (profile) {
 			case HIGH_QUALITY:
-				return true;
 			case BALANCED:
-				return type != CombatFxEvent.Type.IMPACT
-						|| safeSequence % 2 == 0;
 			case HIGH_FRAME_RATE:
-				if (type == CombatFxEvent.Type.MUZZLE_FLASH) {
-					return safeSequence % 2 == 0;
-				}
-				if (type == CombatFxEvent.Type.IMPACT) {
-					return safeSequence % 4 == 0;
-				}
-				return safeSequence % 2 == 0;
+				return true;
 			default:
-				throw new IllegalArgumentException(
-						"unknown Bukov performance profile: " + profile);
+				throw new AssertionError("validated performance profile");
 		}
 	}
 

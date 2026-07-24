@@ -71,6 +71,27 @@ public class BukovCombatPresentationWiringTest {
 		assertFalse(presentation.contains("Actor.process"));
 	}
 
+	@Test
+	public void playerHitscanAlwaysEmitsTracerAndEndpointImpact() throws Exception {
+		String world = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovRealtimeWorld.java");
+		int fireStart = world.indexOf(
+				"public void fire(Firearm firearm, FirearmDefinition definition)");
+		int fireEnd = world.indexOf(
+				"public FireControl.AmmoSelection requestAmmo(", fireStart);
+		String playerFire = world.substring(fireStart, fireEnd);
+
+		int tracer = playerFire.indexOf("combatFx.tracer(");
+		int impact = playerFire.indexOf("combatFx.impact(", tracer);
+		int targetFilter = playerFire.indexOf(
+				"Char target = charsByBody.get(shotHit.body);", impact);
+		assertTrue(tracer >= 0);
+		assertTrue(impact > tracer);
+		// The impact must be emitted before target filtering so a wall stop is
+		// just as readable as an enemy hit.
+		assertTrue(targetFilter > impact);
+	}
+
 	private static String source(String path) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(path)),

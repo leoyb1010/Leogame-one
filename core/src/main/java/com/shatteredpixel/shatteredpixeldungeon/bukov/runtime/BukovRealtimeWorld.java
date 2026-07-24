@@ -446,6 +446,14 @@ public final class BukovRealtimeWorld
 				hitIndicatorStrength,
 				hitIndicatorRemaining);
 		readBossHudState(target);
+		if (inputFrame != null) {
+			target.aim(
+					inputFrame.aim.x,
+					inputFrame.aim.y,
+					inputFrame.fireHeld);
+		}
+		readNavigationHudState(target, elapsed);
+		readThreatHudState(target);
 		if (raid == null) return;
 
 		int availableExtractions = 0;
@@ -460,6 +468,13 @@ public final class BukovRealtimeWorld
 		if (activeExtractionId != null) {
 			ExtractionState active = raid.extraction(activeExtractionId);
 			if (active != null) {
+				int activeCell = resolveExtractionCell(activeExtractionId);
+				pointHudNavigation(
+						target,
+						BukovRaidHudState.Cue.EXTRACTION,
+						activeCell,
+						"撤离 " + activeExtractionId,
+						active.availableAt(elapsed));
 				target.extraction(
 						availableExtractions,
 						activeExtractionId,
@@ -510,6 +525,12 @@ public final class BukovRealtimeWorld
 		}
 
 		if (extractionHere != null) {
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.EXTRACTION,
+					resolveExtractionCell(extractionHere.extractionId()),
+					"撤离 " + extractionHere.extractionId(),
+					extractionHere.availableAt(elapsed));
 			target.interaction(
 					extractionHere.availableAt(elapsed)
 							? BukovRaidHudState.Interaction.EXTRACT
@@ -533,6 +554,12 @@ public final class BukovRealtimeWorld
 					ready ? "泵站供电正常" : "启动泵站",
 					0f,
 					0f);
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.MISSION,
+					pumpCell,
+					ready ? "泵站已启动" : "启动泵站",
+					!ready);
 			return;
 		}
 
@@ -564,6 +591,12 @@ public final class BukovRealtimeWorld
 					"拾取物资",
 					0f,
 					0f);
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.PICKUP,
+					heapCell,
+					"可拾取物资",
+					true);
 			return;
 		}
 
@@ -574,6 +607,12 @@ public final class BukovRealtimeWorld
 					"通道锁定 · 先找到维修档案",
 					0f,
 					0f);
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.MISSION,
+					missionGateCell,
+					"维修通道",
+					false);
 		}
 	}
 
@@ -1874,16 +1913,18 @@ public final class BukovRealtimeWorld
 					shotHit.y,
 					0.85f
 			);
+			// The endpoint is meaningful even when the ray stops on geometry:
+			// without this wall spark, misses looked like the round vanished.
+			combatFx.impact(
+					hero.id(),
+					fxSequence,
+					false,
+					shotHit.x,
+					shotHit.y,
+					0.8f
+			);
 			Char target = charsByBody.get(shotHit.body);
 			if (target != null && target.isAlive()) {
-				combatFx.impact(
-						hero.id(),
-						fxSequence,
-						false,
-						shotHit.x,
-						shotHit.y,
-						0.8f
-				);
 				float damage = RealtimeDamage.resolve(
 						ammunition.applyDamage(definition.damage),
 						1f,
@@ -2390,16 +2431,16 @@ public final class BukovRealtimeWorld
 				enemyShotHit.y,
 				0.75f
 		);
+		combatFx.impact(
+				enemy.stableId,
+				enemy.rangedIntent.shotSequence(),
+				true,
+				enemyShotHit.x,
+				enemyShotHit.y,
+				0.9f
+		);
 		if (enemyShotHit.body == heroBody
 				&& enemy.rangedIntent.hasDamageEvent()) {
-			combatFx.impact(
-					enemy.stableId,
-					enemy.rangedIntent.shotSequence(),
-					true,
-					enemyShotHit.x,
-					enemyShotHit.y,
-					0.9f
-			);
 			pendingEnemyShots.add(new PendingEnemyShot(
 					enemy.mob,
 					enemy.rangedIntent.damage()
@@ -2972,6 +3013,137 @@ public final class BukovRealtimeWorld
 				Math.abs(firstCell % width - secondCell % width),
 				Math.abs(firstCell / width - secondCell / width)
 		) <= 1;
+	}
+
+	private void readNavigationHudState(
+			BukovRaidHudState target,
+			float elapsed) {
+		if (raid == null) return;
+		if (!missionGateUnlocked) {
+			if (carriesMissionArchive()) {
+				pointHudNavigation(
+						target,
+						BukovRaidHudState.Cue.MISSION,
+						missionGateCell,
+						"维修通道",
+						true);
+				return;
+			}
+			BukovRaidCoordinator.ContainerSnapshot archive =
+					raid.container(FirstRaidMission.ARCHIVE_CONTAINER_ID);
+			if (archive != null && !archive.contentsReleased) {
+				pointHudNavigation(
+						target,
+						BukovRaidHudState.Cue.MISSION,
+						archive.cell,
+						"维修档案",
+						archive.state
+								!= BukovSearchableContainer.State.LOCKED);
+				return;
+			}
+			for (Heap heap : Dungeon.level.heaps.valueList()) {
+				if (heap == null || heap.peek() == null) continue;
+				for (Item item : heap.items) {
+					if (!(item instanceof BukovMissionArchive)) continue;
+					pointHudNavigation(
+							target,
+							BukovRaidHudState.Cue.PICKUP,
+							heap.pos,
+							"拾取维修档案",
+							true);
+					return;
+				}
+			}
+		}
+
+		ExtractionState nearest = null;
+		float nearestDistanceSquared = Float.MAX_VALUE;
+		for (ExtractionState extraction : raid.extractions()) {
+			if (extraction.completed()
+					|| !extraction.availableAt(elapsed)) {
+				continue;
+			}
+			int cell = resolveExtractionCell(extraction.extractionId());
+			float distanceSquared = distanceSquaredToCell(cell);
+			if (distanceSquared < nearestDistanceSquared) {
+				nearest = extraction;
+				nearestDistanceSquared = distanceSquared;
+			}
+		}
+		if (nearest != null) {
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.EXTRACTION,
+					resolveExtractionCell(nearest.extractionId()),
+					"撤离 " + nearest.extractionId(),
+					true);
+		}
+	}
+
+	private void readThreatHudState(BukovRaidHudState target) {
+		boolean[] visible = Dungeon.level.heroFOV;
+		if (visible == null || visible.length < Dungeon.level.length()) return;
+		EnemyRuntime nearest = null;
+		float nearestDistanceSquared = Float.MAX_VALUE;
+		for (EnemyRuntime enemy : enemies) {
+			if (enemy == null
+					|| !enemy.body.active
+					|| !enemy.mob.isAlive()
+					|| enemy.mob.pos < 0
+					|| enemy.mob.pos >= Dungeon.level.length()
+					|| !visible[enemy.mob.pos]) {
+				continue;
+			}
+			float deltaX = enemy.body.x - heroBody.x;
+			float deltaY = enemy.body.y - heroBody.y;
+			float distanceSquared = deltaX * deltaX + deltaY * deltaY;
+			if (distanceSquared < nearestDistanceSquared) {
+				nearest = enemy;
+				nearestDistanceSquared = distanceSquared;
+			}
+		}
+		if (nearest == null || nearestDistanceSquared > 18f * 18f) return;
+		float deltaX = nearest.body.x - heroBody.x;
+		float deltaY = nearest.body.y - heroBody.y;
+		float distance = (float)Math.sqrt(nearestDistanceSquared);
+		target.threat(
+				deltaX,
+				deltaY,
+				distance,
+				nearest.definition == null
+						? "敌人" : nearest.definition.name,
+				distance <= 4f);
+	}
+
+	private void pointHudNavigation(
+			BukovRaidHudState target,
+			BukovRaidHudState.Cue cue,
+			int cell,
+			String label,
+			boolean available) {
+		if (cell < 0 || cell >= Dungeon.level.length()) return;
+		int width = Dungeon.level.width();
+		float deltaX = cell % width + 0.5f - heroBody.x;
+		float deltaY = cell / width + 0.5f - heroBody.y;
+		float distance = (float)Math.sqrt(
+				deltaX * deltaX + deltaY * deltaY);
+		target.navigation(
+				cue,
+				deltaX,
+				deltaY,
+				distance,
+				label,
+				available);
+	}
+
+	private float distanceSquaredToCell(int cell) {
+		if (cell < 0 || cell >= Dungeon.level.length()) {
+			return Float.MAX_VALUE;
+		}
+		int width = Dungeon.level.width();
+		float deltaX = cell % width + 0.5f - heroBody.x;
+		float deltaY = cell / width + 0.5f - heroBody.y;
+		return deltaX * deltaX + deltaY * deltaY;
 	}
 
 	private void activatePump() {

@@ -30,6 +30,13 @@ public final class BukovRaidHudState {
 		NEAR, MID, FAR
 	}
 
+	public enum Cue {
+		NONE,
+		PICKUP,
+		MISSION,
+		EXTRACTION
+	}
+
 	private String objective;
 	private float raidElapsedSeconds;
 	private String weaponName;
@@ -76,6 +83,20 @@ public final class BukovRaidHudState {
 	private boolean bossVulnerable;
 	private String bossObjective;
 	private boolean bossRetreatWarning;
+	private boolean aimVisible;
+	private float aimX;
+	private float aimY;
+	private boolean firing;
+	private Cue navigationCue = Cue.NONE;
+	private Direction navigationDirection;
+	private Distance navigationDistance;
+	private String navigationLabel;
+	private boolean navigationAvailable;
+	private boolean threatVisible;
+	private Direction threatDirection;
+	private Distance threatDistance;
+	private String threatLabel;
+	private boolean threatUrgent;
 
 	public void beginFrame(String objective, float raidElapsedSeconds) {
 		this.objective = text(objective);
@@ -124,6 +145,70 @@ public final class BukovRaidHudState {
 		bossVulnerable = false;
 		bossObjective = null;
 		bossRetreatWarning = false;
+		aimVisible = false;
+		aimX = 0f;
+		aimY = 0f;
+		firing = false;
+		navigationCue = Cue.NONE;
+		navigationDirection = null;
+		navigationDistance = null;
+		navigationLabel = null;
+		navigationAvailable = false;
+		threatVisible = false;
+		threatDirection = null;
+		threatDistance = null;
+		threatLabel = null;
+		threatUrgent = false;
+	}
+
+	/**
+	 * Stores the normalized direction shared by mouse, controller and touch.
+	 * Keeping this presentation-only avoids guessing an input device in the
+	 * HUD and guarantees that the reticle matches the live shot direction.
+	 */
+	public void aim(float x, float y, boolean firing) {
+		if (!BukovNumbers.isFinite(x) || !BukovNumbers.isFinite(y)) {
+			return;
+		}
+		float lengthSquared = x * x + y * y;
+		if (lengthSquared <= 0.0001f) return;
+		float inverseLength = 1f / (float)Math.sqrt(lengthSquared);
+		aimVisible = true;
+		aimX = x * inverseLength;
+		aimY = y * inverseLength;
+		this.firing = firing;
+	}
+
+	public void navigation(
+			Cue cue,
+			float deltaX,
+			float deltaY,
+			float distance,
+			String label,
+			boolean available) {
+		if (cue == null || cue == Cue.NONE
+				|| !validVector(deltaX, deltaY)) {
+			return;
+		}
+		navigationCue = cue;
+		navigationDirection = direction(deltaX, deltaY);
+		navigationDistance = distance(distance);
+		navigationLabel = text(label);
+		navigationAvailable = available;
+	}
+
+	public void threat(
+			float deltaX,
+			float deltaY,
+			float distance,
+			String label,
+			boolean urgent) {
+		if (!validVector(deltaX, deltaY)) return;
+		threatVisible = true;
+		threatDirection = direction(deltaX, deltaY);
+		threatDistance = distance(distance);
+		threatLabel = text(label);
+		threatUrgent = urgent;
 	}
 
 	public void presentationSettings(
@@ -441,12 +526,103 @@ public final class BukovRaidHudState {
 		return bossRetreatWarning;
 	}
 
+	public boolean aimVisible() {
+		return aimVisible;
+	}
+
+	public float aimX() {
+		return aimX;
+	}
+
+	public float aimY() {
+		return aimY;
+	}
+
+	public boolean firing() {
+		return firing;
+	}
+
+	public Cue navigationCue() {
+		return navigationCue;
+	}
+
+	public boolean navigationVisible() {
+		return navigationCue != Cue.NONE
+				&& navigationDirection != null
+				&& navigationDistance != null;
+	}
+
+	public Direction navigationDirection() {
+		return navigationDirection;
+	}
+
+	public Distance navigationDistance() {
+		return navigationDistance;
+	}
+
+	public String navigationLabel() {
+		return navigationLabel;
+	}
+
+	public boolean navigationAvailable() {
+		return navigationAvailable;
+	}
+
+	public boolean threatVisible() {
+		return threatVisible;
+	}
+
+	public Direction threatDirection() {
+		return threatDirection;
+	}
+
+	public Distance threatDistance() {
+		return threatDistance;
+	}
+
+	public String threatLabel() {
+		return threatLabel;
+	}
+
+	public boolean threatUrgent() {
+		return threatUrgent;
+	}
+
 	private static Direction direction(KeySoundVisualEvent.Direction value) {
 		return value == null ? null : Direction.valueOf(value.name());
 	}
 
 	private static Distance distance(KeySoundVisualEvent.DistanceBand value) {
 		return value == null ? null : Distance.valueOf(value.name());
+	}
+
+	private static Direction direction(float x, float y) {
+		double angle = Math.atan2(y, x);
+		int sector = (int)Math.floor(
+				(angle + Math.PI / 8d) / (Math.PI / 4d));
+		switch ((sector + 8) % 8) {
+			case 0: return Direction.E;
+			case 1: return Direction.SE;
+			case 2: return Direction.S;
+			case 3: return Direction.SW;
+			case 4: return Direction.W;
+			case 5: return Direction.NW;
+			case 6: return Direction.N;
+			default: return Direction.NE;
+		}
+	}
+
+	private static Distance distance(float tiles) {
+		float safe = nonNegative(tiles);
+		if (safe <= 2.25f) return Distance.NEAR;
+		if (safe <= 8f) return Distance.MID;
+		return Distance.FAR;
+	}
+
+	private static boolean validVector(float x, float y) {
+		return BukovNumbers.isFinite(x)
+				&& BukovNumbers.isFinite(y)
+				&& x * x + y * y > 0.0001f;
 	}
 
 	private static String text(String value) {

@@ -70,19 +70,19 @@ public class FogOfWar extends Image {
 			0x00000000
 			}, {
 			//visited
-			0x7810181B,
-			0x58131D20,
-			0x3C172124
+			0x6010181B,
+			0x40131D20,
+			0x28172124
 			}, {
 			//mapped
-			0x88172428,
-			0x681A2A2E,
-			0x481E3034
+			0x78172428,
+			0x581A2A2E,
+			0x381E3034
 			}, {
 			//invisible
-			0xF20A0E10,
-			0xEB0B1012,
-			0xE20D1214
+			0xE60A0E10,
+			0xDE0B1012,
+			0xD60D1214
 			}};
 
 	private static final int VISIBLE    =   0;

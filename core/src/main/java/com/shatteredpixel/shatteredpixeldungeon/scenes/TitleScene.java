@@ -123,7 +123,7 @@ public class TitleScene extends PixelScene {
 				identityTop,
 				panelWidth,
 				identityHeight,
-				0xC9061115,
+				tokens.colorWithAlpha("ink.background", 218),
 				tokens.color("accent.interact"));
 
 		eyebrow = label(
@@ -155,7 +155,7 @@ public class TitleScene extends PixelScene {
 				menuTop,
 				panelWidth,
 				menuHeight,
-				0xDF071115,
+				tokens.colorWithAlpha("ink.background", 238),
 				tokens.color("panel.border"));
 
 		status = label(
@@ -271,6 +271,11 @@ public class TitleScene extends PixelScene {
 		edge.x = x;
 		edge.y = y;
 		add(edge);
+		ColorBlock topRule = new ColorBlock(width, 1f, edgeColor);
+		topRule.x = x;
+		topRule.y = y;
+		topRule.alpha(0.75f);
+		add(topRule);
 		return result;
 	}
 
@@ -341,6 +346,7 @@ public class TitleScene extends PixelScene {
 		private final ColorBlock surface;
 		private final ColorBlock pressed;
 		private final ColorBlock edge;
+		private final ColorBlock lowerRule;
 		private final RenderedTextBlock text;
 		private final GameAction keyAction;
 
@@ -350,7 +356,8 @@ public class TitleScene extends PixelScene {
 				GameAction keyAction) {
 			this.keyAction = keyAction;
 			surface = new ColorBlock(
-					1f, 1f, tokens.color("panel.surface"));
+					1f, 1f, accent);
+			surface.alpha(0.18f);
 			addToBack(surface);
 			pressed = new ColorBlock(
 					1f, 1f, tokens.color("panel.border"));
@@ -358,6 +365,9 @@ public class TitleScene extends PixelScene {
 			addToBack(pressed);
 			edge = new ColorBlock(1f, 1f, accent);
 			add(edge);
+			lowerRule = new ColorBlock(1f, 1f, accent);
+			lowerRule.alpha(0.65f);
+			add(lowerRule);
 			text = label(value, 7, tokens.color("text.primary"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
@@ -395,7 +405,10 @@ public class TitleScene extends PixelScene {
 			fit(pressed);
 			edge.x = x;
 			edge.y = y;
-			edge.size(2f, height);
+			edge.size(3f, height);
+			lowerRule.x = x;
+			lowerRule.y = y + height - 1f;
+			lowerRule.size(width, 1f);
 			text.maxWidth(Math.max(1, (int)width - 8));
 			text.setPos(
 					x + (width - text.width()) / 2f,

@@ -22,9 +22,11 @@ public final class WndBukovPause extends Window {
 		void run();
 	}
 
-	private static final int WIDTH = 148;
-	private static final int BUTTON_HEIGHT = 20;
+	private static final int WIDTH_P = 166;
+	private static final int WIDTH_L = 190;
+	private static final int BUTTON_HEIGHT = 22;
 	private static final int GAP = 3;
+	private static final int MARGIN = 5;
 	private static final int CONTINUE = 0;
 	private static final int SETTINGS = 1;
 	private static final int SAVE_AND_RETURN = 2;
@@ -45,32 +47,62 @@ public final class WndBukovPause extends Window {
 								"ink.background", 255)), 0));
 		this.saveAndReturn = saveAndReturn;
 		tokens = BukovUiTokens.loadDefault();
+		int windowWidth = BukovWindowLayout.safeWidth(
+				PixelScene.landscape() ? WIDTH_L : WIDTH_P);
+
+		ColorBlock header = new ColorBlock(
+				windowWidth,
+				28,
+				tokens.colorWithAlpha("panel.surface", 255));
+		add(header);
+		ColorBlock headerEdge = new ColorBlock(
+				windowWidth,
+				1,
+				tokens.color("accent.valuable"));
+		headerEdge.y = 27;
+		add(headerEdge);
+
+		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
+				"RAID CONTROL  /  LOCAL SESSION", 6);
+		eyebrow.hardlight(tokens.color("text.secondary"));
+		eyebrow.setPos(MARGIN, 4);
+		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock("行动暂停", 11);
 		title.hardlight(tokens.color("accent.valuable"));
-		title.setRect(0, 2, WIDTH, 14);
-		title.align(RenderedTextBlock.CENTER_ALIGN);
+		title.setPos(MARGIN, 13);
 		add(title);
-		y = 20;
+		y = 33;
 
+		ColorBlock statusSurface = new ColorBlock(
+				windowWidth - MARGIN * 2,
+				23,
+				tokens.colorWithAlpha("panel.surface", 180));
+		statusSurface.x = MARGIN;
+		statusSurface.y = y;
+		add(statusSurface);
 		RenderedTextBlock status = PixelScene.renderTextBlock(
-				"行动进度会在返回藏身处前写入本地存档。", 7);
+				"检查点已保护\n离开行动前会再次写入本地存档", 6);
 		status.hardlight(tokens.color("text.secondary"));
-		status.setRect(5, y, WIDTH - 10, 22);
-		status.align(RenderedTextBlock.CENTER_ALIGN);
+		status.setRect(MARGIN + 5, y + 4, windowWidth - MARGIN * 2 - 10, 16);
 		add(status);
-		y += 25;
+		y += 28;
 
-		addButton(new ActionButton("继续行动", CONTINUE));
-		addButton(new ActionButton("设置", SETTINGS));
-		addButton(new ActionButton("保存并返回藏身处", SAVE_AND_RETURN));
+		addButton(new ActionButton("继续行动", "RESUME", CONTINUE), windowWidth);
+		addButton(new ActionButton("行动设置", "OPTIONS", SETTINGS), windowWidth);
+		addButton(new ActionButton(
+				"保存并返回藏身处",
+				"LEAVE RAID",
+				SAVE_AND_RETURN),
+				windowWidth);
 
-		resize(WIDTH, y);
+		y += 2;
+		resize(windowWidth, y);
 	}
 
-	private void addButton(ActionButton button) {
+	private void addButton(ActionButton button, int windowWidth) {
 		add(button);
-		button.setRect(4, y, WIDTH - 8, BUTTON_HEIGHT);
+		button.setRect(MARGIN, y, windowWidth - MARGIN * 2, BUTTON_HEIGHT);
 		buttons[button.action] = button;
 		y += BUTTON_HEIGHT + GAP;
 		updateFocus();
@@ -123,11 +155,18 @@ public final class WndBukovPause extends Window {
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
 		private final RenderedTextBlock text;
+		private final RenderedTextBlock code;
 
-		private ActionButton(String label, int action) {
+		private ActionButton(String label, String codeLabel, int action) {
 			this.action = action;
 			background = new ColorBlock(
-					1, 1, tokens.color("panel.surface"));
+					1,
+					1,
+					tokens.colorWithAlpha(
+							action == CONTINUE
+									? "accent.extract"
+									: "panel.surface",
+							action == CONTINUE ? 42 : 255));
 			addToBack(background);
 			edge = new ColorBlock(1, 1,
 					action == SAVE_AND_RETURN
@@ -142,8 +181,13 @@ public final class WndBukovPause extends Window {
 			text.hardlight(action == SAVE_AND_RETURN
 					? tokens.color("accent.danger")
 					: tokens.color("text.primary"));
-			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
+			code = PixelScene.renderTextBlock(codeLabel, 5);
+			code.hardlight(action == SAVE_AND_RETURN
+					? tokens.color("accent.danger")
+					: tokens.color("text.secondary"));
+			code.align(RenderedTextBlock.RIGHT_ALIGN);
+			add(code);
 		}
 
 		@Override
@@ -179,6 +223,11 @@ public final class WndBukovPause extends Window {
 					: focused
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+			code.hardlight(focused
+					? tokens.color("accent.interact")
+					: action == SAVE_AND_RETURN
+					? tokens.color("accent.danger")
+					: tokens.color("text.secondary"));
 		}
 
 		@Override
@@ -192,8 +241,17 @@ public final class WndBukovPause extends Window {
 			edge.size(2, height);
 			focusEdge.x = x;
 			focusEdge.y = y;
-			focusEdge.size(width, 1);
-			text.setRect(x + 4, y + (height - 10) / 2f, width - 8, 10);
+			focusEdge.size(width, focusedHeight());
+			text.setRect(x + 7, y + (height - 10) / 2f, width - 58, 10);
+			code.setRect(
+					x + width - 53,
+					y + (height - 7) / 2f,
+					47,
+					7);
+		}
+
+		private float focusedHeight() {
+			return focus.index() == action ? 2 : 1;
 		}
 	}
 }

@@ -11,6 +11,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.levels;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 
@@ -35,6 +36,7 @@ public final class BukovLooseLootPlanner {
 	public static final int REQUIRED_PLACEMENT_COUNT = 5;
 	public static final int MINIMUM_DISTANCE_FROM_DEPLOYMENT = 3;
 	public static final int INTRODUCTION_RADIUS = 12;
+	public static final int TRAINING_INTRODUCTION_RADIUS = 10;
 
 	public enum Kind {
 		WEAPON,
@@ -83,9 +85,26 @@ public final class BukovLooseLootPlanner {
 			boolean[] passable,
 			BukovRaidLayout layout,
 			int entranceCell) {
+		return plan(
+				width,
+				height,
+				passable,
+				layout,
+				entranceCell,
+				BukovRaidMode.EXPEDITION);
+	}
+
+	public static List<Placement> plan(
+			int width,
+			int height,
+			boolean[] passable,
+			BukovRaidLayout layout,
+			int entranceCell,
+			BukovRaidMode raidMode) {
 		if (width <= 0 || height <= 0
 				|| passable == null || passable.length != width * height
 				|| layout == null
+				|| raidMode == null
 				|| entranceCell < 0 || entranceCell >= passable.length
 				|| !passable[entranceCell]) {
 			throw new IllegalArgumentException(
@@ -93,6 +112,8 @@ public final class BukovLooseLootPlanner {
 		}
 
 		int[] distances = distances(width, height, passable, entranceCell);
+		int introductionRadius = raidMode.trainingGround()
+				? TRAINING_INTRODUCTION_RADIUS : INTRODUCTION_RADIUS;
 		Set<Integer> occupied = reservedCells(layout, entranceCell);
 		List<Candidate> introductionCandidates = new ArrayList<>();
 		List<Candidate> candidates = new ArrayList<>();
@@ -103,14 +124,16 @@ public final class BukovLooseLootPlanner {
 				continue;
 			}
 			BukovRaidLayout.Mark mark = containingMark(layout, width, cell);
-			if (mark == null || mark.zone == BukovRaidLayout.Zone.SPAWN) {
+			if (mark == null
+					|| !raidMode.trainingGround()
+							&& mark.zone == BukovRaidLayout.Zone.SPAWN) {
 				continue;
 			}
 			Candidate candidate = new Candidate(cell, distances[cell], mark);
 			// The weapon tutorial belongs on the guaranteed deployment route.
 			// A long ConnectionRoom is still a safe and more discoverable trail
 			// than silently moving the starter gun to a distant side room.
-			if (candidate.distance <= INTRODUCTION_RADIUS) {
+			if (candidate.distance <= introductionRadius) {
 				introductionCandidates.add(candidate);
 			}
 			if (mark.zone != BukovRaidLayout.Zone.TRANSIT
@@ -129,7 +152,7 @@ public final class BukovLooseLootPlanner {
 				usedCells,
 				usedRooms,
 				null,
-				INTRODUCTION_RADIUS,
+				introductionRadius,
 				false);
 		add(placements, usedCells, usedRooms, Kind.WEAPON, weapon);
 
@@ -138,7 +161,7 @@ public final class BukovLooseLootPlanner {
 				usedCells,
 				usedRooms,
 				null,
-				INTRODUCTION_RADIUS,
+				introductionRadius,
 				false);
 		add(placements, usedCells, usedRooms, Kind.AMMUNITION, ammunition);
 
@@ -147,19 +170,27 @@ public final class BukovLooseLootPlanner {
 				usedCells,
 				usedRooms,
 				null,
-				INTRODUCTION_RADIUS,
+				introductionRadius,
 				false);
 		add(placements, usedCells, usedRooms,
 				Kind.RESERVE_AMMUNITION, reserveAmmunition);
 
-		Candidate medical = firstMatching(
-				candidates,
-				usedCells,
-				usedRooms,
-				BukovRaidLayout.Zone.MEDICAL,
-				Integer.MAX_VALUE,
-				true);
-		if (medical == null) {
+		Candidate medical = raidMode.trainingGround()
+				? firstMatching(
+						introductionCandidates,
+						usedCells,
+						usedRooms,
+						null,
+						introductionRadius,
+						false)
+				: firstMatching(
+						candidates,
+						usedCells,
+						usedRooms,
+						BukovRaidLayout.Zone.MEDICAL,
+						Integer.MAX_VALUE,
+						true);
+		if (medical == null && !raidMode.trainingGround()) {
 			medical = firstMatching(
 					candidates,
 					usedCells,
@@ -170,14 +201,22 @@ public final class BukovLooseLootPlanner {
 		}
 		add(placements, usedCells, usedRooms, Kind.MEDICAL, medical);
 
-		Candidate salvage = firstMatching(
-				candidates,
-				usedCells,
-				usedRooms,
-				BukovRaidLayout.Zone.LOW_LOOT,
-				Integer.MAX_VALUE,
-				true);
-		if (salvage == null) {
+		Candidate salvage = raidMode.trainingGround()
+				? firstMatching(
+						introductionCandidates,
+						usedCells,
+						usedRooms,
+						null,
+						introductionRadius,
+						false)
+				: firstMatching(
+						candidates,
+						usedCells,
+						usedRooms,
+						BukovRaidLayout.Zone.LOW_LOOT,
+						Integer.MAX_VALUE,
+						true);
+		if (salvage == null && !raidMode.trainingGround()) {
 			salvage = firstMatching(
 					candidates,
 					usedCells,
@@ -192,12 +231,15 @@ public final class BukovLooseLootPlanner {
 		// topology to remove the player-facing pickup tutorial.
 		for (Kind kind : Kind.values()) {
 			if (contains(placements, kind)) continue;
+			List<Candidate> fallbackCandidates = raidMode.trainingGround()
+					? introductionCandidates : candidates;
 			Candidate fallback = firstMatching(
-					candidates,
+					fallbackCandidates,
 					usedCells,
 					Collections.<String>emptySet(),
 					null,
-					Integer.MAX_VALUE,
+					raidMode.trainingGround()
+							? introductionRadius : Integer.MAX_VALUE,
 					false);
 			add(placements, usedCells, usedRooms, kind, fallback);
 		}
@@ -230,7 +272,8 @@ public final class BukovLooseLootPlanner {
 				level.height(),
 				level.passable,
 				level.raidLayout(),
-				level.entrance());
+				level.entrance(),
+				level.raidMode());
 		for (Placement placement : placements) {
 			Heap heap = level.drop(item(placement.kind), placement.cell);
 			heap.type = Heap.Type.HEAP;

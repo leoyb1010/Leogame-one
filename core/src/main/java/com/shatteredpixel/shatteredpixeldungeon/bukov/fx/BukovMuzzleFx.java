@@ -11,7 +11,7 @@ import com.watabou.utils.PointF;
  */
 public final class BukovMuzzleFx extends Group {
 
-	public static final float DURATION_SECONDS = 0.06f;
+	public static final float DURATION_SECONDS = 0.12f;
 
 	private final float duration;
 	private float age;

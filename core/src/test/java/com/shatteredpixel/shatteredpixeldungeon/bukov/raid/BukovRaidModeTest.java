@@ -28,6 +28,19 @@ public class BukovRaidModeTest {
 		assertTrue(BukovRaidMode.EXPEDITION.bossEnabled);
 		assertFalse(BukovRaidMode.QUICK_SWEEP.bossEnabled);
 		assertFalse(BukovRaidMode.SCAVENGER.usesPlayerLoadout());
+		assertFalse(BukovRaidMode.TRAINING_GROUND.usesPlayerLoadout());
+		assertFalse(BukovRaidMode.TRAINING_GROUND
+				.countsTowardEconomyStatistics());
+		assertEquals(3f,
+				BukovRaidMode.TRAINING_GROUND.targetMinutesMinimum, 0f);
+		assertEquals(5f,
+				BukovRaidMode.TRAINING_GROUND.targetMinutesMaximum, 0f);
+		assertEquals(2,
+				BukovRaidMode.TRAINING_GROUND.initialEnemyCount);
+		assertEquals(BukovRaidMode.TRAINING_GROUND,
+				BukovRaidMode.BOSS_CONTRACT.next());
+		assertEquals(BukovRaidMode.EXPEDITION,
+				BukovRaidMode.TRAINING_GROUND.next());
 		assertTrue(BukovRaidMode.BOSS_CONTRACT.bossEarliestSeconds
 				< BukovRaidMode.EXPEDITION.bossEarliestSeconds);
 	}

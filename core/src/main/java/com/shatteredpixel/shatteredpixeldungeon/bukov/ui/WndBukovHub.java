@@ -63,7 +63,9 @@ public final class WndBukovHub extends Window {
 			Callback deploy,
 			int restoredFocus) {
 		super(0, 0, new NinePatch(
-				TextureCache.createSolid(0xFF0E171A), 0));
+				TextureCache.createSolid(
+						BukovUiTokens.loadDefault().colorWithAlpha(
+								"ink.background", 255)), 0));
 		if (controller == null) {
 			throw new IllegalArgumentException("controller is required");
 		}
@@ -89,6 +91,17 @@ public final class WndBukovHub extends Window {
 
 	private void build(int windowWidth, int windowHeight) {
 		float y = 3;
+		ColorBlock header = new ColorBlock(
+				windowWidth,
+				16,
+				tokens.colorWithAlpha("panel.surface", 255));
+		add(header);
+		ColorBlock headerRule = new ColorBlock(
+				windowWidth,
+				1,
+				tokens.color("accent.valuable"));
+		headerRule.y = 15;
+		add(headerRule);
 
 		RenderedTextBlock eyebrow = text(
 				viewModel.activeRaid
@@ -552,6 +565,9 @@ public final class WndBukovHub extends Window {
 
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final ColorBlock dividerA;
+		private final ColorBlock dividerB;
+		private final ColorBlock dividerC;
 		private final RenderedTextBlock cash;
 		private final RenderedTextBlock stash;
 		private final RenderedTextBlock risk;
@@ -565,6 +581,9 @@ public final class WndBukovHub extends Window {
 							? tokens.color("accent.danger")
 							: tokens.color("accent.valuable"));
 			add(edge);
+			dividerA = statusDivider();
+			dividerB = statusDivider();
+			dividerC = statusDivider();
 			cash = text("现金\n" + viewModel.currency, 7,
 					tokens.color("accent.valuable"));
 			add(cash);
@@ -597,6 +616,9 @@ public final class WndBukovHub extends Window {
 			edge.y = y;
 			edge.size(2, height);
 			float column = (width - 5) / 4f;
+			layoutDivider(dividerA, x + 5 + column, y + 3);
+			layoutDivider(dividerB, x + 5 + column * 2, y + 3);
+			layoutDivider(dividerC, x + 5 + column * 3, y + 3);
 			cash.maxWidth((int) column);
 			stash.maxWidth((int) column);
 			risk.maxWidth((int) column);
@@ -606,12 +628,27 @@ public final class WndBukovHub extends Window {
 			risk.setPos(x + 5 + column * 2, y + 3);
 			weight.setPos(x + 5 + column * 3, y + 3);
 		}
+
+		private ColorBlock statusDivider() {
+			ColorBlock divider = new ColorBlock(
+					1,
+					15,
+					tokens.colorWithAlpha("panel.border", 150));
+			add(divider);
+			return divider;
+		}
+
+		private void layoutDivider(ColorBlock divider, float dividerX, float dividerY) {
+			divider.x = dividerX - 3;
+			divider.y = dividerY;
+		}
 	}
 
 	private final class LoadoutSlotCard extends Component {
 
 		private final BukovHubViewModel.LoadoutSlot slot;
 		private final ColorBlock surface;
+		private final ColorBlock stateSurface;
 		private final ColorBlock edge;
 		private final RenderedTextBlock code;
 		private final RenderedTextBlock value;
@@ -620,6 +657,13 @@ public final class WndBukovHub extends Window {
 			this.slot = slot;
 			surface = new ColorBlock(1, 1, tokens.color("panel.surface"));
 			addToBack(surface);
+			stateSurface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.interact", 28));
+			stateSurface.visible =
+					!"未配置".equals(viewModel.slotSummary(slot));
+			addToBack(stateSurface);
 			edge = new ColorBlock(1, 1,
 					"未配置".equals(viewModel.slotSummary(slot))
 							? tokens.color("panel.border")
@@ -641,6 +685,9 @@ public final class WndBukovHub extends Window {
 			surface.x = x;
 			surface.y = y;
 			surface.size(width, height);
+			stateSurface.x = x;
+			stateSurface.y = y;
+			stateSurface.size(width, height);
 			edge.x = x;
 			edge.y = y;
 			edge.size(width, 1);
@@ -689,7 +736,9 @@ public final class WndBukovHub extends Window {
 
 		private ModeCycleButton() {
 			surface = new ColorBlock(
-					1, 1, tokens.color("panel.surface"));
+					1,
+					1,
+					tokens.colorWithAlpha("accent.interact", 34));
 			addToBack(surface);
 			edge = new ColorBlock(
 					1, 1, tokens.color("accent.interact"));
@@ -728,8 +777,8 @@ public final class WndBukovHub extends Window {
 			edge.y = y;
 			edge.size(2, height);
 			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
+			focusEdge.y = y + height - 2;
+			focusEdge.size(width, 2);
 			label.setPos(x + 5, y + 4);
 		}
 	}
@@ -737,14 +786,28 @@ public final class WndBukovHub extends Window {
 	private final class LoadoutRow extends Button {
 
 		private final BukovHubViewModel.ItemRow item;
+		private final ColorBlock background;
+		private final ColorBlock selectedSurface;
 		private final ColorBlock selected;
 		private final ColorBlock focusEdge;
+		private final ColorBlock divider;
 		private final RenderedTextBlock category;
 		private final RenderedTextBlock name;
 		private final RenderedTextBlock metrics;
 
 		private LoadoutRow(BukovHubViewModel.ItemRow item) {
 			this.item = item;
+			background = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.surface", 220));
+			addToBack(background);
+			selectedSurface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.extract", 30));
+			selectedSurface.visible = item.selected;
+			addToBack(selectedSurface);
 			selected = new ColorBlock(1, 1,
 					item.selected
 							? tokens.color("accent.extract")
@@ -754,6 +817,11 @@ public final class WndBukovHub extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			divider = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("panel.border", 135));
+			add(divider);
 			category = text(item.slot.code, 6,
 					tokens.color("text.secondary"));
 			add(category);
@@ -781,6 +849,10 @@ public final class WndBukovHub extends Window {
 
 		private void setFocused(boolean focused) {
 			focusEdge.visible = focused;
+			selectedSurface.visible = item.selected || focused;
+			selectedSurface.hardlight(focused
+					? tokens.color("accent.interact")
+					: tokens.color("accent.extract"));
 			name.hardlight(!item.deployable
 					? tokens.color("text.disabled")
 					: focused
@@ -800,12 +872,21 @@ public final class WndBukovHub extends Window {
 		@Override
 		protected void layout() {
 			super.layout();
+			background.x = x;
+			background.y = y;
+			background.size(width, height);
+			selectedSurface.x = x;
+			selectedSurface.y = y;
+			selectedSurface.size(width, height);
 			selected.x = x;
 			selected.y = y;
 			selected.size(2, height);
 			focusEdge.x = x;
 			focusEdge.y = y + height - 1;
-			focusEdge.size(width, 1);
+			focusEdge.size(width, 2);
+			divider.x = x + 4;
+			divider.y = y + height - 1;
+			divider.size(width - 8, 1);
 			category.setPos(x + 5, y + 4);
 			float metricsX = x + width - metrics.width() - 3;
 			name.maxWidth(Math.max(
@@ -833,6 +914,10 @@ public final class WndBukovHub extends Window {
 			this.action = action;
 			this.enabled = enabled;
 			surface = new ColorBlock(1, 1, tokens.color("panel.surface"));
+			if (action == BukovHubFocusModel.ACTION_DEPLOY && enabled) {
+				surface.hardlight(tokens.color("accent.extract"));
+				surface.alpha(0.20f);
+			}
 			addToBack(surface);
 			edge = new ColorBlock(1, 1,
 					enabled ? accent : tokens.color("text.disabled"));
@@ -875,8 +960,8 @@ public final class WndBukovHub extends Window {
 			edge.y = y;
 			edge.size(2, height);
 			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
+			focusEdge.y = y + height - 2;
+			focusEdge.size(width, 2);
 			center(label, x + 3, y, width - 6, height);
 		}
 	}

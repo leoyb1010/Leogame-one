@@ -28,9 +28,10 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
 
 /**
- * Realtime raid HUD with four fixed information anchors: survival, objective,
- * extraction and firepower. It only reads presentation state and never owns or
- * advances simulation.
+ * Compact realtime raid HUD. Persistent information stays in a shallow safe-
+ * area bar while aim, navigation and threat information is drawn around the
+ * play-space focus instead of consuming the upper quarter of the battlefield.
+ * It only reads presentation state and never owns or advances simulation.
  */
 public final class BukovRaidHud extends Component {
 
@@ -62,6 +63,9 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock interactionFill;
 	private ColorBlock bossTrack;
 	private ColorBlock bossFill;
+	private ColorBlock navigationBadge;
+	private ColorBlock threatBadge;
+	private ColorBlock[] reticle;
 
 	private RenderedTextBlock healthText;
 	private RenderedTextBlock armorText;
@@ -76,6 +80,8 @@ public final class BukovRaidHud extends Component {
 	private RenderedTextBlock hitText;
 	private RenderedTextBlock bossText;
 	private RenderedTextBlock bossObjectiveText;
+	private RenderedTextBlock navigationText;
+	private RenderedTextBlock threatText;
 
 	private Hero hero;
 	private FirearmRegistry firearmRegistry;
@@ -135,6 +141,12 @@ public final class BukovRaidHud extends Component {
 		interactionFill = block(0xFF000000 | INTERACT);
 		bossTrack = block(TRACK);
 		bossFill = block(0xFF000000 | DANGER);
+		navigationBadge = block(0xDC101918);
+		threatBadge = block(0xDC211411);
+		reticle = new ColorBlock[5];
+		for (int index = 0; index < reticle.length; index++) {
+			reticle[index] = block(0xFF000000 | INTERACT);
+		}
 
 		healthText = text(8, PRIMARY);
 		armorText = text(6, VALUABLE);
@@ -156,6 +168,10 @@ public final class BukovRaidHud extends Component {
 		bossText.align(RenderedTextBlock.CENTER_ALIGN);
 		bossObjectiveText = text(6, VALUABLE);
 		bossObjectiveText.align(RenderedTextBlock.CENTER_ALIGN);
+		navigationText = text(7, PRIMARY);
+		navigationText.align(RenderedTextBlock.CENTER_ALIGN);
+		threatText = text(7, DANGER);
+		threatText.align(RenderedTextBlock.CENTER_ALIGN);
 	}
 
 	public BukovRaidHud bind(
@@ -186,7 +202,7 @@ public final class BukovRaidHud extends Component {
 	}
 
 	public static float preferredHeight(float availableWidth) {
-		return availableWidth >= WIDE_THRESHOLD ? 60f : 86f;
+		return availableWidth >= WIDE_THRESHOLD ? 38f : 48f;
 	}
 
 	@Override
@@ -394,6 +410,19 @@ public final class BukovRaidHud extends Component {
 		bossFill.visible = live.bossActive();
 		bossFill.hardlight(
 				live.bossVulnerable() ? VALUABLE : DANGER);
+		navigationText.visible = live.navigationVisible();
+		navigationBadge.visible = live.navigationVisible();
+		navigationText.hardlight(
+				live.navigationAvailable() ? PRIMARY : DANGER);
+		threatText.visible = live.threatVisible();
+		threatBadge.visible = live.threatVisible();
+		threatText.hardlight(live.threatUrgent() ? DANGER : VALUABLE);
+		int reticleColor = lastCapacity <= 0 || lastMagazine <= 0
+				? DANGER : live.firing() ? VALUABLE : INTERACT;
+		for (ColorBlock piece : reticle) {
+			piece.visible = live.aimVisible();
+			piece.hardlight(reticleColor);
+		}
 	}
 
 	private void refreshCombatAwareness() {
@@ -402,6 +431,8 @@ public final class BukovRaidHud extends Component {
 		bossText.text(BukovCombatHudFormat.bossTitle(live));
 		bossObjectiveText.text(
 				BukovCombatHudFormat.bossObjective(live));
+		navigationText.text(BukovCombatHudFormat.navigation(live));
+		threatText.text(BukovCombatHudFormat.threat(live));
 	}
 
 	@Override
@@ -419,11 +450,12 @@ public final class BukovRaidHud extends Component {
 		} else {
 			layoutCompact(actualHeight);
 		}
+		layoutCombatOverlay(actualHeight);
 	}
 
 	private void layoutWide(float actualHeight) {
-		float leftWidth = Math.min(98f, width * 0.30f);
-		float rightWidth = Math.min(86f, width * 0.26f);
+		float leftWidth = Math.min(88f, width * 0.28f);
+		float rightWidth = Math.min(78f, width * 0.24f);
 		float centerLeft = x + leftWidth + PADDING;
 		float centerRight = x + width - rightWidth - PADDING;
 		float centerWidth = Math.max(34f, centerRight - centerLeft);
@@ -439,7 +471,7 @@ public final class BukovRaidHud extends Component {
 		armorEdge.size(2f, 5f);
 		armorText.setPos(x + PADDING + 4f, y + 19f);
 		statusText.maxWidth((int)(leftWidth - PADDING * 2f));
-		statusText.setPos(x + PADDING, y + 29f);
+		statusText.setPos(x + PADDING, y + 28f);
 
 		objectiveText.maxWidth((int)centerWidth);
 		objectiveText.setPos(centerLeft, y + 3f);
@@ -447,7 +479,7 @@ public final class BukovRaidHud extends Component {
 		extractionText.setPos(centerLeft, y + 14f);
 		interactionText.maxWidth((int)centerWidth);
 		interactionText.setPos(centerLeft, y + 25f);
-		positionInteractionBar(centerLeft, y + actualHeight - 4f, centerWidth);
+		positionInteractionBar(centerLeft, y + actualHeight - 2f, centerWidth);
 
 		float rightX = x + width - rightWidth;
 		ammoText.setPos(rightX, y + 2f);
@@ -461,15 +493,7 @@ public final class BukovRaidHud extends Component {
 		reloadFill.size(
 				(rightWidth - PADDING) * live.reloadProgress(), 2f);
 		timerText.setPos(rightX, y + actualHeight - 10f);
-
-		hitText.maxWidth((int)(leftWidth - PADDING * 2f));
-		hitText.setPos(x + PADDING, y + actualHeight - 10f);
-		soundText.maxWidth((int)centerWidth);
-		soundText.setPos(centerLeft, y + 35f);
-		positionBoss(
-				centerLeft,
-				y + 42f,
-				centerWidth);
+		positionBoss(centerLeft, y + actualHeight + 2f, centerWidth);
 	}
 
 	private void layoutCompact(float actualHeight) {
@@ -487,7 +511,7 @@ public final class BukovRaidHud extends Component {
 		armorEdge.size(2f, 5f);
 		armorText.setPos(x + PADDING + 4f, y + 19f);
 		statusText.maxWidth((int)barWidth);
-		statusText.setPos(x + PADDING, y + 28f);
+		statusText.setPos(x + PADDING, y + 29f);
 
 		float rightX = x + halfWidth + PADDING;
 		ammoText.setPos(rightX, y + 2f);
@@ -501,24 +525,123 @@ public final class BukovRaidHud extends Component {
 		reloadFill.size(barWidth * live.reloadProgress(), 2f);
 		timerText.setPos(rightX, y + 30f);
 
-		objectiveText.maxWidth((int)(width - PADDING * 2f));
-		objectiveText.setPos(x + PADDING, y + 39f);
-		extractionText.maxWidth((int)(width * 0.42f));
-		extractionText.setPos(x + PADDING, y + 50f);
-		interactionText.maxWidth((int)(width * 0.56f));
-		interactionText.setPos(x + width * 0.43f, y + 50f);
-		positionInteractionBar(
-				x + width * 0.43f,
-				y + actualHeight - 3f,
-				width * 0.56f - PADDING);
-		hitText.maxWidth((int)barWidth);
-		hitText.setPos(x + PADDING, y + 62f);
-		soundText.maxWidth((int)barWidth);
-		soundText.setPos(rightX, y + 62f);
+		float missionX = x + width * 0.36f;
+		extractionText.maxWidth((int)(width * 0.34f - PADDING));
+		extractionText.setPos(x + PADDING, y + 38f);
+		objectiveText.maxWidth((int)(width * 0.64f - PADDING));
+		objectiveText.setPos(missionX, y + 38f);
+		positionInteractionBar(x + PADDING,
+				y + actualHeight - 2f, width - PADDING * 2f);
 		positionBoss(
 				x + PADDING,
-				y + 67f,
+				y + actualHeight + 2f,
 				width - PADDING * 2f);
+	}
+
+	private void layoutCombatOverlay(float actualHeight) {
+		float viewportWidth = camera == null ? x + width : camera.width;
+		float viewportHeight = camera == null
+				? y + actualHeight + 160f : camera.height;
+		float centerX = viewportWidth * 0.5f;
+		float centerY = Math.max(
+				y + actualHeight + 42f,
+				viewportHeight * 0.52f);
+		float minViewport = Math.min(viewportWidth, viewportHeight);
+		float aimRadius = clamp(minViewport * 0.095f, 24f, 42f);
+		float crosshairX = centerX + live.aimX() * aimRadius;
+		float crosshairY = centerY + live.aimY() * aimRadius;
+		positionReticle(crosshairX, crosshairY);
+
+		float navigationRadius = aimRadius + 36f;
+		float navigationX = centerX
+				+ directionX(live.navigationDirection())
+						* navigationRadius;
+		float navigationY = centerY
+				+ directionY(live.navigationDirection())
+						* navigationRadius;
+		positionBadge(
+				navigationBadge,
+				navigationText,
+				navigationX,
+				navigationY,
+				112f,
+				viewportWidth,
+				viewportHeight,
+				y + actualHeight + 3f);
+
+		float threatRadius = aimRadius + 55f;
+		float threatX = centerX
+				+ directionX(live.threatDirection()) * threatRadius;
+		float threatY = centerY
+				+ directionY(live.threatDirection()) * threatRadius;
+		if (live.threatDirection() != null
+				&& live.threatDirection()
+						== live.navigationDirection()) {
+			threatX -= directionY(live.threatDirection()) * 18f;
+			threatY += directionX(live.threatDirection()) * 18f;
+		}
+		positionBadge(
+				threatBadge,
+				threatText,
+				threatX,
+				threatY,
+				94f,
+				viewportWidth,
+				viewportHeight,
+				y + actualHeight + 3f);
+
+		float feedbackWidth = Math.min(160f, viewportWidth - 12f);
+		float feedbackX = centerX - feedbackWidth * 0.5f;
+		interactionText.maxWidth((int)feedbackWidth);
+		interactionText.setPos(feedbackX, centerY + aimRadius + 14f);
+		soundText.maxWidth((int)feedbackWidth);
+		soundText.setPos(feedbackX, centerY - aimRadius - 26f);
+		hitText.maxWidth((int)feedbackWidth);
+		hitText.setPos(feedbackX, centerY - aimRadius - 14f);
+	}
+
+	private void positionReticle(float centerX, float centerY) {
+		float gap = 3f;
+		float length = live.firing() ? 6f : 4f;
+		reticle[0].x = centerX - gap - length;
+		reticle[0].y = centerY;
+		reticle[0].size(length, 1f);
+		reticle[1].x = centerX + gap;
+		reticle[1].y = centerY;
+		reticle[1].size(length, 1f);
+		reticle[2].x = centerX;
+		reticle[2].y = centerY - gap - length;
+		reticle[2].size(1f, length);
+		reticle[3].x = centerX;
+		reticle[3].y = centerY + gap;
+		reticle[3].size(1f, length);
+		reticle[4].x = centerX;
+		reticle[4].y = centerY;
+		reticle[4].size(1f, 1f);
+	}
+
+	private void positionBadge(
+			ColorBlock badge,
+			RenderedTextBlock label,
+			float centerX,
+			float centerY,
+			float badgeWidth,
+			float viewportWidth,
+			float viewportHeight,
+			float minimumY) {
+		float badgeX = clamp(
+				centerX - badgeWidth * 0.5f,
+				4f,
+				Math.max(4f, viewportWidth - badgeWidth - 4f));
+		float badgeY = clamp(
+				centerY - 6f,
+				minimumY,
+				Math.max(minimumY, viewportHeight - 15f));
+		badge.x = badgeX;
+		badge.y = badgeY;
+		badge.size(badgeWidth, 12f);
+		label.maxWidth((int)(badgeWidth - 4f));
+		label.setPos(badgeX + 2f, badgeY + 2f);
 	}
 
 	private void positionBoss(float barX, float textY, float barWidth) {
@@ -632,6 +755,46 @@ public final class BukovRaidHud extends Component {
 		result = result * 31 + (live.extractionActive() ? 1 : 0);
 		result = result * 131 + Math.round(live.extractionProgress() * 100f);
 		return result * 131 + Math.round(live.extractionSeconds() * 10f);
+	}
+
+	private static float directionX(BukovRaidHudState.Direction direction) {
+		if (direction == null) return 0f;
+		switch (direction) {
+			case NE:
+			case E:
+			case SE:
+				return direction == BukovRaidHudState.Direction.E
+						? 1f : 0.7071f;
+			case NW:
+			case W:
+			case SW:
+				return direction == BukovRaidHudState.Direction.W
+						? -1f : -0.7071f;
+			default:
+				return 0f;
+		}
+	}
+
+	private static float directionY(BukovRaidHudState.Direction direction) {
+		if (direction == null) return 0f;
+		switch (direction) {
+			case SE:
+			case S:
+			case SW:
+				return direction == BukovRaidHudState.Direction.S
+						? 1f : 0.7071f;
+			case NE:
+			case N:
+			case NW:
+				return direction == BukovRaidHudState.Direction.N
+						? -1f : -0.7071f;
+			default:
+				return 0f;
+		}
+	}
+
+	private static float clamp(float value, float minimum, float maximum) {
+		return Math.max(minimum, Math.min(maximum, value));
 	}
 
 	private static boolean same(String first, String second) {
