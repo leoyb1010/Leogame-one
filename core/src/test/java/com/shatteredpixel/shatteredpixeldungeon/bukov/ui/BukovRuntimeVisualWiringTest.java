@@ -97,8 +97,8 @@ public class BukovRuntimeVisualWiringTest {
 
 		assertTrue(scene.contains(
 				"if (BukovMode.active() && Dungeon.level instanceof BukovLevel)"));
-		assertTrue(scene.contains(
-				"new BukovFirstRaidLandmarks((BukovLevel) Dungeon.level)"));
+			assertTrue(scene.contains(
+					"new BukovFirstRaidLandmarks(bukovLevel)"));
 
 		assertTrue(landmarks.contains("FRAME_GATE_LEFT = 1"));
 		assertTrue(landmarks.contains("FRAME_GATE_MIDDLE = 2"));

@@ -64,10 +64,10 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovDeathTransitionMod
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ExtractionDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovFrameTelemetry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovContainerDefinition;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovExtractionStates;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHostRecoveryPolicy;
@@ -134,6 +134,7 @@ import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.DiscardedItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovEnvironmentFxLayer;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovFirstRaidLandmarks;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovItemSprite;
@@ -418,7 +419,11 @@ public class GameScene extends PixelScene {
 		// cells remain owned by BukovLevel/RealtimeWorld, so rendering archive,
 		// gate, pump, extraction and cover art cannot mutate task topology.
 		if (BukovMode.active() && Dungeon.level instanceof BukovLevel) {
-			add(new BukovFirstRaidLandmarks((BukovLevel) Dungeon.level));
+			BukovLevel bukovLevel = (BukovLevel)Dungeon.level;
+			// Atmosphere sits above authored floor/water and below characters
+			// and landmarks, so it remains visible without obscuring targets.
+			add(new BukovEnvironmentFxLayer(bukovLevel));
+			add(new BukovFirstRaidLandmarks(bukovLevel));
 		}
 
 		floorEmitters = new Group();
@@ -1237,29 +1242,7 @@ public class GameScene extends PixelScene {
 				if (layout == null || layout.extractions.isEmpty()) {
 					return Collections.singletonList(ExtractionState.basic());
 				}
-				List<ExtractionState> result = new ArrayList<>();
-				for (ExtractionDefinition definition : layout.extractions) {
-					ExtractionState.Type type;
-					switch (definition.type) {
-						case CONDITIONAL:
-							type = ExtractionState.Type.CONDITIONAL;
-							break;
-						case TEMPORARY:
-							type = ExtractionState.Type.TEMPORARY;
-							break;
-						case BASELINE:
-						default:
-							type = ExtractionState.Type.BASIC;
-							break;
-					}
-					result.add(new ExtractionState(
-							definition.id,
-							type,
-							definition.interactionSeconds,
-							definition.availableFromSeconds,
-							definition.availableUntilSeconds));
-				}
-				return result;
+				return BukovExtractionStates.fromLayout(layout);
 			}
 
 			private List<BukovContainerDefinition> bukovContainerDefinitions() {

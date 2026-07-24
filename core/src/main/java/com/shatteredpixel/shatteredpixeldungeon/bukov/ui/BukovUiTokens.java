@@ -141,11 +141,15 @@ public final class BukovUiTokens {
 	}
 
 	public int colorWithAlpha(String token, int alpha) {
+		return withAlpha(color(token), alpha);
+	}
+
+	public static int withAlpha(int color, int alpha) {
 		if (alpha < 0 || alpha > 255) {
 			throw new IllegalArgumentException(
 					"alpha must be between zero and 255");
 		}
-		return (alpha << 24) | (color(token) & 0xFFFFFF);
+		return (alpha << 24) | (color & 0xFFFFFF);
 	}
 
 	public int motionMs(String token) {

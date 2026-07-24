@@ -2940,14 +2940,20 @@ public final class BukovRealtimeWorld
 					point.cell >= 0
 							&& point.cell < Dungeon.level.length()
 							&& Dungeon.level.heroFOV[point.cell];
+			boolean occupied = point.cell >= 0
+					&& point.cell < Dungeon.level.length()
+					&& Actor.findChar(point.cell) != null;
+			boolean tooClose = point.cell >= 0
+					&& point.cell < Dungeon.level.length()
+					&& tooCloseToHero(point.cell);
 			if (point.cell < 0
 					|| point.cell >= Dungeon.level.length()
 					|| visibility == SpawnVisibility.OFFSCREEN_ONLY
 							&& insidePlayerFieldOfView
 					|| visibility == SpawnVisibility.VISIBLE_REQUIRED
 							&& !insidePlayerFieldOfView
-					|| Actor.findChar(point.cell) != null
-					|| tooCloseToHero(point.cell)
+					|| occupied
+					|| tooClose
 					|| point.bossArena && !allowBoss
 					|| (point.bossArena && whiteLineResolved())) {
 				continue;
@@ -2961,19 +2967,21 @@ public final class BukovRealtimeWorld
 			if (point.bossArena) {
 				selected = enemyArchetypes.require(
 						FirstRaidEnemySpawnDirector.FIRST_BOSS);
-				float bossEarliest = raidMode.bossEarliestSeconds;
-				if (raid.session().raidOrdinal() == 1
-						&& raidMode != BukovRaidMode.BOSS_CONTRACT) {
-					bossEarliest = Math.max(
-							bossEarliest,
-							selected.firstRaidMinimumSeconds);
-				}
-				if (!raidMode.bossEnabled
-						|| elapsed < bossEarliest
-						|| raid.session().firstRaidProtectionActive()) {
-					continue;
-				}
-				if (activeEnemyCount(selected.id) > 0) {
+				if (!WhiteLineSpawnPolicy.eligible(
+						raidMode,
+						selected,
+						raid.session().raidOrdinal(),
+						elapsed,
+						raid.session().firstRaidProtectionActive(),
+						whiteLineResolved(),
+						activeEnemyCount(selected.id))
+						|| !WhiteLineSpawnPolicy.acceptsSpawnPoint(
+								true,
+								point.cell,
+								Dungeon.level.length(),
+								insidePlayerFieldOfView,
+								occupied,
+								tooClose)) {
 					continue;
 				}
 			} else {
@@ -3100,29 +3108,34 @@ public final class BukovRealtimeWorld
 	}
 
 	private boolean attemptWhiteLineSpawn(float elapsed) {
-		if (!raidMode.bossEnabled || whiteLineResolved()) return false;
 		EnemyArchetypeDefinition boss = enemyArchetypes.require(
 				FirstRaidEnemySpawnDirector.FIRST_BOSS);
-		float earliest = raidMode.bossEarliestSeconds;
-		if (raid.session().raidOrdinal() == 1
-				&& raidMode != BukovRaidMode.BOSS_CONTRACT) {
-			earliest = Math.max(
-					earliest,
-					boss.firstRaidMinimumSeconds);
-		}
-		if (elapsed < earliest
-				|| raid.session().firstRaidProtectionActive()
-				|| activeEnemyCount(boss.id) > 0) {
+		if (!WhiteLineSpawnPolicy.eligible(
+				raidMode,
+				boss,
+				raid.session().raidOrdinal(),
+				elapsed,
+				raid.session().firstRaidProtectionActive(),
+				whiteLineResolved(),
+				activeEnemyCount(boss.id))) {
 			return false;
 		}
 		for (BukovEnemySpawnPlanner.SpawnPoint point :
 				enemySpawnPoints) {
-			if (!point.bossArena
-					|| point.cell < 0
-					|| point.cell >= Dungeon.level.length()
-					|| Dungeon.level.heroFOV[point.cell]
-					|| Actor.findChar(point.cell) != null
-					|| tooCloseToHero(point.cell)) {
+			boolean validCell = point.cell >= 0
+					&& point.cell < Dungeon.level.length();
+			boolean visible = validCell
+					&& Dungeon.level.heroFOV[point.cell];
+			boolean occupied = validCell
+					&& Actor.findChar(point.cell) != null;
+			boolean tooClose = validCell && tooCloseToHero(point.cell);
+			if (!WhiteLineSpawnPolicy.acceptsSpawnPoint(
+					point.bossArena,
+					point.cell,
+					Dungeon.level.length(),
+					visible,
+					occupied,
+					tooClose)) {
 				continue;
 			}
 			BukovHostMob mob = new BukovHostMob().configure(boss);

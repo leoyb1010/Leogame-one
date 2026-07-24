@@ -10,6 +10,8 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.bukov.levels;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,11 +82,35 @@ public final class RaidMapValidator {
 	}
 
 	public static Result validate(BukovRaidLayout layout) {
-		if (layout == null
-				|| layout.playableRoomCount() < 26
-				|| layout.playableRoomCount() > 34) {
+		return validateInternal(layout, null);
+	}
+
+	public static Result validate(
+			BukovRaidLayout layout,
+			BukovRaidMode mode) {
+		if (mode == null) {
+			throw new IllegalArgumentException("raid mode is required");
+		}
+		return validateInternal(layout, mode);
+	}
+
+	private static Result validateInternal(
+			BukovRaidLayout layout,
+			BukovRaidMode mode) {
+		boolean roomCountValid = layout != null
+				&& (mode == null
+						? layout.playableRoomCount() >= 26
+								&& layout.playableRoomCount() <= 34
+						: mode.acceptsContentRoomCount(
+								layout.playableRoomCount()));
+		if (!roomCountValid) {
 			return Result.invalid(
-					Failure.ROOM_COUNT_OUT_OF_RANGE, "Expected 26-34 playable rooms");
+					Failure.ROOM_COUNT_OUT_OF_RANGE,
+					mode == null
+							? "Expected 26-34 playable rooms"
+							: "Expected " + mode.minimumContentRooms
+									+ "-" + mode.maximumContentRooms
+									+ " playable rooms for " + mode.name());
 		}
 
 		Map<String, BukovRaidLayout.Mark> marks = new LinkedHashMap<>();
@@ -108,15 +134,9 @@ public final class RaidMapValidator {
 			return Result.invalid(Failure.MISSING_REQUIRED_SEMANTIC_ROOM,
 					"Missing " + missing(REQUIRED_SEMANTICS, semantics));
 		}
-		if (!between(zoneCounts, BukovRaidLayout.Zone.SPAWN, 3, 6)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.LOW_LOOT, 4, 8)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.COMBAT, 3, 6)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.HIGH_VALUE, 1, 3)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.MEDICAL, 1, 2)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.HAZARD, 1, 3)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.BOSS, 0, 1)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.EXTRACTION, 2, 4)
-				|| !between(zoneCounts, BukovRaidLayout.Zone.SECRET, 1, 3)) {
+		if (!(mode == null
+				? legacyZoneCounts(zoneCounts)
+				: validZoneCounts(zoneCounts, mode))) {
 			return Result.invalid(Failure.INVALID_ZONE_COUNTS, zoneCounts.toString());
 		}
 
@@ -144,6 +164,12 @@ public final class RaidMapValidator {
 		Set<String> bossRooms = new HashSet<>(bosses);
 
 		ExtractionDefinition baseline = baselineExtraction(layout);
+		float minimumDirectSeconds = mode == null
+				? 60f : minimumDirectSeconds(mode);
+		float maximumDirectSeconds = mode == null
+				? 150f : maximumDirectSeconds(mode);
+		float averageTraversalSeconds =
+				averageTraversalSeconds(layout);
 		for (String spawn : spawns) {
 			Map<String, Integer> initialDistances = distances(layout, spawn, false, new HashSet<String>());
 			int reachableResources = 0;
@@ -155,6 +181,21 @@ public final class RaidMapValidator {
 			}
 			if (!initialDistances.containsKey(baseline.roomId)) {
 				return Result.invalid(Failure.NO_KEYLESS_EXTRACTION_FROM_SPAWN, spawn);
+			}
+			float directSeconds =
+					initialDistances.get(baseline.roomId)
+							* averageTraversalSeconds;
+			if (directSeconds < minimumDirectSeconds
+					|| directSeconds > maximumDirectSeconds) {
+				return Result.invalid(
+						Failure.DIRECT_WALK_TIME_OUT_OF_RANGE,
+						"Direct walk " + directSeconds
+								+ " seconds from spawn " + spawn
+								+ "; expected " + minimumDirectSeconds
+								+ "-" + maximumDirectSeconds
+								+ " for " + (mode == null
+										? "default map"
+										: mode.name()));
 			}
 			for (String highValue : highValueRooms) {
 				Integer distance = initialDistances.get(highValue);
@@ -182,16 +223,79 @@ public final class RaidMapValidator {
 		Result routeResult = validateRoutes(layout, marks);
 		if (!routeResult.valid) return routeResult;
 
-		Map<String, Integer> primaryDistances =
-				distances(layout, spawns.get(0), false, new HashSet<String>());
-		float directSeconds = primaryDistances.get(baseline.roomId)
-				* averageTraversalSeconds(layout);
-		if (directSeconds < 60f || directSeconds > 150f) {
-			return Result.invalid(Failure.DIRECT_WALK_TIME_OUT_OF_RANGE,
-					"Direct walk " + directSeconds + " seconds");
-		}
-
 		return Result.valid();
+	}
+
+	private static boolean legacyZoneCounts(
+			Map<BukovRaidLayout.Zone, Integer> counts) {
+		return between(counts, BukovRaidLayout.Zone.SPAWN, 3, 6)
+				&& between(counts, BukovRaidLayout.Zone.LOW_LOOT, 4, 8)
+				&& between(counts, BukovRaidLayout.Zone.COMBAT, 3, 6)
+				&& between(counts, BukovRaidLayout.Zone.HIGH_VALUE, 1, 3)
+				&& between(counts, BukovRaidLayout.Zone.MEDICAL, 1, 2)
+				&& between(counts, BukovRaidLayout.Zone.HAZARD, 1, 3)
+				&& between(counts, BukovRaidLayout.Zone.BOSS, 0, 1)
+				&& between(counts, BukovRaidLayout.Zone.EXTRACTION, 2, 4)
+				&& between(counts, BukovRaidLayout.Zone.SECRET, 1, 3);
+	}
+
+	private static boolean validZoneCounts(
+			Map<BukovRaidLayout.Zone, Integer> counts,
+			BukovRaidMode mode) {
+		int spawn = mode.trainingGround() ? 1
+				: mode == BukovRaidMode.QUICK_SWEEP
+						|| mode == BukovRaidMode.SCAVENGER ? 2 : 3;
+		int lowLoot = mode.trainingGround() ? 3
+				: mode == BukovRaidMode.QUICK_SWEEP ? 4
+				: mode == BukovRaidMode.SCAVENGER ? 5
+				: mode == BukovRaidMode.BOSS_CONTRACT ? 4 : 6;
+		int combat = mode.trainingGround() ? 4
+				: mode == BukovRaidMode.QUICK_SWEEP ? 3
+				: mode == BukovRaidMode.SCAVENGER ? 4
+				: mode == BukovRaidMode.BOSS_CONTRACT ? 6 : 5;
+		int medical = mode.trainingGround() ? 2
+				: mode == BukovRaidMode.QUICK_SWEEP
+						|| mode == BukovRaidMode.BOSS_CONTRACT ? 1 : 2;
+		int hazard = mode.trainingGround() ? 0
+				: mode == BukovRaidMode.BOSS_CONTRACT ? 3
+				: mode == BukovRaidMode.QUICK_SWEEP ? 1 : 2;
+		return exact(counts, BukovRaidLayout.Zone.SPAWN, spawn)
+				&& exact(counts, BukovRaidLayout.Zone.LOW_LOOT, lowLoot)
+				&& exact(counts, BukovRaidLayout.Zone.COMBAT, combat)
+				&& exact(counts, BukovRaidLayout.Zone.HIGH_VALUE, 1)
+				&& exact(counts, BukovRaidLayout.Zone.MEDICAL, medical)
+				&& exact(counts, BukovRaidLayout.Zone.HAZARD, hazard)
+				&& exact(counts, BukovRaidLayout.Zone.BOSS, 1)
+				&& exact(counts, BukovRaidLayout.Zone.EXTRACTION, 3)
+				&& exact(counts, BukovRaidLayout.Zone.SECRET, 1);
+	}
+
+	private static boolean exact(
+			Map<BukovRaidLayout.Zone, Integer> counts,
+			BukovRaidLayout.Zone zone,
+			int expected) {
+		Integer actual = counts.get(zone);
+		return (actual == null ? 0 : actual) == expected;
+	}
+
+	public static float minimumDirectSeconds(BukovRaidMode mode) {
+		if (mode == null) {
+			throw new IllegalArgumentException("raid mode is required");
+		}
+		if (mode.trainingGround()) return 20f;
+		if (mode == BukovRaidMode.QUICK_SWEEP) return 30f;
+		if (mode == BukovRaidMode.SCAVENGER) return 45f;
+		return 60f;
+	}
+
+	public static float maximumDirectSeconds(BukovRaidMode mode) {
+		if (mode == null) {
+			throw new IllegalArgumentException("raid mode is required");
+		}
+		if (mode == BukovRaidMode.BOSS_CONTRACT
+				|| mode == BukovRaidMode.SCAVENGER) return 180f;
+		if (mode == BukovRaidMode.EXPEDITION) return 150f;
+		return 120f;
 	}
 
 	private static Result validateExtractions(BukovRaidLayout layout,
@@ -392,8 +496,11 @@ public final class RaidMapValidator {
 		return result;
 	}
 
-	private static boolean between(Map<BukovRaidLayout.Zone, Integer> counts,
-			BukovRaidLayout.Zone zone, int minimum, int maximum) {
+	private static boolean between(
+			Map<BukovRaidLayout.Zone, Integer> counts,
+			BukovRaidLayout.Zone zone,
+			int minimum,
+			int maximum) {
 		int count = counts.containsKey(zone) ? counts.get(zone) : 0;
 		return count >= minimum && count <= maximum;
 	}

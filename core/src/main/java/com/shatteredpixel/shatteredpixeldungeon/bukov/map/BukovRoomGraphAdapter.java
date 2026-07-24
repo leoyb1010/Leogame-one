@@ -86,6 +86,7 @@ public final class BukovRoomGraphAdapter {
 					return roomId(first).compareTo(roomId(second));
 				}
 			};
+	private static final int MAX_EXTRACTION_TRIPLET_EVALUATIONS = 24;
 
 	private BukovRoomGraphAdapter() {
 	}
@@ -229,8 +230,8 @@ public final class BukovRoomGraphAdapter {
 		if (boss == null) diagnostics.add("NO_BOSS_ROOM_WITH_SAFE_EXIT_BYPASS");
 
 		List<BukovRaidLayout.Mark> extractionMarks = chooseExtractions(
-				rooms, marksById, layout, entranceDistances,
-				highValue, boss, originalExit, seed);
+				rooms, marksById, layout, spawns,
+				highValue, boss, originalExit, raidMode, seed);
 		if (extractionMarks.size() < 3) diagnostics.add("FEWER_THAN_3_EXTRACTION_ROOMS");
 
 		assignCoreSemantics(rooms, layout, marksById, entranceDistances,
@@ -263,10 +264,9 @@ public final class BukovRoomGraphAdapter {
 			BukovRaidLayout layout,
 			BukovRaidMode raidMode,
 			List<String> diagnostics) {
-		// RaidMapValidator is the frozen 26-34 expedition acceptance contract.
-		// Compact and boss maps use mode-specific room/zone envelopes checked
-		// above, while retaining this adapter's semantics, routes, extractions
-		// and reachability checks plus BukovAnchorPlanner terrain validation.
+		// Expedition remains the generation-time compatibility contract.
+		// The mode-aware acceptance matrix validates compact, scavenger, boss,
+		// and fixed training layouts after their terrain anchors are assigned.
 		if (raidMode != BukovRaidMode.EXPEDITION) {
 			return;
 		}
@@ -418,51 +418,113 @@ public final class BukovRoomGraphAdapter {
 
 	private static List<BukovRaidLayout.Mark> chooseExtractions(List<Room> rooms,
 			Map<String, BukovRaidLayout.Mark> marksById, BukovRaidLayout layout,
-			Map<String, Integer> entranceDistances, BukovRaidLayout.Mark highValue,
-			BukovRaidLayout.Mark boss, Room originalExit, long seed) {
-		List<BukovRaidLayout.Mark> result = new ArrayList<>();
-		result.add(marksById.get(roomId(originalExit)));
-
-		List<Room> candidates = new ArrayList<>();
+			List<BukovRaidLayout.Mark> spawns, BukovRaidLayout.Mark highValue,
+			BukovRaidLayout.Mark boss, Room originalExit,
+			BukovRaidMode raidMode, long seed) {
+		List<Room> secondaryCandidates = new ArrayList<>();
+		List<Room> baselineCandidates = new ArrayList<>();
+		float averageTraversalSeconds =
+				averageTraversalSeconds(layout);
+		float minimumDirectSeconds =
+				RaidMapValidator.minimumDirectSeconds(raidMode);
+		float maximumDirectSeconds =
+				RaidMapValidator.maximumDirectSeconds(raidMode);
 		for (Room room : rooms) {
 			BukovRaidLayout.Mark mark = marksById.get(roomId(room));
-			Integer distance = entranceDistances.get(roomId(room));
-			if (room == originalExit || distance == null || distance < 3
+			int minimumSpawnDistance = minimumDistanceFromSpawns(
+					layout, spawns, roomId(room));
+			int maximumSpawnDistance = maximumDistanceFromSpawns(
+					layout, spawns, roomId(room));
+			if (minimumSpawnDistance < 0
 					|| mark == highValue || mark == boss
 					|| mark.zone == BukovRaidLayout.Zone.SPAWN
-					|| room instanceof ConnectionRoom || room instanceof SecretRoom
-					|| room.connected.size() < 2) {
+					|| room instanceof ConnectionRoom
+					|| room instanceof SecretRoom
+					|| room != originalExit && room.connected.size() < 2) {
 				continue;
 			}
-			if (boss != null && !distances(layout, roomId(room), boss.roomId())
-					.containsKey(roomId(originalExit))) {
+			if (boss != null
+					&& !distances(layout, roomId(room), boss.roomId())
+							.containsKey(roomId(originalExit))) {
 				continue;
 			}
-			candidates.add(room);
+			secondaryCandidates.add(room);
+			if (minimumSpawnDistance * averageTraversalSeconds
+							>= minimumDirectSeconds
+					&& maximumSpawnDistance * averageTraversalSeconds
+							<= maximumDirectSeconds) {
+				baselineCandidates.add(room);
+			}
 		}
-		Collections.sort(candidates, (first, second) -> {
-			int firstDistance = entranceDistances.get(roomId(first));
-			int secondDistance = entranceDistances.get(roomId(second));
-			int distanceOrder = Integer.compare(secondDistance, firstDistance);
-			if (distanceOrder != 0) return distanceOrder;
+		Comparator<Room> distanceOrder = (first, second) -> {
+			int firstDistance = minimumDistanceFromSpawns(
+					layout, spawns, roomId(first));
+			int secondDistance = minimumDistanceFromSpawns(
+					layout, spawns, roomId(second));
+			int comparison = Integer.compare(secondDistance, firstDistance);
+			if (comparison != 0) return comparison;
 			return Long.compare(stableTie(seed, second), stableTie(seed, first));
-		});
+		};
+		Collections.sort(baselineCandidates, distanceOrder);
+		Collections.sort(secondaryCandidates, distanceOrder);
 
-		for (Room candidate : candidates) {
-			if (result.size() >= 3) break;
-			boolean farFromExisting = true;
-			for (BukovRaidLayout.Mark selected : result) {
-				Integer distance = distances(
-						layout, roomId(candidate), boss == null ? null : boss.roomId())
-						.get(selected.roomId());
-				if (distance != null && distance < 3) {
-					farFromExisting = false;
-					break;
+		String entranceId = spawns.isEmpty()
+				? null : spawns.get(0).roomId();
+		int evaluatedTriplets = 0;
+		for (Room baseline : baselineCandidates) {
+			for (int firstIndex = 0;
+				firstIndex < secondaryCandidates.size();
+				firstIndex++) {
+				Room first = secondaryCandidates.get(firstIndex);
+				if (first == baseline) continue;
+				for (int secondIndex = firstIndex + 1;
+					secondIndex < secondaryCandidates.size();
+					secondIndex++) {
+					Room second = secondaryCandidates.get(secondIndex);
+					if (second == baseline) continue;
+					List<BukovRaidLayout.Mark> result =
+							new ArrayList<>();
+					result.add(marksById.get(roomId(baseline)));
+					result.add(marksById.get(roomId(first)));
+					result.add(marksById.get(roomId(second)));
+					if (!extractionsSeparated(layout, result, boss)) {
+						continue;
+					}
+					if (++evaluatedTriplets
+							> MAX_EXTRACTION_TRIPLET_EVALUATIONS) {
+						return new ArrayList<>();
+					}
+					if (riskTriplet(
+									layout,
+									entranceId,
+									result,
+									raidMode,
+									boss) != null) {
+						return result;
+					}
 				}
 			}
-			if (farFromExisting) result.add(marksById.get(roomId(candidate)));
 		}
-		return result;
+		return new ArrayList<>();
+	}
+
+	private static boolean extractionsSeparated(
+			BukovRaidLayout layout,
+			List<BukovRaidLayout.Mark> extractions,
+			BukovRaidLayout.Mark boss) {
+		for (int first = 0; first < extractions.size(); first++) {
+			for (int second = first + 1;
+				second < extractions.size();
+				second++) {
+				Integer distance = distances(
+						layout,
+						extractions.get(first).roomId(),
+						boss == null ? null : boss.roomId())
+						.get(extractions.get(second).roomId());
+				if (distance == null || distance < 3) return false;
+			}
+		}
+		return true;
 	}
 
 	private static void assignCoreSemantics(List<Room> rooms, BukovRaidLayout layout,
@@ -668,6 +730,31 @@ public final class BukovRoomGraphAdapter {
 			BukovRaidMode raidMode,
 			BukovRaidLayout.Mark boss,
 			List<String> diagnostics) {
+		RouteTriplet selected = riskTriplet(
+				layout,
+				entranceId,
+				extractionMarks,
+				raidMode,
+				boss);
+		if (selected == null) {
+			diagnostics.add("NO_STRICT_RISK_ROUTE_TRIPLET");
+			return;
+		}
+		layout.routes.add(new BukovRaidLayout.Route(
+				"safe_long", BukovRaidLayout.RouteRisk.SAFE, selected.safe.roomIds));
+		layout.routes.add(new BukovRaidLayout.Route(
+				"balanced_mid", BukovRaidLayout.RouteRisk.BALANCED, selected.balanced.roomIds));
+		layout.routes.add(new BukovRaidLayout.Route(
+				"high_risk_short", BukovRaidLayout.RouteRisk.HIGH_RISK, selected.high.roomIds));
+	}
+
+	private static RouteTriplet riskTriplet(
+			BukovRaidLayout layout,
+			String entranceId,
+			List<BukovRaidLayout.Mark> extractionMarks,
+			BukovRaidMode raidMode,
+			BukovRaidLayout.Mark boss) {
+		if (entranceId == null || extractionMarks.size() < 3) return null;
 		List<RouteCandidate> candidates = new ArrayList<>();
 		Set<String> extractionIds = new HashSet<>();
 		for (BukovRaidLayout.Mark extraction : extractionMarks) {
@@ -683,8 +770,7 @@ public final class BukovRoomGraphAdapter {
 					candidates);
 		}
 		if (candidates.size() < 3) {
-			diagnostics.add("FEWER_THAN_3_REACHABLE_EXTRACTION_ROUTES");
-			return;
+			return null;
 		}
 		Collections.sort(candidates, new Comparator<RouteCandidate>() {
 			@Override
@@ -692,20 +778,10 @@ public final class BukovRoomGraphAdapter {
 				return first.signature.compareTo(second.signature);
 			}
 		});
-		RouteTriplet selected = selectRiskTriplet(
+		return selectRiskTriplet(
 				candidates,
 				raidMode == BukovRaidMode.BOSS_CONTRACT && boss != null
 						? boss.roomId() : null);
-		if (selected == null) {
-			diagnostics.add("NO_STRICT_RISK_ROUTE_TRIPLET");
-			return;
-		}
-		layout.routes.add(new BukovRaidLayout.Route(
-				"safe_long", BukovRaidLayout.RouteRisk.SAFE, selected.safe.roomIds));
-		layout.routes.add(new BukovRaidLayout.Route(
-				"balanced_mid", BukovRaidLayout.RouteRisk.BALANCED, selected.balanced.roomIds));
-		layout.routes.add(new BukovRaidLayout.Route(
-				"high_risk_short", BukovRaidLayout.RouteRisk.HIGH_RISK, selected.high.roomIds));
 	}
 
 	private static void collectRouteCandidates(BukovRaidLayout layout,
@@ -857,6 +933,44 @@ public final class BukovRoomGraphAdapter {
 					pending.add(neighbour);
 				}
 			}
+		}
+		return result;
+	}
+
+	private static float averageTraversalSeconds(
+			BukovRaidLayout layout) {
+		if (layout.links.isEmpty()) return 0f;
+		float total = 0f;
+		for (BukovRaidLayout.Link link : layout.links) {
+			total += link.traversalSeconds;
+		}
+		return total / layout.links.size();
+	}
+
+	private static int minimumDistanceFromSpawns(
+			BukovRaidLayout layout,
+			List<BukovRaidLayout.Mark> spawns,
+			String targetRoomId) {
+		int result = Integer.MAX_VALUE;
+		for (BukovRaidLayout.Mark spawn : spawns) {
+			Integer distance = distances(
+					layout, spawn.roomId(), null).get(targetRoomId);
+			if (distance == null) return -1;
+			result = Math.min(result, distance);
+		}
+		return result == Integer.MAX_VALUE ? -1 : result;
+	}
+
+	private static int maximumDistanceFromSpawns(
+			BukovRaidLayout layout,
+			List<BukovRaidLayout.Mark> spawns,
+			String targetRoomId) {
+		int result = -1;
+		for (BukovRaidLayout.Mark spawn : spawns) {
+			Integer distance = distances(
+					layout, spawn.roomId(), null).get(targetRoomId);
+			if (distance == null) return Integer.MAX_VALUE;
+			result = Math.max(result, distance);
 		}
 		return result;
 	}
