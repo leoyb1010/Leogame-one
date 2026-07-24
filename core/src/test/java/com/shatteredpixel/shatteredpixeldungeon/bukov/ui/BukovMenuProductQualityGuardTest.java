@@ -117,6 +117,10 @@ public class BukovMenuProductQualityGuardTest {
 				"height - actionHeight - 41f"));
 		assertTrue(hubScene.contains(
 				"y + height - actionHeight - 6f"));
+		assertTrue(hubScene.contains(
+				"wide && !DeviceCompat.isDesktop()"));
+		assertTrue(hubScene.contains(
+				"if (!condensedTouch)"));
 	}
 
 	private static String source(String file) throws Exception {

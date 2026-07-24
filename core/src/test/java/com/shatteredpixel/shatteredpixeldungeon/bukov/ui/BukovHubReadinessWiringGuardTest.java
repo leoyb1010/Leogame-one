@@ -19,10 +19,12 @@ public class BukovHubReadinessWiringGuardTest {
 		assertTrue(source.contains(
 				"state.deploymentReadinessHeadline()"));
 		assertTrue(source.contains(
-				"tokens.color(state.canDeploy\n"
-						+ "\t\t\t\t\t\t? \"accent.extract\""));
+				"tokens.color(state.canDeploy"));
+		assertTrue(source.contains("? \"accent.extract\""));
 		assertTrue(source.contains(
-				"readiness.setPos(innerX, modeCard.bottom() + uiGap);"));
+				"readiness.setPos(\n"
+						+ "\t\t\t\t\tinnerX, modeCard.bottom() + uiGap);"));
+		assertTrue(source.contains("if (!condensedTouch)"));
 		assertTrue(source.contains("\"hub.button_confirm\""));
 		assertTrue(source.contains("\"hub.button_prepare\""));
 		assertTrue(source.contains(

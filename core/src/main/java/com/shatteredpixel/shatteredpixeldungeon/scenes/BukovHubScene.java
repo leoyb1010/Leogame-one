@@ -309,13 +309,19 @@ public final class BukovHubScene extends PixelScene {
 				x, y, width, height,
 				entryMessage("hub.panel_deployment"));
 		boolean wide = landscape();
+		boolean condensedTouch =
+				wide && !DeviceCompat.isDesktop();
 		float actionHeight = BukovVisualContract.controlHeight(
 				!DeviceCompat.isDesktop(),
 				uiScaleLevel);
 		float innerX = x + 5f;
 		float innerY = y + 18f;
 		float innerWidth = width - 10f;
-		float cardHeight = wide
+		float cardHeight = condensedTouch
+				? Math.max(24f,
+						Math.min(32f,
+								height - actionHeight - 28f))
+				: wide
 				? Math.max(32f,
 						Math.min(46f, height - actionHeight - 41f))
 				: Math.max(29f,
@@ -344,19 +350,25 @@ public final class BukovHubScene extends PixelScene {
 				cardHeight);
 		add(modeCard);
 
-		RenderedTextBlock readiness = label(
-				state.deploymentReadinessHeadline(),
-				BukovVisualContract.FONT_CAPTION,
-				tokens.color(state.canDeploy
-						? "accent.extract"
-						: "accent.danger"));
-		readiness.maxWidth(Math.max(1, (int) innerWidth));
-		readiness.setPos(innerX, modeCard.bottom() + uiGap);
-		add(readiness);
+		RenderedTextBlock readiness = null;
+		if (!condensedTouch) {
+			readiness = label(
+					state.deploymentReadinessHeadline(),
+					BukovVisualContract.FONT_CAPTION,
+					tokens.color(state.canDeploy
+							? "accent.extract"
+							: "accent.danger"));
+			readiness.maxWidth(Math.max(1, (int) innerWidth));
+			readiness.setPos(
+					innerX, modeCard.bottom() + uiGap);
+			add(readiness);
+		}
 
-		float actionsY = Math.min(
-				readiness.bottom() + uiGap,
-				y + height - actionHeight - 6f);
+		float actionsY = condensedTouch
+				? y + height - actionHeight - 6f
+				: Math.min(
+						readiness.bottom() + uiGap,
+						y + height - actionHeight - 6f);
 		float third = (innerWidth - uiGap * 2f) / 3f;
 		addButton(
 				state.canDeploy
