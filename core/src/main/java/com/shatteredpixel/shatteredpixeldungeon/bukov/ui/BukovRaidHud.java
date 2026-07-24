@@ -534,7 +534,10 @@ public final class BukovRaidHud extends Component {
 
 	@Override
 	protected void layout() {
-		if (background == null) return;
+		// Components are constructed before GameScene assigns their rectangle.
+		// refresh() is allowed during that phase, but no geometry may be derived
+		// from the still-zero width.
+		if (background == null || width <= 0f) return;
 		float actualHeight = height > 0f ? height : preferredHeight(width);
 		background.x = x;
 		background.y = y;

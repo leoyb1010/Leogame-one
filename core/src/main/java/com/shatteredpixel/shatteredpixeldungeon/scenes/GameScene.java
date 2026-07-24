@@ -1005,8 +1005,10 @@ public class GameScene extends PixelScene {
 					bukovWorld.touchControls(bukovTouchControls);
 				}
 
-				float hudWidth = uiCamera.width - insets.left - insets.right
-						- (DeviceCompat.isDesktop() ? 44f : 8f);
+				float hudWidth = Math.max(
+						1f,
+						uiCamera.width - insets.left - insets.right
+								- (DeviceCompat.isDesktop() ? 44f : 8f));
 				bukovHud.setRect(
 						insets.left + 4f,
 						bukovSafeTop + 4f,

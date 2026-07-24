@@ -89,6 +89,15 @@ public class BukovRaidHudWiringGuardTest {
 	}
 
 	@Test
+	public void constructorRefreshDoesNotLayoutBeforeWidthIsAssigned()
+			throws Exception {
+		String hud = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java");
+		assertTrue(hud.contains(
+				"if (background == null || width <= 0f) return;"));
+	}
+
+	@Test
 	public void sceneUsesCommonSafeTopAndReservesHudFromTouchNavigation()
 			throws Exception {
 		String scene = source(
@@ -101,6 +110,8 @@ public class BukovRaidHudWiringGuardTest {
 				"bukovTouchControls.hudBottom(bukovHud.bottom() + 2f)"));
 		assertTrue(scene.contains(
 				"bukovSafeTop + 4f"));
+		assertTrue(scene.contains(
+				"float hudWidth = Math.max("));
 	}
 
 	@Test
