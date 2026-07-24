@@ -33,6 +33,10 @@ public class BukovDeploymentRecoveryGuardTest {
 		assertTrue(deployment.contains("requireBukovLevel(level);"));
 		assertTrue(deployment.contains("source.moveTo(target);"));
 		assertTrue(deployment.contains(
+				"target.child(source.name())"));
+		assertTrue(deployment.contains(
+				"archivedFolder.child(\"game.dat\")"));
+		assertTrue(deployment.contains(
 				"archiveUnverifiedReservedHost();"));
 		assertTrue(deployment.contains(
 				"\"bukov_legacy_archives\","));

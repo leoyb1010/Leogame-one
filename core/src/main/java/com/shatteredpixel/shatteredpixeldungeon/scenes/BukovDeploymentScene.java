@@ -358,8 +358,15 @@ public final class BukovDeploymentScene extends PixelScene {
 						baseName + "-" + (++collision));
 			}
 			source.moveTo(target);
-			FileHandle archivedGame = target.child("game.dat");
+			FileHandle archivedFolder =
+					target.child(source.name());
+			if (!archivedFolder.exists()) {
+				archivedFolder = target;
+			}
+			FileHandle archivedGame =
+					archivedFolder.child("game.dat");
 			if (source.exists()
+					|| !archivedFolder.isDirectory()
 					|| !archivedGame.exists()
 					|| archivedGame.length() <= 1L) {
 				throw new IOException(
@@ -367,7 +374,7 @@ public final class BukovDeploymentScene extends PixelScene {
 								"deployment.archive_validation_failed"));
 			}
 			GamesInProgress.delete(BukovMode.SAVE_SLOT);
-			return target.path();
+			return archivedFolder.path();
 		} catch (RuntimeException failure) {
 			throw new IOException(
 					entryMessage("deployment.archive_failed"),
