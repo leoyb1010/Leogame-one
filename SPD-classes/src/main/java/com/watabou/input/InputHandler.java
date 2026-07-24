@@ -123,10 +123,10 @@ public class InputHandler extends InputAdapter {
 	public boolean mouseMoved(int screenX, int screenY) {
 		if (ControllerHandler.controllerPointerActive()) {
 			ControllerHandler.setControllerPointer(false);
-			PointF hover = ControllerHandler.getControllerPointerPos();
-			screenX = (int)hover.x;
-			screenY = (int)hover.y;
 		}
+		// Mouse movement is itself an input-device switch. Waiting for the
+		// first click left realtime aim stuck on the last controller vector.
+		ControllerHandler.controllerActive = false;
 		PointerEvent.addPointerEvent(new PointerEvent(screenX, screenY, -1, PointerEvent.Type.HOVER));
 		return true;
 	}

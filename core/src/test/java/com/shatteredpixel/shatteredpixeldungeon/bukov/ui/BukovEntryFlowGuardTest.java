@@ -27,7 +27,7 @@ public class BukovEntryFlowGuardTest {
 		String bukovEntry = between(
 				title,
 				"private void openBukovMode()",
-				"private void openClassicMode()");
+				"private abstract class TacticalTitleButton");
 
 		assertTrue(bukovEntry.contains("BukovMode.enter()"));
 		assertTrue(bukovEntry.contains(
@@ -38,6 +38,18 @@ public class BukovEntryFlowGuardTest {
 		assertFalse(bukovEntry.contains("HeroSelectScene.class"));
 		assertFalse(bukovEntry.contains("StartScene.class"));
 		assertFalse(bukovEntry.contains("InterlevelScene.class"));
+	}
+
+	@Test
+	public void titleContainsNoLegacyPlayerRoute() throws Exception {
+		String title = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/TitleScene.java");
+
+		assertFalse(title.contains("openClassicMode"));
+		assertFalse(title.contains("AboutScene"));
+		assertFalse(title.contains("HeroSelectScene"));
+		assertFalse(title.contains("StartScene"));
+		assertFalse(title.contains("\"关于\""));
 	}
 
 	@Test

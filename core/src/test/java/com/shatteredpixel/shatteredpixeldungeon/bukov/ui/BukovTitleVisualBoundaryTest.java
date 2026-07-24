@@ -19,10 +19,7 @@ public class BukovTitleVisualBoundaryTest {
 		String source = text(
 				"src/main/java/com/shatteredpixel/"
 						+ "shatteredpixeldungeon/scenes/TitleScene.java");
-		String playerSurface = between(
-				source,
-				"public void create()",
-				"private void openClassicMode()");
+		String playerSurface = source;
 
 		assertTrue(playerSurface.contains(
 				"TITLE_INDUSTRIAL_LANDSCAPE_V2"));
@@ -34,7 +31,11 @@ public class BukovTitleVisualBoundaryTest {
 		assertTrue(playerSurface.contains("\"继续行动  /  CONTINUE\""));
 		assertTrue(playerSurface.contains("\"进入基地  /  HIDEOUT\""));
 		assertTrue(playerSurface.contains("new WndBukovSettings()"));
-		assertTrue(playerSurface.contains("AboutScene.class"));
+		assertFalse(playerSurface.contains("AboutScene.class"));
+		assertFalse(playerSurface.contains("\"关于\""));
+		assertFalse(playerSurface.contains("HeroSelectScene"));
+		assertFalse(playerSurface.contains("StartScene"));
+		assertFalse(playerSurface.contains("openClassicMode"));
 	}
 
 	@Test
@@ -43,10 +44,7 @@ public class BukovTitleVisualBoundaryTest {
 		String source = text(
 				"src/main/java/com/shatteredpixel/"
 						+ "shatteredpixeldungeon/scenes/TitleScene.java");
-		String playerSurface = between(
-				source,
-				"public void create()",
-				"private void openClassicMode()");
+		String playerSurface = source;
 
 		assertFalse(playerSurface.contains("Chrome"));
 		assertFalse(playerSurface.contains("Fireball"));

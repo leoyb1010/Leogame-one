@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.CollisionMap;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContract;
 
 /**
@@ -24,6 +25,17 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError("right-side gunshot must pan right");
 		}
 		assertNear(1.04f, gunshotPlan.bodyPitch(), 0f, "variant pitch");
+		if (GunshotAudioResolver.variationIndex(-1) != 2
+				|| GunshotSoundFamily.RIFLE.mechanicalAsset(0).equals(
+						GunshotSoundFamily.RIFLE.mechanicalAsset(1))
+				|| GunshotSoundFamily.RIFLE.bodyAsset(1).equals(
+						GunshotSoundFamily.RIFLE.bodyAsset(2))) {
+			throw new AssertionError(
+					"gunshot layer variants must be deterministic and unique");
+		}
+		assertSpace(GunshotAcousticSpace.INDOOR, new ProbeMap(true, true));
+		assertSpace(GunshotAcousticSpace.CORRIDOR, new ProbeMap(true, false));
+		assertSpace(GunshotAcousticSpace.OPEN, new ProbeMap(false, false));
 
 		KeySoundVisualEvent event = new KeySoundVisualEvent();
 		KeySoundVisualizationResolver.resolve(
@@ -94,6 +106,49 @@ public final class BukovAudioModelStandaloneTest {
 		contract.visualizationNearDistance = 4f;
 		contract.visualizationMidDistance = 10f;
 		return contract;
+	}
+
+	private static void assertSpace(
+			GunshotAcousticSpace expected,
+			CollisionMap collisionMap) {
+		GunshotAcousticSpace actual = GunshotAcousticSpaceResolver.resolve(
+				collisionMap,
+				10.5f,
+				10.5f);
+		if (actual != expected
+				|| actual.tailAsset(0).equals(actual.tailAsset(1))
+				|| !actual.tailAsset(0).equals(actual.tailAsset(3))) {
+			throw new AssertionError(
+					"acoustic space/variant mismatch: expected "
+							+ expected + ", got " + actual);
+		}
+	}
+
+	private static final class ProbeMap implements CollisionMap {
+
+		private final boolean verticalWalls;
+		private final boolean horizontalWalls;
+
+		private ProbeMap(boolean verticalWalls, boolean horizontalWalls) {
+			this.verticalWalls = verticalWalls;
+			this.horizontalWalls = horizontalWalls;
+		}
+
+		@Override
+		public int width() {
+			return 32;
+		}
+
+		@Override
+		public int height() {
+			return 32;
+		}
+
+		@Override
+		public boolean blocked(int x, int y) {
+			return (verticalWalls && (y == 8 || y == 12))
+					|| (horizontalWalls && (x == 8 || x == 12));
+		}
 	}
 
 	private static void assertNear(

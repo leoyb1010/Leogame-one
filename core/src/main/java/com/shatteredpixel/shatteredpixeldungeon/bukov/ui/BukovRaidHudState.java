@@ -19,6 +19,7 @@ public final class BukovRaidHudState {
 		EXTRACT,
 		PUMP,
 		MEDICAL,
+		UNLOCK,
 		LOCKED
 	}
 

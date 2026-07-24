@@ -2,6 +2,23 @@
 
 更新日期：2026-07-24
 
+## 六主题场景视觉 v2
+
+- 生产映射、来源与权属：
+  `docs/bukov/THEME_VISUAL_SOURCE_LEDGER.md`
+- 机器可读清单与 SHA-256：
+  `core/src/main/assets/environment/bukov/theme_visual_manifest.json`
+- 人工复核接触表：
+  `core/src/main/assets/environment/bukov/theme_visual_contact_sheet.png`
+- 确定性生成：
+  `node scripts/generate_bukov_theme_visuals.mjs`
+- 完整性门禁：
+  `bash scripts/bukov_theme_visual_gate.sh`
+- 接入范围：六套独立地表 atlas、水面 atlas 和地标 atlas；不改宿主地图
+  拓扑、碰撞、任务锚点、音频、UI、VFX 或相机。
+- 兼容策略：玩法主题 ID 不变，新增独立 `visualAssetId` 选择对应视觉族；
+  旧存档的地标缺少该字段时回退雾港视觉。
+
 ## 工业雾港标题主视觉 v2
 
 - 横版运行时文件：`core/src/main/assets/splashes/bukov/title_industrial_landscape_v2.png`

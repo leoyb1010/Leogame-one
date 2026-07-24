@@ -1,6 +1,5 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.levels;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.watabou.noosa.Tilemap;
 import com.watabou.utils.Bundle;
@@ -28,29 +27,53 @@ public final class BukovLandmarkTilemap extends CustomTilemap {
 	}
 
 	private static final String KIND = "bukov_landmark_kind";
+	private static final String VISUAL_ASSET_ID =
+			"bukov_landmark_visual_asset_id";
 	private static final int TEXTURE_WIDTH = 320;
 	private static final int CELLS_PER_FRAME = 2;
+	private static final String DEFAULT_VISUAL_ASSET_ID = "fog_depot";
 
 	private Kind kind = Kind.ARCHIVE_CABINET;
+	private String visualAssetId = DEFAULT_VISUAL_ASSET_ID;
 
 	public BukovLandmarkTilemap() {
 		configure(Kind.ARCHIVE_CABINET);
 	}
 
 	public BukovLandmarkTilemap(Kind kind) {
-		configure(kind);
+		configure(kind, DEFAULT_VISUAL_ASSET_ID);
+	}
+
+	public BukovLandmarkTilemap(
+			Kind kind, String visualAssetId) {
+		configure(kind, visualAssetId);
 	}
 
 	public Kind kind() {
 		return kind;
 	}
 
+	public String visualAssetId() {
+		return visualAssetId;
+	}
+
 	private void configure(Kind kind) {
+		configure(kind, DEFAULT_VISUAL_ASSET_ID);
+	}
+
+	private void configure(Kind kind, String visualAssetId) {
 		if (kind == null) {
 			throw new IllegalArgumentException("kind is required");
 		}
+		if (visualAssetId == null
+				|| !visualAssetId.matches("[a-z0-9_]+")) {
+			throw new IllegalArgumentException(
+					"visualAssetId is required");
+		}
 		this.kind = kind;
-		texture = Assets.Environment.BUKOV_FIRST_RAID_LANDMARKS;
+		this.visualAssetId = visualAssetId;
+		texture = "environment/bukov/landmarks_"
+				+ visualAssetId + ".png";
 		tileW = kind.frameCount * CELLS_PER_FRAME;
 		tileH = CELLS_PER_FRAME;
 	}
@@ -71,11 +94,16 @@ public final class BukovLandmarkTilemap extends CustomTilemap {
 	public void storeInBundle(Bundle bundle) {
 		super.storeInBundle(bundle);
 		bundle.put(KIND, kind);
+		bundle.put(VISUAL_ASSET_ID, visualAssetId);
 	}
 
 	@Override
 	public void restoreFromBundle(Bundle bundle) {
 		super.restoreFromBundle(bundle);
-		configure(bundle.getEnum(KIND, Kind.class));
+		configure(
+				bundle.getEnum(KIND, Kind.class),
+				bundle.contains(VISUAL_ASSET_ID)
+						? bundle.getString(VISUAL_ASSET_ID)
+						: DEFAULT_VISUAL_ASSET_ID);
 	}
 }

@@ -24,10 +24,13 @@ import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.watabou.input.ControllerHandler;
+import com.watabou.input.PointerEvent;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
+import com.watabou.utils.PointF;
 
 /**
  * Compact realtime raid HUD. Persistent information stays in a shallow safe-
@@ -67,6 +70,7 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock bossFill;
 	private ColorBlock navigationBadge;
 	private ColorBlock threatBadge;
+	private ColorBlock interactionBadge;
 	private ColorBlock[] reticle;
 
 	private RenderedTextBlock healthText;
@@ -147,6 +151,7 @@ public final class BukovRaidHud extends Component {
 		bossFill = block(0xFF000000 | DANGER);
 		navigationBadge = block(0xDC101918);
 		threatBadge = block(0xDC211411);
+		interactionBadge = block(0xE8101C20);
 		reticle = new ColorBlock[5];
 		for (int index = 0; index < reticle.length; index++) {
 			reticle[index] = block(0xFF000000 | INTERACT);
@@ -391,7 +396,8 @@ public final class BukovRaidHud extends Component {
 					live.interaction(),
 					live.interactionLabel(),
 					live.interactionProgress(),
-					live.interactionSeconds()));
+					live.interactionSeconds(),
+					DeviceCompat.isDesktop()));
 		}
 	}
 
@@ -423,6 +429,11 @@ public final class BukovRaidHud extends Component {
 		reloadFill.visible = live.reloading();
 		interactionTrack.visible = live.interactionProgress() > 0f;
 		interactionFill.visible = interactionTrack.visible;
+		interactionBadge.visible =
+				live.interaction() != BukovRaidHudState.Interaction.NONE;
+		interactionText.hardlight(
+				live.interaction() == BukovRaidHudState.Interaction.LOCKED
+						? DANGER : INTERACT);
 		extractionText.hardlight(
 				live.extractionId() != null && !live.extractionAvailable()
 						? DANGER : EXTRACT);
@@ -585,6 +596,17 @@ public final class BukovRaidHud extends Component {
 				42f * uiScale);
 		float crosshairX = centerX + live.aimX() * aimRadius;
 		float crosshairY = centerY + live.aimY() * aimRadius;
+		PointF desktopPointer = desktopPointerInHud();
+		if (desktopPointer != null) {
+			crosshairX = clamp(
+					desktopPointer.x,
+					4f,
+					Math.max(4f, viewportWidth - 4f));
+			crosshairY = clamp(
+					desktopPointer.y,
+					y + actualHeight + 3f,
+					Math.max(y + actualHeight + 3f, viewportHeight - 4f));
+		}
 		positionReticle(crosshairX, crosshairY);
 
 		float navigationRadius = aimRadius + 36f * uiScale;
@@ -630,12 +652,28 @@ public final class BukovRaidHud extends Component {
 		float feedbackWidth = Math.min(
 				160f * uiScale, viewportWidth - 12f);
 		float feedbackX = centerX - feedbackWidth * 0.5f;
+		interactionBadge.x = feedbackX;
+		interactionBadge.y = centerY + aimRadius + 11f;
+		interactionBadge.size(feedbackWidth, 13f);
 		interactionText.maxWidth((int)feedbackWidth);
 		interactionText.setPos(feedbackX, centerY + aimRadius + 14f);
 		soundText.maxWidth((int)feedbackWidth);
 		soundText.setPos(feedbackX, centerY - aimRadius - 26f);
 		hitText.maxWidth((int)feedbackWidth);
 		hitText.setPos(feedbackX, centerY - aimRadius - 14f);
+	}
+
+	private PointF desktopPointerInHud() {
+		if (!DeviceCompat.isDesktop()
+				|| ControllerHandler.controllerActive
+				|| camera == null) {
+			return null;
+		}
+		PointF pointer = PointerEvent.currentHoverPos();
+		if (pointer == null) {
+			return null;
+		}
+		return camera.screenToCamera((int)pointer.x, (int)pointer.y);
 	}
 
 	private void positionReticle(float centerX, float centerY) {

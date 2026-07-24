@@ -184,6 +184,184 @@ function wavPcm16(samples) {
   return wav;
 }
 
+const gunshotFamilies = [
+  {
+    name: "pistol",
+    seed: 0x1200,
+    mechanicalHz: 1560,
+    bodyHz: 176,
+    bodySeconds: 0.15,
+    bodyGain: 0.72,
+  },
+  {
+    name: "smg",
+    seed: 0x2200,
+    mechanicalHz: 1880,
+    bodyHz: 214,
+    bodySeconds: 0.12,
+    bodyGain: 0.62,
+  },
+  {
+    name: "carbine",
+    seed: 0x3200,
+    mechanicalHz: 1320,
+    bodyHz: 144,
+    bodySeconds: 0.19,
+    bodyGain: 0.82,
+  },
+  {
+    name: "rifle",
+    seed: 0x4200,
+    mechanicalHz: 1060,
+    bodyHz: 108,
+    bodySeconds: 0.25,
+    bodyGain: 0.96,
+  },
+  {
+    name: "shotgun",
+    seed: 0x5200,
+    mechanicalHz: 820,
+    bodyHz: 82,
+    bodySeconds: 0.31,
+    bodyGain: 1.12,
+  },
+  {
+    name: "heavy",
+    seed: 0x6200,
+    mechanicalHz: 640,
+    bodyHz: 64,
+    bodySeconds: 0.38,
+    bodyGain: 1.24,
+  },
+];
+
+function synthesizeGunshotMechanical(family, variant) {
+  const duration = 0.082 + variant * 0.006;
+  const out = buffer(duration);
+  const color = 0.62 + variant * 0.07;
+  const frequencyScale = 0.96 + variant * 0.04;
+  addClick(out, 0.002, 0.8 - variant * 0.04, color);
+  addChirp(
+    out,
+    0.003,
+    0.038 + variant * 0.003,
+    family.mechanicalHz * frequencyScale,
+    family.mechanicalHz * 0.34 * frequencyScale,
+    0.38,
+    6.4,
+  );
+  addNoise(
+    out,
+    0.008,
+    0.052,
+    0.21,
+    family.seed + 0x10 + variant,
+    0.28,
+    0.62,
+    7.8,
+  );
+  addClick(out, 0.044 + variant * 0.003, 0.24, 0.5 + variant * 0.08);
+  return finish(out);
+}
+
+function synthesizeGunshotBody(family, variant) {
+  const duration = family.bodySeconds + variant * 0.012;
+  const out = buffer(duration);
+  const frequencyScale = 0.965 + variant * 0.035;
+  addNoise(
+    out,
+    0,
+    Math.min(0.07, duration * 0.32),
+    1.15 + family.bodyGain * 0.2,
+    family.seed + 0x30 + variant,
+    0.82 - family.bodyGain * 0.1,
+    0.32 + variant * 0.07,
+    8.8 - variant * 0.4,
+  );
+  addChirp(
+    out,
+    0,
+    duration * 0.58,
+    family.bodyHz * frequencyScale,
+    family.bodyHz * 0.38 * frequencyScale,
+    family.bodyGain,
+    4.1,
+  );
+  addNoise(
+    out,
+    duration * 0.06,
+    duration * 0.88,
+    0.2 + family.bodyGain * 0.17,
+    family.seed + 0x50 + variant,
+    0.11,
+    0.06,
+    5.2,
+  );
+  return finish(out);
+}
+
+function synthesizeGunshotTail(space, variant) {
+  const configurations = {
+    indoor: {
+      duration: 0.31,
+      baseHz: 128,
+      gain: 0.48,
+      reflections: [0.055, 0.105, 0.176],
+      seed: 0x7100,
+    },
+    corridor: {
+      duration: 0.48,
+      baseHz: 102,
+      gain: 0.42,
+      reflections: [0.085, 0.18, 0.295],
+      seed: 0x7200,
+    },
+    open: {
+      duration: 0.67,
+      baseHz: 76,
+      gain: 0.34,
+      reflections: [0.14, 0.31, 0.49],
+      seed: 0x7300,
+    },
+  };
+  const config = configurations[space];
+  const duration = config.duration + variant * 0.018;
+  const out = buffer(duration);
+  const frequencyScale = 0.97 + variant * 0.03;
+  addNoise(
+    out,
+    0,
+    duration * 0.96,
+    config.gain,
+    config.seed + variant,
+    space === "indoor" ? 0.16 : 0.08,
+    0.04,
+    space === "open" ? 3.1 : 4.5,
+  );
+  addChirp(
+    out,
+    0.006,
+    duration * 0.72,
+    config.baseHz * frequencyScale,
+    config.baseHz * 0.42 * frequencyScale,
+    config.gain * 0.64,
+    space === "open" ? 3.2 : 4.8,
+  );
+  config.reflections.forEach((at, reflection) => {
+    addNoise(
+      out,
+      at + variant * 0.004,
+      Math.min(0.085, duration - at),
+      config.gain * (0.32 - reflection * 0.055),
+      config.seed + 0x20 + variant * 5 + reflection,
+      0.22,
+      0.12,
+      6.2,
+    );
+  });
+  return finish(out);
+}
+
 const sounds = {
   gunshot_player() {
     const out = buffer(0.34);
@@ -453,6 +631,22 @@ const sounds = {
     return finish(out);
   },
 };
+
+for (const family of gunshotFamilies) {
+  for (let variant = 0; variant < 3; variant++) {
+    const suffix = variant + 1;
+    sounds[`gunshot_${family.name}_mechanical_${suffix}`] =
+      () => synthesizeGunshotMechanical(family, variant);
+    sounds[`gunshot_${family.name}_body_${suffix}`] =
+      () => synthesizeGunshotBody(family, variant);
+  }
+}
+for (const space of ["indoor", "corridor", "open"]) {
+  for (let variant = 0; variant < 3; variant++) {
+    sounds[`gunshot_tail_${space}_${variant + 1}`] =
+      () => synthesizeGunshotTail(space, variant);
+  }
+}
 
 fs.mkdirSync(outputDir, { recursive: true });
 for (const [name, synthesize] of Object.entries(sounds)) {

@@ -14,13 +14,27 @@ import static org.junit.Assert.assertTrue;
 public class FirearmAudioProfileTest {
 
 	@Test
-	public void sixGunshotFamiliesResolveToSixDifferentAssets() {
-		Set<String> assets = new HashSet<>();
+	public void sixGunshotFamiliesExposeThreeSeparateLayerVariants() {
+		Set<String> mechanicalAssets = new HashSet<>();
+		Set<String> bodyAssets = new HashSet<>();
 		for (GunshotSoundFamily family : GunshotSoundFamily.values()) {
-			assertTrue(family.asset().endsWith(".wav"));
-			assets.add(family.asset());
+			Set<String> familyMechanical = new HashSet<>();
+			Set<String> familyBody = new HashSet<>();
+			for (int sequence = 0; sequence < 3; sequence++) {
+				String mechanical = family.mechanicalAsset(sequence);
+				String body = family.bodyAsset(sequence);
+				assertTrue(mechanical.endsWith(".wav"));
+				assertTrue(body.endsWith(".wav"));
+				familyMechanical.add(mechanical);
+				familyBody.add(body);
+				mechanicalAssets.add(mechanical);
+				bodyAssets.add(body);
+			}
+			assertEquals(3, familyMechanical.size());
+			assertEquals(3, familyBody.size());
 		}
-		assertEquals(6, assets.size());
+		assertEquals(18, mechanicalAssets.size());
+		assertEquals(18, bodyAssets.size());
 	}
 
 	@Test

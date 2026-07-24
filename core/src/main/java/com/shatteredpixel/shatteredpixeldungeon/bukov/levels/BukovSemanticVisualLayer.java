@@ -40,24 +40,26 @@ public final class BukovSemanticVisualLayer {
 			styleWallEdge(level, layout.seed, mark, theme);
 		}
 
-		placeMissionLandmarks(level, layout);
-		placeExtractionLandmarks(level, layout);
+		placeMissionLandmarks(level, layout, theme);
+		placeExtractionLandmarks(level, layout, theme);
 		placeSemanticLandmark(
-				level, layout, "fog_lamp_pump_station", Kind.PUMP_STATION);
+				level, layout, theme,
+				"fog_lamp_pump_station", Kind.PUMP_STATION);
 		placeSemanticLandmark(
-				level, layout, "flooded_warehouse", Kind.INDUSTRIAL_CACHE);
+				level, layout, theme,
+				"flooded_warehouse", Kind.INDUSTRIAL_CACHE);
 		placeCover(
 				level, layout, "flooded_warehouse",
 				coverKind(theme, 0, Kind.CONCRETE_COVER),
-				coverClusters(theme), protectedCells);
+				coverClusters(theme), theme, protectedCells);
 		placeCover(
 				level, layout, "broken_rail_loading",
 				coverKind(theme, 1, Kind.SANDBAG_COVER),
-				coverClusters(theme), protectedCells);
+				coverClusters(theme), theme, protectedCells);
 		placeCover(
 				level, layout, "umbrella_frame_workshop",
 				coverKind(theme, 2, Kind.CONCRETE_COVER),
-				coverClusters(theme), protectedCells);
+				coverClusters(theme), theme, protectedCells);
 	}
 
 	private static int coverClusters(ThemeDefinition theme) {
@@ -232,7 +234,9 @@ public final class BukovSemanticVisualLayer {
 	}
 
 	private static void placeMissionLandmarks(
-			BukovLevel level, BukovRaidLayout layout) {
+			BukovLevel level,
+			BukovRaidLayout layout,
+			ThemeDefinition theme) {
 		BukovRaidLayout.MissionGate gate = layout.missionGate();
 		if (gate == null) return;
 		addLandmark(
@@ -240,11 +244,14 @@ public final class BukovSemanticVisualLayer {
 				layout.mark(gate.archiveRoomId),
 				gate.archiveX,
 				gate.archiveY,
-				Kind.ARCHIVE_CABINET);
+				Kind.ARCHIVE_CABINET,
+				theme);
 	}
 
 	private static void placeExtractionLandmarks(
-			BukovLevel level, BukovRaidLayout layout) {
+			BukovLevel level,
+			BukovRaidLayout layout,
+			ThemeDefinition theme) {
 		for (ExtractionDefinition extraction : layout.extractions) {
 			addLandmark(
 					level,
@@ -253,13 +260,15 @@ public final class BukovSemanticVisualLayer {
 					extraction.interactionY,
 					extraction.type == ExtractionDefinition.Type.BASELINE
 							? Kind.BASE_EXTRACTION
-							: Kind.CONDITIONAL_EXTRACTION);
+							: Kind.CONDITIONAL_EXTRACTION,
+					theme);
 		}
 	}
 
 	private static void placeSemanticLandmark(
 			BukovLevel level,
 			BukovRaidLayout layout,
+			ThemeDefinition theme,
 			String semanticId,
 			Kind kind) {
 		BukovRaidLayout.Mark mark = semanticMark(layout, semanticId);
@@ -269,7 +278,8 @@ public final class BukovSemanticVisualLayer {
 				mark,
 				(mark.left + mark.right) / 2,
 				(mark.top + mark.bottom) / 2,
-				kind);
+				kind,
+				theme);
 	}
 
 	private static void placeCover(
@@ -278,6 +288,7 @@ public final class BukovSemanticVisualLayer {
 			String semanticId,
 			Kind kind,
 			int clusters,
+			ThemeDefinition theme,
 			Set<Integer> protectedCells) {
 		BukovRaidLayout.Mark mark = semanticMark(layout, semanticId);
 		if (mark == null) return;
@@ -289,7 +300,9 @@ public final class BukovSemanticVisualLayer {
 					continue;
 				}
 				BukovLandmarkTilemap landmark =
-						new BukovLandmarkTilemap(kind);
+						new BukovLandmarkTilemap(
+								kind,
+								visualAssetId(theme));
 				landmark.pos(x, y - 1);
 				level.customTiles.add(landmark);
 				int first = x + y * level.width();
@@ -310,7 +323,8 @@ public final class BukovSemanticVisualLayer {
 					mark,
 					(mark.left + mark.right) / 2,
 					(mark.top + mark.bottom) / 2,
-					kind);
+					kind,
+					theme);
 		}
 	}
 
@@ -355,9 +369,12 @@ public final class BukovSemanticVisualLayer {
 			BukovRaidLayout.Mark mark,
 			int preferredX,
 			int preferredY,
-			Kind kind) {
+			Kind kind,
+			ThemeDefinition theme) {
 		if (mark == null) return;
-		BukovLandmarkTilemap landmark = new BukovLandmarkTilemap(kind);
+		BukovLandmarkTilemap landmark = new BukovLandmarkTilemap(
+				kind,
+				visualAssetId(theme));
 		int minX = mark.left + 1;
 		int minY = mark.top + 1;
 		int maxX = mark.right - landmark.tileW;
@@ -367,6 +384,10 @@ public final class BukovSemanticVisualLayer {
 		int y = clamp(preferredY - landmark.tileH / 2, minY, maxY);
 		landmark.pos(x, y);
 		level.customTiles.add(landmark);
+	}
+
+	private static String visualAssetId(ThemeDefinition theme) {
+		return theme == null ? "fog_depot" : theme.visualAssetId;
 	}
 
 	private static Set<Integer> protectedCells(

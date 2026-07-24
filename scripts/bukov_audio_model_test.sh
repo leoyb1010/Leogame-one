@@ -16,6 +16,7 @@ javac_cmd="${java_home:+$java_home/bin/}javac"
 java_cmd="${java_home:+$java_home/bin/}java"
 
 "$javac_cmd" -d "$test_dir" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/BukovNumbers.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/AudioChannel.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAudioBusMix.java" \
@@ -24,7 +25,11 @@ java_cmd="${java_home:+$java_home/bin/}java"
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SoundCategory.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SpatialAudioModel.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotAudioPlan.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotVariantResolver.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotAudioResolver.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotAcousticSpace.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotAcousticSpaceResolver.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotSoundFamily.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/KeySoundVisualEvent.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/KeySoundVisualizationResolver.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/CombatFeedbackType.java" \
@@ -33,6 +38,7 @@ java_cmd="${java_home:+$java_home/bin/}java"
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/CombatFeedbackResolver.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/settings/BukovExperienceSettings.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/settings/ExperienceContract.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/CollisionMap.java" \
   "$repo_dir/core/src/test/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAudioModelStandaloneTest.java"
 
 "$java_cmd" -cp "$test_dir" \

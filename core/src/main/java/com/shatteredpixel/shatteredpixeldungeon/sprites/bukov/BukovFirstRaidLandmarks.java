@@ -10,7 +10,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.sprites.bukov;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
@@ -56,7 +55,7 @@ public final class BukovFirstRaidLandmarks extends Group {
 		}
 		this.level = level;
 		frames = new TextureFilm(
-				Assets.Environment.BUKOV_FIRST_RAID_LANDMARKS,
+				level.landmarkTex(),
 				SOURCE_FRAME_SIZE,
 				SOURCE_FRAME_SIZE
 		);
@@ -90,7 +89,7 @@ public final class BukovFirstRaidLandmarks extends Group {
 
 	private Image addLandmark(int frame, int cell) {
 		if (!validCell(cell)) return null;
-		Image image = new Image(Assets.Environment.BUKOV_FIRST_RAID_LANDMARKS);
+		Image image = new Image(level.landmarkTex());
 		image.frame(frames.get(frame));
 		image.scale.set(WORLD_SCALE);
 		image.x = cell % level.width() * DungeonTilemap.SIZE;

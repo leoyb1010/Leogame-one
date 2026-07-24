@@ -90,6 +90,15 @@ public final class BukovHudFormat {
 			String label,
 			float progress,
 			float seconds) {
+		return interaction(type, label, progress, seconds, false);
+	}
+
+	public static String interaction(
+			BukovRaidHudState.Interaction type,
+			String label,
+			float progress,
+			float seconds,
+			boolean desktop) {
 		if (type == null || type == BukovRaidHudState.Interaction.NONE) {
 			return "";
 		}
@@ -102,10 +111,12 @@ public final class BukovHudFormat {
 				&& (type == BukovRaidHudState.Interaction.SEARCH
 				|| type == BukovRaidHudState.Interaction.EXTRACT
 				|| type == BukovRaidHudState.Interaction.MEDICAL)) {
-			return "按住互动 · " + action + " " + oneDecimal(seconds) + "秒";
+			return (desktop ? "按住 E" : "按住互动")
+					+ " · " + action + " " + oneDecimal(seconds) + "秒";
 		}
 		return type == BukovRaidHudState.Interaction.LOCKED
-				? action : "按互动 · " + action;
+				? "不可交互 · " + action
+				: (desktop ? "按 E" : "按互动") + " · " + action;
 	}
 
 	public static String extraction(
@@ -181,6 +192,8 @@ public final class BukovHudFormat {
 				return "启动泵站";
 			case MEDICAL:
 				return "治疗";
+			case UNLOCK:
+				return "解锁";
 			case LOCKED:
 				return "目标未开放";
 			default:

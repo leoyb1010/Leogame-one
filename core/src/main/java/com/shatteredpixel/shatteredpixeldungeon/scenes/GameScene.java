@@ -1237,13 +1237,15 @@ public class GameScene extends PixelScene {
 					return;
 				}
 				float tileSize = DungeonTilemap.SIZE;
-				float center = tileSize * 0.5f;
+				// RealtimeBody and HitscanResolver already report tile-center
+				// coordinates (for example 10.5f). Adding another half tile
+				// displaced every muzzle, tracer and impact away from the shot.
 				PointF from = new PointF(
-						event.fromX() * tileSize + center,
-						event.fromY() * tileSize + center);
+						event.fromX() * tileSize,
+						event.fromY() * tileSize);
 				PointF to = new PointF(
-						event.toX() * tileSize + center,
-						event.toY() * tileSize + center);
+						event.toX() * tileSize,
+						event.toY() * tileSize);
 				switch (event.type()) {
 					case MUZZLE_FLASH:
 						overFogEffects.add(new BukovMuzzleFx(

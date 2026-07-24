@@ -46,6 +46,7 @@ public final class GridCollision {
 		int maxY = (int)Math.floor(centerY + radius);
 		for (int y = minY; y <= maxY; y++) {
 			for (int x = minX; x <= maxX; x++) {
+				map.approach(x, y);
 				if (map.blocked(x, y)) {
 					return true;
 				}

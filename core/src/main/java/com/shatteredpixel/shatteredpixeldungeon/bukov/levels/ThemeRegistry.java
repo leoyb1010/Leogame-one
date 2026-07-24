@@ -61,7 +61,13 @@ public final class ThemeRegistry {
 		}
 		Set<String> environmentIds = new HashSet<>();
 		Set<String> environmentFingerprints = new HashSet<>();
+		Set<String> visualAssetIds = new HashSet<>();
 		for (ThemeDefinition definition : parsed.values()) {
+			if (!visualAssetIds.add(definition.visualAssetId)) {
+				throw new IllegalArgumentException(
+						"Duplicate theme visual asset id: "
+								+ definition.visualAssetId);
+			}
 			if (!environmentIds.add(definition.environmentRules.id)) {
 				throw new IllegalArgumentException(
 						"Duplicate environment rule id: "
@@ -135,6 +141,7 @@ public final class ThemeRegistry {
 		return new ThemeDefinition(
 				node.getString("id"),
 				node.getString("name"),
+				node.getString("visualAssetId"),
 				parseColor(node.getString("primaryColor")),
 				parseColor(node.getString("secondaryColor")),
 				node.getFloat("riskMultiplier"),

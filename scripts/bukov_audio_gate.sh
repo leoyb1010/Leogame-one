@@ -44,7 +44,11 @@ for required in \
   'SpatialAudioModel.resolve(' \
   'aiSoundSpatial.perceivable()' \
   'GunshotAudioResolver.resolve(' \
-  'definition.audioProfile.gunshotFamily.asset()' \
+  'definition.audioProfile.gunshotFamily.mechanicalAsset(sequence)' \
+  'definition.audioProfile.gunshotFamily.bodyAsset(sequence)' \
+  'GunshotAcousticSpaceResolver.resolve(' \
+  'acousticSpace.tailAsset(sequence)' \
+  'playPlayerGunshotLayers(' \
   'void reloadAudioCues(' \
   'ReloadAudioCue.values()' \
   'cue.asset()' \
@@ -87,6 +91,10 @@ import sys
 
 with open(sys.argv[1], encoding="utf-8") as source:
     firearms = json.load(source)["firearms"]
+
+if len(firearms) != 18:
+    raise SystemExit(
+        f"Bukov audio gate: expected 18 firearm profiles, got {len(firearms)}")
 
 expected = {"PISTOL", "SMG", "CARBINE", "RIFLE", "SHOTGUN", "HEAVY"}
 actual = set()
@@ -138,6 +146,51 @@ expected=(
   "ambience_calm.wav:3d3172edfed54f7d8c2c1b45ca925e4f0eb934c335454e2a984466e2ad3fd9a7"
   "ambience_tense.wav:36650e44c2ad61df80c5fd28cfbd7c6b3562c672aebe813fbdde2c57f324256c"
   "ambience_combat.wav:f4d8e02c916e869b52cb518ab800d435c1a208989253169e29ea2f5ad190724d"
+  "gunshot_pistol_mechanical_1.wav:0ca692eac88e7190b55c0046719451caaeb908387e15f1be6ffd15665b5a8dd2"
+  "gunshot_pistol_mechanical_2.wav:2c4cbc678fe8bcf5f33bf723bca319f709503f6a74265f6f07a7517523738136"
+  "gunshot_pistol_mechanical_3.wav:5bee4b0c101c7db7a57def4a9aea806c29af30531f905560669dbf42f960e2c2"
+  "gunshot_pistol_body_1.wav:ce2be2d42eb041fca2bd9e7b2cb9107a2d65d85b07da39e8d26ea7e6944323ec"
+  "gunshot_pistol_body_2.wav:bc10701a643f26eb718749454e6ec950320668af0910b76e1005f8e7ebacfcfc"
+  "gunshot_pistol_body_3.wav:1d9ae475b539219671d59db5f0fab994e81e8855fca59b101ef18e5bcea02a5f"
+  "gunshot_smg_mechanical_1.wav:a1535ac8e26f63adf652885e4deb751fe1e2bbd7670f0f99e304fb67afd7e8cb"
+  "gunshot_smg_mechanical_2.wav:e82f7277b3dc1497a6b90748fce2729153802b6014e614c0b527d34a0d070f86"
+  "gunshot_smg_mechanical_3.wav:0f5023f8a873776aeac70817e7c3649b1f245bfa58a32e9b082cc019cc0a98bc"
+  "gunshot_smg_body_1.wav:b6fccc005335cb7c6ea92112612b66d35ad009590497dfe40eab4e8e2a60e942"
+  "gunshot_smg_body_2.wav:bb2102c0c2ad05d52ceb19daa9a1c16642b20164d8a8cfbf4f0be833d85b5f08"
+  "gunshot_smg_body_3.wav:c03022513b4be120e8ec9260a312a2c7483310378a17bf3ceb575507ea3d7826"
+  "gunshot_carbine_mechanical_1.wav:fad8b7381275391623d181dcc69092002e52fbd0e383dfbe763cfce56f757dc1"
+  "gunshot_carbine_mechanical_2.wav:9ab95e5590c05a67a28168c606765941f93a86067978ed4659907e728a8cfff6"
+  "gunshot_carbine_mechanical_3.wav:05357cf48396dfa56cb8bf42a7218ffc0205ab6693e4af6a92c04c8083bd8e5c"
+  "gunshot_carbine_body_1.wav:d5842c82b75b876945525cec490a6b0c57743d79ebe8c799b54a614361a23ab4"
+  "gunshot_carbine_body_2.wav:17087ef4b0e08676f9c102e61c02afd576d0e2c0011bd05d3803fe052a4bd77f"
+  "gunshot_carbine_body_3.wav:e93615bb247ae38b05e888a2d3533e66f5328fe2245765c1239ec7570fefb368"
+  "gunshot_rifle_mechanical_1.wav:7a9ea5371b6ae985e43e4656ce7c0f18613e768674e33afda0816a664fd3061b"
+  "gunshot_rifle_mechanical_2.wav:34d2ecbe380cd6b7670a62a82b66f1747f400f134ee9e11760f17d021a3da596"
+  "gunshot_rifle_mechanical_3.wav:71ec15113c500a20bb99dd3355cbc69cfa37d0c76db791c1d073e87be1a8eb5b"
+  "gunshot_rifle_body_1.wav:38b3c94dd964425f603ebd850d1d5a9c895eefdbf612fe897c202588b863bf97"
+  "gunshot_rifle_body_2.wav:e50e4671e3a9d966d4d7c0840716a36521b51e5efb58b6a0e5741dc6c1dd874e"
+  "gunshot_rifle_body_3.wav:1ea1ee0c5b33c2ec09ade40dfc41ea888631202274c89289080e882f8030f663"
+  "gunshot_shotgun_mechanical_1.wav:a727782d028a8bb20bed85d0bb0afc1856a2e2a59c0b832b322178021746167d"
+  "gunshot_shotgun_mechanical_2.wav:b18d770a73b6f87200ce35f23d2796278f9fc1bac987f9a0de47802016ef256a"
+  "gunshot_shotgun_mechanical_3.wav:fca99a60a19e05ce6c78ca1165c35d05864be948714af5f6d308e0b826668a22"
+  "gunshot_shotgun_body_1.wav:c775550db2d37dbdf1d47917b8fb365e8580a5347dd34d5fb133dcabcf4f4fb0"
+  "gunshot_shotgun_body_2.wav:2c8acce5dd9747269e1ee439a5897330f75586f0453b3718e15de5f96e6373f2"
+  "gunshot_shotgun_body_3.wav:1ea621530b05108e591758228d96ec932be814dca6462e145c3c5fd80b054210"
+  "gunshot_heavy_mechanical_1.wav:4097cc2298c8d9c20783da0184455a1480a4350671dbfb0789cdabbe4c61f796"
+  "gunshot_heavy_mechanical_2.wav:06c0a531c36f7f741e7695bb4d1e2021afdd5803892032434d3f11942b9d3db4"
+  "gunshot_heavy_mechanical_3.wav:d64ab18ad67beb9d7a72b1d85fe86bcc2d762e841167f778d9945d801bbe5e36"
+  "gunshot_heavy_body_1.wav:53993456c63854e9e76c7c4c8fcd4911b02c14fc95bce67929be6743a7c07442"
+  "gunshot_heavy_body_2.wav:0d1f4dbab1a4db0af76e1efd46947a3272c65b50242192d9510cc2232589fb33"
+  "gunshot_heavy_body_3.wav:7310d047c8302cb2534c0f9c858909dd5aec746193a01b7d7fcfcce250cbfef7"
+  "gunshot_tail_indoor_1.wav:76fc29d671b429104d165e377ce2fc996352fcb01db9e638af559d6c14bbcf6f"
+  "gunshot_tail_indoor_2.wav:b2718310c40055d410437523922fd10fbefb9e58b6e1357aa0fb64733d40536a"
+  "gunshot_tail_indoor_3.wav:8e221e92126e1a9b225fee9de0224926e6b4675030e5e6116c5825c016dae0d2"
+  "gunshot_tail_corridor_1.wav:36e51a744e48564fdc4077b452564838b31eac4afb737924f599a4f6b15c6e47"
+  "gunshot_tail_corridor_2.wav:1eb31024b924b7bd448855dbbdf8fd6eafc473540853059da86575909a6fc520"
+  "gunshot_tail_corridor_3.wav:cb535861c6f10254bf1452004df295765a2bbf15c2ab6f2164431b57a948e411"
+  "gunshot_tail_open_1.wav:4d1e0302e9b23a91cbc8bf56e3f2f0b842bdbc2bdb14a0b38627b9381d5c248e"
+  "gunshot_tail_open_2.wav:67ba37b204ac37acd5074c225303c8c5252c41dfd150860737f5a9a4988d4be7"
+  "gunshot_tail_open_3.wav:7279203676453cf1d44d7fa4477a140e17aa32d389cf7023a963698a42f929e4"
 )
 
 for record in "${expected[@]}"; do

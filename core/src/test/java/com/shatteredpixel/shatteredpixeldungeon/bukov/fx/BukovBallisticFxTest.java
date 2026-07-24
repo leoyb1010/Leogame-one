@@ -27,6 +27,8 @@ public class BukovBallisticFxTest {
 				(float) Math.toDegrees(Math.atan2(5f, 12f)),
 				geometry.angleDegrees(),
 				0.0001f);
+		assertTrue(geometry.coreThickness() >= 1.5f);
+		assertTrue(geometry.glowThickness() >= 3.5f);
 		assertTrue(geometry.glowThickness() > geometry.coreThickness());
 	}
 
@@ -47,7 +49,7 @@ public class BukovBallisticFxTest {
 	public void tracerHasBriefMonotonicFadeAndHardExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
 
-		assertTrue(duration >= 0.14f && duration <= 0.20f);
+		assertTrue(duration >= 0.22f && duration <= 0.28f);
 		assertEquals(1f, BukovTracerFx.alphaAt(0f, duration), 0f);
 		assertEquals(0.5f, BukovTracerFx.alphaAt(duration * 0.5f, duration), 0.0001f);
 		assertEquals(0f, BukovTracerFx.alphaAt(duration, duration), 0f);
@@ -68,6 +70,45 @@ public class BukovBallisticFxTest {
 		assertEquals(1f, BukovTracerFx.travelProgressAt(duration, duration), 0f);
 		assertEquals(1f, BukovTracerFx.travelProgressAt(duration * 2f, duration), 0f);
 		assertEquals(0f, BukovTracerFx.travelProgressAt(Float.NaN, duration), 0f);
+	}
+
+	@Test
+	public void firstFrameHitchStillPresentsTheTracerEndpointBeforeExpiry() {
+		float duration = BukovTracerFx.DURATION_SECONDS;
+		float hitchAge = 0.30f;
+
+		assertEquals(1f, BukovTracerFx.travelProgressAt(hitchAge, duration), 0f);
+		assertFalse(BukovTracerFx.shouldExpireAfterUpdate(
+				hitchAge,
+				duration,
+				false));
+		assertTrue(BukovTracerFx.shouldExpireAfterUpdate(
+				hitchAge + 1f / 60f,
+				duration,
+				true));
+	}
+
+	@Test
+	public void normalFrameRateKeepsTheOriginalTracerLifetime() {
+		float duration = BukovTracerFx.DURATION_SECONDS;
+		float firstFrameAge = 1f / 120f;
+
+		assertFalse(BukovTracerFx.shouldExpireAfterUpdate(
+				firstFrameAge,
+				duration,
+				false));
+		assertFalse(BukovTracerFx.shouldExpireAfterUpdate(
+				duration - 0.001f,
+				duration,
+				true));
+		assertTrue(BukovTracerFx.shouldExpireAfterUpdate(
+				duration,
+				duration,
+				true));
+		assertTrue(BukovTracerFx.shouldExpireAfterUpdate(
+				Float.NaN,
+				duration,
+				false));
 	}
 
 	@Test

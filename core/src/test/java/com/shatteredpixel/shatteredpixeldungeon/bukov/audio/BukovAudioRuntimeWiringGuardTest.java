@@ -26,7 +26,11 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("playGunshotLayers("));
 		assertTrue(world.contains("Assets.Sounds.Bukov.DRY_FIRE"));
 		assertTrue(world.contains(
-				"definition.audioProfile.gunshotFamily.asset()"));
+				"definition.audioProfile.gunshotFamily.mechanicalAsset(sequence)"));
+		assertTrue(world.contains(
+				"definition.audioProfile.gunshotFamily.bodyAsset(sequence)"));
+		assertTrue(world.contains("acousticSpace.tailAsset(sequence)"));
+		assertTrue(world.contains("GunshotAcousticSpaceResolver.resolve("));
 		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
 		assertTrue(world.contains("Assets.Sounds.Bukov.GUNSHOT_ENEMY"));
 		assertTrue(world.contains("void reloadAudioCues("));

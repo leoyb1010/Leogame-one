@@ -1,11 +1,13 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.input.KeyEvent;
 import com.watabou.input.ControllerHandler;
@@ -209,6 +211,7 @@ public final class WndBukovSettings extends Window {
 		AIM_CURVE,
 		TRIGGER,
 		BRIGHTNESS,
+		LEGAL,
 		CLOSE
 	}
 
@@ -364,6 +367,9 @@ public final class WndBukovSettings extends Window {
 					int value = SPDSettings.brightness() + 1;
 					SPDSettings.brightness(value > 1 ? -1 : value);
 					break;
+				case LEGAL:
+					showLegalNotice();
+					return;
 				case CLOSE:
 					hide();
 					return;
@@ -373,6 +379,19 @@ public final class WndBukovSettings extends Window {
 			}
 			refreshLabel();
 			updateFocus();
+		}
+
+		private void showLegalNotice() {
+			ShatteredPixelDungeon.scene().addToFront(new WndMessage(
+					"开源许可 / LEGAL\n\n"
+						+ "本程序依据 GNU GPLv3 或更高版本提供，"
+						+ "不附带任何担保。你可以依照该许可证复制、"
+						+ "修改与再发布。\n\n"
+						+ "完整本地文本：\n"
+						+ "legal/LICENSE.txt\n"
+						+ "legal/THIRD_PARTY_NOTICES.txt\n\n"
+						+ "对应源码：\n"
+						+ "https://github.com/leoyb1010/Leogame-one"));
 		}
 
 		private void setDeadZone(boolean left, int profile) {
@@ -489,6 +508,9 @@ public final class WndBukovSettings extends Window {
 				case BRIGHTNESS:
 					setCopy("地图亮度",
 							brightnessLabel(SPDSettings.brightness()));
+					break;
+				case LEGAL:
+					setCopy("开源许可 / Legal", "查看");
 					break;
 				case CLOSE:
 					setCopy("完成并返回", "BACK");

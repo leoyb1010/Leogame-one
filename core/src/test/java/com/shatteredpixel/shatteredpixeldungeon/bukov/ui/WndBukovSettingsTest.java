@@ -46,4 +46,22 @@ public class WndBukovSettingsTest {
 		assertFalse(source.contains("new WndSettings()"));
 		assertFalse(source.contains("windows.WndSettings"));
 	}
+
+	@Test
+	public void legalEntryUsesPackagedNoticesWithoutLegacyPromotion()
+			throws Exception {
+		String source = new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/java/com/shatteredpixel/shatteredpixeldungeon"
+								+ "/bukov/ui/WndBukovSettings.java")),
+				StandardCharsets.UTF_8);
+
+		assertTrue(source.contains("\"开源许可 / Legal\""));
+		assertTrue(source.contains("legal/LICENSE.txt"));
+		assertTrue(source.contains("legal/THIRD_PARTY_NOTICES.txt"));
+		assertTrue(source.contains("不附带任何担保"));
+		assertFalse(source.contains("ShatteredPixel.com"));
+		assertFalse(source.contains("patreon.com"));
+		assertFalse(source.contains("AboutScene"));
+	}
 }

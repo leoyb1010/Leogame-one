@@ -56,8 +56,7 @@ public final class GunshotAudioResolver {
 	}
 
 	public static float variationPitch(int sequence) {
-		switch (com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers.floorMod(
-				sequence, 3)) {
+		switch (variationIndex(sequence)) {
 			case 0:
 				return 0.96f;
 			case 1:
@@ -65,6 +64,10 @@ public final class GunshotAudioResolver {
 			default:
 				return 1.04f;
 		}
+	}
+
+	public static int variationIndex(int sequence) {
+		return GunshotVariantResolver.index(sequence);
 	}
 
 	private static float clamp(float value, float minimum, float maximum) {

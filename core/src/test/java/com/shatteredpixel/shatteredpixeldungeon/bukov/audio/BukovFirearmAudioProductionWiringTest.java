@@ -48,7 +48,12 @@ public class BukovFirearmAudioProductionWiringTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java");
 
 		assertTrue(world.contains(
-				"definition.audioProfile.gunshotFamily.asset()"));
+				"definition.audioProfile.gunshotFamily.mechanicalAsset(sequence)"));
+		assertTrue(world.contains(
+				"definition.audioProfile.gunshotFamily.bodyAsset(sequence)"));
+		assertTrue(world.contains("acousticSpace.tailAsset(sequence)"));
+		assertTrue(world.contains("playPlayerGunshotLayers("));
+		assertTrue(world.contains("GunshotAcousticSpaceResolver.resolve("));
 		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
 		assertTrue(world.contains("public void reloadAudioCues("));
 		assertTrue(world.contains("ReloadAudioCue.values()"));
@@ -65,6 +70,11 @@ public class BukovFirearmAudioProductionWiringTest {
 		assertTrue(assets.contains("GUNSHOT_RIFLE"));
 		assertTrue(assets.contains("GUNSHOT_SHOTGUN"));
 		assertTrue(assets.contains("GUNSHOT_HEAVY"));
+		assertTrue(assets.contains("GUNSHOT_PISTOL_MECHANICAL"));
+		assertTrue(assets.contains("GUNSHOT_PISTOL_BODY"));
+		assertTrue(assets.contains("GUNSHOT_TAIL_INDOOR"));
+		assertTrue(assets.contains("GUNSHOT_TAIL_CORRIDOR"));
+		assertTrue(assets.contains("GUNSHOT_TAIL_OPEN"));
 		assertTrue(assets.contains("RELOAD_MAG_OUT"));
 		assertTrue(assets.contains("RELOAD_MAG_IN"));
 		assertTrue(assets.contains("RELOAD_CHARGE"));

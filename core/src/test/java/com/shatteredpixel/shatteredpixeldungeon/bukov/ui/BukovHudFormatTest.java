@@ -52,6 +52,38 @@ public class BukovHudFormatTest {
 						0f,
 						1.2f));
 		assertEquals(
+				"按住 E · 搜索容器 1.2秒",
+				BukovHudFormat.interaction(
+						BukovRaidHudState.Interaction.SEARCH,
+						"搜索容器",
+						0f,
+						1.2f,
+						true));
+		assertEquals(
+				"按 E · 拾取物资",
+				BukovHudFormat.interaction(
+						BukovRaidHudState.Interaction.PICKUP,
+						"拾取物资",
+						0f,
+						0f,
+						true));
+		assertEquals(
+				"按 E · 使用维修钥匙解锁",
+				BukovHudFormat.interaction(
+						BukovRaidHudState.Interaction.UNLOCK,
+						"使用维修钥匙解锁",
+						0f,
+						0f,
+						true));
+		assertEquals(
+				"不可交互 · 需要维修钥匙",
+				BukovHudFormat.interaction(
+						BukovRaidHudState.Interaction.LOCKED,
+						"需要维修钥匙",
+						0f,
+						0f,
+						true));
+		assertEquals(
 				"搜索容器 50%",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,

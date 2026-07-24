@@ -22,6 +22,8 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyTactics;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignal;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignalSource;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpace;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpaceResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioPlan;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualEvent;
@@ -81,8 +83,6 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialHint
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
-import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
-import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
@@ -305,7 +305,14 @@ public final class BukovRealtimeWorld
 									medicalSystem.activeItemUid()));
 		}
 		heroBody = hero.ensureRealtimeBody();
-		collisionMap = new LevelCollisionMap(Dungeon.level);
+		collisionMap = new LevelCollisionMap(
+				Dungeon.level,
+				cell -> {
+					GameScene.updateMap(cell);
+					Dungeon.level.updateFieldOfView(
+							hero, Dungeon.level.heroFOV);
+					GameScene.updateFog();
+				});
 		collision = new GridCollision(collisionMap);
 		extractionCell = resolveExtractionCell(BASELINE_EXTRACTION_ID);
 		pumpCell = resolvePumpCell();
@@ -320,6 +327,10 @@ public final class BukovRealtimeWorld
 		missionGateUnlocked = raid != null
 				&& raid.eventCompleted(FirstRaidMission.EVENT_ID);
 		applyMissionGateTerrain();
+		if (recoverHeroCheckpoint(hero, heroBody, collisionMap)) {
+			Dungeon.level.updateFieldOfView(hero, Dungeon.level.heroFOV);
+			GameScene.updateFog();
+		}
 		firearmRegistry.loadDefault();
 		ammoRegistry.loadDefault();
 		firearmRegistry.validateAmmunition(ammoRegistry);
@@ -340,6 +351,26 @@ public final class BukovRealtimeWorld
 		input.start();
 		ensureContainerMarkers();
 		createInteractionMarkers();
+	}
+
+	static boolean recoverHeroCheckpoint(
+			Hero hero,
+			RealtimeBody body,
+			CollisionMap collisionMap) {
+		if (hero == null || body == null || collisionMap == null) {
+			throw new IllegalArgumentException(
+					"hero, body, and collision map are required");
+		}
+		int restoredHeroCell = hero.pos;
+		float restoredBodyX = body.x;
+		float restoredBodyY = body.y;
+		hero.pos = RealtimeHeroBodyRecovery.repair(
+				body,
+				hero.pos,
+				collisionMap);
+		return hero.pos != restoredHeroCell
+				|| body.x != restoredBodyX
+				|| body.y != restoredBodyY;
 	}
 
 	public FirearmRegistry firearmRegistry() {
@@ -584,14 +615,18 @@ public final class BukovRealtimeWorld
 					== BukovSearchableContainer.State.LOCKED;
 			boolean maintenanceLock =
 					locked && isMaintenanceCache(nearby);
+			boolean maintenanceUnlock =
+					maintenanceLock && hasMaintenanceKey();
 			target.interaction(
-					locked
+					maintenanceUnlock
+							? BukovRaidHudState.Interaction.UNLOCK
+							: locked
 							? BukovRaidHudState.Interaction.LOCKED
 							: BukovRaidHudState.Interaction.SEARCH,
-					maintenanceLock
-							? hasMaintenanceKey()
-									? "按E解锁 · 维修钥匙"
-									: "需要维修钥匙"
+					maintenanceUnlock
+							? "使用维修钥匙解锁"
+							: maintenanceLock
+									? "需要维修钥匙"
 							: locked ? "容器已锁定" : "搜索容器",
 					0f,
 					nearby.searchSeconds);
@@ -1827,18 +1862,11 @@ public final class BukovRealtimeWorld
 	}
 
 	private void applyMissionGateTerrain() {
-		int desired = missionGateUnlocked
-				? Terrain.OPEN_DOOR : Terrain.LOCKED_DOOR;
-		boolean changed = false;
-		for (int cell : missionGateCells) {
-			if (cell < 0 || cell >= Dungeon.level.length()
-					|| Dungeon.level.map[cell] == desired) {
-				continue;
-			}
-			Level.set(cell, desired, Dungeon.level);
-			GameScene.updateMap(cell);
-			changed = true;
-		}
+		boolean changed = MissionGateTerrain.apply(
+				Dungeon.level,
+				missionGateCells,
+				missionGateUnlocked,
+				cell -> GameScene.updateMap(cell));
 		if (!changed) return;
 		Dungeon.level.updateFieldOfView(
 				hero, Dungeon.level.heroFOV);
@@ -2147,26 +2175,20 @@ public final class BukovRealtimeWorld
 			float directionX = inputFrame.aim.x * cos - inputFrame.aim.y * sin;
 			float directionY = inputFrame.aim.x * sin + inputFrame.aim.y * cos;
 
-			HitscanResolver.cast(
+			resolvePlayerShot(
+					hero.id(),
+					fxSequence,
 					heroBody.x,
 					heroBody.y,
 					directionX,
 					directionY,
 					definition.effectiveRangeTiles * 2f,
+					definition.tracerIntensity,
 					collisionMap,
 					targetQuery,
 					heroBody,
-					shotHit
-			);
-			combatFx.tracer(
-					hero.id(),
-					fxSequence,
-					false,
-					heroBody.x,
-					heroBody.y,
-					shotHit.x,
-					shotHit.y,
-					definition.tracerIntensity
+					shotHit,
+					combatFx
 			);
 			// The endpoint is meaningful even when the ray stops on geometry:
 			// without this wall spark, misses looked like the round vanished.
@@ -2192,6 +2214,45 @@ public final class BukovRealtimeWorld
 				pendingHits.add(new PendingHit(target, damage));
 			}
 		}
+	}
+
+	/**
+	 * Production player-shot resolver kept package-visible so the checkpoint
+	 * recovery gate can exercise the exact hitscan-to-tracer path.
+	 */
+	static void resolvePlayerShot(
+			int sourceId,
+			int sequence,
+			float originX,
+			float originY,
+			float directionX,
+			float directionY,
+			float maximumDistance,
+			float tracerIntensity,
+			CollisionMap collisionMap,
+			HitscanResolver.TargetQuery targetQuery,
+			RealtimeBody ignored,
+			HitscanResolver.Hit hit,
+			CombatFxEventPool combatFx) {
+		HitscanResolver.cast(
+				originX,
+				originY,
+				directionX,
+				directionY,
+				maximumDistance,
+				collisionMap,
+				targetQuery,
+				ignored,
+				hit);
+		combatFx.tracer(
+				sourceId,
+				sequence,
+				false,
+				originX,
+				originY,
+				hit.x,
+				hit.y,
+				tracerIntensity);
 	}
 
 	@Override
@@ -3065,6 +3126,7 @@ public final class BukovRealtimeWorld
 			FirearmDefinition definition,
 			float gainScale,
 			float pitchScale) {
+		int sequence = nextAudioSequence();
 		SpatialAudioModel.resolve(
 				audioContract,
 				1f,
@@ -3074,13 +3136,20 @@ public final class BukovRealtimeWorld
 				playbackSpatial);
 		GunshotAudioResolver.resolve(
 				true,
-				nextAudioSequence(),
+				sequence,
 				0f,
 				0f,
 				playbackSpatial,
 				gunshotAudio);
-		playGunshotLayers(
-				definition.audioProfile.gunshotFamily.asset(),
+		GunshotAcousticSpace acousticSpace =
+				GunshotAcousticSpaceResolver.resolve(
+						collisionMap,
+						heroBody.x,
+						heroBody.y);
+		playPlayerGunshotLayers(
+				definition.audioProfile.gunshotFamily.mechanicalAsset(sequence),
+				definition.audioProfile.gunshotFamily.bodyAsset(sequence),
+				acousticSpace.tailAsset(sequence),
 				gainScale,
 				pitchScale);
 	}
@@ -3171,6 +3240,37 @@ public final class BukovRealtimeWorld
 								2f,
 								gunshotAudio.tailPitch()
 										* safePitchScale)));
+	}
+
+	private void playPlayerGunshotLayers(
+			String mechanicalAsset,
+			String bodyAsset,
+			String tailAsset,
+			float gainScale,
+			float pitchScale) {
+		if (!gunshotAudio.audible()) return;
+		float safePitchScale = Math.max(0.5f, Math.min(2f, pitchScale));
+		playSfxStereo(
+				mechanicalAsset,
+				gunshotAudio.mechanicalLeft() * gainScale,
+				gunshotAudio.mechanicalRight() * gainScale,
+				clampedPitch(
+						gunshotAudio.mechanicalPitch()
+								* safePitchScale));
+		playSfxStereo(
+				bodyAsset,
+				gunshotAudio.bodyLeft() * gainScale,
+				gunshotAudio.bodyRight() * gainScale,
+				clampedPitch(gunshotAudio.bodyPitch() * safePitchScale));
+		playSfxStereo(
+				tailAsset,
+				gunshotAudio.tailLeft() * gainScale,
+				gunshotAudio.tailRight() * gainScale,
+				clampedPitch(gunshotAudio.tailPitch() * safePitchScale));
+	}
+
+	private static float clampedPitch(float pitch) {
+		return Math.max(0.5f, Math.min(2f, pitch));
 	}
 
 	private float realtimeSfxGain() {

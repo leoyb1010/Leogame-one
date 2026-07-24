@@ -37,6 +37,12 @@ public final class ThemeDefinition {
 
 	public final String id;
 	public final String name;
+	/**
+	 * Stable visual slug. Kept separate from the gameplay theme ID so existing
+	 * saves retain rust_workshop/flooded_passage/overgrown_yard/sealed_lab
+	 * while their authored asset names remain player-facing and distinctive.
+	 */
+	public final String visualAssetId;
 	public final int primaryColor;
 	public final int secondaryColor;
 	public final float riskMultiplier;
@@ -56,6 +62,7 @@ public final class ThemeDefinition {
 	ThemeDefinition(
 			String id,
 			String name,
+			String visualAssetId,
 			int primaryColor,
 			int secondaryColor,
 			float riskMultiplier,
@@ -69,6 +76,7 @@ public final class ThemeDefinition {
 			List<String> coverCombination) {
 		this.id = id;
 		this.name = name;
+		this.visualAssetId = visualAssetId;
 		this.primaryColor = primaryColor;
 		this.secondaryColor = secondaryColor;
 		this.riskMultiplier = riskMultiplier;
@@ -113,6 +121,18 @@ public final class ThemeDefinition {
 
 	public List<String> coverCombination() {
 		return coverCombination;
+	}
+
+	public String tilesTexture() {
+		return "environment/bukov/tiles_" + visualAssetId + ".png";
+	}
+
+	public String waterTexture() {
+		return "environment/bukov/water_" + visualAssetId + ".png";
+	}
+
+	public String landmarkTexture() {
+		return "environment/bukov/landmarks_" + visualAssetId + ".png";
 	}
 
 	/** Tunes the same mode's reinforcement cadence without a second loop. */
@@ -217,6 +237,9 @@ public final class ThemeDefinition {
 	private void validate() {
 		require(text(id), "theme id is required");
 		require(text(name), "theme name is required: " + id);
+		require(text(visualAssetId)
+						&& visualAssetId.matches("[a-z0-9_]+"),
+				"theme visualAssetId is invalid: " + id);
 		require(finite(riskMultiplier)
 				&& riskMultiplier >= 0.65f
 				&& riskMultiplier <= 1.50f,

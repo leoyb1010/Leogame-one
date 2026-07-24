@@ -53,7 +53,6 @@ public class TitleScene extends PixelScene {
 	private TacticalTitleButton btnContinue;
 	private TacticalTitleButton btnBukov;
 	private TacticalTitleButton btnSettings;
-	private TacticalTitleButton btnAbout;
 	private BitmapText version;
 	private ExitButton btnExit;
 
@@ -208,7 +207,6 @@ public class TitleScene extends PixelScene {
 		add(btnBukov);
 
 		float secondaryTop = btnBukov.bottom() + 3f;
-		float secondaryWidth = (buttonWidth - 3f) / 2f;
 		btnSettings = new TacticalTitleButton(
 				"设置",
 				tokens.color("panel.border"),
@@ -220,24 +218,8 @@ public class TitleScene extends PixelScene {
 			}
 		};
 		btnSettings.setRect(
-				buttonLeft, secondaryTop, secondaryWidth, secondaryHeight);
+				buttonLeft, secondaryTop, buttonWidth, secondaryHeight);
 		add(btnSettings);
-
-		btnAbout = new TacticalTitleButton(
-				"关于",
-				tokens.color("panel.border"),
-				SPDAction.JOURNAL) {
-			@Override
-			protected void activate() {
-				ShatteredPixelDungeon.switchScene(AboutScene.class);
-			}
-		};
-		btnAbout.setRect(
-				btnSettings.right() + 3f,
-				secondaryTop,
-				secondaryWidth,
-				secondaryHeight);
-		add(btnAbout);
 
 		version = new BitmapText("v" + Game.version, pixelFont);
 		version.measure();
@@ -307,21 +289,6 @@ public class TitleScene extends PixelScene {
 		BukovMode.enter();
 		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
 		ShatteredPixelDungeon.switchScene(BukovHubScene.class);
-	}
-
-	/**
-	 * Retained only for host-save tooling and upstream compatibility. No
-	 * player-visible title control calls this method.
-	 */
-	@SuppressWarnings("unused")
-	private void openClassicMode() {
-		if (GamesInProgress.checkAll().isEmpty()) {
-			GamesInProgress.selectedClass = null;
-			GamesInProgress.curSlot = 1;
-			ShatteredPixelDungeon.switchScene(HeroSelectScene.class);
-		} else {
-			ShatteredPixelDungeon.switchNoFade(StartScene.class);
-		}
 	}
 
 	private abstract class TacticalTitleButton extends Button {

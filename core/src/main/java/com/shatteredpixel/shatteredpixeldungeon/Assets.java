@@ -251,6 +251,81 @@ public class Assets {
 					"sounds/bukov/gunshot_shotgun.wav";
 			public static final String GUNSHOT_HEAVY =
 					"sounds/bukov/gunshot_heavy.wav";
+			public static final String[] GUNSHOT_PISTOL_MECHANICAL = {
+					"sounds/bukov/gunshot_pistol_mechanical_1.wav",
+					"sounds/bukov/gunshot_pistol_mechanical_2.wav",
+					"sounds/bukov/gunshot_pistol_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_PISTOL_BODY = {
+					"sounds/bukov/gunshot_pistol_body_1.wav",
+					"sounds/bukov/gunshot_pistol_body_2.wav",
+					"sounds/bukov/gunshot_pistol_body_3.wav"
+			};
+			public static final String[] GUNSHOT_SMG_MECHANICAL = {
+					"sounds/bukov/gunshot_smg_mechanical_1.wav",
+					"sounds/bukov/gunshot_smg_mechanical_2.wav",
+					"sounds/bukov/gunshot_smg_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_SMG_BODY = {
+					"sounds/bukov/gunshot_smg_body_1.wav",
+					"sounds/bukov/gunshot_smg_body_2.wav",
+					"sounds/bukov/gunshot_smg_body_3.wav"
+			};
+			public static final String[] GUNSHOT_CARBINE_MECHANICAL = {
+					"sounds/bukov/gunshot_carbine_mechanical_1.wav",
+					"sounds/bukov/gunshot_carbine_mechanical_2.wav",
+					"sounds/bukov/gunshot_carbine_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_CARBINE_BODY = {
+					"sounds/bukov/gunshot_carbine_body_1.wav",
+					"sounds/bukov/gunshot_carbine_body_2.wav",
+					"sounds/bukov/gunshot_carbine_body_3.wav"
+			};
+			public static final String[] GUNSHOT_RIFLE_MECHANICAL = {
+					"sounds/bukov/gunshot_rifle_mechanical_1.wav",
+					"sounds/bukov/gunshot_rifle_mechanical_2.wav",
+					"sounds/bukov/gunshot_rifle_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_RIFLE_BODY = {
+					"sounds/bukov/gunshot_rifle_body_1.wav",
+					"sounds/bukov/gunshot_rifle_body_2.wav",
+					"sounds/bukov/gunshot_rifle_body_3.wav"
+			};
+			public static final String[] GUNSHOT_SHOTGUN_MECHANICAL = {
+					"sounds/bukov/gunshot_shotgun_mechanical_1.wav",
+					"sounds/bukov/gunshot_shotgun_mechanical_2.wav",
+					"sounds/bukov/gunshot_shotgun_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_SHOTGUN_BODY = {
+					"sounds/bukov/gunshot_shotgun_body_1.wav",
+					"sounds/bukov/gunshot_shotgun_body_2.wav",
+					"sounds/bukov/gunshot_shotgun_body_3.wav"
+			};
+			public static final String[] GUNSHOT_HEAVY_MECHANICAL = {
+					"sounds/bukov/gunshot_heavy_mechanical_1.wav",
+					"sounds/bukov/gunshot_heavy_mechanical_2.wav",
+					"sounds/bukov/gunshot_heavy_mechanical_3.wav"
+			};
+			public static final String[] GUNSHOT_HEAVY_BODY = {
+					"sounds/bukov/gunshot_heavy_body_1.wav",
+					"sounds/bukov/gunshot_heavy_body_2.wav",
+					"sounds/bukov/gunshot_heavy_body_3.wav"
+			};
+			public static final String[] GUNSHOT_TAIL_INDOOR = {
+					"sounds/bukov/gunshot_tail_indoor_1.wav",
+					"sounds/bukov/gunshot_tail_indoor_2.wav",
+					"sounds/bukov/gunshot_tail_indoor_3.wav"
+			};
+			public static final String[] GUNSHOT_TAIL_CORRIDOR = {
+					"sounds/bukov/gunshot_tail_corridor_1.wav",
+					"sounds/bukov/gunshot_tail_corridor_2.wav",
+					"sounds/bukov/gunshot_tail_corridor_3.wav"
+			};
+			public static final String[] GUNSHOT_TAIL_OPEN = {
+					"sounds/bukov/gunshot_tail_open_1.wav",
+					"sounds/bukov/gunshot_tail_open_2.wav",
+					"sounds/bukov/gunshot_tail_open_3.wav"
+			};
 			public static final String BULLET_HIT =
 					"sounds/bukov/bullet_hit.wav";
 			public static final String CONTACT_HIT =
@@ -313,6 +388,51 @@ public class Assets {
 				Bukov.GUNSHOT_PISTOL, Bukov.GUNSHOT_SMG,
 				Bukov.GUNSHOT_CARBINE, Bukov.GUNSHOT_RIFLE,
 				Bukov.GUNSHOT_SHOTGUN, Bukov.GUNSHOT_HEAVY,
+				Bukov.GUNSHOT_PISTOL_MECHANICAL[0],
+				Bukov.GUNSHOT_PISTOL_MECHANICAL[1],
+				Bukov.GUNSHOT_PISTOL_MECHANICAL[2],
+				Bukov.GUNSHOT_PISTOL_BODY[0],
+				Bukov.GUNSHOT_PISTOL_BODY[1],
+				Bukov.GUNSHOT_PISTOL_BODY[2],
+				Bukov.GUNSHOT_SMG_MECHANICAL[0],
+				Bukov.GUNSHOT_SMG_MECHANICAL[1],
+				Bukov.GUNSHOT_SMG_MECHANICAL[2],
+				Bukov.GUNSHOT_SMG_BODY[0],
+				Bukov.GUNSHOT_SMG_BODY[1],
+				Bukov.GUNSHOT_SMG_BODY[2],
+				Bukov.GUNSHOT_CARBINE_MECHANICAL[0],
+				Bukov.GUNSHOT_CARBINE_MECHANICAL[1],
+				Bukov.GUNSHOT_CARBINE_MECHANICAL[2],
+				Bukov.GUNSHOT_CARBINE_BODY[0],
+				Bukov.GUNSHOT_CARBINE_BODY[1],
+				Bukov.GUNSHOT_CARBINE_BODY[2],
+				Bukov.GUNSHOT_RIFLE_MECHANICAL[0],
+				Bukov.GUNSHOT_RIFLE_MECHANICAL[1],
+				Bukov.GUNSHOT_RIFLE_MECHANICAL[2],
+				Bukov.GUNSHOT_RIFLE_BODY[0],
+				Bukov.GUNSHOT_RIFLE_BODY[1],
+				Bukov.GUNSHOT_RIFLE_BODY[2],
+				Bukov.GUNSHOT_SHOTGUN_MECHANICAL[0],
+				Bukov.GUNSHOT_SHOTGUN_MECHANICAL[1],
+				Bukov.GUNSHOT_SHOTGUN_MECHANICAL[2],
+				Bukov.GUNSHOT_SHOTGUN_BODY[0],
+				Bukov.GUNSHOT_SHOTGUN_BODY[1],
+				Bukov.GUNSHOT_SHOTGUN_BODY[2],
+				Bukov.GUNSHOT_HEAVY_MECHANICAL[0],
+				Bukov.GUNSHOT_HEAVY_MECHANICAL[1],
+				Bukov.GUNSHOT_HEAVY_MECHANICAL[2],
+				Bukov.GUNSHOT_HEAVY_BODY[0],
+				Bukov.GUNSHOT_HEAVY_BODY[1],
+				Bukov.GUNSHOT_HEAVY_BODY[2],
+				Bukov.GUNSHOT_TAIL_INDOOR[0],
+				Bukov.GUNSHOT_TAIL_INDOOR[1],
+				Bukov.GUNSHOT_TAIL_INDOOR[2],
+				Bukov.GUNSHOT_TAIL_CORRIDOR[0],
+				Bukov.GUNSHOT_TAIL_CORRIDOR[1],
+				Bukov.GUNSHOT_TAIL_CORRIDOR[2],
+				Bukov.GUNSHOT_TAIL_OPEN[0],
+				Bukov.GUNSHOT_TAIL_OPEN[1],
+				Bukov.GUNSHOT_TAIL_OPEN[2],
 				Bukov.BULLET_HIT,
 				Bukov.CONTACT_HIT,
 				Bukov.DRY_FIRE, Bukov.RELOAD_START, Bukov.RELOAD_FINISH,

@@ -11,6 +11,10 @@ public class GunshotAudioResolverTest {
 
 	@Test
 	public void threeVariantsStayInsideAuthoredFourPercentPitchRange() {
+		assertEquals(0, GunshotAudioResolver.variationIndex(0));
+		assertEquals(1, GunshotAudioResolver.variationIndex(1));
+		assertEquals(2, GunshotAudioResolver.variationIndex(2));
+		assertEquals(2, GunshotAudioResolver.variationIndex(-1));
 		assertEquals(0.96f, GunshotAudioResolver.variationPitch(0), 0f);
 		assertEquals(1f, GunshotAudioResolver.variationPitch(1), 0f);
 		assertEquals(1.04f, GunshotAudioResolver.variationPitch(2), 0f);

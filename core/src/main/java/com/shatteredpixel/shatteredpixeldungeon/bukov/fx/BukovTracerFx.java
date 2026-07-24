@@ -20,14 +20,16 @@ public final class BukovTracerFx extends Group {
 	 * mouse/touch input, which made consumed ammunition look like a failed
 	 * shot.
 	 */
-	public static final float DURATION_SECONDS = 0.16f;
-	public static final int FRIENDLY_COLOR = 0xB9F6FF;
+	public static final float DURATION_SECONDS = 0.24f;
+	// Warm white stays readable against all six blue/green industrial themes.
+	public static final int FRIENDLY_COLOR = 0xFFF1A8;
 	public static final int HOSTILE_COLOR = 0xFF765E;
 
 	private final float duration;
 	private final TraceGeometry geometry;
 	private final BulletHead bulletHead;
 	private float age;
+	private boolean hasPresentedTravelFrame;
 
 	public BukovTracerFx(PointF from, PointF to, boolean hostile, float intensity) {
 		geometry = plan(from, to, intensity);
@@ -68,6 +70,7 @@ public final class BukovTracerFx extends Group {
 	@Override
 	public void update() {
 		super.update();
+		boolean hadPresentedTravelFrame = hasPresentedTravelFrame;
 		age += Game.elapsed;
 		float alpha = alphaAt(age, duration);
 		for (int index = 0; index < length; index++) {
@@ -84,8 +87,9 @@ public final class BukovTracerFx extends Group {
 					geometry.fromY()
 							+ (geometry.toY() - geometry.fromY()) * progress);
 			bulletHead.fade(alpha);
+			hasPresentedTravelFrame |= progress > 0f;
 		}
-		if (expiredAt(age, duration)) {
+		if (shouldExpireAfterUpdate(age, duration, hadPresentedTravelFrame)) {
 			killAndErase();
 		}
 	}
@@ -111,8 +115,8 @@ public final class BukovTracerFx extends Group {
 				to.y,
 				length,
 				(float) Math.toDegrees(Math.atan2(dy, dx)),
-				0.65f + strength * 0.35f,
-				1.7f + strength * 0.8f);
+				1.05f + strength * 0.55f,
+				2.5f + strength * 1.3f);
 	}
 
 	public static float alphaAt(float age, float duration) {
@@ -131,6 +135,22 @@ public final class BukovTracerFx extends Group {
 			return 0f;
 		}
 		return clamp(age / duration, 0f, 1f);
+	}
+
+	/**
+	 * A tracer may be created after its parent group's update has already
+	 * drained combat events. If the next frame hitches past the whole tracer
+	 * duration, keep the endpoint for that draw instead of erasing a head that
+	 * has only ever been visible at the muzzle.
+	 */
+	static boolean shouldExpireAfterUpdate(
+			float age,
+			float duration,
+			boolean hadPresentedTravelFrame) {
+		if (!finite(age) || !finite(duration) || duration <= 0f) {
+			return true;
+		}
+		return age >= duration && hadPresentedTravelFrame;
 	}
 
 	private static boolean finite(float value) {
@@ -185,8 +205,8 @@ public final class BukovTracerFx extends Group {
 				int color,
 				float coreThickness) {
 			super(
-					Math.max(3.4f, coreThickness * 3.6f),
-					Math.max(1.8f, coreThickness * 1.8f),
+					Math.max(6f, coreThickness * 4.4f),
+					Math.max(2.4f, coreThickness * 2f),
 					color);
 			// ColorBlock's source texture is one pixel; the scale holds the
 			// authored size, so 0.5/0.5 is its actual transform origin.

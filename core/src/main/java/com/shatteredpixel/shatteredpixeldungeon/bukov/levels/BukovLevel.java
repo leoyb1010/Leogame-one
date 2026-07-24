@@ -10,7 +10,6 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.bukov.levels;
 
-import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovEnemySpawnPlanner;
@@ -188,12 +187,16 @@ public class BukovLevel extends RegularLevel {
 
 	@Override
 	public String tilesTex() {
-		return Assets.Environment.TILES_BUKOV_FOG_DEPOT;
+		return visualTheme().tilesTexture();
 	}
 
 	@Override
 	public String waterTex() {
-		return Assets.Environment.WATER_BUKOV_FOG_DEPOT;
+		return visualTheme().waterTexture();
+	}
+
+	public String landmarkTex() {
+		return visualTheme().landmarkTexture();
 	}
 
 	@Override
@@ -561,6 +564,14 @@ public class BukovLevel extends RegularLevel {
 		registry.loadDefault();
 		return registry.require(
 				themeId == null || themeId.isEmpty() ? "fog_depot" : themeId);
+	}
+
+	private ThemeDefinition visualTheme() {
+		return themeForId(
+				raidLayout == null || raidLayout.themeId == null
+						|| raidLayout.themeId.isEmpty()
+						? "fog_depot"
+						: raidLayout.themeId);
 	}
 
 	private void placeExtractionMarkers(boolean updateRuntimeFlags) {

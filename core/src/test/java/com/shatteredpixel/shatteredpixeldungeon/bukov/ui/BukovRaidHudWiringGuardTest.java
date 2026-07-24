@@ -56,6 +56,9 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovCombatHudFormat.navigation(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.threat(live)"));
 		assertTrue(hud.contains("positionReticle(crosshairX, crosshairY)"));
+		assertTrue(hud.contains("PointerEvent.currentHoverPos()"));
+		assertTrue(hud.contains("camera.screenToCamera("));
+		assertTrue(hud.contains("ControllerHandler.controllerActive"));
 		assertTrue(hud.contains("camera.width"));
 		assertTrue(hud.contains("camera.height"));
 		assertTrue(hud.contains("live.bossHealthFraction()"));
@@ -86,6 +89,32 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("Math.floor(uiSeconds * 2f)"));
 		assertFalse(hud.contains("frameCount"));
 		assertFalse(hud.contains("Actor.now"));
+	}
+
+	@Test
+	public void combatFxUsesRealtimeWorldCoordinatesWithoutDoubleCentering()
+			throws Exception {
+		String scene = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
+		assertTrue(scene.contains("event.fromX() * tileSize,"));
+		assertTrue(scene.contains("event.fromY() * tileSize)"));
+		assertTrue(scene.contains("event.toX() * tileSize,"));
+		assertTrue(scene.contains("event.toY() * tileSize)"));
+		assertFalse(scene.contains("event.fromX() * tileSize + center"));
+		assertFalse(scene.contains("event.toX() * tileSize + center"));
+	}
+
+	@Test
+	public void mouseMovementImmediatelySwitchesAimBackFromController()
+			throws Exception {
+		String inputHandler = source(
+				"../SPD-classes/src/main/java/com/watabou/input/InputHandler.java");
+		String mouseMoved = inputHandler.substring(
+				inputHandler.indexOf("boolean mouseMoved("),
+				inputHandler.indexOf("// *****************", inputHandler.indexOf(
+						"boolean mouseMoved(")));
+		assertTrue(mouseMoved.contains(
+				"ControllerHandler.controllerActive = false"));
 	}
 
 	private static String source(String path) throws Exception {

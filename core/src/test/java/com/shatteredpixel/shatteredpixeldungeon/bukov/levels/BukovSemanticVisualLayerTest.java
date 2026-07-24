@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -199,7 +200,9 @@ public class BukovSemanticVisualLayerTest {
 	@Test
 	public void landmarkKindAndGridFootprintSurviveBundleRestore() {
 		BukovLandmarkTilemap original =
-				new BukovLandmarkTilemap(Kind.MAINTENANCE_GATE);
+				new BukovLandmarkTilemap(
+						Kind.MAINTENANCE_GATE,
+						"underground_lab");
 		original.pos(7, 9);
 		Bundle stored = new Bundle();
 		stored.put("landmark", original);
@@ -207,8 +210,43 @@ public class BukovSemanticVisualLayerTest {
 		BukovLandmarkTilemap restored =
 				(BukovLandmarkTilemap)stored.get("landmark");
 		assertTrue(restored.kind() == Kind.MAINTENANCE_GATE);
+		assertEquals("underground_lab", restored.visualAssetId());
 		assertTrue(restored.tileX == 7 && restored.tileY == 9);
 		assertTrue(restored.tileW == 6 && restored.tileH == 2);
+	}
+
+	@Test
+	public void everyThemePassesItsVisualAssetIdToWorldLandmarks() {
+		ThemeRegistry registry = new ThemeRegistry();
+		registry.loadDefault();
+
+		for (ThemeDefinition theme : registry.all()) {
+			BukovLevel level = level(10, 10);
+			BukovRaidLayout layout = new BukovRaidLayout();
+			layout.seed = 114477L;
+			layout.themeId = theme.id;
+			BukovRaidLayout.Mark pump = room(
+					level,
+					1,
+					1,
+					"fog_lamp_pump_station",
+					BukovRaidLayout.Zone.COMBAT);
+			layout.marks.add(pump);
+
+			BukovSemanticVisualLayer.apply(level, layout, theme);
+
+			int themedLandmarks = 0;
+			for (CustomTilemap visual : level.customTiles) {
+				if (visual instanceof BukovLandmarkTilemap) {
+					assertEquals(
+							theme.visualAssetId,
+							((BukovLandmarkTilemap)visual).visualAssetId());
+					themedLandmarks++;
+				}
+			}
+			assertTrue(theme.id + " produced no themed landmark",
+					themedLandmarks > 0);
+		}
 	}
 
 	private static BukovLevel level(int width, int height) {

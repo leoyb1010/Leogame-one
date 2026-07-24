@@ -4,6 +4,7 @@
     {
       "id": "fog_depot",
       "name": "雾港回收区",
+      "visualAssetId": "fog_depot",
       "primaryColor": "#49666C",
       "secondaryColor": "#B68554",
       "riskMultiplier": 0.85,
@@ -29,6 +30,7 @@
     {
       "id": "rust_workshop",
       "name": "锈蚀工场",
+      "visualAssetId": "rust_works",
       "primaryColor": "#6B5146",
       "secondaryColor": "#D08445",
       "riskMultiplier": 1.00,
@@ -54,6 +56,7 @@
     {
       "id": "flooded_passage",
       "name": "沉水通道",
+      "visualAssetId": "flooded_bunker",
       "primaryColor": "#3E5D64",
       "secondaryColor": "#6CA0A2",
       "riskMultiplier": 1.05,
@@ -79,6 +82,7 @@
     {
       "id": "overgrown_yard",
       "name": "荒草货场",
+      "visualAssetId": "container_yard",
       "primaryColor": "#4F6447",
       "secondaryColor": "#A09055",
       "riskMultiplier": 0.95,
@@ -104,6 +108,7 @@
     {
       "id": "cold_storage",
       "name": "冷库环线",
+      "visualAssetId": "cold_storage",
       "primaryColor": "#5B6878",
       "secondaryColor": "#AFC4CF",
       "riskMultiplier": 1.10,
@@ -129,6 +134,7 @@
     {
       "id": "sealed_lab",
       "name": "封存实验层",
+      "visualAssetId": "underground_lab",
       "primaryColor": "#4B536B",
       "secondaryColor": "#A875A1",
       "riskMultiplier": 1.25,
