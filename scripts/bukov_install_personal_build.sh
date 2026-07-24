@@ -92,6 +92,7 @@ package_dir="${package_arg:A}"
 for command_path in \
     /usr/bin/awk \
     /usr/bin/codesign \
+    /usr/bin/find \
     /usr/bin/shasum \
     /usr/bin/unzip \
     /usr/bin/xattr \
@@ -169,8 +170,17 @@ ios_actual_hash="${ios_actual_hash%% *}"
 [[ "$ios_actual_hash" == "$ios_expected_hash" ]] \
   || fail "iOS executable hash does not match PACKAGE_INFO.txt"
 
-mac_jar="${mac_app}/Contents/app"/desktop-*.jar(N[1])
-[[ -f "$mac_jar" ]] || fail "macOS embedded build identity jar is missing"
+typeset -a mac_identity_jars
+mac_identity_jars=()
+while IFS= read -r identity_jar; do
+  mac_identity_jars+=("$identity_jar")
+done < <(
+  /usr/bin/find "${mac_app}/Contents/app" -maxdepth 1 -type f \
+    -name 'desktop-*.jar' -print
+)
+(( ${#mac_identity_jars} == 1 )) \
+  || fail "expected exactly one macOS identity jar, found ${#mac_identity_jars}"
+mac_jar="${mac_identity_jars[1]}"
 mac_embedded_commit="$(
   /usr/bin/unzip -p "$mac_jar" bukov-build-identity.properties \
     | /usr/bin/awk -F= '$1 == "source_commit" { print substr($0, index($0, "=") + 1); exit }'
