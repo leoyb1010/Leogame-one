@@ -268,6 +268,7 @@ public class GameScene extends PixelScene {
 	private BukovRealtimeWorld bukovWorld;
 	private BukovRaidCoordinator bukovRaid;
 	private BukovRuntimeLoadoutAdapter.RuntimeLoadout bukovRuntimeLoadout;
+	private boolean bukovEmergencyLoadoutRecovered;
 	private BukovSaveService bukovSaves;
 	private BukovRaidHud bukovHud;
 	private BukovPauseButton bukovPause;
@@ -910,6 +911,11 @@ public class GameScene extends PixelScene {
 					return;
 				}
 				installBukovRuntimeLoadout();
+				if (bukovEmergencyLoadoutRecovered) {
+					GLog.p(Messages.get(
+							GameScene.class,
+							"bukov_emergency_loadout_recovered"));
+				}
 				bukovWorld = new BukovRealtimeWorld(
 						Dungeon.hero,
 						bukovRaid,
@@ -1096,6 +1102,8 @@ public class GameScene extends PixelScene {
 						BukovRaidCoordinator.resume(bukovSaves);
 				if (resumed != null) {
 					bukovRaid = resumed;
+					bukovEmergencyLoadoutRecovered =
+							resumed.emergencyLoadoutRecovered();
 					if (bukovRaid.session().seed != Dungeon.seed) {
 						throw new IOException(
 								"Bukov checkpoint does not match the loaded host save");
@@ -1104,6 +1112,7 @@ public class GameScene extends PixelScene {
 							extractionDefinitions,
 							containerDefinitions);
 				} else {
+					bukovEmergencyLoadoutRecovered = false;
 					// A durable receipt with no checkpoint means settlement
 					// committed before host-save cleanup completed.
 					BukovProfile profile = bukovSaves.loadProfile();

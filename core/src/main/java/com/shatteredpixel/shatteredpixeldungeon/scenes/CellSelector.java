@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Char;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.input.ControllerHandler;
@@ -65,6 +66,11 @@ public class CellSelector extends ScrollArea {
 	
 	@Override
 	protected void onScroll( ScrollEvent event ) {
+		// The realtime raid owns a fixed, follow-camera presentation. Mouse
+		// wheel input is reserved for inventory/weapon navigation there.
+		if (BukovMode.active()) {
+			return;
+		}
 		float diff = event.amount/10f;
 		
 		//scale zoom difference so zooming is consistent

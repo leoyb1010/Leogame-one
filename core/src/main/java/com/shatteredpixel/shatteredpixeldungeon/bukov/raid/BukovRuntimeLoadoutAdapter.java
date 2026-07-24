@@ -225,7 +225,9 @@ public final class BukovRuntimeLoadoutAdapter {
 		Map<String, Binding> bindings = new LinkedHashMap<>();
 
 		for (RaidItem item : ledger.items()) {
-			if (item.foundInRaid()) {
+			if (item.foundInRaid()
+					&& !BukovActiveRaidRecovery
+							.disposableEmergencyItem(item)) {
 				continue;
 			}
 			String firearmId = firearmId(item.definitionId());

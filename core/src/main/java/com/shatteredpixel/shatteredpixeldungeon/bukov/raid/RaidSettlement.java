@@ -159,6 +159,9 @@ public final class RaidSettlement {
 
 		if (outcome == RaidOutcome.SUCCESS) {
 			for (RaidItem item : carriedLoot.items()) {
+				if (BukovActiveRaidRecovery.disposableEmergencyItem(item)) {
+					continue;
+				}
 				RaidItem settledItem = raidMode.settleExtractedItem(item);
 				// "found in raid" describes the just-finished action. Mission
 				// evidence stays as an archived collectible; BukovLoadout keeps
@@ -177,6 +180,9 @@ public final class RaidSettlement {
 					carriedLoot,
 					raidMode);
 			for (RaidItem item : carriedLoot.items()) {
+				if (BukovActiveRaidRecovery.disposableEmergencyItem(item)) {
+					continue;
+				}
 				boolean protectedFromLoss =
 						item.itemUid().equals(protectedUid)
 								|| raidMode == BukovRaidMode.SCAVENGER

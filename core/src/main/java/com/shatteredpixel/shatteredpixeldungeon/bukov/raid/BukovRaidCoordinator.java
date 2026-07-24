@@ -49,17 +49,20 @@ public final class BukovRaidCoordinator {
 	private final RaidSettlement settlement;
 	private final BukovProfile profile;
 	private final BukovRaidCheckpoint checkpoint;
+	private final boolean emergencyLoadoutRecovered;
 	private boolean finished;
 
 	private BukovRaidCoordinator(
 			BukovSaveService saves,
 			RaidSettlement settlement,
 			BukovProfile profile,
-			BukovRaidCheckpoint checkpoint) {
+			BukovRaidCheckpoint checkpoint,
+			boolean emergencyLoadoutRecovered) {
 		this.saves = saves;
 		this.settlement = settlement;
 		this.profile = profile;
 		this.checkpoint = checkpoint;
+		this.emergencyLoadoutRecovered = emergencyLoadoutRecovered;
 	}
 
 	public static BukovRaidCoordinator start(
@@ -171,6 +174,7 @@ public final class BukovRaidCoordinator {
 				session,
 				carried,
 				extractions);
+		BukovActiveRaidRecovery.markCurrentCheckpoint(checkpoint);
 		checkpoint.rememberDeploymentDefinitions(
 				profile.lastLoadoutDefinitions());
 		for (BukovContainerDefinition definition :
@@ -185,7 +189,8 @@ public final class BukovRaidCoordinator {
 		// resume() removes the same deployed UIDs from the stash before play.
 		saves.saveRaidCheckpoint(checkpoint);
 		saves.saveProfile(profile);
-		return new BukovRaidCoordinator(saves, settlement, profile, checkpoint);
+		return new BukovRaidCoordinator(
+				saves, settlement, profile, checkpoint, false);
 	}
 
 	/** Returns null when no resumable raid exists. */
@@ -213,7 +218,22 @@ public final class BukovRaidCoordinator {
 			throw new IOException("Settled raid checkpoint has no profile receipt");
 		}
 		reconcileDeployment(saves, profile, checkpoint);
-		return new BukovRaidCoordinator(saves, settlement, profile, checkpoint);
+		boolean requiresRecoveryMigration =
+				!checkpoint.eventCompleted(
+						BukovActiveRaidRecovery.MIGRATION_EVENT_ID);
+		boolean emergencyLoadoutRecovered =
+				BukovActiveRaidRecovery.migrateLegacyCheckpoint(checkpoint);
+		if (requiresRecoveryMigration) {
+			// The one-shot decision and any injected items become durable
+			// together. A later player drop can therefore never retrigger it.
+			saves.saveRaidCheckpoint(checkpoint);
+		}
+		return new BukovRaidCoordinator(
+				saves,
+				settlement,
+				profile,
+				checkpoint,
+				emergencyLoadoutRecovered);
 	}
 
 	public BukovProfile profile() {
@@ -265,6 +285,11 @@ public final class BukovRaidCoordinator {
 
 	public boolean finished() {
 		return finished;
+	}
+
+	/** True only for the scene that performed and persisted the legacy repair. */
+	public boolean emergencyLoadoutRecovered() {
+		return emergencyLoadoutRecovered;
 	}
 
 	public boolean eventCompleted(String eventId) {
