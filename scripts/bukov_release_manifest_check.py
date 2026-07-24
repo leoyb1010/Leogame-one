@@ -136,10 +136,21 @@ def check_license_and_evidence(manifest: dict) -> None:
 
     mac = manifest["platforms"]["macOS"]
     ios = manifest["platforms"]["iOS"]
+    final_release = (
+        manifest["product"]["releaseState"]
+        == "personal_build_validated_mac_and_ios_simulator"
+    )
+    expected_qa_status = "passed" if final_release else "partial_pass"
     require(mac["packageEvidence"]["status"] == "passed", "macOS package not passed")
-    require(mac["interactiveQa"]["status"] == "passed", "macOS QA not passed")
+    require(
+        mac["interactiveQa"]["status"] == expected_qa_status,
+        "macOS QA status does not match release scope",
+    )
     require(ios["aotEvidence"]["status"] == "passed", "iOS AOT not passed")
-    require(ios["simulatorQa"]["status"] == "passed", "iOS simulator QA not passed")
+    require(
+        ios["simulatorQa"]["status"] == expected_qa_status,
+        "iOS simulator QA status does not match release scope",
+    )
     require(
         ios["deviceQa"]["status"] == "not_run",
         "physical iOS evidence must be explicit when not run",
@@ -154,8 +165,12 @@ def check_license_and_evidence(manifest: dict) -> None:
     )
     require(
         manifest["evidencePolicy"]["currentPlatformClaim"]
-        == "passed_mac_and_ios_simulator",
-        "platform claim must match the verified personal-build scope",
+        == (
+            "passed_mac_and_ios_simulator"
+            if final_release
+            else "alpha6_platform_smoke_passed_full_e2e_pending"
+        ),
+        "platform claim must match the declared release scope",
     )
 
     for label, evidence in (
@@ -188,8 +203,11 @@ def main() -> None:
     require(manifest.get("schemaVersion") == 2, "unsupported release manifest schema")
     require(
         manifest["product"]["releaseState"]
-        == "personal_build_validated_mac_and_ios_simulator",
-        "release state must match the validated personal-build scope",
+        in {
+            "personal_build_validated_mac_and_ios_simulator",
+            "alpha6_automation_and_platform_smoke_passed_not_final",
+        },
+        "release state must be an explicit validated or not-final scope",
     )
     check_content(manifest)
     check_assets(manifest)

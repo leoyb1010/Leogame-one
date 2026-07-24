@@ -5,8 +5,8 @@
     "nameEn": "Escape from Bukov",
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
-    "releaseState": "personal_build_validated_mac_and_ios_simulator",
-    "releaseSourceCommit": "327d69d6484f80faf73365636b391a410bbaccaa"
+    "releaseState": "alpha6_automation_and_platform_smoke_passed_not_final",
+    "releaseSourceCommit": "cd1068b6642d72681aa4ffd662a4a6343f19d1f3"
   },
   "content": {
     "themes": {
@@ -67,14 +67,14 @@
       "implementation": "present",
       "packageEvidence": {
         "status": "passed",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫.app/Contents/MacOS/逃离布科夫",
-        "binarySha256": "019ca17a15b4588f8e33afe02c33efc4cce1b8cad6dbdad2c37f1dd07a91f3b7",
-        "builtAt": "2026-07-24T04:14:00+08:00",
-        "log": "build/evidence/final-qa/macos-jpackage-final.log"
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "binarySha256": "cc3734c89cf5e6ce081615109094b5a7e1216be3b61de91a8c9eaf5dec57a7b7",
+        "builtAt": "2026-07-24T10:51:00+08:00",
+        "log": "build/evidence/alpha6-macos-package.log"
       },
       "interactiveQa": {
-        "status": "passed",
+        "status": "partial_pass",
         "evidenceDirectory": "build/evidence/final-qa",
         "report": "docs/bukov/FINAL_QA_REPORT.md"
       }
@@ -83,14 +83,14 @@
       "implementation": "present",
       "aotEvidence": {
         "status": "passed",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-iOS-Simulator.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-v2.0/逃离布科夫-iOS-Simulator.app/IOSLauncher",
-        "binarySha256": "56124e7d6bdfcbfb0d0e1a3388c3267d176e3c605a1c49ed7b0f625d34081738",
-        "builtAt": "2026-07-24T04:15:45+08:00",
-        "log": "build/evidence/final-qa/ios-simulator-final.log"
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫-iOS-Simulator.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫-iOS-Simulator.app/IOSLauncher",
+        "binarySha256": "37ccae9b61b110977787cc593156cc0165c098647cb15b544b0e37132ee6464b",
+        "builtAt": "2026-07-24T10:53:00+08:00",
+        "log": "build/evidence/alpha6-ios-simulator.log"
       },
       "simulatorQa": {
-        "status": "passed",
+        "status": "partial_pass",
         "runtime": "iOS 26.5",
         "device": "Codex Test iPhone 17 Pro",
         "deviceId": "50D8337F-7AFD-4AAE-AB44-318BCDC02AF6",
@@ -152,20 +152,20 @@
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
       "status": "passed",
-      "sourceCommit": "327d69d6484f80faf73365636b391a410bbaccaa",
+      "sourceCommit": "cd1068b6642d72681aa4ffd662a4a6343f19d1f3",
       "tests": {
-        "core": 520,
-        "desktop": 2,
+        "core": 656,
+        "desktop": 4,
         "ios": 6,
         "failures": 0
       },
-      "log": "build/evidence/final-qa/release-commit-gradle-suite.log"
+      "log": "build/evidence/alpha6-release-suite.log"
     }
   },
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
-    "currentPlatformClaim": "passed_mac_and_ios_simulator",
+    "currentPlatformClaim": "alpha6_platform_smoke_passed_full_e2e_pending",
     "rule": "Passed claims are bound to releaseSourceCommit and the local evidence directory.",
     "knownLimitations": [
       "Physical iOS device QA was not run.",
