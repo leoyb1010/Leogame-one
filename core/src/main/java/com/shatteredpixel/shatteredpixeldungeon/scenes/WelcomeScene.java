@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
@@ -39,6 +40,7 @@ import com.watabou.input.GameAction;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.FileUtils;
@@ -148,12 +150,12 @@ public class WelcomeScene extends PixelScene {
 			panelTop = insets.top + BukovVisualContract.OUTER_MARGIN;
 		}
 
-		ColorBlock panel = new ColorBlock(
-				panelWidth,
-				panelHeight,
+		NinePatch panel = BukovUiAssets.surface(
+				BukovUiAssets.Surface.PANEL,
 				tokens.colorWithAlpha("ink.background", 238));
 		panel.x = panelLeft;
 		panel.y = panelTop;
+		panel.size(panelWidth, panelHeight);
 		add(panel);
 
 		ColorBlock edge = new ColorBlock(
@@ -257,8 +259,8 @@ public class WelcomeScene extends PixelScene {
 
 	private final class WelcomeActionButton extends Button {
 
-		private final ColorBlock surface;
-		private final ColorBlock pressed;
+		private final NinePatch surface;
+		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final RenderedTextBlock text;
 		private final boolean brandNewProfile;
@@ -266,16 +268,14 @@ public class WelcomeScene extends PixelScene {
 		private WelcomeActionButton(
 				String value, boolean brandNewProfile) {
 			this.brandNewProfile = brandNewProfile;
-			surface = new ColorBlock(
-					1f,
-					1f,
-					tokens.color("accent.interact"));
-			surface.alpha(0.22f);
+			surface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON,
+					tokens.colorWithAlpha("panel.surface", 238));
+			surface.alpha(0.86f);
 			addToBack(surface);
-			pressed = new ColorBlock(
-					1f,
-					1f,
-					tokens.color("panel.border"));
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.colorWithAlpha("panel.deep", 255));
 			pressed.visible = false;
 			addToBack(pressed);
 			edge = new ColorBlock(
@@ -328,7 +328,7 @@ public class WelcomeScene extends PixelScene {
 					y + (height - text.height()) / 2f);
 		}
 
-		private void fit(ColorBlock block) {
+		private void fit(NinePatch block) {
 			block.x = x;
 			block.y = y;
 			block.size(width, height);

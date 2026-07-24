@@ -3,27 +3,40 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
 
 /**
- * Renderer-independent 600ms settlement reveal.
+ * Renderer-independent, token-timed settlement reveal.
  *
  * One clock drives both row disclosure and the rolling total, so frame rate
- * cannot change the order or final economic value.
+ * cannot change the order or final economic value. The caller supplies the
+ * duration selected from the shared motion tokens, including the shortened
+ * reduced-motion duration.
  */
 public final class BukovSettlementRevealModel {
 
-	public static final int DURATION_MS = 600;
-
 	private final int rowCount;
 	private final long totalValue;
+	private final int durationMs;
 	private float elapsedSeconds;
 	private boolean skipped;
 
-	public BukovSettlementRevealModel(int rowCount, long totalValue) {
-		if (rowCount < 0 || totalValue < 0L) {
+	public BukovSettlementRevealModel(
+			int rowCount,
+			long totalValue,
+			int ritualDurationMs,
+			int reducedMotionDurationMs,
+			boolean reduceMotion) {
+		if (rowCount < 0
+				|| totalValue < 0L
+				|| ritualDurationMs <= 0
+				|| reducedMotionDurationMs <= 0) {
 			throw new IllegalArgumentException(
-					"row count and total value must be non-negative");
+					"row count and total value must be non-negative"
+							+ " and motion durations must be positive");
 		}
 		this.rowCount = rowCount;
 		this.totalValue = totalValue;
+		durationMs = reduceMotion
+				? reducedMotionDurationMs
+				: ritualDurationMs;
 	}
 
 	public void advance(float deltaSeconds) {
@@ -33,7 +46,7 @@ public final class BukovSettlementRevealModel {
 		}
 		if (complete()) return;
 		elapsedSeconds = Math.min(
-				DURATION_MS / 1000f,
+				durationSeconds(),
 				elapsedSeconds + deltaSeconds);
 	}
 
@@ -42,7 +55,7 @@ public final class BukovSettlementRevealModel {
 	}
 
 	public boolean complete() {
-		return skipped || elapsedSeconds >= DURATION_MS / 1000f;
+		return skipped || elapsedSeconds >= durationSeconds();
 	}
 
 	public int visibleRows() {
@@ -66,6 +79,10 @@ public final class BukovSettlementRevealModel {
 		if (skipped) return 1f;
 		return Math.min(
 				1f,
-				elapsedSeconds / (DURATION_MS / 1000f));
+				elapsedSeconds / durationSeconds());
+	}
+
+	private float durationSeconds() {
+		return durationMs / 1000f;
 	}
 }

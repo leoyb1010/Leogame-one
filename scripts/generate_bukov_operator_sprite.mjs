@@ -22,7 +22,14 @@ const DIRECTION_COUNT = 8;
 const output = process.argv[2] ?? "core/src/main/assets/sprites/bukov_operator.png";
 const manifestOutput = process.argv[3]
   ?? "core/src/main/assets/sprites/bukov_operator_manifest.json";
+const lowerOutput = process.argv[4]
+  ?? output.replace(/\.png$/, "_lower.png");
+const upperOutput = process.argv[5]
+  ?? output.replace(/\.png$/, "_upper.png");
 const pixels = Buffer.alloc(WIDTH * HEIGHT * 4);
+const lowerPixels = Buffer.alloc(WIDTH * HEIGHT * 4);
+const upperPixels = Buffer.alloc(WIDTH * HEIGHT * 4);
+let activeLayer = upperPixels;
 
 const directions = [
   { name: "N", x: 0, y: -1 },
@@ -73,7 +80,16 @@ function put(frame, direction, x, y, color) {
       || x < 0 || x >= FRAME_W || y < 0 || y >= FRAME_H) return;
   const px = frame * FRAME_W + x;
   const py = direction * FRAME_H + y;
-  pixels.set(color, (py * WIDTH + px) * 4);
+  const offset = (py * WIDTH + px) * 4;
+  pixels.set(color, offset);
+  activeLayer.set(color, offset);
+}
+
+function onLayer(layer, draw) {
+  const previousLayer = activeLayer;
+  activeLayer = layer;
+  draw();
+  activeLayer = previousLayer;
 }
 
 function rect(frame, direction, x, y, width, height, color) {
@@ -115,13 +131,16 @@ function drawOperator(frame, directionIndex, state, phase) {
     return;
   }
 
-  rect(frame, directionIndex, 3, 14, 7, 1, C.shadow);
+  onLayer(lowerPixels, () => {
+    rect(frame, directionIndex, 3, 14, 7, 1, C.shadow);
 
-  // Boots remain anchored to y=14 for every standing state and direction.
-  line(frame, directionIndex, 5, 10 + bob, 4 + gait, 13, C.ink);
-  line(frame, directionIndex, 7, 10 + bob, 8 - gait, 13, C.ink);
-  rect(frame, directionIndex, 3 + gait, 14, 3, 1, C.boot);
-  rect(frame, directionIndex, 7 - gait, 14, 3, 1, C.boot);
+    // The locomotion layer owns only hips, legs, boots and ground contact.
+    // Weapon pixels that extend below the waist remain on the upper layer.
+    line(frame, directionIndex, 5, 10 + bob, 4 + gait, 13, C.ink);
+    line(frame, directionIndex, 7, 10 + bob, 8 - gait, 13, C.ink);
+    rect(frame, directionIndex, 3 + gait, 14, 3, 1, C.boot);
+    rect(frame, directionIndex, 7 - gait, 14, 3, 1, C.boot);
+  });
 
   // Backpack, plate carrier and helmet establish one stable silhouette.
   rect(frame, directionIndex, 2, 5 + bob, 2, 6, C.ink);
@@ -205,22 +224,37 @@ for (let direction = 0; direction < directions.length; direction += 1) {
 
 mkdirSync(dirname(output), { recursive: true });
 mkdirSync(dirname(manifestOutput), { recursive: true });
+mkdirSync(dirname(lowerOutput), { recursive: true });
+mkdirSync(dirname(upperOutput), { recursive: true });
 const temp = mkdtempSync(join(tmpdir(), "bukov-operator-original-"));
-const raw = join(temp, "bukov_operator.rgba");
-try {
-  writeFileSync(raw, pixels);
+
+function encode(pixelsToEncode, rawName, destination) {
+  const raw = join(temp, rawName);
+  writeFileSync(raw, pixelsToEncode);
   const encoded = spawnSync("ffmpeg", [
     "-y", "-hide_banner", "-loglevel", "error",
     "-f", "rawvideo", "-pixel_format", "rgba",
     "-video_size", `${WIDTH}x${HEIGHT}`, "-framerate", "1",
-    "-i", raw, "-frames:v", "1", "-compression_level", "9", output,
+    "-i", raw, "-frames:v", "1", "-compression_level", "9", destination,
   ], { stdio: "inherit" });
   if (encoded.status !== 0) process.exit(encoded.status ?? 1);
-  const sha256 = createHash("sha256")
-    .update(readFileSync(output)).digest("hex");
+}
+
+function sha256(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
+try {
+  encode(pixels, "bukov_operator.rgba", output);
+  encode(lowerPixels, "bukov_operator_lower.rgba", lowerOutput);
+  encode(upperPixels, "bukov_operator_upper.rgba", upperOutput);
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     atlas: "sprites/bukov_operator.png",
+    layers: {
+      lowerBody: "sprites/bukov_operator_lower.png",
+      upperBodyWeapon: "sprites/bukov_operator_upper.png",
+    },
     width: WIDTH,
     height: HEIGHT,
     frameWidth: FRAME_W,
@@ -234,7 +268,11 @@ try {
       muzzleAnchor: [muzzle(direction).x, muzzle(direction).y],
     })),
     states,
-    sha256,
+    sha256: sha256(output),
+    layerSha256: {
+      lowerBody: sha256(lowerOutput),
+      upperBodyWeapon: sha256(upperOutput),
+    },
   };
   writeFileSync(
     manifestOutput,

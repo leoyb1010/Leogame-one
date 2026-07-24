@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -13,8 +14,6 @@ import com.watabou.noosa.Group;
 public final class BukovBloodMistFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.28f;
-	static final int BLOOD_DARK = 0xFF5A1517;
-	static final int BLOOD_BRIGHT = 0xFFB53B32;
 
 	private static final float[] FORWARD =
 			{0.35f, 0.62f, 0.90f, 0.48f, 0.78f, 1.05f, 0.58f};
@@ -32,8 +31,22 @@ public final class BukovBloodMistFx extends Group {
 	private float age;
 
 	public BukovBloodMistFx() {
+		this(BukovUiTokens.loadDefault());
+	}
+
+	BukovBloodMistFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		int solidColor = color(tokens, "combat.fx.solid");
+		int darkColor = color(tokens, "combat.fx.blood.dark");
+		int brightColor = color(tokens, "combat.fx.blood.bright");
 		for (int index = 0; index < droplets.length; index++) {
-			droplets[index] = new Droplet(index % 3 == 0);
+			droplets[index] = new Droplet(
+					index % 3 == 0,
+					solidColor,
+					darkColor,
+					brightColor);
 			add(droplets[index]);
 		}
 		retire();
@@ -124,9 +137,13 @@ public final class BukovBloodMistFx extends Group {
 
 	private static final class Droplet extends ColorBlock {
 
-		private Droplet(boolean bright) {
-			super(bright ? 2f : 1.5f, bright ? 1.5f : 1f, 0xFFFFFFFF);
-			color((bright ? BLOOD_BRIGHT : BLOOD_DARK) & 0xFFFFFF);
+		private Droplet(
+				boolean bright,
+				int solidColor,
+				int darkColor,
+				int brightColor) {
+			super(bright ? 2f : 1.5f, bright ? 1.5f : 1f, solidColor);
+			color(bright ? brightColor : darkColor);
 			origin.set(width() * 0.5f, height() * 0.5f);
 		}
 
@@ -135,5 +152,9 @@ public final class BukovBloodMistFx extends Group {
 			y = centerY - height() * 0.5f;
 			this.alpha(alpha);
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 }

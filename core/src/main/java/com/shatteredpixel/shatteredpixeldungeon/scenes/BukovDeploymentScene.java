@@ -16,6 +16,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
@@ -29,6 +30,7 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
 import com.watabou.utils.FileUtils;
 import com.watabou.utils.RectF;
 
@@ -102,12 +104,12 @@ public final class BukovDeploymentScene extends PixelScene {
 				+ Math.max(BukovVisualContract.OUTER_MARGIN,
 						(safeHeight - panelHeight) * 0.48f);
 
-		ColorBlock panel = new ColorBlock(
-				panelWidth,
-				panelHeight,
+		NinePatch panel = BukovUiAssets.surface(
+				BukovUiAssets.Surface.PANEL,
 				tokens.colorWithAlpha("ink.background", 228));
 		panel.x = panelX;
 		panel.y = panelY;
+		panel.size(panelWidth, panelHeight);
 		add(panel);
 		ColorBlock edge = new ColorBlock(
 				2f, panelHeight, tokens.color("accent.interact"));

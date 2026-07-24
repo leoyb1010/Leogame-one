@@ -90,9 +90,12 @@ public final class BukovHubScene extends PixelScene {
 		addBackdrop(screenWidth, screenHeight, wide);
 
 		RenderedTextBlock eyebrow = label(
-				"ESCAPE FROM BUKOV  /  OFFLINE OPERATIONS",
+				wide
+						? "ESCAPE FROM BUKOV  /  OFFLINE OPERATIONS"
+						: "ESCAPE FROM BUKOV  /  OFFLINE",
 				6,
 				tokens.color("text.secondary"));
+		eyebrow.maxWidth(Math.max(1, (int)usableWidth));
 		eyebrow.setPos(left, top);
 		add(eyebrow);
 
@@ -111,6 +114,7 @@ public final class BukovHubScene extends PixelScene {
 				6,
 				tokens.color(state.activeRaid
 						? "accent.extract" : "text.secondary"));
+		status.maxWidth(Math.max(1, (int)usableWidth));
 		status.setPos(left, title.bottom() + 2f);
 		add(status);
 
@@ -309,18 +313,27 @@ public final class BukovHubScene extends PixelScene {
 		addButton(
 				state.canDeploy
 						? (training ? "进入演练场" : "确认出击")
-						: "配装不完整",
+						: "补齐并出击",
 				innerX,
 				actionsY,
 				third,
 				actionHeight,
 				state.canDeploy ? "accent.extract" : "accent.danger",
-				state.canDeploy,
+				true,
 				SPDAction.TAG_ATTACK,
 				new Callback() {
 					@Override
 					public void call() {
-						deploy();
+						if (state.canDeploy) {
+							deploy();
+							return;
+						}
+						try {
+							controller.prepareAndConfirmDeployment();
+							deploy();
+						} catch (IOException | RuntimeException error) {
+							showError("补齐并出击失败", error);
+						}
 					}
 				});
 		addButton(

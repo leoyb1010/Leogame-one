@@ -236,6 +236,53 @@ public class BukovHubViewModelPresentationTest {
 	}
 
 	@Test
+	public void inventorySearchAndSortUsePlayerFacingMetadata() {
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(item(
+				"needle",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				850));
+		profile.stash().deposit(item(
+				"mountain",
+				"firearm:mountain_762",
+				1,
+				4.1f,
+				6_100));
+		profile.stash().deposit(item(
+				"bandage",
+				"bandage",
+				2,
+				0.12f,
+				180));
+		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
+
+		assertEquals(
+				"mountain",
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.ALL,
+						BukovHubViewModel.InventorySort.VALUE_DESC,
+						"武器").get(0).itemUid);
+		assertEquals(
+				"needle",
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.ALL,
+						BukovHubViewModel.InventorySort.WEIGHT_ASC,
+						"firearm").get(0).itemUid);
+		assertEquals(
+				"bandage",
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.MEDICAL,
+						BukovHubViewModel.InventorySort.NAME_ASC,
+						"战术").get(0).itemUid);
+		assertTrue(model.inventoryItems(
+				BukovHubViewModel.InventoryFilter.ALL,
+				BukovHubViewModel.InventorySort.STASH_ORDER,
+				"不存在").isEmpty());
+	}
+
+	@Test
 	public void portraitAndLandscapeKeepScrollableInventoryAboveFooter() {
 		assertEquals(67, WndBukovHub.inventoryViewportHeight(226, false));
 		assertEquals(48, WndBukovHub.inventoryViewportHeight(180, true));

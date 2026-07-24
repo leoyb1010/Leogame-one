@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "atlas": "interfaces/bukov_ui.png",
+  "generator": "scripts/generate_bukov_ui_atlas.mjs",
+  "palette": "bukov/content/ui_tokens.json",
+  "license": "project original cleared for this repository and personal builds",
+  "width": 112,
+  "height": 32,
+  "pixelSampling": "nearest",
+  "uniqueRgbaColors": 12,
+  "transparentPixels": 2417,
+  "sha256": "2218353b6c77d346ed12d638e8723e8c4049c06ff3e84df96a2793286217e8cb",
+  "entries": [
+    {
+      "apiName": "PANEL",
+      "kind": "ninePatch",
+      "x": 0,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "PANEL_RAISED",
+      "kind": "ninePatch",
+      "x": 16,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "BUTTON",
+      "kind": "ninePatch",
+      "x": 32,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "BUTTON_PRESSED",
+      "kind": "ninePatch",
+      "x": 48,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "STATUS_ACTION",
+      "kind": "icon",
+      "x": 0,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_LOOT",
+      "kind": "icon",
+      "x": 16,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_EXTRACT",
+      "kind": "icon",
+      "x": 32,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_DANGER",
+      "kind": "icon",
+      "x": 48,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_BLEEDING",
+      "kind": "icon",
+      "x": 64,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_FRACTURE",
+      "kind": "icon",
+      "x": 80,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STATUS_CONCUSSION",
+      "kind": "icon",
+      "x": 96,
+      "y": 16,
+      "width": 16,
+      "height": 16
+    }
+  ]
+}

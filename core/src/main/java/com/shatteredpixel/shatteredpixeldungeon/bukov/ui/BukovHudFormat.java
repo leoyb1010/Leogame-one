@@ -64,6 +64,22 @@ public final class BukovHudFormat {
 		return "换弹 " + percent(progress);
 	}
 
+	/**
+	 * Compact timer copy paired with the injury icons. Bleeding and fractures
+	 * persist until treated in the realtime medical model, so an infinity
+	 * marker is more truthful than inventing a countdown for them.
+	 */
+	public static String injuryRemaining(
+			boolean active, float remainingSeconds) {
+		if (!active) return "";
+		if (remainingSeconds <= 0f
+				|| Float.isNaN(remainingSeconds)
+				|| Float.isInfinite(remainingSeconds)) {
+			return "∞";
+		}
+		return Math.max(1, (int)Math.ceil(remainingSeconds)) + "s";
+	}
+
 	public static String status(
 			float bleedingPerSecond,
 			boolean fractured,

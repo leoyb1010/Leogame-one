@@ -81,6 +81,20 @@ public class BukovAccessibilitySettingsGuardTest {
 		assertTrue(!hud.contains(".zoom("));
 	}
 
+	@Test
+	public void reducedMotionControlsSettlementRitualTiming()
+			throws Exception {
+		String settlement = read(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/ui/WndBukovSettlement.java");
+		assertTrue(settlement.contains(
+				"SPDSettings.bukovReduceMotion()"));
+		assertTrue(settlement.contains(
+				"tokens.motionMs(\"instant\")"));
+		assertTrue(settlement.contains(
+				"tokens.motionMs(\"ritual\")"));
+	}
+
 	private static String read(String path) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(path)),

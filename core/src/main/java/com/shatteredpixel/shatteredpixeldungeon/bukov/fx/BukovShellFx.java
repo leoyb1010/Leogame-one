@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -15,15 +16,30 @@ import com.watabou.utils.PointF;
 public final class BukovShellFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.30f;
-	static final int FRIENDLY_COLOR = 0xFFD6B85F;
-	static final int HOSTILE_COLOR = 0xFFA87348;
+	private static final BukovUiTokens DEFAULT_TOKENS =
+			BukovUiTokens.loadDefault();
+	static final int FRIENDLY_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.shell.friendly");
+	static final int HOSTILE_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.shell.hostile");
 
 	private final ShellTrajectory trajectory = new ShellTrajectory();
 	private final ColorBlock casing;
+	private final int friendlyColor;
+	private final int hostileColor;
 	private float age;
 
 	public BukovShellFx() {
-		casing = new Casing();
+		this(DEFAULT_TOKENS);
+	}
+
+	BukovShellFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		friendlyColor = color(tokens, "combat.fx.shell.friendly");
+		hostileColor = color(tokens, "combat.fx.shell.hostile");
+		casing = new Casing(color(tokens, "combat.fx.solid"));
 		add(casing);
 		retire();
 	}
@@ -59,7 +75,7 @@ public final class BukovShellFx extends Group {
 			retire();
 			return false;
 		}
-		casing.color((hostile ? HOSTILE_COLOR : FRIENDLY_COLOR) & 0xFFFFFF);
+		casing.color(hostile ? hostileColor : friendlyColor);
 		casing.alpha(1f);
 		age = 0f;
 		place(0f);
@@ -124,8 +140,8 @@ public final class BukovShellFx extends Group {
 
 	private static final class Casing extends ColorBlock {
 
-		private Casing() {
-			super(3f, 2f, 0xFFFFFFFF);
+		private Casing(int solidColor) {
+			super(3f, 2f, solidColor);
 			origin.set(1.5f, 1f);
 		}
 
@@ -135,6 +151,10 @@ public final class BukovShellFx extends Group {
 			super.draw();
 			Blending.setNormalMode();
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 
 	public static final class ShellTrajectory {

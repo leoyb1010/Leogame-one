@@ -1,10 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
-import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialEvent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 
@@ -25,6 +26,8 @@ public final class BukovRaidCoordinator {
 	static final String TRAINING_FIREARM_DEFINITION = "firearm:needle_9";
 	static final String TRAINING_AMMO_DEFINITION = "ammo:ammo_9_training";
 	static final int TRAINING_AMMO_QUANTITY = 120;
+	public static final String BOSS_CONTRACT_COMPLETED_EVENT_ID =
+			"boss_contract:white_line_defeated";
 
 	public static final class ContainerSnapshot {
 		public final String containerId;
@@ -327,12 +330,57 @@ public final class BukovRaidCoordinator {
 	}
 
 	public String firstRaidObjective() {
+		if (firstRaidStage() == FirstRaidMission.Stage.EXTRACT
+				&& bossContractRequired()
+				&& !bossContractCompleted()) {
+			return "Boss 合同（可选）：击败白线领取合同奖励，或直接撤离";
+		}
 		return FirstRaidMission.objective(firstRaidStage());
 	}
 
 	public boolean firstRaidConditionalExtractionUnlocked() {
 		return !firstRaidMissionActive()
 				|| firstRaidStage() == FirstRaidMission.Stage.EXTRACT;
+	}
+
+	public boolean bossContractRequired() {
+		return session().raidMode() == BukovRaidMode.BOSS_CONTRACT;
+	}
+
+	public boolean bossContractCompleted() {
+		return checkpoint.eventCompleted(
+				BOSS_CONTRACT_COMPLETED_EVENT_ID);
+	}
+
+	/**
+	 * Marks the authoritative boss objective in the raid checkpoint. The
+	 * caller persists it together with the host's defeated boss state.
+	 */
+	public boolean markBossContractCompleted() {
+		ensureOpen();
+		if (!bossContractRequired()) {
+			throw new IllegalStateException(
+					"Boss objective is only valid in Boss Contract mode");
+		}
+		return checkpoint.completeEvent(
+				BOSS_CONTRACT_COMPLETED_EVENT_ID);
+	}
+
+	/**
+	 * Reconciles host saves produced before boss completion was mirrored into
+	 * the raid checkpoint. A bypass is an intentional failed contract, while a
+	 * defeated legacy boss must receive the same completion credit as a new
+	 * kill. The caller persists the checkpoint when this returns true.
+	 */
+	public boolean reconcileLegacyBossContractPhase(
+			WhiteLineBossStateMachine.Phase phase) {
+		ensureOpen();
+		if (!bossContractRequired()
+				|| phase != WhiteLineBossStateMachine.Phase.DEFEATED) {
+			return false;
+		}
+		return checkpoint.completeEvent(
+				BOSS_CONTRACT_COMPLETED_EVENT_ID);
 	}
 
 	public RealtimeStatusState realtimeStatus() {
@@ -675,7 +723,7 @@ public final class BukovRaidCoordinator {
 				outcome,
 				session().elapsedSeconds,
 				session().killCount(),
-				checkpoint.eventCompleted(FirstRaidMission.EVENT_ID),
+				settlementMissionCompleted(),
 				session().raidMode());
 
 		// The receipt and transferred/lost inventory become durable together.
@@ -689,6 +737,12 @@ public final class BukovRaidCoordinator {
 		}
 		finished = true;
 		return result;
+	}
+
+	private boolean settlementMissionCompleted() {
+		return bossContractRequired()
+				? bossContractCompleted()
+				: checkpoint.eventCompleted(FirstRaidMission.EVENT_ID);
 	}
 
 	private ExtractionState activeExtraction() {

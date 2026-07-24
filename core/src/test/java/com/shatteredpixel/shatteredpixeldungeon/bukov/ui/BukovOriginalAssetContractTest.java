@@ -17,6 +17,8 @@ public class BukovOriginalAssetContractTest {
 	@Test
 	public void operatorUsesRuntimeCompatibleOriginalAtlasContract() throws Exception {
 		assertPng("src/main/assets/sprites/bukov_operator.png", 384, 128);
+		assertPng("src/main/assets/sprites/bukov_operator_lower.png", 384, 128);
+		assertPng("src/main/assets/sprites/bukov_operator_upper.png", 384, 128);
 
 		String generator = text("../scripts/generate_bukov_operator_sprite.mjs");
 		String manifest = text(
@@ -25,7 +27,16 @@ public class BukovOriginalAssetContractTest {
 		assertTrue(generator.contains("const FRAME_H = 15"));
 		assertTrue(generator.contains("const FRAME_COUNT = 32"));
 		assertTrue(generator.contains("const DIRECTION_COUNT = 8"));
+		assertTrue(generator.contains("const lowerPixels"));
+		assertTrue(generator.contains("const upperPixels"));
+		assertTrue(generator.contains("onLayer(lowerPixels"));
+		assertTrue(manifest.contains("\"schemaVersion\": 2"));
 		assertTrue(manifest.contains("\"frameCount\": 32"));
+		assertTrue(manifest.contains(
+				"\"lowerBody\": \"sprites/bukov_operator_lower.png\""));
+		assertTrue(manifest.contains(
+				"\"upperBodyWeapon\": \"sprites/bukov_operator_upper.png\""));
+		assertTrue(manifest.contains("\"layerSha256\""));
 		assertTrue(manifest.contains("\"footAnchor\""));
 		assertTrue(manifest.contains("\"muzzleAnchor\""));
 		assertTrue(manifest.contains("\"name\": \"medical\""));
@@ -72,6 +83,10 @@ public class BukovOriginalAssetContractTest {
 		String provenance = text("../artwork/licenses/ASSET_PROVENANCE.csv");
 		assertTrue(provenance.contains(
 				"core/src/main/assets/sprites/bukov_operator.png,project-generated original artwork"));
+		assertTrue(provenance.contains(
+				"core/src/main/assets/sprites/bukov_operator_lower.png,project-generated original artwork layer"));
+		assertTrue(provenance.contains(
+				"core/src/main/assets/sprites/bukov_operator_upper.png,project-generated original artwork layer"));
 		assertTrue(provenance.contains(
 				"core/src/main/assets/environment/bukov/first_raid_landmarks.png,project-generated original artwork"));
 		assertTrue(provenance.contains(

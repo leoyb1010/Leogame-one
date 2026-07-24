@@ -52,12 +52,21 @@ public final class BukovCombatPresentation
 				break;
 			case PLAYER_RELOAD:
 				if (source != null && source.sprite instanceof HeroSprite) {
-					((HeroSprite)source.sprite).reloadFirearm(event.targetCell());
+					((HeroSprite)source.sprite).reloadFirearm(
+							event.targetCell(),
+							event.durationSeconds());
+				}
+				break;
+			case PLAYER_RELOAD_END:
+				if (source != null && source.sprite instanceof HeroSprite) {
+					((HeroSprite)source.sprite).reloadFinished();
 				}
 				break;
 			case PLAYER_HIT:
 				if (target != null && target.sprite instanceof HeroSprite) {
-					((HeroSprite)target.sprite).hitReaction();
+					((HeroSprite)target.sprite).hitReaction(
+							event.targetCell(),
+							event.durationSeconds());
 				}
 				break;
 			case PLAYER_MEDICAL_START:

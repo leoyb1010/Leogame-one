@@ -31,7 +31,9 @@ public final class BukovUiTokens {
 	}
 
 	public static BukovUiTokens loadDefault() {
-		return load(Gdx.files.internal(DEFAULT_PATH));
+		return load(Gdx.files == null
+				? new FileHandle("src/main/assets/" + DEFAULT_PATH)
+				: Gdx.files.internal(DEFAULT_PATH));
 	}
 
 	public static BukovUiTokens load(FileHandle file) {
@@ -65,7 +67,38 @@ public final class BukovUiTokens {
 				"panel.result", "panel.border",
 				"accent.interact", "accent.valuable", "accent.danger",
 				"accent.extract", "text.primary", "text.secondary",
-				"text.disabled");
+				"text.disabled",
+				"combat.fx.solid",
+				"combat.fx.tracer.friendly",
+				"combat.fx.tracer.hostile",
+				"combat.fx.tracer.outline",
+				"combat.fx.muzzle.friendly",
+				"combat.fx.impact.friendly",
+				"combat.fx.shell.friendly",
+				"combat.fx.shell.hostile",
+				"combat.fx.blood.dark",
+				"combat.fx.blood.bright",
+				"combat.fx.bulletMark.edge",
+				"combat.fx.bulletMark.hole",
+				"combat.fx.explosion.hot",
+				"combat.fx.explosion.flame",
+				"combat.fx.explosion.smoke",
+				"combat.enemy.contact",
+				"combat.enemy.blood.alleyScout",
+				"combat.enemy.blood.armored",
+				"combat.enemy.blood.breachVeteran",
+				"combat.enemy.blood.captain",
+				"combat.enemy.blood.depotShotgunner",
+				"combat.enemy.blood.drone",
+				"combat.enemy.blood.fogStalker",
+				"combat.enemy.blood.gunner",
+				"combat.enemy.blood.ironClaspMarksman",
+				"combat.enemy.blood.lineRifleman",
+				"combat.enemy.blood.scavenger",
+				"combat.enemy.blood.signalOperator",
+				"combat.enemy.blood.whiteLine",
+				"level.default.primary",
+				"level.default.secondary");
 		requireKeys(motion, "instant", "fast", "base", "slow", "ritual");
 		requireKeys(pools,
 				"muzzleFlash", "tracer", "shell", "impactSpark",

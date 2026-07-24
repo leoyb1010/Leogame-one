@@ -372,6 +372,7 @@ public final class BukovRealtimeWorld
 		resolveEquippedFirearm();
 		spawnInitialEnemies();
 		refreshEnemiesAndTargets();
+		reconcileLegacyBossContractCheckpoint();
 		publishRealtimeState();
 		targetRefreshRemaining = TARGET_REFRESH_SECONDS;
 		nextEnemySpawnSeconds = raid == null
@@ -1908,7 +1909,7 @@ public final class BukovRealtimeWorld
 		hero.belongings.backpack.items.remove(next);
 		hero.belongings.weapon = next;
 		next.activate(hero);
-		fireControl.resetForWeaponSwap();
+		resetFireControlForWeaponSwap();
 		resolveEquippedFirearm();
 		showHeroStatus("已装备 " + equippedDefinition.name);
 		checkpointLootChange();
@@ -2547,7 +2548,8 @@ public final class BukovRealtimeWorld
 				hero.pos,
 				playerAimCell(),
 				null,
-				1f);
+				1f,
+				seconds);
 		showHeroStatus("换弹");
 	}
 
@@ -2580,6 +2582,14 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public void reloadFinished() {
+		combatPresentation.emit(
+				CombatPresentationEvent.Type.PLAYER_RELOAD_END,
+				hero.id(),
+				hero.id(),
+				hero.pos,
+				playerAimCell(),
+				null,
+				1f);
 		if (equippedFirearm != null) {
 			if (equippedFirearm.magazineAmmo() == 0) {
 				showHeroStatus("没有备用弹药");
@@ -2594,16 +2604,31 @@ public final class BukovRealtimeWorld
 		if (weapon instanceof Firearm) {
 			Firearm firearm = (Firearm)weapon;
 			if (firearm != equippedFirearm) {
-				fireControl.resetForWeaponSwap();
+				resetFireControlForWeaponSwap();
 				equippedFirearm = firearm;
 				equippedDefinition = firearm.definition(firearmRegistry);
 			}
 		} else {
 			if (equippedFirearm != null) {
-				fireControl.resetForWeaponSwap();
+				resetFireControlForWeaponSwap();
 			}
 			equippedFirearm = null;
 			equippedDefinition = null;
+		}
+	}
+
+	private void resetFireControlForWeaponSwap() {
+		boolean reloadWasActive = fireControl.isReloading();
+		fireControl.resetForWeaponSwap();
+		if (reloadWasActive) {
+			combatPresentation.emit(
+					CombatPresentationEvent.Type.PLAYER_RELOAD_END,
+					hero.id(),
+					hero.id(),
+					hero.pos,
+					playerAimCell(),
+					null,
+					1f);
 		}
 	}
 
@@ -4284,6 +4309,20 @@ public final class BukovRealtimeWorld
 			}
 		}
 
+		if (raid.bossContractRequired()
+				&& !raid.bossContractCompleted()) {
+			EnemyRuntime boss = activeWhiteLine();
+			if (boss != null) {
+				pointHudNavigation(
+						target,
+						BukovRaidHudState.Cue.MISSION,
+						boss.mob.pos,
+						"Boss 合同（可选）· 击败白线",
+						true);
+				return;
+			}
+		}
+
 		ExtractionState nearest = nearestExtraction(
 				hero.pos,
 				elapsed,
@@ -4525,6 +4564,9 @@ public final class BukovRealtimeWorld
 			resolveWhiteLineLevel();
 			int cell = enemy.mob.pos;
 			enemy.mob.damageWithoutFloatingText(enemy.mob.HP, hero);
+			if (raid != null && raid.bossContractRequired()) {
+				raid.markBossContractCompleted();
+			}
 			recordEnemyKill();
 			releaseWhiteLineLoot(cell);
 		}
@@ -4592,6 +4634,26 @@ public final class BukovRealtimeWorld
 			}
 		}
 		if (available) resolveWhiteLineLevel();
+	}
+
+	private void reconcileLegacyBossContractCheckpoint() {
+		if (raid == null
+				|| !raid.bossContractRequired()
+				|| !(Dungeon.level instanceof BukovLevel)) {
+			return;
+		}
+		WhiteLineBossStateMachine.Phase phase =
+				((BukovLevel)Dungeon.level).whiteLinePhase();
+		if (!raid.reconcileLegacyBossContractPhase(phase)) {
+			return;
+		}
+		try {
+			raid.saveCheckpoint();
+		} catch (IOException failure) {
+			// The restored host phase remains authoritative in memory. A later
+			// lifecycle checkpoint retries the same idempotent reconciliation.
+			ShatteredPixelDungeon.reportException(failure);
+		}
 	}
 
 	private boolean nonBossExtractionAvailable() {
@@ -4949,9 +5011,10 @@ public final class BukovRealtimeWorld
 				attacker == null ? -1 : attacker.id(),
 				hero.id(),
 				attacker == null ? hero.pos : attacker.pos,
-				hero.pos,
+				playerAimCell(),
 				CombatFeedbackType.PLAYER_HIT,
-				intensity);
+				intensity,
+				fireControl.reloadRemaining());
 		if (wasAlive && !hero.isAlive() && !playerDeathPresented) {
 			playerDeathPresented = true;
 			showTutorial(BukovTutorialEvent.FIRST_DEATH);

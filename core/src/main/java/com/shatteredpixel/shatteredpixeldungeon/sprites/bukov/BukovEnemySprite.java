@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.sprites.bukov;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.MobSprite;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.noosa.ColorBlock;
@@ -29,7 +30,9 @@ public abstract class BukovEnemySprite extends MobSprite {
 	public static final float CONTACT_SCALE = 1.30f;
 	public static final float CONTACT_LIGHTNESS = 0.72f;
 	public static final float CONTACT_OUTLINE_OFFSET = 0.65f;
-	public static final int CONTACT_COLOR = 0xFFFF6847;
+	private static final BukovUiTokens TOKENS = BukovUiTokens.loadDefault();
+	public static final int CONTACT_COLOR =
+			tokenColor("combat.enemy.contact");
 
 	private final int bloodColor;
 	private final SpecialAction specialAction;
@@ -43,9 +46,11 @@ public abstract class BukovEnemySprite extends MobSprite {
 			new ColorBlock(1f, 4f, CONTACT_COLOR);
 
 	protected BukovEnemySprite(
-			String asset, int bloodColor, SpecialAction specialAction) {
+			String asset,
+			String bloodColorToken,
+			SpecialAction specialAction) {
 		super();
-		this.bloodColor = bloodColor;
+		this.bloodColor = tokenColor(bloodColorToken);
 		if (specialAction == null) {
 			throw new IllegalArgumentException("specialAction is required");
 		}
@@ -156,7 +161,7 @@ public abstract class BukovEnemySprite extends MobSprite {
 		x += offsetX;
 		y += offsetY;
 		renderShadow = false;
-		tint(CONTACT_COLOR & 0xFFFFFF, 1f);
+		tint(CONTACT_COLOR, 1f);
 		super.draw();
 		x = originalX;
 		y = originalY;
@@ -190,5 +195,9 @@ public abstract class BukovEnemySprite extends MobSprite {
 	@Override
 	public int blood() {
 		return bloodColor;
+	}
+
+	private static int tokenColor(String name) {
+		return TOKENS.colorWithAlpha(name, 255);
 	}
 }

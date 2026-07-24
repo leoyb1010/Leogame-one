@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -12,20 +13,35 @@ import com.watabou.utils.PointF;
 public final class BukovMuzzleFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.12f;
-	static final int FRIENDLY_COLOR = 0xFFFFF1A6;
+	private static final BukovUiTokens DEFAULT_TOKENS =
+			BukovUiTokens.loadDefault();
+	static final int FRIENDLY_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.muzzle.friendly");
 
 	private final float duration = DURATION_SECONDS;
+	private final int friendlyColor;
+	private final int hostileColor;
 	private final FlashRay center;
 	private final FlashRay lower;
 	private final FlashRay upper;
 	private float age;
 
 	public BukovMuzzleFx() {
-		center = new FlashRay();
+		this(DEFAULT_TOKENS);
+	}
+
+	BukovMuzzleFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		friendlyColor = color(tokens, "combat.fx.muzzle.friendly");
+		hostileColor = color(tokens, "combat.fx.tracer.hostile");
+		int solidColor = color(tokens, "combat.fx.solid");
+		center = new FlashRay(solidColor);
 		add(center);
-		lower = new FlashRay();
+		lower = new FlashRay(solidColor);
 		add(lower);
-		upper = new FlashRay();
+		upper = new FlashRay(solidColor);
 		add(upper);
 		retire();
 	}
@@ -60,7 +76,7 @@ public final class BukovMuzzleFx extends Group {
 		}
 		float angle = (float) Math.toDegrees(Math.atan2(directionY, directionX));
 		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
-		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : FRIENDLY_COLOR;
+		int color = hostile ? hostileColor : friendlyColor;
 		center.configure(muzzleX, muzzleY, 4.2f * strength, 1.4f, angle, color);
 		lower.configure(muzzleX, muzzleY, 2.7f * strength, 0.8f, angle - 24f, color);
 		upper.configure(muzzleX, muzzleY, 2.7f * strength, 0.8f, angle + 24f, color);
@@ -96,8 +112,8 @@ public final class BukovMuzzleFx extends Group {
 
 	private static final class FlashRay extends ColorBlock {
 
-		private FlashRay() {
-			super(1f, 1f, 0xFFFFFFFF);
+		private FlashRay(int solidColor) {
+			super(1f, 1f, solidColor);
 			this.origin.set(0f, 0.5f);
 		}
 
@@ -109,7 +125,7 @@ public final class BukovMuzzleFx extends Group {
 				float angle,
 				int color) {
 			size(length, thickness);
-			color(color & 0xFFFFFF);
+			color(color);
 			alpha(1f);
 			x = originX;
 			y = originY - 0.5f;
@@ -122,5 +138,9 @@ public final class BukovMuzzleFx extends Group {
 			super.draw();
 			Blending.setNormalMode();
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 }

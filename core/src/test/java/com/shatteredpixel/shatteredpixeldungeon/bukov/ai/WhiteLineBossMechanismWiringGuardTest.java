@@ -25,6 +25,7 @@ public class WhiteLineBossMechanismWiringGuardTest {
 		assertTrue(world.contains("bodyTraceWithinRange(hero.pos)"));
 		assertTrue(world.contains("withinInteractionRange(hero.pos, pumpCell)"));
 		assertTrue(world.contains("BOSS_SYNCHRONIZED_TRACE"));
+		assertTrue(world.contains("raid.markBossContractCompleted();"));
 		assertFalse(world.contains(".completeObjective("));
 	}
 
@@ -56,6 +57,7 @@ public class WhiteLineBossMechanismWiringGuardTest {
 		assertTrue(world.contains("bypassWhiteLineForExtraction()"));
 		assertTrue(world.contains("bossState.bypass(available)"));
 		assertTrue(world.contains("nonBossExtractionAvailable()"));
+		assertTrue(world.contains("raid.bossContractRequired()"));
 	}
 
 	private static String read(String path) throws Exception {

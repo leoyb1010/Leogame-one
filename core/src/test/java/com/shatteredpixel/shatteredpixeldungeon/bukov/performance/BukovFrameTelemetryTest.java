@@ -55,6 +55,14 @@ public class BukovFrameTelemetryTest {
 		assertEquals(2L, second.frameCount());
 		assertEquals(20d, second.p50Ms(), 0.0001d);
 		assertEquals(20d, second.maximumFrameMs(), 0.001d);
+		assertEquals(5L, second.sessionFrameCount());
+		assertEquals(0.07d, second.sessionSeconds(), 0.0001d);
+		assertEquals(10d, second.sessionP50Ms(), 0.0001d);
+		assertEquals(20d, second.sessionP95Ms(), 0.0001d);
+		assertEquals(20d, second.sessionP99Ms(), 0.0001d);
+		assertEquals(2L, second.sessionFramesOver16_7Ms());
+		assertEquals(0L, second.sessionFramesOver33_3Ms());
+		assertEquals(20d, second.sessionMaximumFrameMs(), 0.001d);
 	}
 
 	@Test
@@ -63,6 +71,10 @@ public class BukovFrameTelemetryTest {
 				new BukovFrameTelemetry(0.009f, 1920, 1080, 144);
 		String line = telemetry.recordFrame(0.01f).toLogLine();
 
+		assertTrue(line.contains(
+				"\"schema\":\"bukov-render-frame-v2\""));
+		assertTrue(line.contains(
+				"\"metricKind\":\"cpu-render-callback-frame-pacing\""));
 		assertTrue(line.contains(
 				"\"measurement\":\"Gdx.graphics.getDeltaTime\""));
 		assertTrue(line.contains("\"hardwareGpuCounter\":false"));
@@ -75,6 +87,14 @@ public class BukovFrameTelemetryTest {
 		assertTrue(line.contains("\"framesOver16_7Ms\":0"));
 		assertTrue(line.contains("\"framesOver33_3Ms\":0"));
 		assertTrue(line.contains("\"maximumFrameMs\":10.000"));
+		assertTrue(line.contains("\"sessionFrames\":1"));
+		assertTrue(line.contains("\"sessionSeconds\":0.010"));
+		assertTrue(line.contains("\"sessionP50Ms\":10.000"));
+		assertTrue(line.contains("\"sessionP95Ms\":10.000"));
+		assertTrue(line.contains("\"sessionP99Ms\":10.000"));
+		assertTrue(line.contains("\"sessionFramesOver16_7Ms\":0"));
+		assertTrue(line.contains("\"sessionFramesOver33_3Ms\":0"));
+		assertTrue(line.contains("\"sessionMaximumFrameMs\":10.000"));
 		assertTrue(line.contains("\"resolutionPx\":\"1920x1080\""));
 		assertTrue(line.contains("\"targetRefreshHz\":144"));
 		assertFalse(line.contains("\"hardwareGpuCounter\":true"));

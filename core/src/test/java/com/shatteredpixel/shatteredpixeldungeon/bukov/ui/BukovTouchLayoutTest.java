@@ -66,6 +66,32 @@ public class BukovTouchLayoutTest {
 	}
 
 	@Test
+	public void iphoneLandscapeKeepsEveryActionBelowRaidHud() {
+		float hudBottom = 55f;
+		BukovTouchLayout layout = BukovTouchLayout.calculate(
+				240f,
+				135f,
+				6f,
+				3f,
+				6f,
+				5f,
+				hudBottom
+		);
+
+		assertTrue(layout.landscape);
+		assertContained(layout);
+		assertCoreControlsDoNotOverlap(layout);
+		assertTrue(layout.movement.y >= hudBottom);
+		assertTrue(layout.aimFire.y >= hudBottom);
+		assertTrue(layout.interact.y >= hudBottom);
+		assertTrue(layout.drop.y >= hudBottom);
+		assertTrue(layout.reload.y >= hudBottom);
+		assertTrue(layout.medical.y >= hudBottom);
+		assertTrue(layout.backpack.y >= hudBottom);
+		assertTrue(layout.pause.y >= hudBottom);
+	}
+
+	@Test
 	public void compactLogicalViewportStillPreservesTwoIndependentSticks() {
 		BukovTouchLayout layout = BukovTouchLayout.calculate(
 				240f,

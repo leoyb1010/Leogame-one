@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -12,15 +13,30 @@ import com.watabou.utils.PointF;
 public final class BukovImpactFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.14f;
-	static final int FRIENDLY_COLOR = 0xFFFFF0B2;
+	private static final BukovUiTokens DEFAULT_TOKENS =
+			BukovUiTokens.loadDefault();
+	static final int FRIENDLY_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.impact.friendly");
 
 	private final float duration = DURATION_SECONDS;
 	private final SparkRay[] rays = new SparkRay[5];
+	private final int friendlyColor;
+	private final int hostileColor;
 	private float age;
 
 	public BukovImpactFx() {
+		this(DEFAULT_TOKENS);
+	}
+
+	BukovImpactFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		friendlyColor = color(tokens, "combat.fx.impact.friendly");
+		hostileColor = color(tokens, "combat.fx.tracer.hostile");
+		int solidColor = color(tokens, "combat.fx.solid");
 		for (int index = 0; index < rays.length; index++) {
-			rays[index] = new SparkRay();
+			rays[index] = new SparkRay(solidColor);
 			add(rays[index]);
 		}
 		retire();
@@ -46,7 +62,7 @@ public final class BukovImpactFx extends Group {
 			return false;
 		}
 		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
-		int color = hostile ? BukovTracerFx.HOSTILE_COLOR : FRIENDLY_COLOR;
+		int color = hostile ? hostileColor : friendlyColor;
 		float rayLength = 2.2f + strength * 1.7f;
 		for (int index = 0; index < 4; index++) {
 			rays[index].configure(
@@ -96,8 +112,8 @@ public final class BukovImpactFx extends Group {
 
 	private static final class SparkRay extends ColorBlock {
 
-		private SparkRay() {
-			super(1f, 1f, 0xFFFFFFFF);
+		private SparkRay(int solidColor) {
+			super(1f, 1f, solidColor);
 			origin.set(0f, 0.5f);
 		}
 
@@ -109,7 +125,7 @@ public final class BukovImpactFx extends Group {
 				float angle,
 				int color) {
 			size(length, thickness);
-			color(color & 0xFFFFFF);
+			color(color);
 			alpha(1f);
 			x = impactX;
 			y = impactY - 0.5f;
@@ -122,5 +138,9 @@ public final class BukovImpactFx extends Group {
 			super.draw();
 			Blending.setNormalMode();
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 }

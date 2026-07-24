@@ -24,24 +24,34 @@ public class BukovRuntimeVisualWiringTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovRealtimeWorld.java");
 		String facing = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/bukov/BukovFacing8.java");
+		String pose = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/bukov/BukovOperatorPose.java");
 		String manifest = source(
 				"src/main/assets/sprites/bukov_operator_manifest.json");
 
 		assertTrue(hero.contains(
 				"TextureCache.get(Assets.Sprites.BUKOV_OPERATOR)"));
 		assertTrue(hero.contains("bukovDirection = BukovFacing8.S.row"));
-		assertTrue(hero.contains("bukovTiers(),\n\t\t\t\tbukovDirection"));
-		assertTrue(hero.contains("idle.frames( film, 0, 1 )"));
-		assertTrue(hero.contains("run.frames( film, 2, 3, 4, 5, 6, 7 )"));
-		assertTrue(hero.contains("aim.frames( film, 8, 9 )"));
+		assertTrue(hero.contains("new BukovOperatorPose()"));
+		assertTrue(hero.contains("Assets.Sprites.BUKOV_OPERATOR_LOWER"));
+		assertTrue(hero.contains("Assets.Sprites.BUKOV_OPERATOR_UPPER"));
+		assertTrue(hero.contains("setBukovLocomotionDirection("));
+		assertTrue(hero.contains("bukovPose.upperBodyFacing().row"));
+		assertTrue(hero.contains("bukovLowerLayer.draw()"));
+		assertTrue(hero.contains("bukovUpperLayer.draw()"));
+		assertTrue(hero.contains("if (curAnim != die)"));
+		assertTrue(hero.contains("idle.frames( film, 0, 1, 0, 1 )"));
+		assertTrue(hero.contains(
+				"run.frames( film, 2, 3, 4, 5, 6, 7, 4, 3 )"));
+		assertTrue(hero.contains("aim.frames( film, 8 )"));
 		assertTrue(hero.contains("fire.frames( film, 10, 11, 12, 8 )"));
 		assertTrue(hero.contains(
-				"reload.frames( film, 13, 14, 15, 16, 8 )"));
-		assertTrue(hero.contains("hit.frames( film, 17, 18, 19, 8 )"));
+				"reload.frames( film, 13, 14, 15, 16, 15, 8 )"));
+		assertTrue(hero.contains("hit.frames( film, 17, 18 )"));
 		assertTrue(hero.contains(
 				"medical.frames( film, 20, 21, 22, 23, 8 )"));
 		assertTrue(hero.contains(
-				"die.frames( film, 24, 25, 26, 27, 27 )"));
+				"die.frames( film, 24, 25, 26, 27, 27, 27 )"));
 		assertTrue(hero.contains(
 				"extract.frames( film, 28, 29, 30, 31, 28 )"));
 		assertTrue(hero.contains("void firearmFire("));
@@ -50,7 +60,8 @@ public class BukovRuntimeVisualWiringTest {
 		assertTrue(hero.contains("void medicalUse("));
 		assertTrue(hero.contains("void extractionRadio("));
 		assertTrue(hero.contains("setBukovRealtimeOrientation("));
-		assertTrue(hero.contains("BukovFacing8.resolve("));
+		assertTrue(pose.contains("locomotionFacing = BukovFacing8.resolve("));
+		assertTrue(pose.contains("upperBodyFacing = BukovFacing8.resolve("));
 		assertTrue(world.contains("setBukovRealtimeOrientation("));
 		assertTrue(facing.contains("N(0)"));
 		assertTrue(facing.contains("NW(7)"));
@@ -58,6 +69,9 @@ public class BukovRuntimeVisualWiringTest {
 		assertTrue(manifest.contains("\"width\": 384"));
 		assertTrue(manifest.contains("\"height\": 128"));
 		assertTrue(manifest.contains("\"frameCount\": 32"));
+		assertTrue(manifest.contains("\"schemaVersion\": 2"));
+		assertTrue(manifest.contains("\"lowerBody\""));
+		assertTrue(manifest.contains("\"upperBodyWeapon\""));
 		assertTrue(manifest.contains("\"directions\""));
 		assertTrue(manifest.contains("\"footAnchor\""));
 		assertTrue(manifest.contains("\"muzzleAnchor\""));

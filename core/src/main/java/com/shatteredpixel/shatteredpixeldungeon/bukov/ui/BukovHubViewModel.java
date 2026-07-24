@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,6 +57,24 @@ public final class BukovHubViewModel {
 						|| row.slot == LoadoutSlot.BACKPACK;
 			}
 			return row.slot == LoadoutSlot.GEAR;
+		}
+	}
+
+	public enum InventorySort {
+		STASH_ORDER("入库"),
+		VALUE_DESC("价值"),
+		WEIGHT_ASC("重量"),
+		NAME_ASC("名称");
+
+		public final String label;
+
+		InventorySort(String label) {
+			this.label = label;
+		}
+
+		public InventorySort next() {
+			InventorySort[] values = values();
+			return values[(ordinal() + 1) % values.length];
 		}
 	}
 
@@ -568,14 +587,70 @@ public final class BukovHubViewModel {
 	}
 
 	public List<ItemRow> inventoryItems(InventoryFilter filter) {
+		return inventoryItems(
+				filter,
+				InventorySort.STASH_ORDER,
+				"");
+	}
+
+	public List<ItemRow> inventoryItems(
+			InventoryFilter filter,
+			InventorySort sort,
+			String query) {
 		if (filter == null) {
 			throw new IllegalArgumentException("filter is required");
 		}
+		if (sort == null) {
+			throw new IllegalArgumentException("sort is required");
+		}
+		String normalizedQuery = query == null
+				? ""
+				: query.trim().toLowerCase(Locale.ROOT);
 		List<ItemRow> result = new ArrayList<>();
 		for (ItemRow row : stashItems) {
-			if (filter.matches(row)) result.add(row);
+			if (filter.matches(row)
+					&& matchesQuery(row, normalizedQuery)) {
+				result.add(row);
+			}
+		}
+		Comparator<ItemRow> comparator = comparator(sort);
+		if (comparator != null) {
+			Collections.sort(result, comparator);
 		}
 		return Collections.unmodifiableList(result);
+	}
+
+	private static boolean matchesQuery(
+			ItemRow row, String normalizedQuery) {
+		if (normalizedQuery.isEmpty()) return true;
+		return row.label.toLowerCase(Locale.ROOT)
+				.contains(normalizedQuery)
+				|| row.definitionId.toLowerCase(Locale.ROOT)
+				.contains(normalizedQuery)
+				|| row.slot.label.toLowerCase(Locale.ROOT)
+				.contains(normalizedQuery)
+				|| row.rarity.label.toLowerCase(Locale.ROOT)
+				.contains(normalizedQuery);
+	}
+
+	private static Comparator<ItemRow> comparator(InventorySort sort) {
+		switch (sort) {
+			case VALUE_DESC:
+				return Comparator
+						.comparingLong((ItemRow row) -> row.value)
+						.reversed()
+						.thenComparing(row -> row.itemUid);
+			case WEIGHT_ASC:
+				return Comparator
+						.comparingDouble((ItemRow row) -> row.weight)
+						.thenComparing(row -> row.itemUid);
+			case NAME_ASC:
+				return Comparator
+						.comparing((ItemRow row) -> row.label)
+						.thenComparing(row -> row.itemUid);
+			default:
+				return null;
+		}
 	}
 
 	public String inventoryFilterSummary(InventoryFilter filter) {

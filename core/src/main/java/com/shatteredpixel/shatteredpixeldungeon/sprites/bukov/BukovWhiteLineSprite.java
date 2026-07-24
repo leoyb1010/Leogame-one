@@ -13,7 +13,8 @@ public final class BukovWhiteLineSprite extends BukovEnemySprite {
 	private int encounterVisual;
 
 	public BukovWhiteLineSprite() {
-		super(Assets.Sprites.BUKOV_WHITE_LINE, 0xFF3F4545,
+		super(Assets.Sprites.BUKOV_WHITE_LINE,
+				"combat.enemy.blood.whiteLine",
 				SpecialAction.PHASE_CAST);
 		TextureFilm frames = new TextureFilm(texture, 16, 18);
 

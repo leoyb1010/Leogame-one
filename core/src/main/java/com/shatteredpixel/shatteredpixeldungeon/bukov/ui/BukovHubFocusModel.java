@@ -9,6 +9,7 @@ public final class BukovHubFocusModel {
 	public static final int ACTION_DEPLOY = 3;
 	public static final int ACTION_BACK = 4;
 	public static final int ACTION_COUNT = 5;
+	private static final int UTILITY_COUNT = 4;
 
 	private final int itemCount;
 	private int index;
@@ -29,7 +30,7 @@ public final class BukovHubFocusModel {
 	}
 
 	public void focus(int target) {
-		int count = itemCount + 2 + ACTION_COUNT;
+		int count = itemCount + UTILITY_COUNT + ACTION_COUNT;
 		index = Math.max(0, Math.min(target, count - 1));
 	}
 
@@ -45,17 +46,29 @@ public final class BukovHubFocusModel {
 		return index == itemCount + 1;
 	}
 
+	public boolean sortFocused() {
+		return index == itemCount + 2;
+	}
+
+	public boolean searchFocused() {
+		return index == itemCount + 3;
+	}
+
 	public int itemIndex() {
 		return itemFocused() ? index : -1;
 	}
 
 	public int actionIndex() {
-		return itemFocused() || modeFocused() || filterFocused()
-				? -1 : index - itemCount - 2;
+		return itemFocused()
+				|| modeFocused()
+				|| filterFocused()
+				|| sortFocused()
+				|| searchFocused()
+				? -1 : index - itemCount - UTILITY_COUNT;
 	}
 
 	public void move(int delta) {
-		int count = itemCount + 2 + ACTION_COUNT;
+		int count = itemCount + UTILITY_COUNT + ACTION_COUNT;
 		index = (index + delta) % count;
 		if (index < 0) {
 			index += count;

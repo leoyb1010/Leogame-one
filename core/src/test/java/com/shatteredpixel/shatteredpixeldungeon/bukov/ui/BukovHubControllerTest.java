@@ -92,6 +92,53 @@ public class BukovHubControllerTest {
 	}
 
 	@Test
+	public void oneActionRepairsAndConfirmsADeployment() throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.clearLoadout();
+
+		hub.prepareAndConfirmDeployment();
+
+		assertTrue(hub.viewModel().canDeploy);
+		assertEquals(null, hub.viewModel().deploymentBlockReason);
+		assertTrue(saves.loadProfile().loadout().contains(
+				BukovStarterProvisioning.WEAPON_UID));
+		assertTrue(saves.loadProfile().loadout().contains(
+				BukovStarterProvisioning.AMMO_UID));
+	}
+
+	@Test
+	public void recommendationSkipsUnsupportedGunAndProvisionsUsablePair()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(new RaidItem(
+				"unsupported-first",
+				"firearm:prototype_unknown",
+				1,
+				1f,
+				100,
+				false,
+				false,
+				1f));
+		saves.saveProfile(profile);
+		BukovHubController hub = new BukovHubController(saves);
+		hub.clearLoadout();
+
+		hub.prepareAndConfirmDeployment();
+
+		BukovProfile repaired = saves.loadProfile();
+		assertFalse(repaired.loadout().contains("unsupported-first"));
+		assertTrue(hasSelectedDefinition(
+				repaired,
+				"firearm:needle_9"));
+		assertTrue(hasSelectedDefinition(
+				repaired,
+				"ammo:ammo_9_standard"));
+		assertTrue(hub.viewModel().canDeploy);
+	}
+
+	@Test
 	public void modeCycleReachesRiskFreeTrainingGround() throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
 		BukovHubController hub = new BukovHubController(saves);

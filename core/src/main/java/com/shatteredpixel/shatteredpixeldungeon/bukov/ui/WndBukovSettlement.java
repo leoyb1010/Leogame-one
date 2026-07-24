@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -112,7 +113,10 @@ public final class WndBukovSettlement extends Window {
 		tokens = BukovUiTokens.loadDefault();
 		reveal = new BukovSettlementRevealModel(
 				viewModel.items.size(),
-				viewModel.value);
+				viewModel.value,
+				tokens.motionMs("ritual"),
+				tokens.motionMs("instant"),
+				SPDSettings.bukovReduceMotion());
 
 		int width = BukovWindowLayout.safeWidth(
 				PixelScene.landscape() ? WIDTH_L : WIDTH_P);

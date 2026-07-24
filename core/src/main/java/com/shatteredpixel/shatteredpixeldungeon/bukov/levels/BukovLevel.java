@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.rooms.BukovExtracti
 import com.shatteredpixel.shatteredpixeldungeon.bukov.map.BukovRoomGraphAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.actors.blobs.Blob;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
@@ -70,10 +71,12 @@ public class BukovLevel extends RegularLevel {
 	private static final String WHITE_LINE_STATE = "bukov_white_line_state";
 	public static final int STANDARD_ROOM_BUDGET = 31;
 	public static final int SPECIAL_ROOM_BUDGET = 0;
+	private static final BukovUiTokens UI_TOKENS =
+			BukovUiTokens.loadDefault();
 
 	{
-		color1 = 0x526B6A;
-		color2 = 0x9B784F;
+		color1 = UI_TOKENS.color("level.default.primary");
+		color2 = UI_TOKENS.color("level.default.secondary");
 		// Realtime firefights need enough forward awareness to read cover,
 		// gunfire and objectives on a phone without turning the raid into a
 		// black keyhole.
@@ -442,6 +445,11 @@ public class BukovLevel extends RegularLevel {
 					"Restored White Line health contract does not match content");
 		}
 		return whiteLineState;
+	}
+
+	/** Returns null when this host save has never materialized White Line. */
+	public WhiteLineBossStateMachine.Phase whiteLinePhase() {
+		return whiteLineState == null ? null : whiteLineState.phase();
 	}
 
 	public int semanticCell(String semanticId) {

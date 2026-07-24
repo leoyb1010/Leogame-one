@@ -43,6 +43,12 @@ public class BukovHudFormatTest {
 		assertEquals(
 				"流血 0.4/秒 · 骨折 · 震荡 2.5秒 · 疼痛",
 				BukovHudFormat.status(0.4f, true, 0.2f, 2.5f, 0f));
+		assertEquals("∞",
+				BukovHudFormat.injuryRemaining(true, 0f));
+		assertEquals("3s",
+				BukovHudFormat.injuryRemaining(true, 2.5f));
+		assertEquals("",
+				BukovHudFormat.injuryRemaining(false, 9f));
 		assertEquals("换弹 35%", BukovHudFormat.reload(true, 0.35f));
 		assertEquals(
 				"按住互动 · 搜索容器 · 1.2秒",

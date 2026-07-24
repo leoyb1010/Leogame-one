@@ -151,22 +151,66 @@ public final class BukovTouchLayout {
 
 		float action = clamp(stick * 0.38f, 19f, 28f);
 		float gap = clamp(action * 0.18f, 3f, 5f);
-		float actionColumnX = Math.max(
-				safe.x + margin,
-				aim.x - gap - action
-		);
-		float lowerY = aim.bottom() - action;
-		Rect medical = new Rect(actionColumnX, lowerY, action, action);
-		Rect reload = new Rect(actionColumnX, lowerY - gap - action, action, action);
+		Rect interact;
+		Rect reload;
+		Rect medical;
+		Rect drop;
+		if (landscape) {
+			/*
+			 * A compact landscape cannot afford an action row above the right
+			 * stick: that row intersects even the base-height raid HUD. Keep a
+			 * two-by-two action grid in the center lane, aligned with the two
+			 * sticks and entirely below the reserved HUD edge.
+			 */
+			float rightColumnX = aim.x - gap - action;
+			float leftColumnX = rightColumnX - gap - action;
+			float topRowY = Math.max(
+					Math.max(safe.y + margin, hudBottom + gap),
+					aim.y);
+			float bottomRowY = aim.bottom() - action;
+			if (topRowY + action + gap > bottomRowY) {
+				topRowY = Math.max(
+						safe.y + margin,
+						bottomRowY - gap - action);
+			}
+			drop = new Rect(
+					leftColumnX, topRowY, action, action);
+			interact = new Rect(
+					rightColumnX, topRowY, action, action);
+			reload = new Rect(
+					leftColumnX, bottomRowY, action, action);
+			medical = new Rect(
+					rightColumnX, bottomRowY, action, action);
+		} else {
+			float actionColumnX = Math.max(
+					safe.x + margin,
+					aim.x - gap - action
+			);
+			float lowerY = aim.bottom() - action;
+			medical = new Rect(
+					actionColumnX, lowerY, action, action);
+			reload = new Rect(
+					actionColumnX,
+					lowerY - gap - action,
+					action,
+					action);
 
-		float upperY = Math.max(safe.y + margin, aim.y - gap - action);
-		Rect interact = new Rect(aim.right() - action, upperY, action, action);
-		Rect drop = new Rect(
-				Math.max(safe.x + margin, interact.x - gap - action),
-				upperY,
-				action,
-				action
-		);
+			float upperY = Math.max(
+					safe.y + margin,
+					aim.y - gap - action);
+			interact = new Rect(
+					aim.right() - action,
+					upperY,
+					action,
+					action);
+			drop = new Rect(
+					Math.max(
+							safe.x + margin,
+							interact.x - gap - action),
+					upperY,
+					action,
+					action);
+		}
 
 		float pauseWidth = clamp(safe.width * 0.15f, 34f, 52f);
 		float pauseHeight = clamp(shortest * 0.10f, 18f, 24f);

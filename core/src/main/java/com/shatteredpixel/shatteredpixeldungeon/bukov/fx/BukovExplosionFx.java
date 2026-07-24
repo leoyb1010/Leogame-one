@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -11,29 +12,40 @@ import com.watabou.noosa.Group;
 public final class BukovExplosionFx extends Group {
 
 	public static final float DURATION_SECONDS = 0.42f;
-	static final int HOT_COLOR = 0xFFFFF1B0;
-	static final int FLAME_COLOR = 0xFFFF8A3D;
-	static final int SMOKE_COLOR = 0xFF5D5B55;
 
 	private static final int RAY_COUNT = 12;
 	private static final int SMOKE_COUNT = 6;
 
 	private final BlastRay[] rays = new BlastRay[RAY_COUNT];
 	private final SmokeBlock[] smoke = new SmokeBlock[SMOKE_COUNT];
-	private final LightBlock core = new LightBlock();
+	private final int hotColor;
+	private final int flameColor;
+	private final LightBlock core;
 	private float centerX;
 	private float centerY;
 	private float strength;
 	private float age;
 
 	public BukovExplosionFx() {
+		this(BukovUiTokens.loadDefault());
+	}
+
+	BukovExplosionFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		int solidColor = color(tokens, "combat.fx.solid");
+		hotColor = color(tokens, "combat.fx.explosion.hot");
+		flameColor = color(tokens, "combat.fx.explosion.flame");
+		int smokeColor = color(tokens, "combat.fx.explosion.smoke");
+		core = new LightBlock(solidColor, hotColor);
 		add(core);
 		for (int index = 0; index < rays.length; index++) {
-			rays[index] = new BlastRay();
+			rays[index] = new BlastRay(solidColor);
 			add(rays[index]);
 		}
 		for (int index = 0; index < smoke.length; index++) {
-			smoke[index] = new SmokeBlock();
+			smoke[index] = new SmokeBlock(solidColor, smokeColor);
 			add(smoke[index]);
 		}
 		retire();
@@ -86,7 +98,7 @@ public final class BukovExplosionFx extends Group {
 					length,
 					0.7f + strength * 0.35f,
 					index * (360f / RAY_COUNT),
-					index % 3 == 0 ? HOT_COLOR : FLAME_COLOR,
+					index % 3 == 0 ? hotColor : flameColor,
 					flash);
 		}
 		float smokeAlpha = smokeAlphaAt(progress);
@@ -138,8 +150,11 @@ public final class BukovExplosionFx extends Group {
 
 	private static final class LightBlock extends ColorBlock {
 
-		private LightBlock() {
-			super(1f, 1f, 0xFFFFFFFF);
+		private final int hotColor;
+
+		private LightBlock(int solidColor, int hotColor) {
+			super(1f, 1f, solidColor);
+			this.hotColor = hotColor;
 		}
 
 		private void configure(
@@ -147,7 +162,7 @@ public final class BukovExplosionFx extends Group {
 			size(size, size);
 			x = centerX - size * 0.5f;
 			y = centerY - size * 0.5f;
-			color(HOT_COLOR & 0xFFFFFF);
+			color(hotColor);
 			this.alpha(alpha);
 		}
 
@@ -161,8 +176,8 @@ public final class BukovExplosionFx extends Group {
 
 	private static final class BlastRay extends ColorBlock {
 
-		private BlastRay() {
-			super(1f, 1f, 0xFFFFFFFF);
+		private BlastRay(int solidColor) {
+			super(1f, 1f, solidColor);
 			origin.set(0f, 0.5f);
 		}
 
@@ -178,7 +193,7 @@ public final class BukovExplosionFx extends Group {
 			x = centerX;
 			y = centerY - thickness * 0.5f;
 			this.angle = angle;
-			color(color & 0xFFFFFF);
+			color(color);
 			this.alpha(alpha);
 		}
 
@@ -192,8 +207,11 @@ public final class BukovExplosionFx extends Group {
 
 	private static final class SmokeBlock extends ColorBlock {
 
-		private SmokeBlock() {
-			super(1f, 1f, 0xFFFFFFFF);
+		private final int smokeColor;
+
+		private SmokeBlock(int solidColor, int smokeColor) {
+			super(1f, 1f, solidColor);
+			this.smokeColor = smokeColor;
 		}
 
 		private void configure(
@@ -201,8 +219,12 @@ public final class BukovExplosionFx extends Group {
 			size(size, size);
 			x = centerX - size * 0.5f;
 			y = centerY - size * 0.5f;
-			color(SMOKE_COLOR & 0xFFFFFF);
+			color(smokeColor);
 			this.alpha(alpha);
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 }

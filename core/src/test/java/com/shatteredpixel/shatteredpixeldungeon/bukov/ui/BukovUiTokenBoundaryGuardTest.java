@@ -31,6 +31,16 @@ public class BukovUiTokenBoundaryGuardTest {
 			"BukovDeploymentScene.java"
 	};
 
+	private static final Path BUKOV_FX = Paths.get(
+			"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+					+ "bukov/fx");
+	private static final Path BUKOV_ENEMY_PRESENTATION = Paths.get(
+			"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+					+ "sprites/bukov");
+	private static final Path BUKOV_LEVEL = Paths.get(
+			"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+					+ "bukov/levels/BukovLevel.java");
+
 	@Test
 	public void majorSurfacesUseTokensWithoutEmbeddedRgbColors()
 			throws Exception {
@@ -107,6 +117,26 @@ public class BukovUiTokenBoundaryGuardTest {
 		}
 	}
 
+	@Test
+	public void combatFxEnemyPresentationAndLevelAvoidEmbeddedRgb()
+			throws Exception {
+		assertDirectoryHasNoRgbLiterals(BUKOV_FX);
+		assertDirectoryHasNoRgbLiterals(BUKOV_ENEMY_PRESENTATION);
+		assertFileHasNoRgbLiterals(BUKOV_LEVEL);
+
+		assertTrue(
+				sourceAt(BUKOV_FX.resolve("BukovTracerFx.java"))
+						.contains("BukovUiTokens"));
+		assertTrue(
+				sourceAt(BUKOV_FX.resolve("BukovExplosionFx.java"))
+						.contains("BukovUiTokens"));
+		assertTrue(
+				sourceAt(BUKOV_ENEMY_PRESENTATION.resolve(
+						"BukovEnemySprite.java"))
+						.contains("BukovUiTokens"));
+		assertTrue(sourceAt(BUKOV_LEVEL).contains("BukovUiTokens"));
+	}
+
 	private static String source(String file) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(
@@ -125,11 +155,38 @@ public class BukovUiTokenBoundaryGuardTest {
 				StandardCharsets.UTF_8);
 	}
 
+	private static void assertDirectoryHasNoRgbLiterals(Path directory)
+			throws Exception {
+		try (Stream<Path> paths = Files.walk(directory)) {
+			for (Path path : (Iterable<Path>) paths
+					.filter(value -> value.toString().endsWith(".java"))
+					::iterator) {
+				assertFileHasNoRgbLiterals(path);
+			}
+		}
+	}
+
+	private static void assertFileHasNoRgbLiterals(Path path)
+			throws Exception {
+		Pattern literalColor = Pattern.compile(
+				"0x[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\\b");
+		assertFalse(
+				path.getFileName() + " embeds RGB outside ui_tokens.json",
+				literalColor.matcher(sourceAt(path)).find());
+	}
+
+	private static String sourceAt(Path path) throws Exception {
+		return new String(
+				Files.readAllBytes(path),
+				StandardCharsets.UTF_8);
+	}
+
 	private static boolean isTechnicalMask(
 			String file,
 			String line,
 			String literal) {
-		if ("BukovHitDirectionArc.java".equals(file)) {
+		if ("BukovHitDirectionArc.java".equals(file)
+				|| "BukovSoundDirectionArc.java".equals(file)) {
 			return "0xFFFFFFFF".equals(literal)
 					&& line.contains("TextureCache.createSolid(");
 		}

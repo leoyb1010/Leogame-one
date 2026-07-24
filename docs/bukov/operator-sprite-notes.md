@@ -1,25 +1,24 @@
-# 逃离布科夫原创行动员动画图集
+# 逃离布科夫行动员分层动画
 
-## 结论
+## 运行时结论
 
-`core/src/main/assets/sprites/bukov_operator.png` 已经不是旧 Rogue 图的换色版本。当前图集由 `scripts/generate_bukov_operator_sprite.mjs` 从透明画布开始，用像素几何图元独立绘制：全覆式头盔、窄观察窗、呼吸面罩、板甲、战术背包、无线电天线、步枪、弹匣和腰包均为新的轮廓。
+行动员不再使用“整张人物跟随鼠标换方向”的旧接法。实时渲染由两个同尺寸透明图层组成：
 
-生成脚本不读取任何源图片，不接受角色模板路径，也不复制旧图的 Alpha 平面。它只将自行绘制的 RGBA 缓冲区交给 FFmpeg 编码成 PNG。
+- `bukov_operator_lower.png`：髋部以下、脚步和接地阴影，仅跟随移动向量。
+- `bukov_operator_upper.png`：躯干、头盔、手臂、武器、枪口焰和动作道具，优先跟随瞄准向量。
 
-## 运行时契约
+因此角色可以向东移动、同时向北瞄准或开火；停止移动后腿部保留最后一个稳定朝向，武器仍可独立跟随鼠标。死亡动作只绘制完整的上层倒地帧，不会残留站立的腿。
 
-- 图集：`256 × 128`、8-bit RGBA、透明背景。
-- 有效帧：每帧 `12 × 15`，每行 21 帧，8 行装备层级。
-- 有效区域：`252 × 120`；右侧 4 像素和底部 8 像素是现有 `HeroSprite` 图集契约要求的透明留白。
-- 0–1：idle，端枪警戒有轻微姿态差。
-- 2–7：run，六帧非对称步态，包含身体起伏。
-- 8–12：death，从受击、屈膝到倒地静止。
-- 13–15：fire，举枪、枪口焰、后坐复位。
-- 16–17：reload / operate，卸下弹匣和插入弹匣。
-- 18：hit / airborne brace，当前可兼容主工程的 `fly` 帧调用。
-- 19–20：extract / radio，抬手操作撤离无线电。
+## 图集契约
 
-现有 `HeroSprite` 不需要改变帧宽、帧高或动画索引即可接入前六类动画；第 16–17 帧复用 `operate`，19–20 帧复用 `read`。后续如果为受击和撤离增加专属动画状态，可直接使用 18 和 19–20，不需要再次改图集。
+- 三张图集均为 `384 × 128`、8-bit RGBA、透明背景。
+- 每帧 `12 × 15`，每个方向 32 帧，共 8 行。
+- 方向顺序：N、NE、E、SE、S、SW、W、NW。
+- 0–1 idle，2–7 move，8–9 aim，10–12 fire，13–16 reload，
+  17–19 hit，20–23 medical，24–27 down，28–31 extract。
+- 完整图 `bukov_operator.png` 继续作为头像和动画时序源；分层图只改变实时世界中的绘制组合。
+
+`BukovOperatorPose` 是唯一的方向状态入口。`HeroSprite` 的下层拥有独立动画时钟，所以上层播放开火、换弹或治疗时不会冻结脚步。运行时按 v2.0 状态机映射为 4 帧 8fps idle、8 帧 12fps walk、八向单帧 aim、4 帧 30fps fire、6 帧 reload、2 帧短 hit 和 6 帧 12fps death；现有原创帧通过确定性复用补齐状态机要求的帧数。
 
 ## 确定性重建
 
@@ -27,14 +26,4 @@
 node scripts/generate_bukov_operator_sprite.mjs
 ```
 
-脚本仅依赖 Node.js 标准库与 FFmpeg。相同脚本会生成与仓库资产逐字节一致的 PNG：
-
-- 当前 PNG SHA-256：`ecd792ae22de2f2e6a2f0ad854f8a8968fada2613da58c02f511e7b9b2617c18`
-- 旧 `rogue.png` SHA-256：`84f66ab86adc47ee06440aa08931dadeca9325b127e30c559ca363b11acaf7aa`
-- 两者轮廓和 Alpha 均不相同，生成脚本也没有源图读取入口。
-
-统一静态验收：
-
-```bash
-./scripts/bukov_original_visual_gate.sh
-```
+生成器从同一组原创像素图元一次性输出完整图、下半身层、上半身/武器层和带三份 SHA-256 的 manifest。完整图的像素输出保持不变，分层资产不读取或复制任何外部角色图片。

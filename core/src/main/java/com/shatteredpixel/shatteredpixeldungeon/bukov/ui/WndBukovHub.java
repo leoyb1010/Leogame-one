@@ -16,6 +16,7 @@ import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.Callback;
+import com.watabou.utils.DeviceCompat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,6 +46,8 @@ public final class WndBukovHub extends Window {
 	private final Callback deploy;
 	private final BukovHubViewModel viewModel;
 	private final BukovHubViewModel.InventoryFilter inventoryFilter;
+	private final BukovHubViewModel.InventorySort inventorySort;
+	private final String inventoryQuery;
 	private final List<BukovHubViewModel.ItemRow> inventoryItems;
 	private final BukovHubFocusModel focus;
 	private final BukovUiTokens tokens;
@@ -53,6 +56,9 @@ public final class WndBukovHub extends Window {
 	private ScrollPane itemScroll;
 	private ModeSelectButton modeButton;
 	private FilterCycleButton filterButton;
+	private SortCycleButton sortButton;
+	private InventorySearchButton searchButton;
+	private float actionButtonHeight = BUTTON_HEIGHT;
 	private final BukovFocusRepeater focusRepeater =
 			new BukovFocusRepeater();
 
@@ -61,14 +67,18 @@ public final class WndBukovHub extends Window {
 				controller,
 				deploy,
 				0,
-				BukovHubViewModel.InventoryFilter.ALL);
+				BukovHubViewModel.InventoryFilter.ALL,
+				BukovHubViewModel.InventorySort.STASH_ORDER,
+				"");
 	}
 
 	private WndBukovHub(
 			BukovHubController controller,
 			Callback deploy,
 			int restoredFocus,
-			BukovHubViewModel.InventoryFilter inventoryFilter) {
+			BukovHubViewModel.InventoryFilter inventoryFilter,
+			BukovHubViewModel.InventorySort inventorySort,
+			String inventoryQuery) {
 		super(0, 0, new NinePatch(
 				TextureCache.createSolid(
 						BukovUiTokens.loadDefault().colorWithAlpha(
@@ -76,15 +86,23 @@ public final class WndBukovHub extends Window {
 		if (controller == null) {
 			throw new IllegalArgumentException("controller is required");
 		}
-		if (deploy == null || inventoryFilter == null) {
+		if (deploy == null
+				|| inventoryFilter == null
+				|| inventorySort == null
+				|| inventoryQuery == null) {
 			throw new IllegalArgumentException(
-					"deploy callback and inventory filter are required");
+					"deploy callback and inventory view state are required");
 		}
 		this.controller = controller;
 		this.deploy = deploy;
 		this.inventoryFilter = inventoryFilter;
+		this.inventorySort = inventorySort;
+		this.inventoryQuery = inventoryQuery;
 		viewModel = controller.viewModel();
-		inventoryItems = viewModel.inventoryItems(inventoryFilter);
+		inventoryItems = viewModel.inventoryItems(
+				inventoryFilter,
+				inventorySort,
+				inventoryQuery);
 		focus = new BukovHubFocusModel(inventoryItems.size());
 		focus.focus(restoredFocus);
 		tokens = BukovUiTokens.loadDefault();
@@ -99,6 +117,9 @@ public final class WndBukovHub extends Window {
 	}
 
 	private void build(int windowWidth, int windowHeight) {
+		boolean landscape = PixelScene.landscape();
+		boolean compactLandscape = landscape && windowHeight < 150;
+		actionButtonHeight = compactLandscape ? 15f : BUTTON_HEIGHT;
 		float y = 3;
 		ColorBlock header = new ColorBlock(
 				windowWidth,
@@ -119,6 +140,9 @@ public final class WndBukovHub extends Window {
 				6,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(windowWidth - MARGIN - eyebrow.width(), y);
+		// The bilingual eyebrow and 11px Chinese title cannot share a 127px
+		// portrait header without drawing through one another.
+		eyebrow.visible = landscape;
 		add(eyebrow);
 
 		RenderedTextBlock title = text(
@@ -131,12 +155,19 @@ public final class WndBukovHub extends Window {
 		add(title);
 		y += 16;
 
-		StatusStrip status = new StatusStrip(windowWidth - MARGIN * 2);
-		status.setRect(MARGIN, y, windowWidth - MARGIN * 2, 21);
-		add(status);
-		y += 23;
+		if (!compactLandscape) {
+			StatusStrip status = new StatusStrip(
+					windowWidth - MARGIN * 2);
+			status.setRect(
+					MARGIN,
+					y,
+					windowWidth - MARGIN * 2,
+					21);
+			add(status);
+			y += 23;
+		}
 
-		if (!PixelScene.landscape()) {
+		if (!landscape) {
 			float slotGap = 2;
 			float slotWidth =
 					(windowWidth - MARGIN * 2 - slotGap * 2) / 3f;
@@ -160,7 +191,11 @@ public final class WndBukovHub extends Window {
 		float utilityWidth =
 				(windowWidth - MARGIN * 2 - GAP) / 2f;
 		modeButton = new ModeSelectButton();
-		modeButton.setRect(MARGIN, y, utilityWidth, BUTTON_HEIGHT);
+		modeButton.setRect(
+				MARGIN,
+				y,
+				utilityWidth,
+				actionButtonHeight);
 		add(modeButton);
 		addAction(
 				viewModel.activeRaid
@@ -173,47 +208,62 @@ public final class WndBukovHub extends Window {
 				viewModel.activeRaid
 						? "text.disabled"
 						: "accent.valuable");
-		y += BUTTON_HEIGHT + GAP;
+		y += actionButtonHeight + GAP;
 
-		RenderedTextBlock modeSummary = text(
-				compact(
-						viewModel.raidModeSummary,
-						PixelScene.landscape() ? 42 : 27),
-				6,
-				tokens.color("text.secondary"));
-		modeSummary.setRect(
-				MARGIN,
-				y,
-				windowWidth - MARGIN * 2,
-				7);
-		add(modeSummary);
-		y += 8;
+		if (!compactLandscape) {
+			RenderedTextBlock modeSummary = text(
+					compact(
+							viewModel.raidModeSummary,
+							landscape ? 42 : 27),
+					6,
+					tokens.color("text.secondary"));
+			modeSummary.setRect(
+					MARGIN,
+					y,
+					windowWidth - MARGIN * 2,
+					7);
+			add(modeSummary);
+			y += 8;
+		}
 
-		float filterWidth = PixelScene.landscape() ? 70f : 58f;
-		RenderedTextBlock stashLabel = text(
-				viewModel.activeRaid
-						? "本次行动携带"
-						: "仓库物资 · 点击加入配装",
-				7,
-				tokens.color("text.secondary"));
-		stashLabel.setRect(
-				MARGIN,
-				y,
-				windowWidth - MARGIN * 2 - filterWidth - GAP,
-				9);
-		add(stashLabel);
+		float inventoryUtilityHeight =
+				DeviceCompat.isDesktop() ? 9f : 15f;
+		float inventoryUtilityWidth =
+				(windowWidth - MARGIN * 2 - GAP * 2f) / 3f;
 		filterButton = new FilterCycleButton();
 		filterButton.setRect(
-				windowWidth - MARGIN - filterWidth,
+				MARGIN,
 				y,
-				filterWidth,
-				9);
+				inventoryUtilityWidth,
+				inventoryUtilityHeight);
 		add(filterButton);
-		y += 10;
+		sortButton = new SortCycleButton();
+		sortButton.setRect(
+				filterButton.right() + GAP,
+				y,
+				inventoryUtilityWidth,
+				inventoryUtilityHeight);
+		add(sortButton);
+		searchButton = new InventorySearchButton();
+		searchButton.setRect(
+				sortButton.right() + GAP,
+				y,
+				inventoryUtilityWidth,
+				inventoryUtilityHeight);
+		add(searchButton);
+		y += inventoryUtilityHeight + 1f;
 
+		float footerReserved = compactLandscape
+				? GAP
+						+ actionButtonHeight
+						+ GAP
+						+ actionButtonHeight
+				: FOOTER_RESERVED
+						- (BUTTON_HEIGHT - actionButtonHeight) * 2f;
 		float listHeight = inventoryViewportHeight(
 				windowHeight,
-				PixelScene.landscape());
+				y,
+				footerReserved);
 		InventoryList list = new InventoryList(windowWidth - MARGIN * 2);
 		itemScroll = new ScrollPane(list);
 		// ScrollPane.layout() needs its parent camera, so attach it before sizing.
@@ -225,13 +275,19 @@ public final class WndBukovHub extends Window {
 				listHeight);
 		y += listHeight + GAP;
 
-		RenderedTextBlock settlement = text(
-				settlementText(),
-				6,
-				settlementColor());
-		settlement.setRect(MARGIN, y, windowWidth - MARGIN * 2, 9);
-		add(settlement);
-		y += 10;
+		if (!compactLandscape) {
+			RenderedTextBlock settlement = text(
+					settlementText(),
+					6,
+					settlementColor());
+			settlement.setRect(
+					MARGIN,
+					y,
+					windowWidth - MARGIN * 2,
+					9);
+			add(settlement);
+			y += 10;
+		}
 
 		float half = (windowWidth - MARGIN * 2 - GAP) / 2f;
 		addAction(
@@ -256,12 +312,12 @@ public final class WndBukovHub extends Window {
 				y,
 				half,
 				"panel.border");
-		y += BUTTON_HEIGHT + GAP;
+		y += actionButtonHeight + GAP;
 
 		addAction(
 				viewModel.activeRaid
 						? "继续行动"
-						: !viewModel.canDeploy ? "配装不完整" : "确认出击",
+						: !viewModel.canDeploy ? "补齐并出击" : "确认出击",
 				BukovHubFocusModel.ACTION_DEPLOY,
 				MARGIN,
 				y,
@@ -279,12 +335,19 @@ public final class WndBukovHub extends Window {
 	static int inventoryViewportHeight(
 			int windowHeight,
 			boolean landscape) {
+		return (int)inventoryViewportHeight(
+				windowHeight,
+				landscape ? INVENTORY_TOP_L : INVENTORY_TOP_P,
+				FOOTER_RESERVED);
+	}
+
+	static float inventoryViewportHeight(
+			float windowHeight,
+			float inventoryTop,
+			float footerReserved) {
 		return Math.max(
-				1,
-				windowHeight
-						- (landscape
-								? INVENTORY_TOP_L : INVENTORY_TOP_P)
-						- FOOTER_RESERVED);
+				1f,
+				windowHeight - inventoryTop - footerReserved);
 	}
 
 	static int windowHeightFor(
@@ -391,7 +454,11 @@ public final class WndBukovHub extends Window {
 				action,
 				tokens.color(accentToken),
 				actionEnabled(action));
-		button.setRect(x, y, buttonWidth, BUTTON_HEIGHT);
+		button.setRect(
+				x,
+				y,
+				buttonWidth,
+				actionButtonHeight);
 		actionButtons.add(button);
 		add(button);
 	}
@@ -422,21 +489,76 @@ public final class WndBukovHub extends Window {
 										controller,
 										deploy,
 										restoredFocus,
-										inventoryFilter))));
+										inventoryFilter,
+										inventorySort,
+										inventoryQuery))));
 	}
 
 	private void cycleInventoryFilter() {
 		BukovHubViewModel.InventoryFilter next =
 				inventoryFilter.next();
 		int nextFilterFocus =
-				viewModel.inventoryItems(next).size() + 1;
+				viewModel.inventoryItems(
+						next,
+						inventorySort,
+						inventoryQuery).size() + 1;
 		hide();
 		ShatteredPixelDungeon.scene().addToFront(
 				new WndBukovHub(
 						controller,
 						deploy,
 						nextFilterFocus,
-						next));
+						next,
+						inventorySort,
+						inventoryQuery));
+	}
+
+	private void cycleInventorySort() {
+		BukovHubViewModel.InventorySort next = inventorySort.next();
+		int nextSortFocus =
+				viewModel.inventoryItems(
+						inventoryFilter,
+						next,
+						inventoryQuery).size() + 2;
+		hide();
+		ShatteredPixelDungeon.scene().addToFront(
+				new WndBukovHub(
+						controller,
+						deploy,
+						nextSortFocus,
+						inventoryFilter,
+						next,
+						inventoryQuery));
+	}
+
+	private void openInventorySearch() {
+		// Pointer and controller entry both return to the semantic search
+		// control. Its absolute index must be recomputed because applying a
+		// query can change the number of visible inventory rows.
+		focus.focus(inventoryItems.size() + 3);
+		hide();
+		ShatteredPixelDungeon.scene().addToFront(
+				new WndBukovInventorySearch(
+						inventoryQuery,
+						query -> {
+							int searchFocus =
+									searchFocusFor(query);
+							ShatteredPixelDungeon.scene().addToFront(
+									new WndBukovHub(
+											controller,
+											deploy,
+											searchFocus,
+											inventoryFilter,
+											inventorySort,
+											query));
+						}));
+	}
+
+	private int searchFocusFor(String query) {
+		return viewModel.inventoryItems(
+				inventoryFilter,
+				inventorySort,
+				query).size() + 3;
 	}
 
 	private void activateAction(int action) {
@@ -470,6 +592,10 @@ public final class WndBukovHub extends Window {
 					} else if (viewModel.canDeploy) {
 						ShatteredPixelDungeon.scene().addToFront(
 								new DeploymentConfirmWindow());
+					} else {
+						controller.prepareAndConfirmDeployment();
+						hide();
+						deploy.call();
 					}
 					break;
 				default:
@@ -489,8 +615,7 @@ public final class WndBukovHub extends Window {
 			return action == BukovHubFocusModel.ACTION_DEPLOY
 					|| action == BukovHubFocusModel.ACTION_BACK;
 		}
-		return action != BukovHubFocusModel.ACTION_DEPLOY
-				|| viewModel.canDeploy;
+		return true;
 	}
 
 	private void openVendor() {
@@ -504,7 +629,9 @@ public final class WndBukovHub extends Window {
 										controller,
 										deploy,
 										restoredFocus,
-										inventoryFilter))));
+										inventoryFilter,
+										inventorySort,
+										inventoryQuery))));
 	}
 
 	private void confirmDeployment() {
@@ -525,7 +652,9 @@ public final class WndBukovHub extends Window {
 						controller,
 						deploy,
 						restoredFocus,
-						inventoryFilter));
+						inventoryFilter,
+						inventorySort,
+						inventoryQuery));
 	}
 
 	private void showError(String title, Throwable error) {
@@ -585,6 +714,10 @@ public final class WndBukovHub extends Window {
 			openModeSelection();
 		} else if (focus.filterFocused()) {
 			cycleInventoryFilter();
+		} else if (focus.sortFocused()) {
+			cycleInventorySort();
+		} else if (focus.searchFocused()) {
+			openInventorySearch();
 		} else {
 			activateAction(focus.actionIndex());
 		}
@@ -604,6 +737,12 @@ public final class WndBukovHub extends Window {
 		}
 		if (filterButton != null) {
 			filterButton.setFocused(focus.filterFocused());
+		}
+		if (sortButton != null) {
+			sortButton.setFocused(focus.sortFocused());
+		}
+		if (searchButton != null) {
+			searchButton.setFocused(focus.searchFocused());
 		}
 		if (focus.itemFocused() && itemScroll != null) {
 			float rowY = focus.itemIndex() * ROW_HEIGHT;
@@ -762,6 +901,10 @@ public final class WndBukovHub extends Window {
 				RenderedTextBlock empty = text(
 						viewModel.stashItems.isEmpty()
 								? "仓库为空 · 完成撤离可带回物资"
+								: !inventoryQuery.isEmpty()
+								? "没有匹配“"
+										+ compact(inventoryQuery, 12)
+										+ "”的物资"
 								: inventoryFilter.label + "分类暂无物资",
 						7,
 						tokens.color("text.disabled"));
@@ -795,8 +938,8 @@ public final class WndBukovHub extends Window {
 					1, 1, tokens.color("panel.border"));
 			add(edge);
 			label = text(
-					"筛选 " + viewModel.inventoryFilterSummary(
-							inventoryFilter),
+					"筛选 " + inventoryFilter.label
+							+ " " + inventoryItems.size(),
 					6,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -826,6 +969,115 @@ public final class WndBukovHub extends Window {
 			edge.y = y + height - 1;
 			edge.size(width, 1);
 			label.maxWidth(Math.max(1, (int) width - 2));
+			center(label, x + 1, y, width - 2, height);
+		}
+	}
+
+	private final class SortCycleButton extends Button {
+
+		private final ColorBlock surface;
+		private final ColorBlock edge;
+		private final RenderedTextBlock label;
+
+		private SortCycleButton() {
+			surface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.valuable", 28));
+			addToBack(surface);
+			edge = new ColorBlock(
+					1, 1, tokens.color("panel.border"));
+			add(edge);
+			label = text(
+					"排序 " + inventorySort.label,
+					6,
+					tokens.color("text.secondary"));
+			label.align(RenderedTextBlock.CENTER_ALIGN);
+			add(label);
+		}
+
+		@Override
+		protected void onClick() {
+			cycleInventorySort();
+		}
+
+		private void setFocused(boolean focused) {
+			edge.hardlight(tokens.color(
+					focused ? "accent.valuable" : "panel.border"));
+			surface.alpha(focused ? 0.34f : 0.15f);
+			label.hardlight(tokens.color(
+					focused ? "accent.valuable" : "text.secondary"));
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+			surface.x = x;
+			surface.y = y;
+			surface.size(width, height);
+			edge.x = x;
+			edge.y = y + height - 1;
+			edge.size(width, 1);
+			label.maxWidth(Math.max(1, (int)width - 2));
+			center(label, x + 1, y, width - 2, height);
+		}
+	}
+
+	private final class InventorySearchButton extends Button {
+
+		private final ColorBlock surface;
+		private final ColorBlock edge;
+		private final RenderedTextBlock label;
+
+		private InventorySearchButton() {
+			surface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.interact", 28));
+			addToBack(surface);
+			edge = new ColorBlock(
+					1, 1, tokens.color("panel.border"));
+			add(edge);
+			label = text(
+					inventoryQuery.isEmpty()
+							? "搜索"
+							: "搜索 " + compact(inventoryQuery, 5),
+					6,
+					tokens.color(
+							inventoryQuery.isEmpty()
+									? "text.secondary"
+									: "accent.interact"));
+			label.align(RenderedTextBlock.CENTER_ALIGN);
+			add(label);
+		}
+
+		@Override
+		protected void onClick() {
+			openInventorySearch();
+		}
+
+		private void setFocused(boolean focused) {
+			edge.hardlight(tokens.color(
+					focused ? "accent.interact" : "panel.border"));
+			surface.alpha(focused ? 0.34f : 0.15f);
+			label.hardlight(tokens.color(
+					focused
+							? "accent.interact"
+							: inventoryQuery.isEmpty()
+							? "text.secondary"
+							: "accent.interact"));
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+			surface.x = x;
+			surface.y = y;
+			surface.size(width, height);
+			edge.x = x;
+			edge.y = y + height - 1;
+			edge.size(width, 1);
+			label.maxWidth(Math.max(1, (int)width - 2));
 			center(label, x + 1, y, width - 2, height);
 		}
 	}

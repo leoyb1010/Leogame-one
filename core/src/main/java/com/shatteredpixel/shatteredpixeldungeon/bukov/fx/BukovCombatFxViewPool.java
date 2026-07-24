@@ -36,10 +36,14 @@ public final class BukovCombatFxViewPool extends Group {
 	 * array allocation occurs while presenting combat events.
 	 */
 	public BukovCombatFxViewPool(BukovUiTokens tokens) {
-		this(Capacities.from(tokens));
+		this(tokens, Capacities.from(tokens));
 	}
 
-	BukovCombatFxViewPool(Capacities capacities) {
+	private BukovCombatFxViewPool(
+			BukovUiTokens tokens, Capacities capacities) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("UI tokens are required");
+		}
 		if (capacities == null) {
 			throw new IllegalArgumentException("capacities are required");
 		}
@@ -58,31 +62,31 @@ public final class BukovCombatFxViewPool extends Group {
 		bulletMarkStamps = new long[bulletMarks.length];
 		explosionStamps = new long[explosions.length];
 		for (int index = 0; index < muzzles.length; index++) {
-			muzzles[index] = new BukovMuzzleFx();
+			muzzles[index] = new BukovMuzzleFx(tokens);
 			add(muzzles[index]);
 		}
 		for (int index = 0; index < shells.length; index++) {
-			shells[index] = new BukovShellFx();
+			shells[index] = new BukovShellFx(tokens);
 			add(shells[index]);
 		}
 		for (int index = 0; index < tracers.length; index++) {
-			tracers[index] = new BukovTracerFx();
+			tracers[index] = new BukovTracerFx(tokens);
 			add(tracers[index]);
 		}
 		for (int index = 0; index < impacts.length; index++) {
-			impacts[index] = new BukovImpactFx();
+			impacts[index] = new BukovImpactFx(tokens);
 			add(impacts[index]);
 		}
 		for (int index = 0; index < bloodMists.length; index++) {
-			bloodMists[index] = new BukovBloodMistFx();
+			bloodMists[index] = new BukovBloodMistFx(tokens);
 			add(bloodMists[index]);
 		}
 		for (int index = 0; index < bulletMarks.length; index++) {
-			bulletMarks[index] = new BukovBulletMarkFx();
+			bulletMarks[index] = new BukovBulletMarkFx(tokens);
 			add(bulletMarks[index]);
 		}
 		for (int index = 0; index < explosions.length; index++) {
-			explosions[index] = new BukovExplosionFx();
+			explosions[index] = new BukovExplosionFx(tokens);
 			add(explosions[index]);
 		}
 	}

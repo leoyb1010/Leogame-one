@@ -45,4 +45,20 @@ public class BukovWindowLayoutTest {
 				WndBukovSettings.windowHeightFor(
 						220, 0f, 0f, true));
 	}
+
+	@Test
+	public void compactLandscapeLoadoutRetainsScrollableInventory() {
+		// 240x135 logical iPhone landscape minus common safe area/gutters.
+		float windowHeight = 119f;
+		float inventoryTop = 49f;
+		float compactFooter = 34f;
+
+		assertEquals(
+				36f,
+				WndBukovHub.inventoryViewportHeight(
+						windowHeight,
+						inventoryTop,
+						compactFooter),
+				0f);
+	}
 }

@@ -34,6 +34,12 @@ public class BukovSettlementWiringGuardTest {
 		assertTrue(settlement.contains("[ 撤离确认 ]"));
 		assertTrue(settlement.contains("[ 行动损失 ]"));
 		assertTrue(settlement.contains("if (skipReveal()) return;"));
+		assertTrue(settlement.contains(
+				"SPDSettings.bukovReduceMotion()"));
+		assertTrue(settlement.contains(
+				"tokens.motionMs(\"instant\")"));
+		assertTrue(settlement.contains(
+				"tokens.motionMs(\"ritual\")"));
 	}
 
 	private static String read(String path) throws Exception {

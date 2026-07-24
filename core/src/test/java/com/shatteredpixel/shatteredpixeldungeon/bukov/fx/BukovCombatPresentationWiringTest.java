@@ -19,21 +19,25 @@ public class BukovCombatPresentationWiringTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/HeroSprite.java");
 
 		assertTrue(sprites.contains("realtimeActionPlaying"));
-		assertTrue(sprites.contains("priority <= realtimeActionPriority"));
+		assertTrue(sprites.contains("restartSamePriority"));
 		assertTrue(sprites.contains(
 				"if (realtimeActionPlaying) {\n\t\t\treturn;"));
 		assertTrue(hero.contains(
-				"playBukovAction(fire, targetCell, 1, callback)"));
+				"playBukovAction(fire, targetCell, 1, true, callback)"));
 		assertTrue(hero.contains(
 				"playBukovAction(reload, targetCell, 2, callback)"));
 		assertTrue(hero.contains(
-				"playBukovAction(hit, ch.pos, 3, callback)"));
+				"playBukovAction(hit, ch.pos, 3, new Callback()"));
 		assertTrue(hero.contains(
 				"playBukovAction(medical, ch.pos, 2, null)"));
 		assertTrue(hero.contains(
 				"playBukovAction(extract, ch.pos, 2, callback)"));
 		assertTrue(hero.contains(
-				"playRealtimeAction(animation, targetCell, priority, completion)"));
+				"reloadRemainingSeconds - animationDuration(hit)"));
+		assertTrue(hero.contains(
+				"if (bukovReloading && resumeSeconds > 0f)"));
+		assertTrue(hero.contains("reload.delay = reloadFrameDelay("));
+		assertTrue(hero.contains("cancelRealtimeAction(reload)"));
 		assertFalse(hero.contains(
 				"firearmFire(int targetCell, final Callback callback) {\n"
 						+ "\t\tanimCallback"));
@@ -60,6 +64,12 @@ public class BukovCombatPresentationWiringTest {
 				"CombatPresentationEvent.Type.PLAYER_EXTRACTION"));
 		assertTrue(world.contains(
 				"CombatPresentationEvent.Type.EXTRACTION_COMPLETE"));
+		assertTrue(world.contains(
+				"CombatPresentationEvent.Type.PLAYER_RELOAD_END"));
+		assertTrue(world.contains("fireControl.reloadRemaining()"));
+		assertTrue(world.contains("resetFireControlForWeaponSwap()"));
+		assertTrue(presentation.contains("event.durationSeconds()"));
+		assertTrue(presentation.contains(".reloadFinished();"));
 		assertTrue(presentation.contains("CombatFeedbackResolver.add("));
 		assertTrue(presentation.contains("combatFeedback <= 0"));
 		assertTrue(presentation.contains(

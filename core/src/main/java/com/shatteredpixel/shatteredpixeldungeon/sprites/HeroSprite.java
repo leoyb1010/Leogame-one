@@ -29,11 +29,13 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovFacing8;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovOperatorPose;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.MovieClip;
 import com.watabou.noosa.TextureFilm;
 import com.watabou.utils.Callback;
 import com.watabou.utils.PointF;
@@ -44,15 +46,26 @@ public class HeroSprite extends CharSprite {
 	private static final int FRAME_WIDTH	= 12;
 	private static final int FRAME_HEIGHT	= 15;
 	
-	private static final int RUN_FRAMERATE	= 20;
+	private static final int RUN_FRAMERATE	= 12;
 	
 	private static TextureFilm tiers;
 	private static TextureFilm bukovTiers;
+	private static TextureFilm bukovLowerTiers;
 
 	private final boolean bukovOperator;
+	private final BukovOperatorPose bukovPose = new BukovOperatorPose();
 	private int bukovDirection = BukovFacing8.S.row;
+	private int bukovLocomotionDirection = BukovFacing8.S.row;
 	private boolean bukovAimActive;
 	private boolean bukovActionPlaying;
+	private boolean bukovMoving;
+	private boolean bukovReloading;
+	private MovieClip bukovLowerLayer;
+	private Image bukovUpperLayer;
+	private Animation bukovLowerIdle;
+	private Animation bukovLowerRun;
+	private int bukovUpperRenderedDirection = -1;
+	private int bukovUpperRenderedFrame = -1;
 	
 	private Animation fly;
 	private Animation read;
@@ -70,6 +83,9 @@ public class HeroSprite extends CharSprite {
 		texture(bukovOperator
 				? Assets.Sprites.BUKOV_OPERATOR
 				: Dungeon.hero.heroClass.spritesheet());
+		if (bukovOperator) {
+			initializeBukovLayers();
+		}
 		updateArmor();
 		
 		link( Dungeon.hero );
@@ -139,43 +155,70 @@ public class HeroSprite extends CharSprite {
 	private void rebuildBukovAnimations() {
 		TextureFilm film = new TextureFilm(
 				bukovTiers(),
-				bukovDirection,
+				BukovFacing8.S.row,
 				FRAME_WIDTH,
 				FRAME_HEIGHT
 		);
 
-		idle = new Animation( 5, true );
-		idle.frames( film, 0, 1 );
+		idle = new Animation( 8, true );
+		idle.frames( film, 0, 1, 0, 1 );
 
 		run = new Animation( RUN_FRAMERATE, true );
-		run.frames( film, 2, 3, 4, 5, 6, 7 );
+		run.frames( film, 2, 3, 4, 5, 6, 7, 4, 3 );
 
-		aim = new Animation( 8, true );
-		aim.frames( film, 8, 9 );
+		aim = new Animation( 1, true );
+		aim.frames( film, 8 );
 
-		fire = new Animation( 18, false );
+		fire = new Animation( 30, false );
 		fire.frames( film, 10, 11, 12, 8 );
 		attack = fire;
 		zap = fire.clone();
 
-		reload = new Animation( 9, false );
-		reload.frames( film, 13, 14, 15, 16, 8 );
+		reload = new Animation( 12, false );
+		reload.frames( film, 13, 14, 15, 16, 15, 8 );
 		operate = reload;
 
-		hit = new Animation( 14, false );
-		hit.frames( film, 17, 18, 19, 8 );
+		hit = new Animation( 30, false );
+		hit.frames( film, 17, 18 );
 
 		medical = new Animation( 9, false );
 		medical.frames( film, 20, 21, 22, 23, 8 );
 
-		die = new Animation( 10, false );
-		die.frames( film, 24, 25, 26, 27, 27 );
+		die = new Animation( 12, false );
+		die.frames( film, 24, 25, 26, 27, 27, 27 );
 
 		extract = new Animation( 8, false );
 		extract.frames( film, 28, 29, 30, 31, 28 );
 		read = extract;
 
 		fly = aim.clone();
+		rebuildBukovLocomotionAnimations();
+	}
+
+	private void initializeBukovLayers() {
+		bukovLowerLayer = new MovieClip(Assets.Sprites.BUKOV_OPERATOR_LOWER);
+		bukovUpperLayer = new Image(Assets.Sprites.BUKOV_OPERATOR_UPPER);
+		bukovLowerLayer.texture.filter(
+				SmartTexture.NEAREST, SmartTexture.NEAREST);
+		bukovUpperLayer.texture.filter(
+				SmartTexture.NEAREST, SmartTexture.NEAREST);
+	}
+
+	private void rebuildBukovLocomotionAnimations() {
+		TextureFilm film = new TextureFilm(
+				bukovLowerTiers(),
+				bukovLocomotionDirection,
+				FRAME_WIDTH,
+				FRAME_HEIGHT
+		);
+		bukovLowerIdle = new Animation(8, true);
+		bukovLowerIdle.frames(film, 0, 1, 0, 1);
+		bukovLowerRun = new Animation(RUN_FRAMERATE, true);
+		bukovLowerRun.frames(film, 2, 3, 4, 5, 6, 7, 4, 3);
+		if (bukovLowerLayer != null) {
+			bukovLowerLayer.play(
+					bukovMoving ? bukovLowerRun : bukovLowerIdle);
+		}
 	}
 	
 	@Override
@@ -230,7 +273,7 @@ public class HeroSprite extends CharSprite {
 			return;
 		}
 		faceBukovTarget(ch.pos, targetCell);
-		playBukovAction(fire, targetCell, 1, callback);
+		playBukovAction(fire, targetCell, 1, true, callback);
 	}
 
 	public void firearmFire(int targetCell) {
@@ -241,10 +284,21 @@ public class HeroSprite extends CharSprite {
 	 * Realtime reload/operate animation, also isolated from host turn timing.
 	 */
 	public synchronized void reloadFirearm(int targetCell, final Callback callback) {
+		reloadFirearm(targetCell, 0f, callback);
+	}
+
+	public synchronized void reloadFirearm(
+			int targetCell,
+			float durationSeconds,
+			final Callback callback) {
 		if (!bukovOperator) {
 			operate(targetCell, callback);
 			return;
 		}
+		bukovReloading = true;
+		reload.delay = reloadFrameDelay(
+				durationSeconds,
+				reload.frames == null ? 0 : reload.frames.length);
 		faceBukovTarget(ch.pos, targetCell);
 		playBukovAction(reload, targetCell, 2, callback);
 	}
@@ -253,16 +307,54 @@ public class HeroSprite extends CharSprite {
 		reloadFirearm(targetCell, null);
 	}
 
+	public void reloadFirearm(int targetCell, float durationSeconds) {
+		reloadFirearm(targetCell, durationSeconds, null);
+	}
+
+	public synchronized void reloadFinished() {
+		bukovReloading = false;
+		if (cancelRealtimeAction(reload)) {
+			bukovActionPlaying = false;
+		}
+	}
+
 	public synchronized void hitReaction(final Callback callback) {
+		hitReaction(ch == null ? 0 : ch.pos, 0f, callback);
+	}
+
+	public synchronized void hitReaction(
+			int reloadTargetCell,
+			float reloadRemainingSeconds,
+			final Callback callback) {
 		if (!bukovOperator) {
 			if (callback != null) callback.call();
 			return;
 		}
-		playBukovAction(hit, ch.pos, 3, callback);
+		flash();
+		final float resumeSeconds = Math.max(
+				0f,
+				reloadRemainingSeconds - animationDuration(hit));
+		playBukovAction(hit, ch.pos, 3, new Callback() {
+			@Override
+			public void call() {
+				if (bukovReloading && resumeSeconds > 0f) {
+					reloadFirearm(reloadTargetCell, resumeSeconds);
+				}
+				if (callback != null) {
+					callback.call();
+				}
+			}
+		});
 	}
 
 	public void hitReaction() {
 		hitReaction(null);
+	}
+
+	public void hitReaction(
+			int reloadTargetCell,
+			float reloadRemainingSeconds) {
+		hitReaction(reloadTargetCell, reloadRemainingSeconds, null);
 	}
 
 	public synchronized void extractionRadio(final Callback callback) {
@@ -300,6 +392,20 @@ public class HeroSprite extends CharSprite {
 			int targetCell,
 			int priority,
 			final Callback callback ) {
+		playBukovAction(
+				animation,
+				targetCell,
+				priority,
+				false,
+				callback);
+	}
+
+	private void playBukovAction(
+			final Animation animation,
+			int targetCell,
+			int priority,
+			boolean restartSamePriority,
+			final Callback callback ) {
 		final Callback completion = new Callback() {
 			@Override
 			public void call() {
@@ -309,9 +415,28 @@ public class HeroSprite extends CharSprite {
 				}
 			}
 		};
-		if (playRealtimeAction(animation, targetCell, priority, completion)) {
+		if (playRealtimeAction(
+				animation,
+				targetCell,
+				priority,
+				restartSamePriority,
+				completion)) {
 			bukovActionPlaying = true;
 		}
+	}
+
+	static float reloadFrameDelay(float durationSeconds, int frameCount) {
+		if (!(durationSeconds > 0f)
+				|| Float.isInfinite(durationSeconds)
+				|| frameCount <= 0) {
+			return 1f / 12f;
+		}
+		return durationSeconds / frameCount;
+	}
+
+	private static float animationDuration(Animation animation) {
+		return animation == null || animation.frames == null
+				? 0f : animation.delay * animation.frames.length;
 	}
 
 	public void setBukovRealtimeOrientation(
@@ -319,19 +444,24 @@ public class HeroSprite extends CharSprite {
 		if (!bukovOperator) {
 			return;
 		}
-		bukovAimActive = aimX != 0f || aimY != 0f;
-		float facingX = bukovAimActive ? aimX : moveX;
-		float facingY = bukovAimActive ? aimY : moveY;
-		if (facingX != 0f || facingY != 0f) {
-			setBukovDirection(BukovFacing8.resolve(facingX, facingY).row);
-		}
+		bukovPose.update(moveX, moveY, aimX, aimY);
+		bukovAimActive = bukovPose.aimActive();
+		setBukovLocomotionDirection(bukovPose.locomotionFacing().row);
+		setBukovDirection(bukovPose.upperBodyFacing().row);
 	}
 
 	@Override
 	public void setRealtimeMoving(boolean moving) {
+		bukovMoving = moving;
 		super.setRealtimeMoving(moving);
-		if (bukovOperator && bukovAimActive && !moving
+		if (bukovOperator && bukovLowerLayer != null) {
+			bukovLowerLayer.play(
+					moving ? bukovLowerRun : bukovLowerIdle);
+		}
+		if (bukovOperator && bukovAimActive
 				&& !bukovActionPlaying && curAnim != die) {
+			// Locomotion belongs to the lower film. A live aim vector keeps the
+			// torso and weapon in the aim film even while the legs are running.
 			play(aim);
 		}
 	}
@@ -351,7 +481,8 @@ public class HeroSprite extends CharSprite {
 		int dx = to % width - from % width;
 		int dy = to / width - from / width;
 		if (dx != 0 || dy != 0) {
-			setBukovDirection(BukovFacing8.resolve(dx, dy).row);
+			bukovPose.faceUpperBody(dx, dy);
+			setBukovDirection(bukovPose.upperBodyFacing().row);
 		}
 	}
 
@@ -360,8 +491,16 @@ public class HeroSprite extends CharSprite {
 			return;
 		}
 		bukovDirection = direction;
-		rebuildBukovAnimations();
+		bukovUpperRenderedDirection = -1;
 		flipHorizontal = false;
+	}
+
+	private void setBukovLocomotionDirection(int direction) {
+		if (direction == bukovLocomotionDirection) {
+			return;
+		}
+		bukovLocomotionDirection = direction;
+		rebuildBukovLocomotionAnimations();
 	}
 
 	@Override
@@ -381,10 +520,81 @@ public class HeroSprite extends CharSprite {
 		sleeping = ch.isAlive() && ((Hero)ch).resting;
 		
 		super.update();
+		if (bukovOperator && bukovLowerLayer != null) {
+			bukovLowerLayer.update();
+		}
+	}
+
+	@Override
+	public void draw() {
+		if (!bukovOperator || bukovLowerLayer == null
+				|| bukovUpperLayer == null) {
+			super.draw();
+			return;
+		}
+
+		int frameColumn = currentBukovFrameColumn();
+		if (bukovUpperRenderedDirection != bukovDirection
+				|| bukovUpperRenderedFrame != frameColumn) {
+			bukovUpperLayer.frame(
+					frameColumn * FRAME_WIDTH,
+					bukovDirection * FRAME_HEIGHT,
+					FRAME_WIDTH,
+					FRAME_HEIGHT
+			);
+			bukovUpperRenderedDirection = bukovDirection;
+			bukovUpperRenderedFrame = frameColumn;
+		}
+
+		syncBukovLayer(bukovLowerLayer);
+		syncBukovLayer(bukovUpperLayer);
+		if (curAnim != die) {
+			bukovLowerLayer.draw();
+		}
+		bukovUpperLayer.draw();
+	}
+
+	private int currentBukovFrameColumn() {
+		RectF activeFrame = frame();
+		return Math.max(0, Math.min(31, Math.round(
+				activeFrame.left * texture.width / FRAME_WIDTH)));
+	}
+
+	private void syncBukovLayer(Image layer) {
+		layer.camera = camera();
+		layer.x = x;
+		layer.y = y;
+		layer.scale.set(scale);
+		layer.origin.set(origin);
+		layer.angle = angle;
+		layer.rm = rm;
+		layer.gm = gm;
+		layer.bm = bm;
+		layer.am = am;
+		layer.ra = ra;
+		layer.ga = ga;
+		layer.ba = ba;
+		layer.aa = aa;
+	}
+
+	@Override
+	public void destroy() {
+		if (bukovLowerLayer != null) {
+			bukovLowerLayer.destroy();
+			bukovLowerLayer = null;
+		}
+		if (bukovUpperLayer != null) {
+			bukovUpperLayer.destroy();
+			bukovUpperLayer = null;
+		}
+		super.destroy();
 	}
 	
 	public void sprint( float speed ) {
 		run.delay = 1f / speed / RUN_FRAMERATE;
+		if (bukovLowerRun != null) {
+			bukovLowerRun.delay = 1f / speed / RUN_FRAMERATE;
+		}
 	}
 	
 	public static TextureFilm tiers() {
@@ -402,6 +612,16 @@ public class HeroSprite extends CharSprite {
 			bukovTiers = new TextureFilm(texture, texture.width, FRAME_HEIGHT);
 		}
 		return bukovTiers;
+	}
+
+	private static TextureFilm bukovLowerTiers() {
+		if (bukovLowerTiers == null) {
+			SmartTexture texture =
+					TextureCache.get(Assets.Sprites.BUKOV_OPERATOR_LOWER);
+			bukovLowerTiers =
+					new TextureFilm(texture, texture.width, FRAME_HEIGHT);
+		}
+		return bukovLowerTiers;
 	}
 
 	public static Image avatar( Hero hero ){

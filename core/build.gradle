@@ -1,5 +1,13 @@
 apply plugin: 'java-library'
 
+def appleBuildRoot = System.getenv('APPLE_BUILD_ROOT')
+if (appleBuildRoot) {
+    // Keep generated classes out of synced Documents folders. Besides being
+    // substantially faster on macOS, this prevents File Provider from
+    // creating duplicate " 2.class" outputs during iterative builds.
+    layout.buildDirectory = file("${appleBuildRoot}/core")
+}
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 [compileJava, compileTestJava]*.options*.compilerArgs = ['-XDstringConcat=inline']
 java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility

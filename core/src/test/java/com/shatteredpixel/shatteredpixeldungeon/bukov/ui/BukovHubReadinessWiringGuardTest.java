@@ -22,6 +22,12 @@ public class BukovHubReadinessWiringGuardTest {
 				"state.canDeploy\n"
 						+ "\t\t\t\t\t\t\t\t\t? \"accent.extract\""));
 		assertTrue(source.contains("\"确认出击\""));
+		assertTrue(source.contains("\"补齐并出击\""));
+		assertTrue(source.contains(
+				"controller.prepareAndConfirmDeployment();"));
+		assertTrue(source.contains(
+				"controller.prepareAndConfirmDeployment();\n"
+						+ "\t\t\t\t\t\t\tdeploy();"));
 	}
 
 	@Test
@@ -34,7 +40,13 @@ public class BukovHubReadinessWiringGuardTest {
 		assertTrue(source.contains(
 				"\"配装已就绪 / 可立即出击 · \""));
 		assertTrue(source.contains(
-				"!viewModel.canDeploy ? \"配装不完整\" : \"确认出击\""));
+				"!viewModel.canDeploy ? \"补齐并出击\" : \"确认出击\""));
+		assertTrue(source.contains(
+				"controller.prepareAndConfirmDeployment();"));
+		assertTrue(source.contains(
+				"controller.prepareAndConfirmDeployment();\n"
+						+ "\t\t\t\t\t\thide();\n"
+						+ "\t\t\t\t\t\tdeploy.call();"));
 	}
 
 	private static String source(String relative) throws Exception {

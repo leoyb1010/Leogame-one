@@ -58,13 +58,33 @@ public final class BukovHubController {
 
 	public void recommendLoadout() throws IOException {
 		requireEditableLoadout();
-		profile.loadout().clear();
-		String firearmDefinition = selectFirstWithPrefix("firearm:");
-		selectFirstCompatibleAmmo(firearmDefinition);
-		selectFirstWithDefinition("bandage");
-		selectFirstWithPrefix("armor:");
-		selectFirstWithPrefix("backpack:");
-		saves.saveProfile(profile);
+		BukovProfile working = profile.copy();
+		applyRecommendedLoadout(working);
+		commitProfile(working);
+	}
+
+	/**
+	 * Repairs a formal loadout and validates it in the same player action.
+	 *
+	 * The caller may transition directly to the deployment scene after this
+	 * returns. Persisting only the validated copy prevents a partially repaired
+	 * loadout from becoming visible when provisioning or validation fails.
+	 */
+	public void prepareAndConfirmDeployment() throws IOException {
+		if (activeCheckpoint != null) {
+			return;
+		}
+		BukovProfile working = profile.copy();
+		if (!working.selectedRaidMode().usesPlayerLoadout()) {
+			working.loadout().clear();
+		} else if (!viewModel(working).canDeploy) {
+			applyRecommendedLoadout(working);
+		}
+		BukovHubViewModel state = viewModel(working);
+		if (!state.canDeploy) {
+			throw new IllegalStateException(state.deploymentBlockReason);
+		}
+		commitProfile(working);
 	}
 
 	/** Atomic vendor entry point for a future hideout shop panel. */
@@ -368,37 +388,90 @@ public final class BukovHubController {
 		return out.toString();
 	}
 
-	private String selectFirstWithPrefix(String prefix) {
-		for (RaidItem item : profile.stash().items()) {
+	private void applyRecommendedLoadout(BukovProfile working) {
+		// Free all slots before provisioning; a corrupt or player-filled
+		// twelve-stack loadout must not prevent the recovery pair being added.
+		working.loadout().clear();
+		BukovStarterProvisioning.ensure(working, false);
+		working.loadout().clear();
+		RaidItem firearm = null;
+		RaidItem compatibleAmmo = null;
+		for (RaidItem candidate : working.stash().items()) {
+			if (!candidate.definitionId().startsWith("firearm:")) {
+				continue;
+			}
+			for (RaidItem ammunition : working.stash().items()) {
+				if (BukovHubViewModel.compatible(
+						candidate.definitionId(),
+						ammunition.definitionId())) {
+					firearm = candidate;
+					compatibleAmmo = ammunition;
+					break;
+				}
+			}
+			if (firearm != null) {
+				break;
+			}
+		}
+		if (firearm == null || compatibleAmmo == null) {
+			throw new IllegalStateException(
+					"无法准备主武器与兼容弹药，请重新进入藏身处");
+		}
+		working.loadout().select(firearm.itemUid(), working.stash());
+		working.loadout().select(
+				compatibleAmmo.itemUid(),
+				working.stash());
+		selectFirstWithDefinition(working, "bandage");
+		selectFirstWithPrefix(working, "backpack:");
+		selectFirstWithPrefix(working, "armor:");
+
+		if (viewModel(working).overweight) {
+			// Optional protection must never turn one-click repair into another
+			// deployment blocker. The firearm and ammunition are authoritative.
+			working.loadout().clear();
+			working.loadout().select(firearm.itemUid(), working.stash());
+			working.loadout().select(
+					compatibleAmmo.itemUid(),
+					working.stash());
+		}
+		BukovHubViewModel state = viewModel(working);
+		if (!state.canDeploy) {
+			throw new IllegalStateException(state.deploymentBlockReason);
+		}
+	}
+
+	private static String selectFirstWithPrefix(
+			BukovProfile working,
+			String prefix) {
+		for (RaidItem item : working.stash().items()) {
 			if (item.definitionId().startsWith(prefix)) {
-				profile.loadout().select(item.itemUid(), profile.stash());
+				working.loadout().select(
+						item.itemUid(),
+						working.stash());
 				return item.definitionId();
 			}
 		}
 		return null;
 	}
 
-	private void selectFirstCompatibleAmmo(String firearmDefinition) {
-		if (firearmDefinition == null) {
-			return;
-		}
-		for (RaidItem item : profile.stash().items()) {
-			if (BukovHubViewModel.compatible(
-					firearmDefinition,
-					item.definitionId())) {
-				profile.loadout().select(item.itemUid(), profile.stash());
+	private static void selectFirstWithDefinition(
+			BukovProfile working,
+			String definitionId) {
+		for (RaidItem item : working.stash().items()) {
+			if (definitionId.equals(item.definitionId())) {
+				working.loadout().select(
+						item.itemUid(),
+						working.stash());
 				return;
 			}
 		}
 	}
 
-	private void selectFirstWithDefinition(String definitionId) {
-		for (RaidItem item : profile.stash().items()) {
-			if (definitionId.equals(item.definitionId())) {
-				profile.loadout().select(item.itemUid(), profile.stash());
-				return;
-			}
-		}
+	private static BukovHubViewModel viewModel(BukovProfile working) {
+		return BukovHubViewModel.from(
+				working,
+				null,
+				FIRST_RAID_WEIGHT_LIMIT);
 	}
 
 	private void requireEditableLoadout() {

@@ -146,6 +146,42 @@ public class BukovDeploymentFlowTest {
 	}
 
 	@Test
+	public void partialRecoveryKitRepairsMissingWeaponWithoutUidCollision() {
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(new RaidItem(
+				"provision:recovery:0:ammo_9_standard",
+				"ammo:ammo_9_standard",
+				11,
+				0.012f,
+				12,
+				false,
+				false,
+				1f));
+		profile.stash().deposit(new RaidItem(
+				"provision:recovery:0:bandage",
+				"bandage",
+				1,
+				0.12f,
+				180,
+				false,
+				false,
+				1f));
+
+		assertTrue(BukovStarterProvisioning.ensure(profile));
+
+		assertEquals(3, profile.stash().distinctItemCount());
+		assertEquals(3, profile.loadout().distinctItemCount());
+		assertEquals(11, findQuantity(
+				profile,
+				"ammo:ammo_9_standard"));
+		assertTrue(profile.loadout().contains(
+				"provision:recovery:0:ammo_9_standard"));
+		assertTrue(profile.loadout().contains(
+				"provision:recovery:0:bandage"));
+		assertFalse(BukovStarterProvisioning.ensure(profile));
+	}
+
+	@Test
 	public void interruptedProfileWriteIsReconciledFromDurableRaid()
 			throws IOException {
 		BukovSaveService prepared = preparedProfile();

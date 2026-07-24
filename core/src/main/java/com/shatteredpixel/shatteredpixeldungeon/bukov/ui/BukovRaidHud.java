@@ -26,8 +26,10 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.input.ControllerHandler;
 import com.watabou.input.PointerEvent;
+import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.PointF;
@@ -43,8 +45,14 @@ public final class BukovRaidHud extends Component {
 	private static final float PADDING = 4f;
 	private static final float AWARENESS_SIDE_MARGIN = 6f;
 	private static final float AWARENESS_GAP = 4f;
+	private static final int STATUS_BLEEDING = 0;
+	private static final int STATUS_FRACTURE = 1;
+	private static final int STATUS_CONCUSSION = 2;
+	private static final int STATUS_COUNT = 3;
 
 	private final BukovRaidHudState live = new BukovRaidHudState();
+	private final BukovReloadRingModel reloadRing =
+			new BukovReloadRingModel();
 
 	private BukovUiTokens tokens;
 	private int primaryColor;
@@ -53,6 +61,7 @@ public final class BukovRaidHud extends Component {
 	private int valuableColor;
 	private int dangerColor;
 	private int extractColor;
+	private int panelSurfaceColor;
 	private ColorBlock background;
 	private ColorBlock topEdge;
 	private ColorBlock healthTrack;
@@ -61,8 +70,8 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock healthFlash;
 	private ColorBlock[] healthSeparators;
 	private ColorBlock armorEdge;
-	private ColorBlock reloadTrack;
-	private ColorBlock reloadFill;
+	private ColorBlock[] reloadSegments;
+	private ColorBlock[] weaponGlyph;
 	private ColorBlock interactionTrack;
 	private ColorBlock interactionFill;
 	private ColorBlock bossTrack;
@@ -72,10 +81,14 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock interactionBadge;
 	private ColorBlock[] reticle;
 	private BukovHitDirectionArc[] hitDirectionArcs;
+	private BukovSoundDirectionArc[] soundDirectionArcs;
+	private Image[] injuryIcons;
 
 	private RenderedTextBlock healthText;
 	private RenderedTextBlock armorText;
 	private RenderedTextBlock statusText;
+	private RenderedTextBlock[] injuryTimers;
+	private RenderedTextBlock medicalHintText;
 	private RenderedTextBlock ammoText;
 	private RenderedTextBlock weaponText;
 	private RenderedTextBlock objectiveText;
@@ -110,6 +123,7 @@ public final class BukovRaidHud extends Component {
 	private String lastObjective;
 	private int lastClockSecond = Integer.MIN_VALUE;
 	private int lastStatusKey = Integer.MIN_VALUE;
+	private int lastMedicalInputMode = Integer.MIN_VALUE;
 	private int lastInteractionKey = Integer.MIN_VALUE;
 	private String lastInteractionLabel;
 	private BukovRaidHudState.Interaction lastInteractionType;
@@ -119,6 +133,7 @@ public final class BukovRaidHud extends Component {
 	private float healthFraction;
 	private float uiSeconds;
 	private float healthFlashRemaining;
+	private boolean injuryIndicatorsVisible;
 	private int uiScaleLevel = -1;
 	private float uiScale = 1f;
 
@@ -138,6 +153,7 @@ public final class BukovRaidHud extends Component {
 		valuableColor = tokens.color("accent.valuable");
 		dangerColor = tokens.color("accent.danger");
 		extractColor = tokens.color("accent.extract");
+		panelSurfaceColor = tokens.color("panel.surface");
 
 		background = block(tokens.colorWithAlpha("ink.background", 224));
 		topEdge = block(tokens.colorWithAlpha("accent.interact", 255));
@@ -152,8 +168,18 @@ public final class BukovRaidHud extends Component {
 					block(tokens.colorWithAlpha("panel.result", 208));
 		}
 		armorEdge = block(tokens.colorWithAlpha("accent.valuable", 255));
-		reloadTrack = block(tokens.colorWithAlpha("panel.surface", 255));
-		reloadFill = block(tokens.colorWithAlpha("accent.valuable", 255));
+		reloadSegments =
+				new ColorBlock[BukovReloadRingModel.SEGMENT_COUNT];
+		for (int index = 0; index < reloadSegments.length; index++) {
+			reloadSegments[index] =
+					block(tokens.colorWithAlpha("panel.surface", 255));
+			reloadSegments[index].visible = false;
+		}
+		weaponGlyph = new ColorBlock[3];
+		for (int index = 0; index < weaponGlyph.length; index++) {
+			weaponGlyph[index] =
+					block(tokens.colorWithAlpha("text.secondary", 255));
+		}
 		interactionTrack =
 				block(tokens.colorWithAlpha("panel.surface", 255));
 		interactionFill =
@@ -172,15 +198,49 @@ public final class BukovRaidHud extends Component {
 					new BukovHitDirectionArc(dangerColor);
 			add(hitDirectionArcs[index]);
 		}
+		soundDirectionArcs = new BukovSoundDirectionArc[
+				BukovSoundRingModel.SEGMENT_COUNT];
+		for (int index = 0; index < soundDirectionArcs.length; index++) {
+			soundDirectionArcs[index] =
+					new BukovSoundDirectionArc(valuableColor);
+			soundDirectionArcs[index].direction(
+					BukovRaidHudState.Direction.values()[index]);
+			add(soundDirectionArcs[index]);
+		}
 		reticle = new ColorBlock[5];
 		for (int index = 0; index < reticle.length; index++) {
 			reticle[index] =
 					block(tokens.colorWithAlpha("accent.interact", 255));
 		}
 
+		injuryIcons = new Image[] {
+				BukovUiAssets.icon(
+						BukovUiAssets.StatusIcon.BLEEDING,
+						dangerColor),
+				BukovUiAssets.icon(
+						BukovUiAssets.StatusIcon.FRACTURE,
+						valuableColor),
+				BukovUiAssets.icon(
+						BukovUiAssets.StatusIcon.CONCUSSION,
+						interactColor)
+		};
+		int[] injuryColors = {
+				dangerColor, valuableColor, interactColor
+		};
+		injuryTimers = new RenderedTextBlock[STATUS_COUNT];
+		for (int index = 0; index < STATUS_COUNT; index++) {
+			Image icon = injuryIcons[index];
+			icon.hardlight(injuryColors[index]);
+			icon.visible = false;
+			add(icon);
+			injuryTimers[index] = text(6, injuryColors[index]);
+			injuryTimers[index].visible = false;
+		}
+
 		healthText = text(8, primaryColor);
 		armorText = text(6, valuableColor);
 		statusText = text(6, secondaryColor);
+		medicalHintText = text(6, extractColor);
 		ammoText = text(10, valuableColor);
 		weaponText = text(6, secondaryColor);
 		objectiveText = text(7, primaryColor);
@@ -251,19 +311,24 @@ public final class BukovRaidHud extends Component {
 		float elapsed = Math.max(0f, Game.elapsed);
 		uiSeconds += elapsed;
 		healthFlashRemaining = Math.max(0f, healthFlashRemaining - elapsed);
-		refresh();
+		refresh(elapsed);
 	}
 
 	public void refresh() {
+		refresh(0f);
+	}
+
+	private void refresh(float elapsedSeconds) {
 		applyUiScale(SPDSettings.bukovUiScale());
 		if (hudSource != null) {
 			hudSource.readRaidHudState(live);
 		}
 		refreshVitals();
+		refreshMedicalHint();
 		refreshFirepower();
 		refreshMissionAndInteraction();
 		refreshCombatAwareness();
-		refreshAnimationState();
+		refreshAnimationState(elapsedSeconds);
 		layout();
 	}
 
@@ -317,12 +382,46 @@ public final class BukovRaidHud extends Component {
 					live.painSeverity(),
 					live.concussionRemaining(),
 					live.stimulantRemaining()));
+			injuryTimers[STATUS_BLEEDING].text(
+					BukovHudFormat.injuryRemaining(
+							live.bleedingPerSecond() > 0f,
+							0f));
+			injuryTimers[STATUS_FRACTURE].text(
+					BukovHudFormat.injuryRemaining(
+							live.fractured(),
+							0f));
+			injuryTimers[STATUS_CONCUSSION].text(
+					BukovHudFormat.injuryRemaining(
+							live.concussionRemaining() > 0f,
+							live.concussionRemaining()));
 		}
-		boolean injured = live.bleedingPerSecond() > 0f
-				|| live.fractured()
-				|| live.concussionRemaining() > 0f;
+		boolean bleeding = live.bleedingPerSecond() > 0f;
+		boolean fractured = live.fractured();
+		boolean concussed = live.concussionRemaining() > 0f;
+		boolean injured = bleeding || fractured || concussed;
+		injuryIndicatorsVisible = injured;
+		statusText.visible = !injured;
+		setInjuryIndicatorVisible(STATUS_BLEEDING, bleeding);
+		setInjuryIndicatorVisible(STATUS_FRACTURE, fractured);
+		setInjuryIndicatorVisible(STATUS_CONCUSSION, concussed);
 		statusText.hardlight(
 				injured ? dangerColor : secondaryColor);
+	}
+
+	private void refreshMedicalHint() {
+		boolean controller = ControllerHandler.controllerActive;
+		boolean desktop = DeviceCompat.isDesktop();
+		int inputMode = controller ? 1 : desktop ? 0 : 2;
+		if (inputMode != lastMedicalInputMode) {
+			lastMedicalInputMode = inputMode;
+			medicalHintText.text(medicalHint(desktop, controller));
+		}
+		boolean urgent = healthFraction <= 0.7f
+				|| live.bleedingPerSecond() > 0f
+				|| live.fractured()
+				|| live.concussionRemaining() > 0f;
+		medicalHintText.hardlight(urgent ? dangerColor : extractColor);
+		medicalHintText.alpha(urgent ? 1f : 0.72f);
 	}
 
 	private void refreshFirepower() {
@@ -423,20 +522,24 @@ public final class BukovRaidHud extends Component {
 		}
 	}
 
-	private void refreshAnimationState() {
+	private void refreshAnimationState(float elapsedSeconds) {
+		boolean reduceMotion = SPDSettings.bukovReduceMotion();
 		boolean lowHealth = healthFraction <= 0.30f;
 		healthFill.visible = !lowHealth;
 		dangerFill.visible = lowHealth;
 		healthFlash.visible = healthFlashRemaining > 0f;
 		healthFlash.alpha(Math.min(1f, healthFlashRemaining / 0.07f));
 		if (lowHealth) {
-			dangerFill.alpha(0.58f + 0.42f
-					* Math.abs((uiSeconds % 1f) * 2f - 1f));
+			dangerFill.alpha(reduceMotion
+					? 1f
+					: 0.58f + 0.42f
+							* Math.abs((uiSeconds % 1f) * 2f - 1f));
 		}
 
 		boolean lowAmmo = lastCapacity > 0
 				&& lastMagazine * 4 <= lastCapacity;
-		boolean blinkOn = ((int)Math.floor(uiSeconds * 2f) & 1) == 0;
+		boolean blinkOn = reduceMotion
+				|| ((int)Math.floor(uiSeconds * 2f) & 1) == 0;
 		float awarenessAlpha = live.combatAwarenessAlpha();
 		ammoText.hardlight(
 				lowAmmo ? dangerColor : valuableColor);
@@ -452,10 +555,27 @@ public final class BukovRaidHud extends Component {
 					? BukovHudFormat.reload(true, live.reloadProgress())
 					: BukovHudFormat.weapon(lastWeapon, lastAutomatic));
 		}
-		reloadTrack.visible = live.reloading();
-		reloadFill.visible = live.reloading();
-		reloadTrack.alpha(awarenessAlpha);
-		reloadFill.alpha(awarenessAlpha);
+		reloadRing.update(
+				elapsedSeconds,
+				live.reloading(),
+				live.reloadProgress(),
+				Math.max(0, lastMagazine),
+				reduceMotion,
+				tokens.motionMs("fast") / 1000f);
+		int filledReloadSegments = reloadRing.filledSegmentCount();
+		boolean reloadVisible = reloadRing.visible(live.reloading());
+		for (int index = 0; index < reloadSegments.length; index++) {
+			ColorBlock segment = reloadSegments[index];
+			segment.visible = reloadVisible;
+			segment.hardlight(index < filledReloadSegments
+					? valuableColor : panelSurfaceColor);
+			segment.alpha(awarenessAlpha);
+		}
+		for (ColorBlock piece : weaponGlyph) {
+			piece.visible = lastCapacity > 0;
+			piece.hardlight(lowAmmo ? dangerColor : secondaryColor);
+			piece.alpha(awarenessAlpha);
+		}
 		interactionTrack.visible = live.interactionProgress() > 0f;
 		interactionFill.visible = interactionTrack.visible;
 		interactionBadge.visible =
@@ -466,12 +586,22 @@ public final class BukovRaidHud extends Component {
 		extractionText.hardlight(
 				live.extractionId() != null && !live.extractionAvailable()
 						? dangerColor : extractColor);
+		float soundAlpha = BukovSoundRingModel.alpha(live);
+		int soundSegment =
+				BukovSoundRingModel.segmentIndex(live.soundDirection());
+		boolean longSoundArc =
+				BukovSoundRingModel.longArc(live.soundCategory());
+		int soundColor = longSoundArc ? dangerColor : valuableColor;
 		soundText.visible = live.soundVisible();
-		soundText.alpha(awarenessAlpha * Math.max(
-				0.35f,
-				Math.min(1f,
-						live.soundStrength()
-								* live.soundRemainingSeconds() / 0.9f)));
+		soundText.alpha(soundAlpha);
+		for (int index = 0; index < soundDirectionArcs.length; index++) {
+			BukovSoundDirectionArc arc = soundDirectionArcs[index];
+			arc.visible = soundAlpha > 0f && index == soundSegment;
+			if (!arc.visible) continue;
+			arc.longArc(longSoundArc);
+			arc.hardlight(soundColor);
+			arc.alpha(soundAlpha);
+		}
 		hitText.visible = live.hitVisible();
 		float strongestHitAlpha = 0f;
 		for (int index = 0; index < hitDirectionArcs.length; index++) {
@@ -499,16 +629,21 @@ public final class BukovRaidHud extends Component {
 		bossObjectiveText.visible = live.bossActive();
 		bossTrack.visible = live.bossActive();
 		bossFill.visible = live.bossActive();
+		objectiveText.visible = !live.bossActive();
+		extractionText.visible = !live.bossActive();
 		bossFill.hardlight(
 				live.bossVulnerable() ? valuableColor : dangerColor);
-		navigationText.visible = live.navigationVisible();
-		navigationBadge.visible = live.navigationVisible();
+		boolean textEdgeRail = DeviceCompat.isDesktop();
+		navigationText.visible =
+				textEdgeRail && live.navigationVisible();
+		navigationBadge.visible =
+				textEdgeRail && live.navigationVisible();
 		navigationText.alpha(awarenessAlpha);
 		navigationBadge.alpha(awarenessAlpha);
 		navigationText.hardlight(
 				live.navigationAvailable() ? primaryColor : dangerColor);
-		threatText.visible = live.threatVisible();
-		threatBadge.visible = live.threatVisible();
+		threatText.visible = textEdgeRail && live.threatVisible();
+		threatBadge.visible = textEdgeRail && live.threatVisible();
 		threatText.alpha(awarenessAlpha);
 		threatBadge.alpha(awarenessAlpha);
 		threatText.hardlight(
@@ -575,6 +710,15 @@ public final class BukovRaidHud extends Component {
 		armorText.setPos(x + PADDING + 4f, y + 19f);
 		statusText.maxWidth((int)(leftWidth - PADDING * 2f));
 		statusText.setPos(x + PADDING, y + 28f);
+		positionInjuryIndicators(
+				x + PADDING,
+				y + 27f,
+				leftWidth - PADDING * 2f,
+				9f,
+				7f);
+		medicalHintText.visible = true;
+		medicalHintText.maxWidth((int)(leftWidth - PADDING * 2f));
+		medicalHintText.setPos(x + PADDING, y + 36f);
 
 		objectiveText.maxWidth((int)centerWidth);
 		objectiveText.setPos(centerLeft, y + 3f);
@@ -585,19 +729,18 @@ public final class BukovRaidHud extends Component {
 		positionInteractionBar(centerLeft, y + actualHeight - 2f, centerWidth);
 
 		float rightX = x + width - rightWidth;
+		float reloadSize = BukovRaidHudLayout.RELOAD_RING_SIZE;
+		float reloadX = x + width - PADDING - reloadSize;
 		ammoText.setPos(rightX, y + 2f);
-		weaponText.maxWidth((int)(rightWidth - PADDING));
+		ammoText.maxWidth((int)Math.max(
+				1f, rightWidth - PADDING - reloadSize - 3f));
+		weaponText.maxWidth((int)Math.max(
+				1f, rightWidth - PADDING - reloadSize - 3f));
 		weaponText.setPos(rightX, y + 16f);
-		reloadTrack.x = rightX;
-		reloadTrack.y = y + 26f;
-		reloadTrack.size(rightWidth - PADDING, 2f);
-		reloadFill.x = rightX;
-		reloadFill.y = reloadTrack.y;
-		reloadFill.size(
-				(rightWidth - PADDING) * live.reloadProgress(), 2f);
+		positionReloadRing(reloadX, y + 3f, reloadSize);
 		timerText.maxWidth((int)(rightWidth - PADDING));
 		timerText.setPos(rightX, y + 24f);
-		positionBoss(centerLeft, y + actualHeight + 2f, centerWidth);
+		positionBoss(centerLeft, y + 2f, centerWidth);
 	}
 
 	private void layoutCompact(float actualHeight) {
@@ -605,6 +748,7 @@ public final class BukovRaidHud extends Component {
 				BukovRaidHudLayout.calculate(width, uiScaleLevel);
 		BukovRaidHudLayout.Rect vitals = hudLayout.vitals;
 		BukovRaidHudLayout.Rect firepower = hudLayout.firepower;
+		BukovRaidHudLayout.Rect medicalHint = hudLayout.medicalHint;
 		float scaledPadding = PADDING * uiScale;
 
 		healthText.setPos(x + vitals.x, y + vitals.y);
@@ -631,23 +775,40 @@ public final class BukovRaidHud extends Component {
 				x + hudLayout.condition.x,
 				y + hudLayout.condition.y);
 
+		BukovRaidHudLayout.Rect reloadRing =
+				BukovRaidHudLayout.compactReloadRing(
+						width, uiScaleLevel);
+		float reloadSize = reloadRing.width;
+		float reloadX = x + reloadRing.x;
+		float firepowerCopyWidth = Math.max(
+				1f, firepower.width - reloadSize - 3f * uiScale);
+		ammoText.maxWidth((int)firepowerCopyWidth);
 		ammoText.setPos(x + firepower.x, y + firepower.y);
 		weaponText.text(BukovRaidHudLayout.compactLine(
 				currentWeaponLabel(),
-				firepower.width,
+				firepowerCopyWidth,
 				uiScaleLevel));
-		weaponText.maxWidth((int)firepower.width);
+		weaponText.maxWidth((int)firepowerCopyWidth);
 		weaponText.setPos(
 				x + firepower.x,
 				y + firepower.y + 14f * uiScale);
-		reloadTrack.x = x + firepower.x;
-		reloadTrack.y = y + firepower.y + 24f * uiScale;
-		reloadTrack.size(firepower.width, 2f * uiScale);
-		reloadFill.y = reloadTrack.y;
-		reloadFill.x = reloadTrack.x;
-		reloadFill.size(
-				firepower.width * live.reloadProgress(),
-				2f * uiScale);
+		positionReloadRing(
+				reloadX,
+				y + reloadRing.y,
+				reloadSize);
+		float injuryWidth =
+				medicalHint.right() - hudLayout.condition.x;
+		positionInjuryIndicators(
+				x + hudLayout.condition.x,
+				y + hudLayout.condition.y,
+				injuryWidth,
+				hudLayout.condition.height,
+				7f * uiScale);
+		medicalHintText.visible = !injuryIndicatorsVisible;
+		medicalHintText.maxWidth((int)medicalHint.width);
+		medicalHintText.setPos(
+				x + medicalHint.x,
+				y + medicalHint.y);
 		timerText.maxWidth((int)hudLayout.clock.width);
 		timerText.setPos(
 				x + hudLayout.clock.x,
@@ -672,7 +833,7 @@ public final class BukovRaidHud extends Component {
 				width - scaledPadding * 2f);
 		positionBoss(
 				x + scaledPadding,
-				y + actualHeight + 2f,
+				y + hudLayout.extraction.y,
 				width - scaledPadding * 2f);
 	}
 
@@ -718,48 +879,92 @@ public final class BukovRaidHud extends Component {
 					arcRadiusX,
 					arcRadiusY);
 		}
+		float soundRadius = clamp(
+				minViewport * 0.11f,
+				25f * uiScale,
+				40f * uiScale);
+		float soundCenterX = playerHudX(viewportWidth);
+		float soundCenterY = playerHudY(arcCenterY, playableTop, viewportHeight);
+		for (BukovSoundDirectionArc arc : soundDirectionArcs) {
+			arc.fit(
+					soundCenterX,
+					soundCenterY,
+					soundRadius);
+		}
 
 		/*
 		 * Direction text already carries an arrow. Keep these badges in a
 		 * shallow edge rail rather than placing 94-112 world-unit slabs over
 		 * the direction they describe, where they can hide the actual enemy.
 		 */
-		float awarenessWidth = awarenessBadgeWidth(
-				viewportWidth, uiScale);
-		float awarenessY = y + actualHeight + 10f;
-		positionBadge(
-				navigationBadge,
-				navigationText,
-				AWARENESS_SIDE_MARGIN + awarenessWidth * 0.5f,
-				awarenessY,
-				awarenessWidth,
-				viewportWidth,
-				viewportHeight,
-				y + actualHeight + 3f);
+		if (DeviceCompat.isDesktop()) {
+			float awarenessWidth = awarenessBadgeWidth(
+					viewportWidth, uiScale);
+			float awarenessY = y + actualHeight + 10f;
+			positionBadge(
+					navigationBadge,
+					navigationText,
+					AWARENESS_SIDE_MARGIN + awarenessWidth * 0.5f,
+					awarenessY,
+					awarenessWidth,
+					viewportWidth,
+					viewportHeight,
+					y + actualHeight + 3f);
 
-		positionBadge(
-				threatBadge,
-				threatText,
-				viewportWidth - AWARENESS_SIDE_MARGIN
-						- awarenessWidth * 0.5f,
-				awarenessY,
-				awarenessWidth,
-				viewportWidth,
-				viewportHeight,
-				y + actualHeight + 3f);
+			positionBadge(
+					threatBadge,
+					threatText,
+					viewportWidth - AWARENESS_SIDE_MARGIN
+							- awarenessWidth * 0.5f,
+					awarenessY,
+					awarenessWidth,
+					viewportWidth,
+					viewportHeight,
+					y + actualHeight + 3f);
 
-		float feedbackWidth = Math.min(
-				160f * uiScale, viewportWidth - 12f);
-		float feedbackX = centerX - feedbackWidth * 0.5f;
-		interactionBadge.x = feedbackX;
-		interactionBadge.y = centerY + aimRadius + 11f;
-		interactionBadge.size(feedbackWidth, 13f);
-		interactionText.maxWidth((int)feedbackWidth);
-		interactionText.setPos(feedbackX, centerY + aimRadius + 14f);
-		soundText.maxWidth((int)feedbackWidth);
-		soundText.setPos(feedbackX, centerY - aimRadius - 26f);
-		hitText.maxWidth((int)feedbackWidth);
-		hitText.setPos(feedbackX, centerY - aimRadius - 14f);
+			float feedbackWidth = Math.min(
+					160f * uiScale, viewportWidth - 12f);
+			float feedbackX = centerX - feedbackWidth * 0.5f;
+			float feedbackY = clamp(
+					centerY + aimRadius + 11f,
+					playableTop,
+					Math.max(playableTop, viewportHeight - 17f));
+			interactionBadge.x = feedbackX;
+			interactionBadge.y = feedbackY;
+			interactionBadge.size(feedbackWidth, 13f);
+			interactionText.maxWidth((int)feedbackWidth);
+			interactionText.setPos(feedbackX, feedbackY + 3f);
+			soundText.maxWidth((int)feedbackWidth);
+			soundText.setPos(
+					feedbackX,
+					Math.max(playableTop, centerY - aimRadius - 26f));
+			hitText.maxWidth((int)feedbackWidth);
+			hitText.setPos(
+					feedbackX,
+					Math.max(playableTop + 9f,
+							centerY - aimRadius - 14f));
+		} else {
+			/*
+			 * Mobile already has directional sound/damage arcs. Keep only the
+			 * actionable interaction copy, in the left rail opposite the two
+			 * navigation buttons, so no text slab covers either touch stick.
+			 */
+			BukovRaidHudLayout.Rect feedback =
+					BukovRaidHudLayout.mobileFeedback(
+							viewportWidth,
+							viewportHeight,
+							x,
+							y + actualHeight);
+			interactionBadge.x = feedback.x;
+			interactionBadge.y = feedback.y;
+			interactionBadge.size(feedback.width, feedback.height);
+			interactionText.maxWidth((int)feedback.width);
+			interactionText.setPos(
+					feedback.x,
+					feedback.y + 3f);
+			soundText.visible = false;
+			hitText.visible = false;
+		}
 	}
 
 	private PointF desktopPointerInHud() {
@@ -773,6 +978,36 @@ public final class BukovRaidHud extends Component {
 			return null;
 		}
 		return camera.screenToCamera((int)pointer.x, (int)pointer.y);
+	}
+
+	private float playerHudX(float fallback) {
+		if (hero == null || hero.sprite == null
+				|| Camera.main == null || camera == null) {
+			return fallback * 0.5f;
+		}
+		float worldX = hero.sprite.x + hero.sprite.width() * 0.5f;
+		float screenX = (worldX - Camera.main.scroll.x)
+				* Camera.main.zoom + Camera.main.x;
+		float uiX = (screenX - camera.x) / camera.zoom + camera.scroll.x;
+		return clamp(uiX, 4f, Math.max(4f, fallback - 4f));
+	}
+
+	private float playerHudY(
+			float fallback,
+			float playableTop,
+			float viewportHeight) {
+		if (hero == null || hero.sprite == null
+				|| Camera.main == null || camera == null) {
+			return fallback;
+		}
+		float worldY = hero.sprite.y + hero.sprite.height() * 0.5f;
+		float screenY = (worldY - Camera.main.scroll.y)
+				* Camera.main.zoom + Camera.main.y;
+		float uiY = (screenY - camera.y) / camera.zoom + camera.scroll.y;
+		return clamp(
+				uiY,
+				playableTop + 4f,
+				Math.max(playableTop + 4f, viewportHeight - 4f));
 	}
 
 	private void positionReticle(float centerX, float centerY) {
@@ -886,6 +1121,93 @@ public final class BukovRaidHud extends Component {
 				barWidth * live.interactionProgress(), 2f);
 	}
 
+	private void setInjuryIndicatorVisible(
+			int index, boolean visible) {
+		injuryIcons[index].visible = visible;
+		injuryTimers[index].visible = visible;
+	}
+
+	private void positionInjuryIndicators(
+			float rowX,
+			float rowY,
+			float rowWidth,
+			float rowHeight,
+			float iconSize) {
+		float slotWidth = Math.max(1f, rowWidth / STATUS_COUNT);
+		float gap = Math.max(1f, iconSize * 0.12f);
+		for (int index = 0; index < STATUS_COUNT; index++) {
+			float slotX = rowX + slotWidth * index;
+			Image icon = injuryIcons[index];
+			float currentWidth = Math.max(1f, icon.width());
+			float iconScale = icon.scale.x
+					* iconSize / currentWidth;
+			icon.scale.set(iconScale);
+			icon.x = slotX;
+			icon.y = rowY
+					+ Math.max(0f, (rowHeight - iconSize) * 0.5f);
+
+			RenderedTextBlock timer = injuryTimers[index];
+			timer.maxWidth((int)Math.max(
+					1f, slotWidth - iconSize - gap));
+			timer.setPos(
+					slotX + iconSize + gap,
+					rowY + Math.max(
+							0f,
+							(rowHeight - timer.height()) * 0.5f));
+		}
+	}
+
+	private void positionReloadRing(
+			float ringX,
+			float ringY,
+			float ringSize) {
+		float thickness = Math.max(1f, ringSize * 0.12f);
+		float gap = Math.max(1f, ringSize * 0.06f);
+		float segmentLength = Math.max(
+				1f, (ringSize - thickness * 2f - gap) * 0.5f);
+		float second = thickness + segmentLength + gap;
+
+		// Clockwise from the upper-left segment.
+		positionSegment(0, ringX + thickness, ringY,
+				segmentLength, thickness);
+		positionSegment(1, ringX + second, ringY,
+				segmentLength, thickness);
+		positionSegment(2, ringX + ringSize - thickness,
+				ringY + thickness, thickness, segmentLength);
+		positionSegment(3, ringX + ringSize - thickness,
+				ringY + second, thickness, segmentLength);
+		positionSegment(4, ringX + second,
+				ringY + ringSize - thickness, segmentLength, thickness);
+		positionSegment(5, ringX + thickness,
+				ringY + ringSize - thickness, segmentLength, thickness);
+		positionSegment(6, ringX,
+				ringY + second, thickness, segmentLength);
+		positionSegment(7, ringX,
+				ringY + thickness, thickness, segmentLength);
+
+		weaponGlyph[0].x = ringX + ringSize * 0.25f;
+		weaponGlyph[0].y = ringY + ringSize * 0.38f;
+		weaponGlyph[0].size(ringSize * 0.45f, ringSize * 0.18f);
+		weaponGlyph[1].x = ringX + ringSize * 0.70f;
+		weaponGlyph[1].y = ringY + ringSize * 0.41f;
+		weaponGlyph[1].size(ringSize * 0.18f, ringSize * 0.10f);
+		weaponGlyph[2].x = ringX + ringSize * 0.43f;
+		weaponGlyph[2].y = ringY + ringSize * 0.54f;
+		weaponGlyph[2].size(ringSize * 0.15f, ringSize * 0.22f);
+	}
+
+	private void positionSegment(
+			int index,
+			float segmentX,
+			float segmentY,
+			float segmentWidth,
+			float segmentHeight) {
+		ColorBlock segment = reloadSegments[index];
+		segment.x = segmentX;
+		segment.y = segmentY;
+		segment.size(segmentWidth, segmentHeight);
+	}
+
 	private ColorBlock block(int color) {
 		ColorBlock result = new ColorBlock(1f, 1f, color);
 		add(result);
@@ -909,6 +1231,14 @@ public final class BukovRaidHud extends Component {
 
 	public static String controlHint(boolean desktop) {
 		return desktop ? "TAB 背包 · 暂停" : "背包键 · 暂停";
+	}
+
+	public static String medicalHint(
+			boolean desktop, boolean controller) {
+		if (controller) return "方向键 · 快速医疗";
+		return desktop
+				? "1–4 / H · 快速医疗"
+				: "医疗键 · 快速医疗";
 	}
 
 	private String currentStatusLabel() {

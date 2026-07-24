@@ -41,10 +41,11 @@ public class CombatPresentationEventPoolTest {
 				new CombatPresentationEventPool(1);
 		final int[] values = new int[4];
 		final CombatFeedbackType[] feedback = new CombatFeedbackType[1];
+		final float[] duration = new float[1];
 		pool.emit(
 				CombatPresentationEvent.Type.PLAYER_RELOAD,
 				7, 7, 41, 42,
-				null, 1f);
+				null, 1f, 2.4f);
 
 		pool.drain(event -> {
 			values[0] = event.sourceId();
@@ -52,6 +53,7 @@ public class CombatPresentationEventPoolTest {
 			values[2] = event.sourceCell();
 			values[3] = event.targetCell();
 			feedback[0] = event.feedbackType();
+			duration[0] = event.durationSeconds();
 		});
 
 		assertEquals(7, values[0]);
@@ -59,6 +61,7 @@ public class CombatPresentationEventPoolTest {
 		assertEquals(41, values[2]);
 		assertEquals(42, values[3]);
 		assertNull(feedback[0]);
+		assertEquals(2.4f, duration[0], 0.0001f);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -67,6 +70,16 @@ public class CombatPresentationEventPoolTest {
 				CombatPresentationEvent.Type.PLAYER_HIT,
 				1, 1, 0, 0,
 				CombatFeedbackType.PLAYER_HIT,
+				Float.NaN);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void rejectsInvalidDuration() {
+		new CombatPresentationEventPool(1).emit(
+				CombatPresentationEvent.Type.PLAYER_RELOAD,
+				1, 1, 0, 0,
+				null,
+				1f,
 				Float.NaN);
 	}
 }

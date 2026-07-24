@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Group;
@@ -12,14 +13,26 @@ public final class BukovBulletMarkFx extends Group {
 
 	public static final float DURATION_SECONDS = 12f;
 	static final float FADE_START_SECONDS = 9f;
-	static final int EDGE_COLOR = 0xFF776B5B;
-	static final int HOLE_COLOR = 0xFF171A18;
 
-	private final ColorBlock edge = new ColorBlock(1f, 1f, 0xFFFFFFFF);
-	private final ColorBlock hole = new ColorBlock(1f, 1f, 0xFFFFFFFF);
+	private final ColorBlock edge;
+	private final ColorBlock hole;
+	private final int edgeColor;
+	private final int holeColor;
 	private float age;
 
 	public BukovBulletMarkFx() {
+		this(BukovUiTokens.loadDefault());
+	}
+
+	BukovBulletMarkFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		int solidColor = color(tokens, "combat.fx.solid");
+		edgeColor = color(tokens, "combat.fx.bulletMark.edge");
+		holeColor = color(tokens, "combat.fx.bulletMark.hole");
+		edge = new ColorBlock(1f, 1f, solidColor);
+		hole = new ColorBlock(1f, 1f, solidColor);
 		add(edge);
 		add(hole);
 		retire();
@@ -49,7 +62,7 @@ public final class BukovBulletMarkFx extends Group {
 				2.8f + strength,
 				1.5f + strength * 0.35f,
 				angle,
-				EDGE_COLOR);
+				edgeColor);
 		configure(
 				hole,
 				impactX,
@@ -57,7 +70,7 @@ public final class BukovBulletMarkFx extends Group {
 				1.45f + strength * 0.55f,
 				0.8f + strength * 0.22f,
 				angle,
-				HOLE_COLOR);
+				holeColor);
 		age = 0f;
 		revive();
 		active = true;
@@ -105,7 +118,7 @@ public final class BukovBulletMarkFx extends Group {
 		block.x = centerX - width * 0.5f;
 		block.y = centerY - height * 0.5f;
 		block.angle = angle;
-		block.color(color & 0xFFFFFF);
+		block.color(color);
 		block.alpha(1f);
 	}
 
@@ -122,5 +135,9 @@ public final class BukovBulletMarkFx extends Group {
 
 	private static boolean finite(float value) {
 		return !Float.isNaN(value) && !Float.isInfinite(value);
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 }

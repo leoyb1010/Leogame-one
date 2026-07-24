@@ -13,13 +13,7 @@ public class BukovUiTokensTest {
 
 	@Test
 	public void loadsAuthoredPresentationContract() throws IOException {
-		String json = new String(
-				Files.readAllBytes(Paths.get(
-						"src/main/assets/bukov/content/ui_tokens.json"
-				)),
-				StandardCharsets.UTF_8
-		);
-		BukovUiTokens tokens = BukovUiTokens.parse(json);
+		BukovUiTokens tokens = BukovUiTokens.parse(authoredJson());
 
 		assertEquals(0x10242D, tokens.color("ink.background"));
 		assertEquals(0x02090C, tokens.color("ink.shadow"));
@@ -35,10 +29,9 @@ public class BukovUiTokensTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void rejectsInvalidHexColor() {
-		BukovUiTokens.parse(minimalJson(
-				requiredColors().replace("#10242D", "#12GG2D")
-		));
+	public void rejectsInvalidHexColor() throws IOException {
+		BukovUiTokens.parse(
+				authoredJson().replace("#10242D", "#12GG2D"));
 	}
 
 	private static String minimalJson(String colors) {
@@ -58,22 +51,11 @@ public class BukovUiTokensTest {
 				+ "}";
 	}
 
-	private static String requiredColors() {
-		return "\"ink.background\":\"#10242D\","
-				+ "\"ink.shadow\":\"#02090C\","
-				+ "\"ink.loading\":\"#07100E\","
-				+ "\"ink.failure\":\"#050B0D\","
-				+ "\"panel.surface\":\"#1A3644\","
-				+ "\"panel.deep\":\"#101C20\","
-				+ "\"panel.result\":\"#101514\","
-				+ "\"panel.border\":\"#3A5A66\","
-				+ "\"accent.interact\":\"#4FA7A0\","
-				+ "\"accent.valuable\":\"#E3B94E\","
-				+ "\"accent.danger\":\"#E05A3A\","
-				+ "\"accent.extract\":\"#6FCF97\","
-				+ "\"text.primary\":\"#E8F1F0\","
-				+ "\"text.secondary\":\"#9FB8B4\","
-				+ "\"text.disabled\":\"#5A7076\"";
+	private static String authoredJson() throws IOException {
+		return new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/assets/bukov/content/ui_tokens.json")),
+				StandardCharsets.UTF_8);
 	}
 
 	private static String haptic(String name) {

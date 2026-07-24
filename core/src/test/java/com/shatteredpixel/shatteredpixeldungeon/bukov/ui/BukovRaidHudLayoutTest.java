@@ -17,7 +17,12 @@ public class BukovRaidHudLayoutTest {
 			assertTrue(layout.compact);
 			assertFalse(layout.vitals.overlaps(layout.firepower));
 			assertFalse(layout.condition.overlaps(layout.clock));
+			assertFalse(layout.condition.overlaps(layout.medicalHint));
+			assertFalse(layout.medicalHint.overlaps(layout.clock));
+			assertBandBelow(layout.clock, layout.condition);
+			assertBandBelow(layout.clock, layout.medicalHint);
 			assertBandBelow(layout.extraction, layout.condition);
+			assertBandBelow(layout.extraction, layout.medicalHint);
 			assertBandBelow(layout.extraction, layout.clock);
 			assertBandBelow(layout.objective, layout.extraction);
 			assertTrue(layout.objective.bottom() < layout.height);
@@ -44,6 +49,46 @@ public class BukovRaidHudLayoutTest {
 		assertTrue(touch.pause.y >= reservedBottom);
 		assertFalse(touch.backpack.overlaps(touch.movement));
 		assertFalse(touch.pause.overlaps(touch.aimFire));
+	}
+
+	@Test
+	public void wideLandscapeDoesNotGrowAnEmptyHudBackground() {
+		assertEquals(
+				46f,
+				BukovRaidHudLayout.preferredHeight(232f, 0),
+				0f);
+		assertEquals(
+				46f,
+				BukovRaidHudLayout.preferredHeight(232f, 2),
+				0f);
+	}
+
+	@Test
+	public void v2ReloadRingStaysTwentyFourSquareInsideCompactFirepower() {
+		for (int scaleLevel = 0; scaleLevel <= 2; scaleLevel++) {
+			BukovRaidHudLayout layout =
+					BukovRaidHudLayout.calculate(127f, scaleLevel);
+			BukovRaidHudLayout.Rect ring =
+					BukovRaidHudLayout.compactReloadRing(
+							127f, scaleLevel);
+
+			assertEquals(24f, ring.width, 0f);
+			assertEquals(24f, ring.height, 0f);
+			assertTrue(ring.x >= layout.firepower.x);
+			assertTrue(ring.y >= layout.firepower.y);
+			assertTrue(ring.right() <= layout.firepower.right());
+			assertTrue(ring.bottom() <= layout.firepower.bottom());
+			assertFalse(ring.overlaps(layout.condition));
+			assertFalse(ring.overlaps(layout.medicalHint));
+		}
+	}
+
+	@Test
+	public void mobileInteractionRailAvoidsNavigationAndSticks() {
+		assertMobileFeedbackClear(
+				135f, 225f, 4f, 6f, 4f, 10f, 128.5f);
+		assertMobileFeedbackClear(
+				240f, 135f, 6f, 3f, 6f, 5f, 53f);
 	}
 
 	@Test
@@ -80,5 +125,51 @@ public class BukovRaidHudLayoutTest {
 			BukovRaidHudLayout.Rect lower,
 			BukovRaidHudLayout.Rect upper) {
 		assertTrue(lower.y >= upper.bottom());
+	}
+
+	private static void assertMobileFeedbackClear(
+			float viewportWidth,
+			float viewportHeight,
+			float safeLeft,
+			float safeTop,
+			float safeRight,
+			float safeBottom,
+			float hudBottom) {
+		BukovRaidHudLayout.Rect feedback =
+				BukovRaidHudLayout.mobileFeedback(
+						viewportWidth,
+						viewportHeight,
+						safeLeft + 4f,
+						hudBottom);
+		BukovTouchLayout touch = BukovTouchLayout.calculate(
+				viewportWidth,
+				viewportHeight,
+				safeLeft,
+				safeTop,
+				safeRight,
+				safeBottom,
+				hudBottom + 2f);
+
+		assertTrue(feedback.x >= safeLeft);
+		assertTrue(feedback.y >= 0f);
+		assertTrue(feedback.right() <= viewportWidth);
+		assertTrue(feedback.bottom() <= viewportHeight);
+		assertFalse(overlaps(feedback, touch.movement));
+		assertFalse(overlaps(feedback, touch.aimFire));
+		assertFalse(overlaps(feedback, touch.interact));
+		assertFalse(overlaps(feedback, touch.drop));
+		assertFalse(overlaps(feedback, touch.reload));
+		assertFalse(overlaps(feedback, touch.medical));
+		assertFalse(overlaps(feedback, touch.backpack));
+		assertFalse(overlaps(feedback, touch.pause));
+	}
+
+	private static boolean overlaps(
+			BukovRaidHudLayout.Rect first,
+			BukovTouchLayout.Rect second) {
+		return first.x < second.right()
+				&& first.right() > second.x
+				&& first.y < second.bottom()
+				&& first.bottom() > second.y;
 	}
 }

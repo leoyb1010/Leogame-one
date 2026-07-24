@@ -11,6 +11,7 @@ public final class CombatPresentationEvent {
 	public enum Type {
 		PLAYER_FIRE,
 		PLAYER_RELOAD,
+		PLAYER_RELOAD_END,
 		PLAYER_HIT,
 		PLAYER_MEDICAL_START,
 		PLAYER_MEDICAL_END,
@@ -34,6 +35,7 @@ public final class CombatPresentationEvent {
 	private int targetCell;
 	private CombatFeedbackType feedbackType;
 	private float intensity;
+	private float durationSeconds;
 
 	void set(Type type,
 			 int sourceId,
@@ -41,7 +43,8 @@ public final class CombatPresentationEvent {
 			 int sourceCell,
 			 int targetCell,
 			 CombatFeedbackType feedbackType,
-			 float intensity) {
+			 float intensity,
+			 float durationSeconds) {
 		this.type = type;
 		this.sourceId = sourceId;
 		this.targetId = targetId;
@@ -49,6 +52,7 @@ public final class CombatPresentationEvent {
 		this.targetCell = targetCell;
 		this.feedbackType = feedbackType;
 		this.intensity = intensity;
+		this.durationSeconds = durationSeconds;
 	}
 
 	public Type type() {
@@ -77,5 +81,9 @@ public final class CombatPresentationEvent {
 
 	public float intensity() {
 		return intensity;
+	}
+
+	public float durationSeconds() {
+		return durationSeconds;
 	}
 }

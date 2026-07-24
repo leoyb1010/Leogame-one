@@ -59,6 +59,19 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovCombatHudFormat.threat(live)"));
 		assertTrue(hud.contains("live.combatAwarenessAlpha()"));
 		assertTrue(hud.contains("BukovHitDirectionArc"));
+		assertTrue(hud.contains("BukovSoundDirectionArc"));
+		assertTrue(hud.contains("BukovSoundRingModel.alpha(live)"));
+		assertTrue(hud.contains("BukovReloadRingModel"));
+		assertTrue(hud.contains("new ColorBlock[BukovReloadRingModel.SEGMENT_COUNT]"));
+		assertTrue(hud.contains("BukovUiAssets.StatusIcon.BLEEDING"));
+		assertTrue(hud.contains("BukovUiAssets.StatusIcon.FRACTURE"));
+		assertTrue(hud.contains("BukovUiAssets.StatusIcon.CONCUSSION"));
+		assertTrue(hud.contains("BukovHudFormat.injuryRemaining("));
+		assertTrue(hud.contains("BukovRaidHudLayout.RELOAD_RING_SIZE"));
+		assertTrue(hud.contains("BukovRaidHudLayout.compactReloadRing("));
+		assertTrue(hud.contains("new BukovSoundDirectionArc["));
+		assertTrue(hud.contains("tokens.motionMs(\"fast\")"));
+		assertTrue(hud.contains("SPDSettings.bukovReduceMotion()"));
 		assertTrue(hud.contains("live.hitCount()"));
 		assertTrue(hud.contains("positionReticle(crosshairX, crosshairY)"));
 		assertTrue(hud.contains("PointerEvent.currentHoverPos()"));
@@ -66,7 +79,13 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("ControllerHandler.controllerActive"));
 		assertTrue(hud.contains("camera.width"));
 		assertTrue(hud.contains("camera.height"));
+		assertTrue(hud.contains("hero.sprite.x + hero.sprite.width() * 0.5f"));
+		assertTrue(hud.contains("hero.sprite.y + hero.sprite.height() * 0.5f"));
 		assertTrue(hud.contains("live.bossHealthFraction()"));
+		String animation = hud.substring(
+				hud.indexOf("private void refreshAnimationState("),
+				hud.indexOf("private void refreshCombatAwareness("));
+		assertFalse(animation.contains("new "));
 		assertFalse(hud.contains("Actor."));
 		assertFalse(hud.contains("Random."));
 	}
@@ -79,13 +98,37 @@ public class BukovRaidHudWiringGuardTest {
 		String layout = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHudLayout.java");
 		assertTrue(hud.contains("BukovRaidHudLayout.preferredHeight("));
-		assertTrue(layout.contains("private static final float WIDE_HEIGHT = 38f"));
-		assertTrue(layout.contains("private static final float COMPACT_HEIGHT = 68f"));
+		assertTrue(layout.contains("private static final float WIDE_HEIGHT = 46f"));
+		assertTrue(layout.contains("private static final float COMPACT_HEIGHT = 79f"));
 		assertTrue(layout.contains("compactObjective("));
+		assertTrue(layout.contains("public final Rect medicalHint"));
 		assertTrue(hud.contains("layoutCombatOverlay(actualHeight)"));
-		assertTrue(hud.contains("centerY + aimRadius + 14f"));
+		assertTrue(hud.contains("centerY + aimRadius + 11f"));
 		assertFalse(hud.contains(
 				"availableWidth >= WIDE_THRESHOLD ? 60f : 86f"));
+	}
+
+	@Test
+	public void medicalHintMatchesDesktopControllerAndTouchInputWiring()
+			throws Exception {
+		String input = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/RealtimeInput.java");
+		String touch = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovTouchControls.java");
+		String hud = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java");
+
+		assertTrue(input.contains("Input.Keys.H"));
+		assertTrue(input.contains("Input.Keys.NUM_1"));
+		assertTrue(input.contains("Input.Keys.NUM_2"));
+		assertTrue(input.contains("Input.Keys.NUM_3"));
+		assertTrue(input.contains("Input.Keys.NUM_4"));
+		assertTrue(input.contains("controllerMedicalPressed = true"));
+		assertTrue(touch.contains("BukovTouchState.Action.MEDICAL"));
+		assertTrue(touch.contains("\"医疗\""));
+		assertTrue(hud.contains("\"1–4 / H · 快速医疗\""));
+		assertTrue(hud.contains("\"方向键 · 快速医疗\""));
+		assertTrue(hud.contains("\"医疗键 · 快速医疗\""));
 	}
 
 	@Test

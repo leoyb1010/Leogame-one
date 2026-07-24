@@ -28,6 +28,25 @@ public final class CombatPresentationEventPool {
 					 int targetCell,
 					 CombatFeedbackType feedbackType,
 					 float intensity) {
+		emit(
+				type,
+				sourceId,
+				targetId,
+				sourceCell,
+				targetCell,
+				feedbackType,
+				intensity,
+				0f);
+	}
+
+	public void emit(CombatPresentationEvent.Type type,
+					 int sourceId,
+					 int targetId,
+					 int sourceCell,
+					 int targetCell,
+					 CombatFeedbackType feedbackType,
+					 float intensity,
+					 float durationSeconds) {
 		if (type == null) {
 			throw new IllegalArgumentException("type is required");
 		}
@@ -36,6 +55,12 @@ public final class CombatPresentationEventPool {
 						.isFinite(intensity)) {
 			throw new IllegalArgumentException(
 					"intensity must be finite and non-negative");
+		}
+		if (durationSeconds < 0f
+				|| !com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+						.isFinite(durationSeconds)) {
+			throw new IllegalArgumentException(
+					"durationSeconds must be finite and non-negative");
 		}
 		if (size == events.length) {
 			head = (head + 1) % events.length;
@@ -50,7 +75,8 @@ public final class CombatPresentationEventPool {
 				sourceCell,
 				targetCell,
 				feedbackType,
-				intensity);
+				intensity,
+				durationSeconds);
 		size++;
 	}
 

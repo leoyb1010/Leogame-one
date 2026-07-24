@@ -1,6 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "atlas": "sprites/bukov_operator.png",
+  "layers": {
+    "lowerBody": "sprites/bukov_operator_lower.png",
+    "upperBodyWeapon": "sprites/bukov_operator_upper.png"
+  },
   "width": 384,
   "height": 128,
   "frameWidth": 12,
@@ -183,5 +187,9 @@
       "to": 31
     }
   ],
-  "sha256": "949cc8e15d3dab655d112e261c3a949887d97f2761fa226d50e306cb8030f224"
+  "sha256": "949cc8e15d3dab655d112e261c3a949887d97f2761fa226d50e306cb8030f224",
+  "layerSha256": {
+    "lowerBody": "15a6f6911430a4aed7a5b49d5977b38839a4eb95429b70d8b84ae3dc04ca37bf",
+    "upperBodyWeapon": "47db8a7714419e709a23d75b961c07b4f09cef74c942c631693151da44bcc3b7"
+  }
 }

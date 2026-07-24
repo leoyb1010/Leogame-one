@@ -13,6 +13,7 @@ mode_seen=""
 self_test=false
 output_arg=""
 ios_device="Codex Test iPhone 17 Pro"
+render_frame_logs=()
 
 evidence_dir=""
 steps_file=""
@@ -22,7 +23,7 @@ source_branch=""
 started_utc=""
 lock_held=false
 evidence_created=false
-planned_step_count=26
+planned_step_count=27
 
 usage() {
   cat <<'USAGE'
@@ -42,6 +43,7 @@ wide lock, records the exact commit and host environment, and runs:
   10,000-seed first-raid sweep
   100-iteration real disk save stress
   1,800-second performance smoke and E2E gates
+  captured macOS and iOS render-callback frame-pacing evidence
   macOS jpackage image and iOS Simulator app builds
   packaged legal check and final source-integrity check
 
@@ -57,11 +59,17 @@ Options:
                      build/reports/bukov-final-gate/.
   --ios-device NAME  iOS Simulator device used by the build step
                      (default: Codex Test iPhone 17 Pro).
+  --render-frame-log FILE
+                     Existing absolute packaged-app log containing one
+                     uninterrupted bukov-render-frame-v2 live gameplay scene.
+                     Repeat for macOS and iOS. Required by --apply. Include
+                     source_commit=<full SHA> and platform=macOS or platform=iOS.
   --self-test        Run syntax, argument, lock, and path-safety checks only.
   -h, --help         Show this help.
 
-The script never deletes or replaces an evidence directory. Concurrent runs
-against this repository are rejected.
+Render telemetry is CPU render-callback frame pacing, not a hardware GPU
+counter or a replacement for Instruments/Metal evidence. The script never
+deletes or replaces an evidence directory. Concurrent runs are rejected.
 USAGE
 }
 
@@ -123,6 +131,9 @@ run_self_test() {
   fi
   if "$script_path" --output >/dev/null 2>&1; then
     fail "missing --output value was accepted"
+  fi
+  if "$script_path" --render-frame-log >/dev/null 2>&1; then
+    fail "missing --render-frame-log value was accepted"
   fi
   if "$script_path" --not-a-real-option >/dev/null 2>&1; then
     fail "unknown option was accepted"
@@ -289,6 +300,31 @@ execute_sequence() {
   local gradle="$script_dir/apple-gradle"
   local mac_app="${apple_cache_root:A}/desktop/jpackage/逃离布科夫.app"
   local ios_app="${apple_cache_root:A}/ios/robovm.tmp/IOSLauncher.app"
+  local -a render_frame_gate_command=(
+    python3 "$script_dir/bukov_render_frame_gate.py"
+    --output "$evidence_dir/render-frame-summary.json"
+    --expected-source-commit "$source_commit"
+    --require-platform macOS
+    --require-platform iOS
+    --minimum-duration-seconds 1800
+    --max-p95-ms 16.7
+    --max-p99-ms 33.3
+    --max-over-16-7-ratio 0.05
+    --max-over-33-3-ratio 0.01
+    --high-refresh-min-hz 120
+    --high-refresh-max-p95-ms 10
+  )
+  if (( ${#render_frame_logs[@]} == 0 )); then
+    render_frame_gate_command+=(
+      --input "<required-macOS-render-log>"
+      --input "<required-iOS-render-log>"
+    )
+  else
+    local render_log
+    for render_log in "${render_frame_logs[@]}"; do
+      render_frame_gate_command+=(--input "$render_log")
+    done
+  fi
 
   run_step "01-static-diff-check" \
     "Git whitespace/error diff check" \
@@ -329,47 +365,50 @@ execute_sequence() {
   run_step "13-static-camera" \
     "Standalone realtime camera and world-bounds gate" \
     /bin/bash "$script_dir/bukov_realtime_camera_test.sh"
+  run_step "14-render-frame-pacing" \
+    "Real packaged-app CPU render-callback frame-pacing gate" \
+    "${render_frame_gate_command[@]}"
 
-  run_step "14-gradle-clean" \
+  run_step "15-gradle-clean" \
     "Clean Core, Desktop, and iOS build outputs" \
     "$gradle" :core:clean :desktop:clean :ios:clean --no-daemon
-  run_step "15-test-core" \
+  run_step "16-test-core" \
     "Complete Core test suite" \
     "$gradle" :core:test --rerun-tasks --no-daemon
-  run_step "16-test-desktop" \
+  run_step "17-test-desktop" \
     "Complete Desktop test suite" \
     "$gradle" :desktop:test --rerun-tasks --no-daemon
-  run_step "17-test-ios" \
+  run_step "18-test-ios" \
     "Complete iOS test suite" \
     "$gradle" :ios:test --rerun-tasks --no-daemon
-  run_step "18-robovm-api" \
+  run_step "19-robovm-api" \
     "RoboVM AOT API compatibility gate" \
     python3 "$script_dir/bukov_robovm_api_gate.py"
 
-  run_step "19-seed-10000" \
+  run_step "20-seed-10000" \
     "10,000-seed synthetic and real first-raid critical-path sweep" \
     "$script_dir/bukov_seed_sweep.sh" 10000
-  run_step "20-save-100" \
+  run_step "21-save-100" \
     "100-iteration in-memory and real-disk save stress gate" \
     "$script_dir/bukov_save_stress.sh" 100
-  run_step "21-performance-smoke-1800" \
+  run_step "22-performance-smoke-1800" \
     "1,800-second fixed-step performance smoke gate" \
     "$script_dir/bukov_performance_smoke.sh" 1800
-  run_step "22-performance-e2e-1800" \
+  run_step "23-performance-e2e-1800" \
     "1,800-second 30-enemy/200-projectile E2E CPU gate" \
     "$script_dir/bukov_performance_e2e.sh" 1800
 
-  run_step "23-build-macos" \
+  run_step "24-build-macos" \
     "Build the macOS jpackage application image" \
     "$gradle" :desktop:jpackageImage --rerun-tasks --no-daemon
-  run_step "24-build-ios-simulator" \
+  run_step "25-build-ios-simulator" \
     "Build and launch the iOS Simulator application" \
     "$gradle" :ios:launchIPhoneSimulator \
       "-Probovm.device.name=$ios_device" --rerun-tasks --no-daemon
-  run_step "25-packaged-legal" \
+  run_step "26-packaged-legal" \
     "Verify legal payloads in both built application bundles" \
     /bin/sh "$script_dir/bukov_packaged_legal_gate.sh" "$mac_app" "$ios_app"
-  run_step "26-source-integrity" \
+  run_step "27-source-integrity" \
     "Verify final HEAD and clean worktree still match the sealed source" \
     /bin/zsh -c \
       '[[ "$(git -C "$1" rev-parse HEAD)" == "$2" ]] && [[ -z "$(git -C "$1" status --porcelain --untracked-files=all)" ]]' \
@@ -544,6 +583,11 @@ while (( $# > 0 )); do
       ios_device="$2"
       shift 2
       ;;
+    --render-frame-log)
+      (( $# >= 2 )) || fail "--render-frame-log requires a value"
+      render_frame_logs+=("$2")
+      shift 2
+      ;;
     --self-test)
       self_test=true
       shift
@@ -560,6 +604,7 @@ done
 
 if [[ "$self_test" == true ]]; then
   [[ -z "$mode_seen" && -z "$output_arg" \
+      && ${#render_frame_logs[@]} -eq 0 \
       && "$ios_device" == "Codex Test iPhone 17 Pro" ]] \
     || fail "--self-test cannot be combined with execution options"
   run_self_test
@@ -569,6 +614,14 @@ fi
 [[ -n "$ios_device" ]] || fail "--ios-device cannot be empty"
 contains_control_character "$ios_device" \
   && fail "--ios-device cannot contain tabs or newlines"
+for render_log in "${render_frame_logs[@]}"; do
+  [[ -n "$render_log" && "$render_log" == /* ]] \
+    || fail "--render-frame-log must be an absolute file"
+  contains_control_character "$render_log" \
+    && fail "--render-frame-log cannot contain tabs or newlines"
+  [[ -f "$render_log" ]] \
+    || fail "--render-frame-log is not a file: $render_log"
+done
 
 source_commit="$(git -C "$project_root" rev-parse HEAD)"
 source_branch="$(git -C "$project_root" symbolic-ref --quiet --short HEAD \
@@ -597,10 +650,14 @@ if [[ "$apply" != true ]]; then
   print -r -- "worktree_state=$worktree_state"
   print -r -- "evidence_dir=$evidence_dir"
   print -r -- "ios_simulator_device=$ios_device"
+  print -r -- "render_frame_log_count=${#render_frame_logs[@]}"
   execute_sequence
   print -r -- "Dry run only: no command was executed and no evidence was written."
   exit 0
 fi
+
+(( ${#render_frame_logs[@]} >= 2 )) \
+  || fail "--apply requires separate macOS and iOS --render-frame-log inputs"
 
 mkdir -p "${repository_lock:h}"
 if ! mkdir "$repository_lock" 2>/dev/null; then

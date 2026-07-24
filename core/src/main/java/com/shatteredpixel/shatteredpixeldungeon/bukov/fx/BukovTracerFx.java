@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.glwrap.Blending;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -23,14 +24,22 @@ public final class BukovTracerFx extends Group {
 	static final float MAX_TRAIL_PIXELS = 16f;
 	static final float MAX_TRAIL_FRACTION = 0.25f;
 	// Muted amber stays readable without resembling a full-length laser.
-	// ColorBlock consumes ARGB, so the alpha byte must be explicit.
-	public static final int FRIENDLY_COLOR = 0xFFFFD27A;
-	public static final int HOSTILE_COLOR = 0xFFFF725C;
-	static final int HEAD_OUTLINE_COLOR = 0xFF151B20;
+	// ColorBlock consumes ARGB, so token RGB values receive explicit opacity.
+	private static final BukovUiTokens DEFAULT_TOKENS =
+			BukovUiTokens.loadDefault();
+	public static final int FRIENDLY_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.tracer.friendly");
+	public static final int HOSTILE_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.tracer.hostile");
+	static final int HEAD_OUTLINE_COLOR = color(
+			DEFAULT_TOKENS, "combat.fx.tracer.outline");
 
 	private final float duration = DURATION_SECONDS;
 	private final TraceGeometry geometry = new TraceGeometry();
 	private final TailSegment workingTail = new TailSegment();
+	private final int friendlyColor;
+	private final int hostileColor;
+	private final int headOutlineColor;
 	private final LightLine glowLine;
 	private final LightLine coreLine;
 	private final BulletHead bulletHeadOutline;
@@ -43,13 +52,24 @@ public final class BukovTracerFx extends Group {
 	 * slots and reconfigures them without allocating scene nodes per shot.
 	 */
 	public BukovTracerFx() {
-		glowLine = new LightLine(0.12f);
+		this(DEFAULT_TOKENS);
+	}
+
+	BukovTracerFx(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		friendlyColor = color(tokens, "combat.fx.tracer.friendly");
+		hostileColor = color(tokens, "combat.fx.tracer.hostile");
+		headOutlineColor = color(tokens, "combat.fx.tracer.outline");
+		int solidColor = color(tokens, "combat.fx.solid");
+		glowLine = new LightLine(0.12f, solidColor);
 		add(glowLine);
-		coreLine = new LightLine(0.8f);
+		coreLine = new LightLine(0.8f, solidColor);
 		add(coreLine);
-		bulletHeadOutline = new BulletHead(false);
+		bulletHeadOutline = new BulletHead(false, solidColor);
 		add(bulletHeadOutline);
-		bulletHead = new BulletHead(true);
+		bulletHead = new BulletHead(true, solidColor);
 		add(bulletHead);
 		retire();
 	}
@@ -78,7 +98,7 @@ public final class BukovTracerFx extends Group {
 		}
 		age = 0f;
 		hasPresentedTravelFrame = false;
-		int color = hostile ? HOSTILE_COLOR : FRIENDLY_COLOR;
+		int color = hostile ? hostileColor : friendlyColor;
 		glowLine.configure(
 				geometry.glowThickness(),
 				geometry.angleDegrees(),
@@ -94,7 +114,7 @@ public final class BukovTracerFx extends Group {
 				geometry.fromX(),
 				geometry.fromY(),
 				geometry.angleDegrees(),
-				HEAD_OUTLINE_COLOR,
+				headOutlineColor,
 				outlineWidthFor(geometry.coreThickness()),
 				outlineHeightFor(geometry.coreThickness()));
 		bulletHead.configure(
@@ -297,8 +317,8 @@ public final class BukovTracerFx extends Group {
 		private float thickness;
 		private final float alphaWeight;
 
-		private LightLine(float alpha) {
-			super(1f, 1f, 0xFFFFFFFF);
+		private LightLine(float alpha, int solidColor) {
+			super(1f, 1f, solidColor);
 			origin.set(0f, 0.5f);
 			alphaWeight = alpha;
 			visible = false;
@@ -307,7 +327,7 @@ public final class BukovTracerFx extends Group {
 		private void configure(float thickness, float angle, int color) {
 			this.thickness = thickness;
 			this.angle = angle;
-			color(color & 0xFFFFFF);
+			color(color);
 			alpha(0f);
 			visible = false;
 		}
@@ -335,8 +355,8 @@ public final class BukovTracerFx extends Group {
 
 	private static final class BulletHead extends ColorBlock {
 
-		private BulletHead(boolean additive) {
-			super(1f, 1f, 0xFFFFFFFF);
+		private BulletHead(boolean additive, int solidColor) {
+			super(1f, 1f, solidColor);
 			// ColorBlock's source texture is one pixel; the scale holds the
 			// authored size, so 0.5/0.5 is its actual transform origin.
 			origin.set(0.5f, 0.5f);
@@ -353,7 +373,7 @@ public final class BukovTracerFx extends Group {
 				float width,
 				float height) {
 			size(width, height);
-			color(color & 0xFFFFFF);
+			color(color);
 			this.angle = angle;
 			moveTo(x, y);
 			fade(1f);
@@ -379,6 +399,10 @@ public final class BukovTracerFx extends Group {
 				Blending.setNormalMode();
 			}
 		}
+	}
+
+	private static int color(BukovUiTokens tokens, String name) {
+		return tokens.colorWithAlpha(name, 255);
 	}
 
 	static final class TailSegment {

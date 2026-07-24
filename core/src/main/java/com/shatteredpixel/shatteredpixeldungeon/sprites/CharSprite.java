@@ -228,7 +228,8 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 
 	/**
 	 * Plays a cosmetic realtime attack without calling Char.onAttackComplete().
-	 * Repeated automatic-fire pulses are ignored until the current film ends.
+	 * Generic attacks retain the conservative no-restart policy; the Bukov
+	 * player firearm opts into same-priority restart for readable automatic fire.
 	 */
 	public void realtimeAttack( int targetCell ) {
 		playRealtimeAction( attack, targetCell, 1, null );
@@ -256,11 +257,29 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			int targetCell,
 			int priority,
 			final Callback callback ) {
+		return playRealtimeAction(
+				animation,
+				targetCell,
+				priority,
+				false,
+				callback);
+	}
+
+	protected synchronized boolean playRealtimeAction(
+			final Animation animation,
+			int targetCell,
+			int priority,
+			boolean restartSamePriority,
+			final Callback callback ) {
 		if (animation == null || ch == null || curAnim == die) {
 			if (callback != null) callback.call();
 			return false;
 		}
-		if (realtimeActionPlaying && priority <= realtimeActionPriority) {
+		if (!acceptsRealtimeAction(
+				realtimeActionPlaying,
+				realtimeActionPriority,
+				priority,
+				restartSamePriority)) {
 			return false;
 		}
 
@@ -275,6 +294,33 @@ public class CharSprite extends MovieClip implements Tweener.Listener, MovieClip
 			}
 		};
 		play( animation );
+		return true;
+	}
+
+	static boolean acceptsRealtimeAction(
+			boolean actionPlaying,
+			int currentPriority,
+			int requestedPriority,
+			boolean restartSamePriority) {
+		return !actionPlaying
+				|| requestedPriority > currentPriority
+				|| requestedPriority == currentPriority
+						&& restartSamePriority;
+	}
+
+	protected synchronized boolean cancelRealtimeAction(
+			Animation expectedAnimation) {
+		if (!realtimeActionPlaying || curAnim != expectedAnimation) {
+			return false;
+		}
+		realtimeActionToken++;
+		realtimeActionPlaying = false;
+		realtimeActionPriority = 0;
+		animCallback = null;
+		Animation target = realtimeMoving ? run : idle;
+		if (target != null) {
+			play(target);
+		}
 		return true;
 	}
 

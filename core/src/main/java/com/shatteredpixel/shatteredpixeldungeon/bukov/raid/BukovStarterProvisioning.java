@@ -48,10 +48,12 @@ public final class BukovStarterProvisioning {
 							ammunition.definitionId);
 			boolean changed = false;
 			if (compatibleAmmunition == null) {
-				String ammunitionUid = "provision:recovery:"
+				String ammunitionUid = uniqueUid(
+						profile,
+						"provision:recovery:"
 						+ profile.settlements().size()
 						+ ":"
-						+ ammunition.offerId;
+						+ ammunition.offerId);
 				profile.stash().deposit(
 						ammunition.createItem(ammunitionUid));
 				compatibleAmmunition =
@@ -87,37 +89,65 @@ public final class BukovStarterProvisioning {
 		String medicalUid = firstKit ? MEDICAL_UID : prefix + "bandage";
 		int ammunition = firstKit ? 36 : 24;
 		int medical = firstKit ? 3 : 1;
-		profile.stash().deposit(new RaidItem(
-				weaponUid,
-				"firearm:needle_9",
-				1,
-				0.90f,
-				850,
-				false,
-				false,
-				1f));
-		profile.stash().deposit(new RaidItem(
-				ammoUid,
-				"ammo:ammo_9_standard",
-				ammunition,
-				0.012f,
-				12,
-				false,
-				false,
-				1f));
-		profile.stash().deposit(new RaidItem(
-				medicalUid,
-				"bandage",
-				medical,
-				0.12f,
-				180,
-				false,
-				false,
-				1f));
-		profile.loadout().select(weaponUid, profile.stash());
-		profile.loadout().select(ammoUid, profile.stash());
-		profile.loadout().select(medicalUid, profile.stash());
-		return true;
+		RaidItem weapon = findDefinition(profile, "firearm:needle_9");
+		RaidItem ammo = findDefinition(profile, "ammo:ammo_9_standard");
+		RaidItem bandage = findDefinition(profile, "bandage");
+		boolean changed = false;
+		if (weapon == null) {
+			weaponUid = uniqueUid(profile, weaponUid);
+			profile.stash().deposit(new RaidItem(
+					weaponUid,
+					"firearm:needle_9",
+					1,
+					0.90f,
+					850,
+					false,
+					false,
+					1f));
+			weapon = profile.stash().item(weaponUid);
+			changed = true;
+		}
+		if (ammo == null) {
+			ammoUid = uniqueUid(profile, ammoUid);
+			profile.stash().deposit(new RaidItem(
+					ammoUid,
+					"ammo:ammo_9_standard",
+					ammunition,
+					0.012f,
+					12,
+					false,
+					false,
+					1f));
+			ammo = profile.stash().item(ammoUid);
+			changed = true;
+		}
+		if (bandage == null) {
+			medicalUid = uniqueUid(profile, medicalUid);
+			profile.stash().deposit(new RaidItem(
+					medicalUid,
+					"bandage",
+					medical,
+					0.12f,
+					180,
+					false,
+					false,
+					1f));
+			bandage = profile.stash().item(medicalUid);
+			changed = true;
+		}
+		if (!profile.loadout().contains(weapon.itemUid())) {
+			profile.loadout().select(weapon.itemUid(), profile.stash());
+			changed = true;
+		}
+		if (!profile.loadout().contains(ammo.itemUid())) {
+			profile.loadout().select(ammo.itemUid(), profile.stash());
+			changed = true;
+		}
+		if (!profile.loadout().contains(bandage.itemUid())) {
+			profile.loadout().select(bandage.itemUid(), profile.stash());
+			changed = true;
+		}
+		return changed;
 	}
 
 	private static RaidItem preferredSupportedFirearm(
@@ -146,6 +176,20 @@ public final class BukovStarterProvisioning {
 			}
 		}
 		return null;
+	}
+
+	private static String uniqueUid(
+			BukovProfile profile,
+			String preferredUid) {
+		if (!profile.stash().contains(preferredUid)) {
+			return preferredUid;
+		}
+		int suffix = 2;
+		while (profile.stash().contains(
+				preferredUid + ":" + suffix)) {
+			suffix++;
+		}
+		return preferredUid + ":" + suffix;
 	}
 
 	private static String recoveryAmmunitionOffer(

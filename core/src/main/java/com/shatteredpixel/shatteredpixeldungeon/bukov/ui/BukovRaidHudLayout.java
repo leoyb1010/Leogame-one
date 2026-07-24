@@ -12,8 +12,11 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 public final class BukovRaidHudLayout {
 
 	public static final float WIDE_THRESHOLD = 220f;
-	private static final float WIDE_HEIGHT = 38f;
-	private static final float COMPACT_HEIGHT = 68f;
+	public static final float RELOAD_RING_SIZE = 24f;
+	private static final float WIDE_HEIGHT = 46f;
+	private static final float COMPACT_HEIGHT = 79f;
+	private static final float MOBILE_FEEDBACK_SIDE_MARGIN = 6f;
+	private static final float MOBILE_FEEDBACK_HEIGHT = 13f;
 
 	public static final class Rect {
 		public final float x;
@@ -47,6 +50,7 @@ public final class BukovRaidHudLayout {
 	public final Rect vitals;
 	public final Rect firepower;
 	public final Rect condition;
+	public final Rect medicalHint;
 	public final Rect clock;
 	public final Rect extraction;
 	public final Rect objective;
@@ -57,6 +61,7 @@ public final class BukovRaidHudLayout {
 			Rect vitals,
 			Rect firepower,
 			Rect condition,
+			Rect medicalHint,
 			Rect clock,
 			Rect extraction,
 			Rect objective) {
@@ -65,6 +70,7 @@ public final class BukovRaidHudLayout {
 		this.vitals = vitals;
 		this.firepower = firepower;
 		this.condition = condition;
+		this.medicalHint = medicalHint;
 		this.clock = clock;
 		this.extraction = extraction;
 		this.objective = objective;
@@ -78,7 +84,10 @@ public final class BukovRaidHudLayout {
 		}
 		float scale = scaleMultiplier(scaleLevel);
 		boolean compact = availableWidth < WIDE_THRESHOLD;
-		float height = (compact ? COMPACT_HEIGHT : WIDE_HEIGHT) * scale;
+		// The wide renderer has fixed row geometry. Growing only its background
+		// consumed most of a compact iPhone landscape without enlarging any
+		// content, and pushed the touch controls underneath the HUD.
+		float height = compact ? COMPACT_HEIGHT * scale : WIDE_HEIGHT;
 		float padding = 4f * scale;
 		float contentWidth = Math.max(1f, availableWidth - padding * 2f);
 		float halfGap = 4f * scale;
@@ -95,7 +104,8 @@ public final class BukovRaidHudLayout {
 					rect(padding, 28f * scale, columnWidth, 9f * scale),
 					rect(rightX, 28f * scale, columnWidth, 9f * scale),
 					rect(padding, 39f * scale, contentWidth, 9f * scale),
-					rect(padding, 50f * scale, contentWidth, 16f * scale)
+					rect(padding, 50f * scale, contentWidth, 9f * scale),
+					rect(padding, 61f * scale, contentWidth, 16f * scale)
 			);
 		}
 
@@ -114,6 +124,8 @@ public final class BukovRaidHudLayout {
 						Math.max(1f, rightWidth - padding), 33f * scale),
 				rect(padding, 27f * scale,
 						Math.max(1f, leftWidth - padding), 8f * scale),
+				rect(padding, 36f * scale,
+						Math.max(1f, leftWidth - padding), 8f * scale),
 				rect(availableWidth - rightWidth, 24f * scale,
 						Math.max(1f, rightWidth - padding), 10f * scale),
 				rect(centerX, 13f * scale, centerWidth, 9f * scale),
@@ -124,6 +136,63 @@ public final class BukovRaidHudLayout {
 	public static float preferredHeight(
 			float availableWidth, int scaleLevel) {
 		return calculate(availableWidth, scaleLevel).height;
+	}
+
+	/** v2 firepower ring: fixed 24x24 and contained by the compact band. */
+	public static Rect compactReloadRing(
+			float availableWidth, int scaleLevel) {
+		BukovRaidHudLayout layout =
+				calculate(availableWidth, scaleLevel);
+		Rect firepower = layout.firepower;
+		float x = firepower.right() - RELOAD_RING_SIZE;
+		float y = firepower.y
+				+ Math.max(0f,
+						(firepower.height - RELOAD_RING_SIZE) * 0.5f);
+		return rect(
+				x,
+				y,
+				RELOAD_RING_SIZE,
+				RELOAD_RING_SIZE);
+	}
+
+	/**
+	 * Keeps the single high-priority mobile interaction prompt in the empty
+	 * left rail below the HUD. Backpack/pause own the right side of this row;
+	 * directional sound and damage remain represented by their world-space
+	 * arcs instead of additional text slabs.
+	 */
+	public static Rect mobileFeedback(
+			float viewportWidth,
+			float viewportHeight,
+			float hudLeft,
+			float hudBottom) {
+		if (viewportWidth <= 0f || viewportHeight <= 0f) {
+			throw new IllegalArgumentException(
+					"viewport dimensions must be positive");
+		}
+		float width = Math.min(
+				96f,
+				Math.max(1f,
+						viewportWidth * 0.34f));
+		float x = Math.min(
+				Math.max(
+						MOBILE_FEEDBACK_SIDE_MARGIN,
+						Math.max(0f, hudLeft)),
+				Math.max(0f, viewportWidth - width));
+		float y = Math.max(
+				0f,
+				Math.min(
+						hudBottom + 4f,
+						Math.max(
+								0f,
+								viewportHeight
+										- MOBILE_FEEDBACK_HEIGHT
+										- 4f)));
+		return rect(
+				x,
+				y,
+				Math.min(width, viewportWidth - x),
+				MOBILE_FEEDBACK_HEIGHT);
 	}
 
 	public static float scaleMultiplier(int scaleLevel) {

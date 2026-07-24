@@ -106,6 +106,7 @@ public class Assets {
 		public static final String LEO_DIALOG_FRAME = "interfaces/leo_dialog_frame.png";
 		public static final String LEO_BUTTON       = "interfaces/leo_button_normal.png";
 		public static final String LEO_BUTTON_DOWN  = "interfaces/leo_button_pressed.png";
+		public static final String BUKOV_UI         = "interfaces/bukov_ui.png";
 
 		public static final String RADIAL_MENU      = "interfaces/radial_menu.png";
 	}
@@ -506,6 +507,10 @@ public class Assets {
 		public static final String MAGE     = "sprites/mage.png";
 		public static final String ROGUE    = "sprites/rogue.png";
 		public static final String BUKOV_OPERATOR = "sprites/bukov_operator.png";
+		public static final String BUKOV_OPERATOR_LOWER =
+				"sprites/bukov_operator_lower.png";
+		public static final String BUKOV_OPERATOR_UPPER =
+				"sprites/bukov_operator_upper.png";
 		public static final String BUKOV_SCAVENGER = "sprites/bukov/scavenger.png";
 		public static final String BUKOV_GUNNER    = "sprites/bukov/gunner.png";
 		public static final String BUKOV_ARMORED   = "sprites/bukov/armored.png";

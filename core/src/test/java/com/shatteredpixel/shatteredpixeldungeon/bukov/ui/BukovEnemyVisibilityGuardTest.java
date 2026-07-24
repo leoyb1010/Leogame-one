@@ -94,7 +94,7 @@ public class BukovEnemyVisibilityGuardTest {
 		assertTrue(sprite.contains(
 				"drawContactOutline(0f, CONTACT_OUTLINE_OFFSET)"));
 		assertTrue(sprite.contains(
-				"tint(CONTACT_COLOR & 0xFFFFFF, 1f)"));
+				"tint(CONTACT_COLOR, 1f)"));
 		assertTrue(sprite.contains("renderShadow = false"));
 		assertTrue(sprite.contains(
 				"renderShadow = originalRenderShadow"));

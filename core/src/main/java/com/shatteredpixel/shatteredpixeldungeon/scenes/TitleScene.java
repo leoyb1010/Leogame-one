@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovFirstRunCalibration;
@@ -34,6 +35,7 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.DeviceCompat;
@@ -50,8 +52,8 @@ public class TitleScene extends PixelScene {
 	private RenderedTextBlock title;
 	private RenderedTextBlock englishTitle;
 	private RenderedTextBlock status;
-	private ColorBlock identityPanel;
-	private ColorBlock menuPanel;
+	private NinePatch identityPanel;
+	private NinePatch menuPanel;
 	private TacticalTitleButton btnContinue;
 	private TacticalTitleButton btnBukov;
 	private TacticalTitleButton btnSettings;
@@ -247,16 +249,18 @@ public class TitleScene extends PixelScene {
 		}
 	}
 
-	private ColorBlock panel(
+	private NinePatch panel(
 			float x,
 			float y,
 			float width,
 			float height,
 			int fill,
 			int edgeColor) {
-		ColorBlock result = new ColorBlock(width, height, fill);
+		NinePatch result = BukovUiAssets.surface(
+				BukovUiAssets.Surface.PANEL, fill);
 		result.x = x;
 		result.y = y;
+		result.size(width, height);
 		add(result);
 		ColorBlock edge = new ColorBlock(2f, height, edgeColor);
 		edge.x = x;
@@ -297,8 +301,8 @@ public class TitleScene extends PixelScene {
 
 	private abstract class TacticalTitleButton extends Button {
 
-		private final ColorBlock surface;
-		private final ColorBlock pressed;
+		private final NinePatch surface;
+		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final ColorBlock lowerRule;
 		private final RenderedTextBlock text;
@@ -309,12 +313,14 @@ public class TitleScene extends PixelScene {
 				int accent,
 				GameAction keyAction) {
 			this.keyAction = keyAction;
-			surface = new ColorBlock(
-					1f, 1f, accent);
-			surface.alpha(0.18f);
+			surface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON,
+					tokens.colorWithAlpha("panel.surface", 238));
+			surface.alpha(0.86f);
 			addToBack(surface);
-			pressed = new ColorBlock(
-					1f, 1f, tokens.color("panel.border"));
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.colorWithAlpha("panel.deep", 255));
 			pressed.visible = false;
 			addToBack(pressed);
 			edge = new ColorBlock(1f, 1f, accent);
@@ -372,7 +378,7 @@ public class TitleScene extends PixelScene {
 					y + (height - text.height()) / 2f);
 		}
 
-		private void fit(ColorBlock block) {
+		private void fit(NinePatch block) {
 			block.x = x;
 			block.y = y;
 			block.size(width, height);
