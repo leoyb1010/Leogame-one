@@ -14,11 +14,14 @@ import com.watabou.utils.PointF;
  */
 public final class BukovTracerFx extends Group {
 
-	/** Fast head travel followed by a brief endpoint fade. */
-	public static final float TRAVEL_SECONDS = 0.24f;
-	public static final float DURATION_SECONDS = 0.38f;
-	static final float MAX_TRAIL_PIXELS = 32f;
-	static final float MAX_TRAIL_FRACTION = 0.38f;
+	/**
+	 * Firearms are hitscan for gameplay. The visual head only bridges a few
+	 * frames so it reads as a round, not a slow projectile or energy bolt.
+	 */
+	public static final float TRAVEL_SECONDS = 0.10f;
+	public static final float DURATION_SECONDS = 0.18f;
+	static final float MAX_TRAIL_PIXELS = 16f;
+	static final float MAX_TRAIL_FRACTION = 0.25f;
 	// Muted amber stays readable without resembling a full-length laser.
 	// ColorBlock consumes ARGB, so the alpha byte must be explicit.
 	public static final int FRIENDLY_COLOR = 0xFFFFD27A;
@@ -52,13 +55,13 @@ public final class BukovTracerFx extends Group {
 				geometry.glowThickness(),
 				geometry.angleDegrees(),
 				color,
-				0.16f);
+				0.12f);
 		add(glowLine);
 		coreLine = new LightLine(
 				geometry.coreThickness(),
 				geometry.angleDegrees(),
 				color,
-				0.72f);
+				0.8f);
 		add(coreLine);
 		TailSegment initialTail = tailSegmentAt(geometry, 0f);
 		glowLine.place(initialTail, 0f);
@@ -137,8 +140,8 @@ public final class BukovTracerFx extends Group {
 				to.y,
 				length,
 				(float) Math.toDegrees(Math.atan2(dy, dx)),
-				0.65f + strength * 0.28f,
-				1.35f + strength * 0.70f);
+				0.55f + strength * 0.20f,
+				1.10f + strength * 0.50f);
 	}
 
 	public static float alphaAt(float age, float duration) {
@@ -221,19 +224,19 @@ public final class BukovTracerFx extends Group {
 	}
 
 	static float headWidthFor(float coreThickness) {
-		return Math.max(5.2f, coreThickness * 4.2f);
+		return Math.max(4f, coreThickness * 4f);
 	}
 
 	static float headHeightFor(float coreThickness) {
-		return Math.max(2.2f, coreThickness * 1.9f);
+		return Math.max(1.5f, coreThickness * 1.7f);
 	}
 
 	static float outlineWidthFor(float coreThickness) {
-		return Math.max(6.8f, coreThickness * 5.4f);
+		return Math.max(5.4f, coreThickness * 5.2f);
 	}
 
 	static float outlineHeightFor(float coreThickness) {
-		return Math.max(3.2f, coreThickness * 2.7f);
+		return Math.max(2.3f, coreThickness * 2.6f);
 	}
 
 	/**

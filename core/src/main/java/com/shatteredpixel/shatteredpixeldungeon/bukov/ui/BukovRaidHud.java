@@ -34,8 +34,8 @@ import com.watabou.utils.PointF;
 
 /**
  * Compact realtime raid HUD. Persistent information stays in a shallow safe-
- * area bar while aim, navigation and threat information is drawn around the
- * play-space focus instead of consuming the upper quarter of the battlefield.
+ * area bar while aim stays in play-space and navigation/threat information
+ * stays in a shallow edge rail instead of covering combatants.
  * It only reads presentation state and never owns or advances simulation.
  */
 public final class BukovRaidHud extends Component {
@@ -51,6 +51,8 @@ public final class BukovRaidHud extends Component {
 	private static final int VALUABLE = 0xE3B94E;
 	private static final int DANGER = 0xE05A3A;
 	private static final int EXTRACT = 0x6FCF97;
+	private static final float AWARENESS_SIDE_MARGIN = 6f;
+	private static final float AWARENESS_GAP = 4f;
 
 	private final BukovRaidHudState live = new BukovRaidHudState();
 
@@ -149,8 +151,8 @@ public final class BukovRaidHud extends Component {
 		interactionFill = block(0xFF000000 | INTERACT);
 		bossTrack = block(TRACK);
 		bossFill = block(0xFF000000 | DANGER);
-		navigationBadge = block(0xDC101918);
-		threatBadge = block(0xDC211411);
+		navigationBadge = block(0xB8101918);
+		threatBadge = block(0xB8211411);
 		interactionBadge = block(0xE8101C20);
 		reticle = new ColorBlock[5];
 		for (int index = 0; index < reticle.length; index++) {
@@ -612,42 +614,31 @@ public final class BukovRaidHud extends Component {
 		}
 		positionReticle(crosshairX, crosshairY);
 
-		float navigationRadius = aimRadius + 36f * uiScale;
-		float navigationX = centerX
-				+ directionX(live.navigationDirection())
-						* navigationRadius;
-		float navigationY = centerY
-				+ directionY(live.navigationDirection())
-						* navigationRadius;
+		/*
+		 * Direction text already carries an arrow. Keep these badges in a
+		 * shallow edge rail rather than placing 94-112 world-unit slabs over
+		 * the direction they describe, where they can hide the actual enemy.
+		 */
+		float awarenessWidth = awarenessBadgeWidth(
+				viewportWidth, uiScale);
+		float awarenessY = y + actualHeight + 10f;
 		positionBadge(
 				navigationBadge,
 				navigationText,
-				navigationX,
-				navigationY,
-				112f * uiScale,
+				AWARENESS_SIDE_MARGIN + awarenessWidth * 0.5f,
+				awarenessY,
+				awarenessWidth,
 				viewportWidth,
 				viewportHeight,
 				y + actualHeight + 3f);
 
-		float threatRadius = aimRadius + 55f * uiScale;
-		float threatX = centerX
-				+ directionX(live.threatDirection()) * threatRadius;
-		float threatY = centerY
-				+ directionY(live.threatDirection()) * threatRadius;
-		if (live.threatDirection() != null
-				&& live.threatDirection()
-						== live.navigationDirection()) {
-			threatX -= directionY(live.threatDirection())
-					* 18f * uiScale;
-			threatY += directionX(live.threatDirection())
-					* 18f * uiScale;
-		}
 		positionBadge(
 				threatBadge,
 				threatText,
-				threatX,
-				threatY,
-				94f * uiScale,
+				viewportWidth - AWARENESS_SIDE_MARGIN
+						- awarenessWidth * 0.5f,
+				awarenessY,
+				awarenessWidth,
 				viewportWidth,
 				viewportHeight,
 				y + actualHeight + 3f);
@@ -721,6 +712,20 @@ public final class BukovRaidHud extends Component {
 		badge.size(badgeWidth, 12f);
 		label.maxWidth((int)(badgeWidth - 4f));
 		label.setPos(badgeX + 2f, badgeY + 2f);
+	}
+
+	static float awarenessBadgeWidth(
+			float viewportWidth, float uiScale) {
+		float availablePerBadge = Math.max(
+				36f,
+				(viewportWidth
+						- AWARENESS_SIDE_MARGIN * 2f
+						- AWARENESS_GAP) * 0.5f);
+		float scaledWidth = 84f + 24f
+				* (clamp(uiScale, 1f, 1.5f) - 1f);
+		return Math.min(
+				scaledWidth,
+				availablePerBadge);
 	}
 
 	private void positionBoss(float barX, float textY, float barWidth) {
@@ -846,42 +851,6 @@ public final class BukovRaidHud extends Component {
 		result = result * 31 + (live.extractionActive() ? 1 : 0);
 		result = result * 131 + Math.round(live.extractionProgress() * 100f);
 		return result * 131 + Math.round(live.extractionSeconds() * 10f);
-	}
-
-	private static float directionX(BukovRaidHudState.Direction direction) {
-		if (direction == null) return 0f;
-		switch (direction) {
-			case NE:
-			case E:
-			case SE:
-				return direction == BukovRaidHudState.Direction.E
-						? 1f : 0.7071f;
-			case NW:
-			case W:
-			case SW:
-				return direction == BukovRaidHudState.Direction.W
-						? -1f : -0.7071f;
-			default:
-				return 0f;
-		}
-	}
-
-	private static float directionY(BukovRaidHudState.Direction direction) {
-		if (direction == null) return 0f;
-		switch (direction) {
-			case SE:
-			case S:
-			case SW:
-				return direction == BukovRaidHudState.Direction.S
-						? 1f : 0.7071f;
-			case NE:
-			case N:
-			case NW:
-				return direction == BukovRaidHudState.Direction.N
-						? -1f : -0.7071f;
-			default:
-				return 0f;
-		}
 	}
 
 	private static float clamp(float value, float minimum, float maximum) {

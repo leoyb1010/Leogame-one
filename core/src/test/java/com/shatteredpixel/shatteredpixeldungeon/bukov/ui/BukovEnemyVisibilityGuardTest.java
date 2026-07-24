@@ -67,8 +67,9 @@ public class BukovEnemyVisibilityGuardTest {
 	@Test
 	public void sharedPresentationIsLargeBrightOpaqueAndFogBound()
 			throws Exception {
-		assertTrue(BukovEnemySprite.CONTACT_SCALE >= 1.15f);
-		assertTrue(BukovEnemySprite.CONTACT_LIGHTNESS >= 0.60f);
+		assertTrue(BukovEnemySprite.CONTACT_SCALE >= 1.25f);
+		assertTrue(BukovEnemySprite.CONTACT_LIGHTNESS >= 0.70f);
+		assertTrue(BukovEnemySprite.CONTACT_OUTLINE_OFFSET > 0f);
 		assertEquals(0xFF, BukovEnemySprite.CONTACT_COLOR >>> 24);
 
 		String sprite = source(
@@ -77,11 +78,23 @@ public class BukovEnemyVisibilityGuardTest {
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
 						+ "scenes/GameScene.java");
+		String hud = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/ui/BukovRaidHud.java");
 
 		assertTrue(sprite.contains(
 				"texture.filter(SmartTexture.NEAREST, SmartTexture.NEAREST)"));
 		assertTrue(sprite.contains("scale.set(CONTACT_SCALE, CONTACT_SCALE)"));
 		assertTrue(sprite.contains("lightness(CONTACT_LIGHTNESS)"));
+		assertTrue(sprite.contains(
+				"drawContactOutline(-CONTACT_OUTLINE_OFFSET, 0f)"));
+		assertTrue(sprite.contains(
+				"drawContactOutline(0f, CONTACT_OUTLINE_OFFSET)"));
+		assertTrue(sprite.contains(
+				"tint(CONTACT_COLOR & 0xFFFFFF, 1f)"));
+		assertTrue(sprite.contains("renderShadow = false"));
+		assertTrue(sprite.contains(
+				"renderShadow = originalRenderShadow"));
 		assertTrue(sprite.contains("new ColorBlock(12f, 1f, CONTACT_COLOR)"));
 		assertFalse(sprite.contains("alpha(0."));
 
@@ -91,6 +104,15 @@ public class BukovEnemyVisibilityGuardTest {
 				"sprite.visible = Dungeon.level.heroFOV[mob.pos]"));
 		assertTrue(scene.contains(
 				"mob.sprite.visible = Dungeon.level.heroFOV[mob.pos]"));
+
+		// Awareness text belongs at the HUD edge. A radial threat slab can
+		// otherwise sit directly over the enemy whose direction it describes.
+		assertTrue(hud.contains(
+				"AWARENESS_SIDE_MARGIN + awarenessWidth * 0.5f"));
+		assertTrue(hud.contains(
+				"viewportWidth - AWARENESS_SIDE_MARGIN"));
+		assertFalse(hud.contains("float threatRadius"));
+		assertFalse(hud.contains("float navigationRadius"));
 	}
 
 	private static String source(String relativePath) throws Exception {

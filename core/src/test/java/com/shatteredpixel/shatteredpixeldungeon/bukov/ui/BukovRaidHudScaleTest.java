@@ -27,4 +27,17 @@ public class BukovRaidHudScaleTest {
 		assertTrue(BukovRaidHud.controlHint(false).contains("背包"));
 		assertTrue(BukovRaidHud.controlHint(false).contains("暂停"));
 	}
+
+	@Test
+	public void awarenessBadgesStayCompactAtTheHudEdge() {
+		assertEquals(84f,
+				BukovRaidHud.awarenessBadgeWidth(360f, 1f),
+				0f);
+		assertEquals(96f,
+				BukovRaidHud.awarenessBadgeWidth(360f, 1.5f),
+				0f);
+		assertEquals(42f,
+				BukovRaidHud.awarenessBadgeWidth(100f, 1f),
+				0f);
+	}
 }

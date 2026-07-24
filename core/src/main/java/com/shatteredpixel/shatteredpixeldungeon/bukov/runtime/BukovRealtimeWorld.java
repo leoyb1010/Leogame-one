@@ -2279,7 +2279,11 @@ public final class BukovRealtimeWorld
 					definition.impactIntensity
 			);
 			Char target = charsByBody.get(shotHit.body);
-			if (target != null && target.isAlive()) {
+			if (playerShotCanDamage(
+					shotHit,
+					heroBody,
+					hero,
+					target)) {
 				float damage = RealtimeDamage.resolve(
 						ammunition.applyDamage(definition.damage),
 						1f,
@@ -2907,11 +2911,14 @@ public final class BukovRealtimeWorld
 
 		targetBodies.clear();
 		enemyShotTargetBodies.clear();
+		// Hostile rounds can only resolve gameplay damage against the player.
+		// Keeping other hostiles out of the cast prevents an ally (or the
+		// shooter itself after body overlap) from swallowing the ray and makes
+		// source/target ownership identical for tracing and damage.
 		enemyShotTargetBodies.add(heroBody);
 		charsByBody.clear();
 		for (EnemyRuntime enemy : enemies) {
 			targetBodies.add(enemy.body);
-			enemyShotTargetBodies.add(enemy.body);
 			charsByBody.put(enemy.body, enemy.mob);
 		}
 	}
@@ -3131,13 +3138,51 @@ public final class BukovRealtimeWorld
 				enemyShotHit.y,
 				0.9f
 		);
-		if (enemyShotHit.body == heroBody
+		if (enemyShotCanDamage(
+				enemyShotHit,
+				enemy.body,
+				heroBody,
+				enemy.mob,
+				hero)
 				&& enemy.rangedIntent.hasDamageEvent()) {
 			pendingEnemyShots.add(new PendingEnemyShot(
 					enemy.mob,
 					enemy.rangedIntent.damage()
 			));
 		}
+	}
+
+	static boolean playerShotCanDamage(
+			HitscanResolver.Hit hit,
+			RealtimeBody shooterBody,
+			Char shooter,
+			Char target) {
+		return hit != null
+				&& hit.body != null
+				&& hit.body != shooterBody
+				&& target != null
+				&& target != shooter
+				&& target.realtimeBody == hit.body
+				&& target.isAlive()
+				&& target.alignment == Char.Alignment.ENEMY;
+	}
+
+	static boolean enemyShotCanDamage(
+			HitscanResolver.Hit hit,
+			RealtimeBody shooterBody,
+			RealtimeBody playerBody,
+			Char shooter,
+			Char player) {
+		return hit != null
+				&& hit.body == playerBody
+				&& playerBody != null
+				&& playerBody != shooterBody
+				&& shooter != null
+				&& shooter != player
+				&& shooter.realtimeBody == shooterBody
+				&& player != null
+				&& player.realtimeBody == playerBody
+				&& player.isAlive();
 	}
 
 	private static void showEnemyStatus(EnemyRuntime enemy,

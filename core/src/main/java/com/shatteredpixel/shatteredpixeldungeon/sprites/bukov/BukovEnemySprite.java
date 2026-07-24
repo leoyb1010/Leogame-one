@@ -19,8 +19,9 @@ public abstract class BukovEnemySprite extends MobSprite {
 	 * into the floor even while the host sprite is correctly inside hero FOV.
 	 * Keep the source art, but present it as a readable combat contact.
 	 */
-	public static final float CONTACT_SCALE = 1.20f;
-	public static final float CONTACT_LIGHTNESS = 0.64f;
+	public static final float CONTACT_SCALE = 1.30f;
+	public static final float CONTACT_LIGHTNESS = 0.72f;
+	public static final float CONTACT_OUTLINE_OFFSET = 0.65f;
 	public static final int CONTACT_COLOR = 0xFFFF6847;
 
 	private final int bloodColor;
@@ -67,6 +68,17 @@ public abstract class BukovEnemySprite extends MobSprite {
 
 	@Override
 	public void draw() {
+		/*
+		 * The body, not only a detached HUD marker, must be readable. Four
+		 * small silhouette passes create a crisp one-physical-pixel contact
+		 * edge at normal desktop zoom. The original palette is then drawn on
+		 * top, so archetypes remain distinguishable instead of becoming flat
+		 * red targets. This stays attached to the FOV-bound mob sprite.
+		 */
+		drawContactOutline(-CONTACT_OUTLINE_OFFSET, 0f);
+		drawContactOutline(CONTACT_OUTLINE_OFFSET, 0f);
+		drawContactOutline(0f, -CONTACT_OUTLINE_OFFSET);
+		drawContactOutline(0f, CONTACT_OUTLINE_OFFSET);
 		super.draw();
 		drawContactMarker(contactUnderline,
 				x + (width() - 12f) * 0.5f,
@@ -74,6 +86,36 @@ public abstract class BukovEnemySprite extends MobSprite {
 		float bracketY = y + Math.max(3f, height() * 0.30f);
 		drawContactMarker(contactBracketLeft, x - 1.5f, bracketY);
 		drawContactMarker(contactBracketRight, x + width() + 0.5f, bracketY);
+	}
+
+	private void drawContactOutline(float offsetX, float offsetY) {
+		float originalX = x;
+		float originalY = y;
+		float originalRm = rm;
+		float originalGm = gm;
+		float originalBm = bm;
+		float originalAm = am;
+		float originalRa = ra;
+		float originalGa = ga;
+		float originalBa = ba;
+		float originalAa = aa;
+		boolean originalRenderShadow = renderShadow;
+		x += offsetX;
+		y += offsetY;
+		renderShadow = false;
+		tint(CONTACT_COLOR & 0xFFFFFF, 1f);
+		super.draw();
+		x = originalX;
+		y = originalY;
+		rm = originalRm;
+		gm = originalGm;
+		bm = originalBm;
+		am = originalAm;
+		ra = originalRa;
+		ga = originalGa;
+		ba = originalBa;
+		aa = originalAa;
+		renderShadow = originalRenderShadow;
 	}
 
 	private void drawContactMarker(ColorBlock marker, float markerX, float markerY) {
