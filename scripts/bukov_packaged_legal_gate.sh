@@ -17,9 +17,9 @@ mac_jar=$(find "$mac_app/Contents/app" -maxdepth 1 -type f \
 test -s "$ios_app/legal/LICENSE.txt"
 test -s "$ios_app/legal/THIRD_PARTY_NOTICES.txt"
 
-jar tf "$mac_jar" | grep -Fxq 'legal/LICENSE.txt'
-jar tf "$mac_jar" | grep -Fxq 'legal/THIRD_PARTY_NOTICES.txt'
-if jar tf "$mac_jar" | grep -Eq \
+/usr/bin/unzip -Z1 "$mac_jar" | grep -Fxq 'legal/LICENSE.txt'
+/usr/bin/unzip -Z1 "$mac_jar" | grep -Fxq 'legal/THIRD_PARTY_NOTICES.txt'
+if /usr/bin/unzip -Z1 "$mac_jar" | grep -Eq \
 	'(^|/)(leo_[^/]*\.(png|jpg)|(LeoIdentityConfig|LeoStyledButton|LeoChanges|WndLeoWelcome)\.class)$'; then
 	echo "retired Leo player-facing resource found in macOS package" >&2
 	exit 1
