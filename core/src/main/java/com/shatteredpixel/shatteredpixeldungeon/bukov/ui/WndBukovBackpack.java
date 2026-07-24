@@ -69,10 +69,12 @@ public final class WndBukovBackpack extends Window {
 	private static final int HEIGHT_L = 170;
 	private static final int MARGIN = 4;
 	private static final int ROW_HEIGHT = 28;
-	private static final int BUTTON_HEIGHT = 18;
+	private static final int BUTTON_HEIGHT = 22;
 	private static final int GAP = 2;
+	private static final float ACTION_ICON_SIZE = 10f;
+	private static final float ACTION_ICON_LABEL_GAP = 2f;
 	private static final int MIN_HEADER_HEIGHT = 33;
-	private static final int FOOTER_HEIGHT = 75;
+	private static final int FOOTER_HEIGHT = 83;
 	private static final int VIEWPORT_MARGIN = 4;
 	private static final int MIN_LIST_HEIGHT_L = 40;
 	private static final int MIN_LIST_HEIGHT_P = 72;
@@ -746,6 +748,41 @@ public final class WndBukovBackpack extends Window {
 		CLOSE
 	}
 
+	private static BukovTouchIcon.Glyph actionGlyph(Action action) {
+		switch (action) {
+			case DROP:
+				return BukovTouchIcon.Glyph.DROP;
+			case USE:
+				return BukovTouchIcon.Glyph.MEDICAL;
+			case EQUIP:
+				return BukovTouchIcon.Glyph.INTERACT;
+			case CLOSE:
+			default:
+				return BukovTouchIcon.Glyph.BACK;
+		}
+	}
+
+	private static String shortActionLabel(String value) {
+		String normalized = value == null ? "" : value.trim();
+		int separator = normalized.indexOf('·');
+		if (separator > 0) {
+			normalized = normalized.substring(0, separator).trim();
+		}
+		int whitespace = normalized.indexOf(' ');
+		if (whitespace > 0) {
+			normalized = normalized.substring(0, whitespace);
+		}
+		int codePoints = normalized.codePointCount(0, normalized.length());
+		int maximum = normalized.matches("\\p{ASCII}*") ? 7 : 4;
+		if (codePoints <= maximum) {
+			return normalized;
+		}
+		return normalized.substring(
+				0,
+				normalized.offsetByCodePoints(0, maximum - 1))
+				+ "…";
+	}
+
 	private final class DetailContent extends Component {
 
 		private final int contentWidth;
@@ -990,14 +1027,17 @@ public final class WndBukovBackpack extends Window {
 		private final Action action;
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 		private final ColorBlock focusEdge;
 		private final String labelValue;
 		private boolean enabled = true;
+		private boolean focused;
+		private boolean pointerPressed;
 
 		private TacticalButton(String value, Action action) {
 			this.action = action;
-			labelValue = value;
+			labelValue = shortActionLabel(value);
 			surface = new ColorBlock(1, 1,
 					tokens.colorWithAlpha(
 							action == Action.CLOSE
@@ -1016,32 +1056,64 @@ public final class WndBukovBackpack extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			icon = new BukovTouchIcon(
+					actionGlyph(action),
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			add(icon);
 			label = text(
-					value, BukovVisualContract.FONT_BODY,
+					labelValue, BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
-			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
 		}
 
 		private void setEnabled(boolean enabled) {
 			this.enabled = enabled;
+			if (!enabled) {
+				pointerPressed = false;
+			}
 			label.hardlight(enabled
 					? tokens.color("text.primary")
 					: tokens.color("text.disabled"));
 			edge.hardlight(enabled
 					? action == Action.CLOSE
 					? tokens.color("accent.extract")
-					: tokens.color("accent.interact")
-					: tokens.color("panel.border"));
+						: tokens.color("accent.interact")
+						: tokens.color("panel.border"));
+			updateIconState();
 		}
 
 		private void setFocused(boolean focused) {
+			this.focused = focused;
 			focusEdge.visible = focused;
 			label.hardlight(!enabled
 					? tokens.color("text.disabled")
 					: focused
-					? tokens.color("accent.interact")
-					: tokens.color("text.primary"));
+						? tokens.color("accent.interact")
+						: tokens.color("text.primary"));
+			updateIconState();
+		}
+
+		private void updateIconState() {
+			icon.visualState(
+					enabled && pointerPressed,
+					!enabled);
+		}
+
+		@Override
+		protected void onPointerDown() {
+			if (!enabled) {
+				return;
+			}
+			pointerPressed = true;
+			updateIconState();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			updateIconState();
 		}
 
 		@Override
@@ -1065,15 +1137,26 @@ public final class WndBukovBackpack extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
+			int labelWidth = Math.max(
+					1,
+					(int)(width - ACTION_ICON_SIZE
+							- ACTION_ICON_LABEL_GAP - 8f));
 			fitSingleLine(
 					label,
 					labelValue,
-					Math.max(1, (int)width - 6));
-			label.setRect(
-					x + 3,
-					y + (height - 9) / 2f,
-					width - 6,
-					9);
+					labelWidth);
+			float contentWidth = ACTION_ICON_SIZE
+					+ ACTION_ICON_LABEL_GAP + label.width();
+			float contentX = x + (width - contentWidth) / 2f;
+			icon.setRect(
+					contentX,
+					y + (height - ACTION_ICON_SIZE) / 2f,
+					ACTION_ICON_SIZE,
+					ACTION_ICON_SIZE);
+			label.setPos(
+					contentX + ACTION_ICON_SIZE
+							+ ACTION_ICON_LABEL_GAP,
+					y + (height - label.height()) / 2f);
 		}
 	}
 }

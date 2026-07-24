@@ -186,20 +186,24 @@ public final class WndBukovServices extends Window {
 		float y = windowHeight - BUTTON_HEIGHT - MARGIN;
 		addAction(
 				nextTabLabel(),
+				BukovTouchIcon.Glyph.MODE,
 				BukovServicesFocusModel.ACTION_TAB,
 				MARGIN, y, fourth, true, "accent.interact");
 		addAction(
 				primaryLabel(),
+				primaryGlyph(),
 				BukovServicesFocusModel.ACTION_PRIMARY,
 				MARGIN + fourth + GAP,
 				y, fourth, primaryEnabled(), accentToken());
 		addAction(
 				secondaryLabel(),
+				secondaryGlyph(),
 				BukovServicesFocusModel.ACTION_SECONDARY,
 				MARGIN + (fourth + GAP) * 2f,
 				y, fourth, secondaryEnabled(), "accent.valuable");
 		addAction(
 				BukovMessages.get("bukov.economy.services.back"),
+				BukovTouchIcon.Glyph.BACK,
 				BukovServicesFocusModel.ACTION_BACK,
 				MARGIN + (fourth + GAP) * 3f,
 				y, fourth, true, "panel.border");
@@ -304,6 +308,26 @@ public final class WndBukovServices extends Window {
 		return slotName(slot);
 	}
 
+	private BukovTouchIcon.Glyph primaryGlyph() {
+		if (tab == Tab.CONTRACTS) {
+			return BukovTouchIcon.Glyph.INTERACT;
+		}
+		if (tab == Tab.INSURANCE) {
+			return BukovTouchIcon.Glyph.BACKPACK;
+		}
+		return BukovTouchIcon.Glyph.AIM_FIRE;
+	}
+
+	private BukovTouchIcon.Glyph secondaryGlyph() {
+		if (tab == Tab.CONTRACTS) {
+			return BukovTouchIcon.Glyph.SEARCH;
+		}
+		if (tab == Tab.INSURANCE) {
+			return BukovTouchIcon.Glyph.BACKPACK;
+		}
+		return BukovTouchIcon.Glyph.RELOAD;
+	}
+
 	private boolean primaryEnabled() {
 		if (model.locked || !hasSelection()) return false;
 		if (tab == Tab.CONTRACTS) {
@@ -369,6 +393,7 @@ public final class WndBukovServices extends Window {
 
 	private void addAction(
 			String label,
+			BukovTouchIcon.Glyph glyph,
 			int action,
 			float x,
 			float y,
@@ -376,7 +401,11 @@ public final class WndBukovServices extends Window {
 			boolean enabled,
 			String token) {
 		ActionButton button = new ActionButton(
-				label, action, enabled, tokens.color(token));
+				label,
+				glyph,
+				action,
+				enabled,
+				tokens.color(token));
 		button.setRect(x, y, buttonWidth, BUTTON_HEIGHT);
 		actions.add(button);
 		add(button);
@@ -696,10 +725,12 @@ public final class WndBukovServices extends Window {
 		private final boolean enabled;
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private ActionButton(
 				String value,
+				BukovTouchIcon.Glyph glyph,
 				int action,
 				boolean enabled,
 				int accent) {
@@ -711,6 +742,13 @@ public final class WndBukovServices extends Window {
 			edge = new ColorBlock(
 					1, 1, enabled ? accent : tokens.color("text.disabled"));
 			add(edge);
+			icon = new BukovTouchIcon(
+					glyph,
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			icon.visualState(false, !enabled);
+			add(icon);
 			label = text(
 					value,
 					BukovVisualContract.FONT_CAPTION,
@@ -723,6 +761,7 @@ public final class WndBukovServices extends Window {
 		private void setFocused(boolean focused) {
 			edge.alpha(focused ? 1f : 0.55f);
 			surface.alpha(focused ? 0.34f : enabled ? 0.18f : 0.05f);
+			icon.visualState(false, !enabled);
 		}
 
 		@Override
@@ -739,9 +778,22 @@ public final class WndBukovServices extends Window {
 			edge.x = x;
 			edge.y = y;
 			edge.size(2, height);
-			label.maxWidth(Math.max(1, (int) width - 4));
+			float iconSize = Math.max(
+					7f,
+					Math.min(9f, height - 7f));
+			float iconLeft = x + 3f;
+			icon.setRect(
+					iconLeft,
+					y + (height - iconSize) / 2f,
+					iconSize,
+					iconSize);
+			float textLeft = iconLeft + iconSize + 1f;
+			float textWidth = Math.max(
+					1f,
+					x + width - 2f - textLeft);
+			label.maxWidth(Math.max(1, (int)textWidth));
 			label.setPos(
-					x + (width - label.width()) / 2f,
+					textLeft + (textWidth - label.width()) / 2f,
 					y + (height - label.height()) / 2f);
 		}
 	}

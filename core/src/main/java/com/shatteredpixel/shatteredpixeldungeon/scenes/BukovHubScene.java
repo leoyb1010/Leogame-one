@@ -11,8 +11,13 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovFocusModel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovFocusRepeater;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovIconLabelButton;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovNavigation;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchIcon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiScale;
@@ -28,10 +33,13 @@ import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndOptions;
 import com.watabou.gltextures.SmartTexture;
+import com.watabou.gltextures.TextureCache;
+import com.watabou.input.ControllerHandler;
 import com.watabou.input.GameAction;
+import com.watabou.input.KeyEvent;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
@@ -833,31 +841,215 @@ public final class BukovHubScene extends PixelScene {
 	}
 
 	private void confirmAbandon() {
-		addToFront(new WndOptions(
-				entryMessage("hub.abandon_title"),
-				entryMessage("hub.abandon_body"),
-				entryMessage("hub.cancel"),
-				entryMessage("hub.confirm_abandon")) {
-			@Override
-			protected void onSelect(int index) {
-				if (index != 1) {
-					BukovUiSoundRouter.play(
-							BukovUiSoundPlayer.Cue.CANCEL);
-					return;
-				}
-				BukovUiSoundRouter.play(
-						BukovUiSoundPlayer.Cue.CONFIRM);
-				try {
-					controller.abandonActiveRaid();
-					Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
-					reload();
-				} catch (IOException | RuntimeException error) {
-					showError(
-							entryMessage("hub.error_abandon"),
-							error);
+		addToFront(new AbandonConfirmWindow());
+	}
+
+	private final class AbandonConfirmWindow extends Window {
+
+		private static final int CANCEL = 0;
+		private static final int CONFIRM = 1;
+		private static final int BUTTON_HEIGHT = 22;
+		private static final int MARGIN = 6;
+		private static final int BUTTON_GAP = 4;
+
+		private final BukovFocusModel focus =
+				new BukovFocusModel(2, CANCEL);
+		private final BukovFocusRepeater focusRepeater =
+				new BukovFocusRepeater();
+		private final ConfirmButton[] buttons = new ConfirmButton[2];
+		private boolean submitting;
+
+		private AbandonConfirmWindow() {
+			super(
+					0,
+					0,
+					new NinePatch(
+							TextureCache.createSolid(
+									BukovHubScene.this.tokens.colorWithAlpha(
+											"ink.background", 255)),
+							0));
+			RectF insets = BukovHubScene.this.getCommonInsets();
+			int availableWidth = Math.max(
+					1,
+					(int)Math.floor(
+							Camera.main.width
+									- insets.left - insets.right - 8f));
+			int availableHeight = Math.max(
+					1,
+					(int)Math.floor(
+							Camera.main.height
+									- insets.top - insets.bottom - 8f));
+			int windowWidth = Math.min(
+					DeviceCompat.isDesktop() ? 176 : 160,
+					availableWidth);
+			int windowHeight = Math.min(108, availableHeight);
+			resize(windowWidth, windowHeight);
+
+			ColorBlock header = new ColorBlock(
+					windowWidth,
+					18,
+					tokens.colorWithAlpha("panel.surface", 255));
+			add(header);
+			ColorBlock headerEdge = new ColorBlock(
+					windowWidth,
+					1,
+					tokens.color("accent.danger"));
+			headerEdge.y = 17;
+			add(headerEdge);
+
+			RenderedTextBlock title = label(
+					entryMessage("hub.abandon_title"),
+					BukovVisualContract.FONT_BODY,
+					tokens.color("accent.danger"));
+			title.setPos(MARGIN, 5);
+			title.maxWidth(Math.max(1, windowWidth - MARGIN * 2));
+			add(title);
+
+			RenderedTextBlock body = label(
+					entryMessage("hub.abandon_body"),
+					BukovVisualContract.FONT_CAPTION,
+					tokens.color("text.secondary"));
+			body.maxWidth(Math.max(1, windowWidth - MARGIN * 2));
+			body.setPos(MARGIN, 23);
+			add(body);
+
+			float buttonWidth =
+					(windowWidth - MARGIN * 2f - BUTTON_GAP) / 2f;
+			float buttonY = windowHeight - BUTTON_HEIGHT - MARGIN;
+			buttons[CANCEL] = new ConfirmButton(
+					BukovTouchIcon.Glyph.BACK,
+					entryMessage("hub.cancel"),
+					false);
+			buttons[CANCEL].setRect(
+					MARGIN,
+					buttonY,
+					buttonWidth,
+					BUTTON_HEIGHT);
+			add(buttons[CANCEL]);
+			buttons[CONFIRM] = new ConfirmButton(
+					BukovTouchIcon.Glyph.DROP,
+					entryMessage("hub.confirm_abandon"),
+					true);
+			buttons[CONFIRM].setRect(
+					MARGIN + buttonWidth + BUTTON_GAP,
+					buttonY,
+					buttonWidth,
+					BUTTON_HEIGHT);
+			add(buttons[CONFIRM]);
+			updateFocus();
+		}
+
+		@Override
+		public void update() {
+			super.update();
+			int delta = focusRepeater.update(
+					ControllerHandler.leftStickPosition.x,
+					ControllerHandler.leftStickPosition.y,
+					Game.elapsed);
+			if (delta != 0) {
+				focus.move(delta);
+				updateFocus();
+			}
+		}
+
+		@Override
+		public boolean onSignal(KeyEvent event) {
+			if (!event.pressed) {
+				return true;
+			}
+			if (BukovNavigation.back(event)) {
+				cancel();
+			} else if (BukovNavigation.previous(event)) {
+				focus.move(-1);
+				updateFocus();
+			} else if (BukovNavigation.next(event)) {
+				focus.move(1);
+				updateFocus();
+			} else if (BukovNavigation.confirm(event)) {
+				buttons[focus.index()].onClick();
+			}
+			return true;
+		}
+
+		@Override
+		public void onBackPressed() {
+			cancel();
+		}
+
+		private void updateFocus() {
+			for (int index = 0; index < buttons.length; index++) {
+				if (buttons[index] != null) {
+					buttons[index].setFocused(focus.index() == index);
 				}
 			}
-		});
+		}
+
+		private void cancel() {
+			BukovUiSoundRouter.play(BukovUiSoundPlayer.Cue.CANCEL);
+			hide();
+		}
+
+		private void submit() {
+			if (submitting) {
+				return;
+			}
+			submitting = true;
+			BukovUiSoundRouter.play(BukovUiSoundPlayer.Cue.CONFIRM);
+			hide();
+			try {
+				controller.abandonActiveRaid();
+				Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
+				reload();
+			} catch (IOException | RuntimeException error) {
+				showError(
+						entryMessage("hub.error_abandon"),
+						error);
+			}
+		}
+
+		private final class ConfirmButton
+				extends BukovIconLabelButton {
+
+			private final boolean confirms;
+			private final ColorBlock accent;
+
+			private ConfirmButton(
+					BukovTouchIcon.Glyph glyph,
+					String text,
+					boolean confirms) {
+				super(glyph, text, true);
+				this.confirms = confirms;
+				accent = new ColorBlock(
+						1,
+						1,
+						tokens.color(confirms
+								? "accent.danger"
+								: "panel.border"));
+				add(accent);
+			}
+
+			@Override
+			protected void onClick() {
+				focus.focus(confirms ? CONFIRM : CANCEL);
+				updateFocus();
+				if (confirms) {
+					submit();
+				} else {
+					cancel();
+				}
+			}
+
+			@Override
+			protected void layout() {
+				super.layout();
+				if (accent == null) {
+					return;
+				}
+				accent.x = x;
+				accent.y = y;
+				accent.size(2f, height);
+			}
+		}
 	}
 
 	private void reload() {

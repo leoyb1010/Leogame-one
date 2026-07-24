@@ -201,6 +201,7 @@ public final class WndBukovVendor extends Window {
 				BukovMessages.get(tab == Tab.BUY
 						? "bukov.economy.vendor.view_sell"
 						: "bukov.economy.vendor.view_buy"),
+				BukovTouchIcon.Glyph.VENDOR,
 				BukovVendorFocusModel.ACTION_TAB,
 				MARGIN,
 				buttonY,
@@ -209,6 +210,7 @@ public final class WndBukovVendor extends Window {
 				"accent.interact");
 		addAction(
 				tradeLabel(),
+				BukovTouchIcon.Glyph.BACKPACK,
 				BukovVendorFocusModel.ACTION_TRADE,
 				MARGIN + third + GAP,
 				buttonY,
@@ -217,6 +219,7 @@ public final class WndBukovVendor extends Window {
 				tab == Tab.BUY ? "accent.valuable" : "accent.extract");
 		addAction(
 				BukovMessages.get("bukov.economy.vendor.back"),
+				BukovTouchIcon.Glyph.BACK,
 				BukovVendorFocusModel.ACTION_BACK,
 				MARGIN + (third + GAP) * 2,
 				buttonY,
@@ -298,6 +301,7 @@ public final class WndBukovVendor extends Window {
 
 	private void addAction(
 			String label,
+			BukovTouchIcon.Glyph glyph,
 			int action,
 			float x,
 			float y,
@@ -306,6 +310,7 @@ public final class WndBukovVendor extends Window {
 			String accentToken) {
 		ActionButton button = new ActionButton(
 				label,
+				glyph,
 				action,
 				enabled,
 				tokens.color(accentToken));
@@ -678,10 +683,12 @@ public final class WndBukovVendor extends Window {
 		private final ColorBlock surface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private ActionButton(
 				String value,
+				BukovTouchIcon.Glyph glyph,
 				int action,
 				boolean enabled,
 				int accent) {
@@ -707,9 +714,16 @@ public final class WndBukovVendor extends Window {
 					1, 1, tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			icon = new BukovTouchIcon(
+					glyph,
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			icon.visualState(false, !enabled);
+			add(icon);
 			label = text(
 					value,
-					BukovVisualContract.FONT_BODY,
+					BukovVisualContract.FONT_CAPTION,
 					enabled
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
@@ -719,6 +733,7 @@ public final class WndBukovVendor extends Window {
 
 		private void setFocused(boolean focused) {
 			focusEdge.visible = focused;
+			icon.visualState(false, !enabled);
 			label.hardlight(!enabled
 					? tokens.color("text.disabled")
 					: focused
@@ -745,8 +760,22 @@ public final class WndBukovVendor extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
+			float iconSize = Math.max(
+					7f,
+					Math.min(10f, height - 6f));
+			float iconLeft = x + 3f;
+			icon.setRect(
+					iconLeft,
+					y + (height - iconSize) / 2f,
+					iconSize,
+					iconSize);
+			float textLeft = iconLeft + iconSize + 2f;
+			float textWidth = Math.max(
+					1f,
+					x + width - 3f - textLeft);
+			label.maxWidth(Math.max(1, (int)textWidth));
 			label.setPos(
-					x + (width - label.width()) / 2f,
+					textLeft + (textWidth - label.width()) / 2f,
 					y + (height - label.height()) / 2f);
 		}
 	}

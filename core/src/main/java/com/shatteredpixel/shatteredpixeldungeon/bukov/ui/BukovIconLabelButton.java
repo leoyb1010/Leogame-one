@@ -236,7 +236,22 @@ public class BukovIconLabelButton extends Button {
 					iconSize,
 					iconSize);
 		} else {
-			float iconLeft = x + HORIZONTAL_PADDING;
+			float availableWidth = Math.max(
+					1f,
+					width - HORIZONTAL_PADDING * 2f - trailingInset);
+			float maximumTextWidth = Math.max(
+					1f,
+					availableWidth - iconSize - ICON_LABEL_GAP);
+			labelView.maxWidth(Math.max(1, (int) maximumTextWidth));
+			float renderedTextWidth = Math.min(
+					maximumTextWidth,
+					labelView.width());
+			float groupWidth =
+					iconSize + ICON_LABEL_GAP + renderedTextWidth;
+			float contentWidth = width - trailingInset;
+			float iconLeft = x + Math.max(
+					HORIZONTAL_PADDING,
+					(contentWidth - groupWidth) * 0.5f);
 			iconView.setRect(
 					iconLeft,
 					y + (height - iconSize) * 0.5f,
@@ -244,16 +259,12 @@ public class BukovIconLabelButton extends Button {
 					iconSize);
 			float textLeft =
 					iconLeft + iconSize + ICON_LABEL_GAP;
-			float textWidth = Math.max(
-					1f,
-					right() - HORIZONTAL_PADDING
-							- trailingInset - textLeft);
-			labelView.maxWidth((int) textWidth);
+			labelView.align(RenderedTextBlock.LEFT_ALIGN);
 			labelView.setRect(
 					textLeft,
 					y + (height - labelView.height()) * 0.5f
 							+ verticalOffset,
-					textWidth,
+					renderedTextWidth,
 					labelView.height());
 		}
 	}

@@ -27,6 +27,8 @@ public final class WndBukovPause extends Window {
 	private static final int WIDTH_L = 190;
 	private static final int GAP = 3;
 	private static final int MARGIN = 5;
+	private static final int DESIRED_HEIGHT_P = 190;
+	private static final int DESIRED_HEIGHT_L = 150;
 	private static final int CONTINUE = 0;
 	private static final int SETTINGS = 1;
 	private static final int SAVE_AND_RETURN = 2;
@@ -48,22 +50,33 @@ public final class WndBukovPause extends Window {
 								"ink.background", 255)), 0));
 		this.saveAndReturn = saveAndReturn;
 		tokens = BukovUiTokens.loadDefault();
-		buttonHeight = Math.round(
-				BukovVisualContract.controlHeight(
-						true, SPDSettings.bukovUiScale()));
+		boolean compactHeight = PixelScene.landscape();
 		int windowWidth = BukovWindowLayout.safeWidth(
 				PixelScene.landscape() ? WIDTH_L : WIDTH_P);
+		int windowHeight = BukovWindowLayout.safeHeight(
+				compactHeight ? DESIRED_HEIGHT_L : DESIRED_HEIGHT_P);
+		int headerHeight = compactHeight ? 22 : 28;
+		int statusHeight = compactHeight ? 17 : 23;
+		int buttonGap = compactHeight ? 2 : GAP;
+		int contentTop = headerHeight + 3 + statusHeight + 3;
+		int availablePerButton = Math.max(
+				Math.round(BukovVisualContract.controlHeight(true)),
+				(windowHeight - contentTop - buttonGap * 2 - 2) / 3);
+		buttonHeight = Math.min(
+				Math.round(BukovVisualContract.controlHeight(
+						true, SPDSettings.bukovUiScale())),
+				availablePerButton);
 
 		ColorBlock header = new ColorBlock(
 				windowWidth,
-				28,
+				headerHeight,
 				tokens.colorWithAlpha("panel.surface", 255));
 		add(header);
 		ColorBlock headerEdge = new ColorBlock(
 				windowWidth,
 				1,
 				tokens.color("accent.valuable"));
-		headerEdge.y = 27;
+		headerEdge.y = headerHeight - 1;
 		add(headerEdge);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
@@ -71,7 +84,7 @@ public final class WndBukovPause extends Window {
 				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
-		eyebrow.setPos(MARGIN, 4);
+		eyebrow.setPos(MARGIN, compactHeight ? 2 : 4);
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
@@ -79,13 +92,13 @@ public final class WndBukovPause extends Window {
 				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
-		title.setPos(MARGIN, 13);
+		title.setPos(MARGIN, compactHeight ? 11 : 13);
 		add(title);
-		y = 33;
+		y = headerHeight + 3;
 
 		ColorBlock statusSurface = new ColorBlock(
 				windowWidth - MARGIN * 2,
-				23,
+				statusHeight,
 				tokens.colorWithAlpha("panel.surface", 180));
 		statusSurface.x = MARGIN;
 		statusSurface.y = y;
@@ -96,36 +109,42 @@ public final class WndBukovPause extends Window {
 				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		status.hardlight(tokens.color("text.secondary"));
-		status.setRect(MARGIN + 5, y + 4, windowWidth - MARGIN * 2 - 10, 16);
+		status.setRect(
+				MARGIN + 5,
+				y + (compactHeight ? 2 : 4),
+				windowWidth - MARGIN * 2 - 10,
+				statusHeight - (compactHeight ? 3 : 7));
 		add(status);
-		y += 28;
+		y += statusHeight + 3;
 
 		addButton(new ActionButton(
 				BukovTouchIcon.Glyph.MOVEMENT,
 				BukovMessages.get("bukov.raid.pause.resume_label"),
 				BukovMessages.get("bukov.raid.pause.resume_code"),
-				CONTINUE), windowWidth);
+				CONTINUE), windowWidth, buttonGap);
 		addButton(new ActionButton(
-				BukovTouchIcon.Glyph.PAUSE,
+				BukovTouchIcon.Glyph.MODE,
 				BukovMessages.get("bukov.raid.pause.settings_label"),
 				BukovMessages.get("bukov.raid.pause.settings_code"),
-				SETTINGS), windowWidth);
+				SETTINGS), windowWidth, buttonGap);
 		addButton(new ActionButton(
-				BukovTouchIcon.Glyph.BACKPACK,
+				BukovTouchIcon.Glyph.BACK,
 				BukovMessages.get("bukov.raid.pause.leave_label"),
 				BukovMessages.get("bukov.raid.pause.leave_code"),
 				SAVE_AND_RETURN),
-				windowWidth);
+				windowWidth,
+				buttonGap);
 
-		y += 2;
-		resize(windowWidth, y);
+		y += Math.max(0, 2 - buttonGap);
+		resize(windowWidth, Math.min(windowHeight, y));
 	}
 
-	private void addButton(ActionButton button, int windowWidth) {
+	private void addButton(
+			ActionButton button, int windowWidth, int buttonGap) {
 		add(button);
 		button.setRect(MARGIN, y, windowWidth - MARGIN * 2, buttonHeight);
 		buttons[button.action] = button;
-		y += buttonHeight + GAP;
+		y += buttonHeight + buttonGap;
 		updateFocus();
 	}
 

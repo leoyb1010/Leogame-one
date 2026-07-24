@@ -63,10 +63,11 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(pause.contains(
 				"BukovTouchIcon.Glyph.MOVEMENT"));
 		assertTrue(pause.contains(
-				"BukovTouchIcon.Glyph.PAUSE"));
+				"BukovTouchIcon.Glyph.MODE"));
 		assertTrue(pause.contains(
-				"BukovTouchIcon.Glyph.BACKPACK"));
+				"BukovTouchIcon.Glyph.BACK"));
 		assertTrue(pause.contains("BukovWindowLayout.safeWidth"));
+		assertTrue(pause.contains("BukovWindowLayout.safeHeight"));
 		assertTrue(backpack.contains("detailSurface"));
 		assertTrue(backpack.contains("stateSurface"));
 		assertTrue(backpack.contains("action == Action.CLOSE"));
@@ -85,11 +86,49 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(vendor.contains("bukov.economy.vendor.balance"));
 	}
 
+	@Test
+	public void everyPrimaryIosActionSurfaceUsesSemanticIconAndCaption()
+			throws Exception {
+		for (String file : new String[] {
+				"WndBukovBackpack.java",
+				"WndBukovInventorySearch.java",
+				"WndBukovVendor.java",
+				"WndBukovServices.java",
+				"WndBukovRaidModeSelection.java",
+				"WndBukovSettlement.java"
+		}) {
+			String source = source(file);
+			assertTrue(file, source.contains("BukovTouchIcon"));
+			assertTrue(
+					file,
+					source.contains("BukovVisualContract.FONT_CAPTION"));
+		}
+
+		assertTrue(source("WndBukovBackpack.java").contains(
+				"private static final int BUTTON_HEIGHT = 22"));
+		assertTrue(source("WndBukovInventorySearch.java").contains(
+				"private static final int BUTTON_HEIGHT = 22"));
+
+		String hubScene = sceneSource("BukovHubScene.java");
+		assertTrue(hubScene.contains("class AbandonConfirmWindow"));
+		assertTrue(hubScene.contains("extends BukovIconLabelButton"));
+		assertFalse(hubScene.contains("new WndOptions("));
+	}
+
 	private static String source(String file) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(
 						"src/main/java/com/shatteredpixel/"
 								+ "shatteredpixeldungeon/bukov/ui/"
+								+ file)),
+				StandardCharsets.UTF_8);
+	}
+
+	private static String sceneSource(String file) throws Exception {
+		return new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/java/com/shatteredpixel/"
+								+ "shatteredpixeldungeon/scenes/"
 								+ file)),
 				StandardCharsets.UTF_8);
 	}

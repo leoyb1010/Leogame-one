@@ -11,7 +11,7 @@ public class WndBukovBackpackLayoutTest {
 	@Test
 	public void portraitLayoutFitsIPhoneViewport() {
 		assertEquals(
-				109,
+				101,
 				WndBukovBackpack.inventoryViewportHeight(217, false));
 		assertEquals(
 				127,
@@ -25,7 +25,7 @@ public class WndBukovBackpackLayoutTest {
 	@Test
 	public void landscapeLayoutFitsCompactViewport() {
 		assertEquals(
-				44,
+				36,
 				WndBukovBackpack.inventoryViewportHeight(152, true));
 		assertEquals(
 				226,
@@ -49,7 +49,7 @@ public class WndBukovBackpackLayoutTest {
 
 		assertEquals(59, layout.headerHeight);
 		assertEquals(72, layout.listHeight);
-		assertEquals(40, layout.detailHeight);
+		assertEquals(32, layout.detailHeight);
 		assertEquals(86, layout.footerHeight);
 		assertEquals(
 				217,
@@ -71,7 +71,7 @@ public class WndBukovBackpackLayoutTest {
 
 		assertEquals(33, layout.headerHeight);
 		assertEquals(40, layout.listHeight);
-		assertEquals(33, layout.detailHeight);
+		assertEquals(25, layout.detailHeight);
 		assertEquals(79, layout.footerHeight);
 		assertEquals(
 				152,

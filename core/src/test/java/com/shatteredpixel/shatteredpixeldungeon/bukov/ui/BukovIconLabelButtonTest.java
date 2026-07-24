@@ -51,16 +51,18 @@ public class BukovIconLabelButtonTest {
 	}
 
 	@Test
-	public void layoutKeepsIconLeftAndShortLabelRight()
+	public void layoutCentersIconAndShortLabelAsOneVisualGroup()
 			throws Exception {
 		String source = source();
 
 		int iconLeft = source.indexOf(
-				"float iconLeft = x + HORIZONTAL_PADDING;");
+				"float iconLeft = x + Math.max(");
 		int textLeft = source.indexOf(
 				"iconLeft + iconSize + ICON_LABEL_GAP;");
 		assertTrue(iconLeft >= 0);
 		assertTrue(textLeft > iconLeft);
+		assertTrue(source.contains(
+				"iconSize + ICON_LABEL_GAP + renderedTextWidth"));
 		assertTrue(source.contains("BukovVisualContract.FONT_CAPTION"));
 	}
 
@@ -80,7 +82,7 @@ public class BukovIconLabelButtonTest {
 		assertTrue(source.contains(
 				"public void contentRightInset(float inset)"));
 		assertTrue(source.contains(
-				"- trailingInset - textLeft"));
+				"float contentWidth = width - trailingInset;"));
 	}
 
 	private static String source() throws Exception {

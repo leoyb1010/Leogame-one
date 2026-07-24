@@ -436,6 +436,7 @@ public final class WndBukovSettlement extends Window {
 		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final NinePatch focusSurface;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private final boolean repeat;
@@ -458,8 +459,16 @@ public final class WndBukovSettlement extends Window {
 					tokens.color("accent.interact"));
 			focusSurface.visible = false;
 			addToBack(focusSurface);
+			icon = new BukovTouchIcon(
+					repeat
+							? BukovTouchIcon.Glyph.DEPLOY
+							: BukovTouchIcon.Glyph.BACK,
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			add(icon);
 			label = text(
-					labelText, BukovVisualContract.FONT_BODY,
+					labelText, BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
@@ -483,6 +492,7 @@ public final class WndBukovSettlement extends Window {
 			label.hardlight(focused
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+			icon.visualState(false, false);
 		}
 
 		@Override
@@ -490,11 +500,13 @@ public final class WndBukovSettlement extends Window {
 			background.visible = false;
 			focusSurface.visible = false;
 			pressed.visible = true;
+			icon.visualState(true, false);
 		}
 
 		@Override
 		protected void onPointerUp() {
 			pressed.visible = false;
+			icon.visualState(false, false);
 			boolean focused =
 					focus.index() == (repeat ? 0 : actionButtons.length - 1);
 			background.visible = !focused;
@@ -516,8 +528,20 @@ public final class WndBukovSettlement extends Window {
 			focusSurface.x = x;
 			focusSurface.y = y;
 			focusSurface.size(width, height);
-			label.setRect(x + 4, y + (height - 10) / 2f,
-					width - 8, 10);
+			float iconSize = Math.max(8f, Math.min(12f, height - 6f));
+			label.maxWidth(Math.max(
+					1,
+					(int) (width - iconSize - 13f)));
+			float groupWidth = iconSize + 3f + label.width();
+			float left = x + Math.max(4f, (width - groupWidth) / 2f);
+			icon.setRect(
+					left,
+					y + (height - iconSize) / 2f,
+					iconSize,
+					iconSize);
+			label.setPos(
+					left + iconSize + 3f,
+					y + (height - label.height()) / 2f);
 		}
 	}
 }

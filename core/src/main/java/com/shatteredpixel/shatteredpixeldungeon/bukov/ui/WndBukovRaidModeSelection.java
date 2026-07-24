@@ -474,6 +474,7 @@ public final class WndBukovRaidModeSelection extends Window {
 		private final ColorBlock surface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private ActionButton(int action, int accent) {
@@ -492,8 +493,16 @@ public final class WndBukovRaidModeSelection extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			icon = new BukovTouchIcon(
+					action == BukovRaidModeFocusModel.ACTION_APPLY
+							? BukovTouchIcon.Glyph.DEPLOY
+							: BukovTouchIcon.Glyph.BACK,
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			add(icon);
 			label = text(
-					"", BukovVisualContract.FONT_BODY,
+					"", BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
@@ -518,6 +527,7 @@ public final class WndBukovRaidModeSelection extends Window {
 							: focused
 							? "accent.interact"
 							: "text.primary"));
+			icon.visualState(false, !enabled);
 			surface.alpha(focused ? 0.32f : enabled ? 0.18f : 0.08f);
 		}
 
@@ -533,8 +543,20 @@ public final class WndBukovRaidModeSelection extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
-			label.maxWidth(Math.max(1, (int) width - 6));
-			center(label, x + 3, y, width - 6, height);
+			float iconSize = Math.max(8f, Math.min(12f, height - 6f));
+			label.maxWidth(Math.max(
+					1,
+					(int) (width - iconSize - 13f)));
+			float groupWidth = iconSize + 3f + label.width();
+			float left = x + Math.max(4f, (width - groupWidth) / 2f);
+			icon.setRect(
+					left,
+					y + (height - iconSize) / 2f,
+					iconSize,
+					iconSize);
+			label.setPos(
+					left + iconSize + 3f,
+					y + (height - label.height()) / 2f);
 		}
 	}
 
