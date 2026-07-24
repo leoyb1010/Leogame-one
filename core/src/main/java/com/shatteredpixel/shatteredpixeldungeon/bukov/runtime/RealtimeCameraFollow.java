@@ -9,10 +9,8 @@ public final class RealtimeCameraFollow {
 	private final float halfDeadZoneX;
 	private final float halfDeadZoneY;
 	private final float responsiveness;
-	private float trackingCenterX;
-	private float trackingCenterY;
-	private float lookAheadX;
-	private float lookAheadY;
+	private float centerX;
+	private float centerY;
 	private boolean initialized;
 
 	public RealtimeCameraFollow(
@@ -33,31 +31,13 @@ public final class RealtimeCameraFollow {
 		if (!finite(centerX) || !finite(centerY)) {
 			throw new IllegalArgumentException("camera center must be finite");
 		}
-		this.trackingCenterX = centerX;
-		this.trackingCenterY = centerY;
-		lookAheadX = 0f;
-		lookAheadY = 0f;
+		this.centerX = centerX;
+		this.centerY = centerY;
 		initialized = true;
 	}
 
 	public void update(float targetX, float targetY, float deltaSeconds) {
-		update(targetX, targetY, 0f, 0f, deltaSeconds);
-	}
-
-	/**
-	 * Follows the operator and independently eases a presentation-only aiming
-	 * offset. Keeping the dead-zone center separate from the aiming offset lets
-	 * a released stick/touch return exactly to the tracked operator instead of
-	 * stopping at one edge of the dead zone.
-	 */
-	public void update(
-			float targetX,
-			float targetY,
-			float targetLookAheadX,
-			float targetLookAheadY,
-			float deltaSeconds) {
 		if (!finite(targetX) || !finite(targetY)
-				|| !finite(targetLookAheadX) || !finite(targetLookAheadY)
 				|| !finite(deltaSeconds) || deltaSeconds <= 0f) {
 			return;
 		}
@@ -66,35 +46,31 @@ public final class RealtimeCameraFollow {
 			return;
 		}
 
-		float desiredX = trackingCenterX;
-		float desiredY = trackingCenterY;
-		if (targetX > trackingCenterX + halfDeadZoneX) {
+		float desiredX = centerX;
+		float desiredY = centerY;
+		if (targetX > centerX + halfDeadZoneX) {
 			desiredX = targetX - halfDeadZoneX;
-		} else if (targetX < trackingCenterX - halfDeadZoneX) {
+		} else if (targetX < centerX - halfDeadZoneX) {
 			desiredX = targetX + halfDeadZoneX;
 		}
-		if (targetY > trackingCenterY + halfDeadZoneY) {
+		if (targetY > centerY + halfDeadZoneY) {
 			desiredY = targetY - halfDeadZoneY;
-		} else if (targetY < trackingCenterY - halfDeadZoneY) {
+		} else if (targetY < centerY - halfDeadZoneY) {
 			desiredY = targetY + halfDeadZoneY;
 		}
 
-		// Cap one bad render delta, then use a frame-rate-independent
-		// exponential response. At 8/s, roughly 99% of the gap closes in 0.6s.
 		float safeDelta = Math.min(deltaSeconds, 0.25f);
 		float blend = (float)(1d - Math.exp(-responsiveness * safeDelta));
-		trackingCenterX += (desiredX - trackingCenterX) * blend;
-		trackingCenterY += (desiredY - trackingCenterY) * blend;
-		lookAheadX += (targetLookAheadX - lookAheadX) * blend;
-		lookAheadY += (targetLookAheadY - lookAheadY) * blend;
+		centerX += (desiredX - centerX) * blend;
+		centerY += (desiredY - centerY) * blend;
 	}
 
 	public float centerX() {
-		return trackingCenterX + lookAheadX;
+		return centerX;
 	}
 
 	public float centerY() {
-		return trackingCenterY + lookAheadY;
+		return centerY;
 	}
 
 	public boolean initialized() {

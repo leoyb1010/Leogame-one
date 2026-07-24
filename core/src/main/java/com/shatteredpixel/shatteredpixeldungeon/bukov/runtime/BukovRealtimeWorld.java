@@ -89,7 +89,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovInteractionMarker;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
-import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.audio.Sample;
@@ -2041,14 +2040,9 @@ public final class BukovRealtimeWorld
 							- camera.centerOffset.y
 			);
 		}
-		float lookAheadPixels = inputFrame == null
-				? 0f
-				: inputFrame.cameraLookAheadTiles * DungeonTilemap.SIZE;
 		cameraFollow.update(
 				hero.sprite.x + hero.sprite.width() * 0.5f,
 				hero.sprite.y + hero.sprite.height() * 0.5f,
-				inputFrame == null ? 0f : inputFrame.aim.x * lookAheadPixels,
-				inputFrame == null ? 0f : inputFrame.aim.y * lookAheadPixels,
 				renderDelta
 		);
 		camera.scroll.set(
@@ -2057,24 +2051,6 @@ public final class BukovRealtimeWorld
 				cameraFollow.centerY() - camera.height * 0.5f
 						+ camera.centerOffset.y
 		);
-	}
-
-	/**
-	 * Render-space focus consumed by the scene's clamp/alignment guard.
-	 *
-	 * This deliberately exposes no simulation body state: the returned point is
-	 * the already-smoothed presentation camera target, including aim look-ahead.
-	 */
-	public float presentationCameraFocusX() {
-		return cameraFollow.initialized()
-				? cameraFollow.centerX()
-				: hero.sprite.x + hero.sprite.width() * 0.5f;
-	}
-
-	public float presentationCameraFocusY() {
-		return cameraFollow.initialized()
-				? cameraFollow.centerY()
-				: hero.sprite.y + hero.sprite.height() * 0.5f;
 	}
 
 	@Override

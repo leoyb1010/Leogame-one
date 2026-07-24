@@ -1694,12 +1694,8 @@ public class GameScene extends PixelScene {
 		if (hero == null || Camera.main == null || Dungeon.level == null) {
 			return;
 		}
-		float focusX = bukovWorld == null
-				? hero.x + hero.width() * 0.5f
-				: bukovWorld.presentationCameraFocusX();
-		float focusY = bukovWorld == null
-				? hero.y + hero.height() * 0.5f
-				: bukovWorld.presentationCameraFocusY();
+		float focusX = hero.x + hero.width() * 0.5f;
+		float focusY = hero.y + hero.height() * 0.5f;
 		Camera camera = Camera.main;
 		camera.scroll.set(
 				BukovViewport.resolveScroll(

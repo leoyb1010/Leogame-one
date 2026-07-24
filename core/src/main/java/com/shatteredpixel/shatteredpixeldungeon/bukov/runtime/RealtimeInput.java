@@ -23,9 +23,6 @@ import com.watabou.utils.Signal;
  */
 public final class RealtimeInput {
 
-	static final float POINTER_CAMERA_LOOK_AHEAD_TILES = 3.5f;
-	static final float DIRECT_CAMERA_LOOK_AHEAD_TILES = 2.5f;
-
 	private final InputFrame frame = new InputFrame();
 	private final RealtimeTouchState touch = new RealtimeTouchState();
 	private final PointF tunedLeftStick = new PointF();
@@ -167,7 +164,6 @@ public final class RealtimeInput {
 		frame.movement.set(0f, 0f);
 		frame.fireHeld = false;
 		frame.interactHeld = false;
-		frame.cameraLookAheadTiles = 0f;
 		frame.clearEdges();
 		cancelTouches();
 		if (touchControls != null) {
@@ -201,7 +197,6 @@ public final class RealtimeInput {
 				SPDSettings.bukovTriggerRelease() / 100f);
 		frame.aimAssistScale = BukovInputTuning.aimAssistScale(
 				SPDSettings.bukovAimAssist());
-		frame.cameraLookAheadTiles = 0f;
 		float moveX = 0f;
 		float moveY = 0f;
 		if (Gdx.input.isKeyPressed(Input.Keys.A)) moveX -= 1f;
@@ -243,13 +238,10 @@ public final class RealtimeInput {
 				tunedRightStick);
 		if (lengthSquared(tunedRightStick.x, tunedRightStick.y) > 0f) {
 			normalizeInto(tunedRightStick.x, tunedRightStick.y, frame.aim);
-			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
 		} else if (mobile != null && mobile.aimHeld()) {
 			frame.aim.set(mobile.aimX(), mobile.aimY());
-			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
 		} else if (touchEnabled && touch.fireHeld()) {
 			touch.sample(touchRadius(), frame.movement, frame.aim);
-			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
 		} else if (!touchEnabled && !ControllerHandler.controllerActive) {
 			PointF pointer = PointerEvent.currentHoverPos();
 			PointF world = Camera.main.screenToCamera((int)pointer.x, (int)pointer.y);
@@ -258,7 +250,6 @@ public final class RealtimeInput {
 					world.y / DungeonTilemap.SIZE - heroBody.y,
 					frame.aim
 			);
-			frame.cameraLookAheadTiles = POINTER_CAMERA_LOOK_AHEAD_TILES;
 		}
 
 		boolean mouseFirePressed = !touchEnabled
