@@ -26,12 +26,15 @@ remain separate Instruments/Metal evidence.
 
 ## Packaged-app render-callback gate
 
-`BukovFrameTelemetry` emits one `bukov-render-frame-v2` JSON record every
-reporting window. The v2 record keeps cumulative nearest-rank session
+`BukovFrameTelemetry` emits one `bukov-render-frame-v3` JSON record every
+reporting window. The v3 record keeps cumulative nearest-rank session
 P50/P95/P99 values at 0.1 ms histogram resolution and exact cumulative
-slow-frame counts, so a 30-minute run can be gated without trying to
+refresh-budget miss counts, so a 30-minute run can be gated without trying to
 reconstruct percentiles from 10-second summaries. Each record also includes
-the render resolution and target refresh rate.
+the render resolution, target refresh rate, and the per-device frame budget.
+The budget is the target refresh period plus 10% host-scheduling tolerance;
+this prevents a normal 60 Hz `16.67 ms` callback from being mislabeled as a
+drop merely because its measured delivery rounds to `16.7–17.0 ms`.
 
 This metric is explicitly
 `cpu-render-callback-frame-pacing`, sampled from the raw
@@ -67,10 +70,10 @@ python3 scripts/bukov_render_frame_gate.py \
 The default per-run thresholds are:
 
 - uninterrupted duration at least 1,800 seconds;
-- P95 at most 16.7 ms, tightened to 10.0 ms when the recorded target is
+- P95 at most 18.4 ms, tightened to 10.0 ms when the recorded target is
   120 Hz or higher;
 - P99 at most 33.3 ms;
-- no more than 5% of frames above 16.7 ms;
+- no more than 5% of frames above the recorded refresh budget;
 - no more than 1% of frames above 33.3 ms;
 - known positive resolution and refresh target;
 - exact match to the sealed source commit when one is supplied.

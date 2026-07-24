@@ -61,7 +61,7 @@ Options:
                      (default: Codex Test iPhone 17 Pro).
   --render-frame-log FILE
                      Existing absolute packaged-app log containing one
-                     uninterrupted bukov-render-frame-v2 live gameplay scene.
+                     uninterrupted bukov-render-frame-v3 live gameplay scene.
                      Repeat for macOS and iOS. Required by --apply. Include
                      source_commit=<full SHA> and platform=macOS or platform=iOS.
   --self-test        Run syntax, argument, lock, and path-safety checks only.
@@ -307,9 +307,9 @@ execute_sequence() {
     --require-platform macOS
     --require-platform iOS
     --minimum-duration-seconds 1800
-    --max-p95-ms 16.7
+    --max-p95-ms 18.4
     --max-p99-ms 33.3
-    --max-over-16-7-ratio 0.05
+    --max-over-budget-ratio 0.05
     --max-over-33-3-ratio 0.01
     --high-refresh-min-hz 120
     --high-refresh-max-p95-ms 10

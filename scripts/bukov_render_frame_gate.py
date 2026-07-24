@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA = "bukov-render-frame-v2"
+SCHEMA = "bukov-render-frame-v3"
 METRIC_KIND = "cpu-render-callback-frame-pacing"
 MEASUREMENT = "Gdx.graphics.getDeltaTime"
 SCOPE = "render-callback-frame-pacing"
@@ -37,7 +37,7 @@ class Thresholds:
     minimum_duration_seconds: float
     max_p95_ms: float
     max_p99_ms: float
-    max_over_16_7_ratio: float
+    max_over_budget_ratio: float
     max_over_33_3_ratio: float
     high_refresh_min_hz: int
     high_refresh_max_p95_ms: float
@@ -56,7 +56,8 @@ class RunEvidence:
     p95_ms: float
     p99_ms: float
     maximum_frame_ms: float
-    frames_over_16_7_ms: int
+    frame_budget_ms: float
+    frames_over_budget: int
     frames_over_33_3_ms: int
     resolution_px: str
     observed_resolutions_px: tuple[str, ...]
@@ -64,8 +65,8 @@ class RunEvidence:
     observed_refresh_targets_hz: tuple[int, ...]
 
     @property
-    def over_16_7_ratio(self) -> float:
-        return self.frames_over_16_7_ms / self.session_frames
+    def over_budget_ratio(self) -> float:
+        return self.frames_over_budget / self.session_frames
 
     @property
     def over_33_3_ratio(self) -> float:
@@ -118,19 +119,26 @@ def _validate_record(record: dict[str, Any]) -> None:
     p95 = _number(record, "sessionP95Ms")
     p99 = _number(record, "sessionP99Ms")
     maximum = _number(record, "sessionMaximumFrameMs")
-    over_16 = _integer(record, "sessionFramesOver16_7Ms")
+    frame_budget = _number(record, "frameBudgetMs")
+    over_budget = _integer(record, "sessionFramesOverBudget")
     over_33 = _integer(record, "sessionFramesOver33_3Ms")
     refresh = _integer(record, "targetRefreshHz")
     resolution = record.get("resolutionPx")
 
     if session_frames <= 0 or session_seconds <= 0:
         raise GateInputError("session frame count and duration must be positive")
-    if not (0 <= over_33 <= over_16 <= session_frames):
+    if not (0 <= over_33 <= over_budget <= session_frames):
         raise GateInputError("slow-frame counters are inconsistent")
     if not (0 <= p50 <= p95 <= p99 <= maximum):
         raise GateInputError("session percentile order is inconsistent")
     if refresh <= 0:
         raise GateInputError("targetRefreshHz must be known and positive")
+    expected_budget = 1_000.0 / refresh * 1.10
+    if abs(frame_budget - expected_budget) > 0.01:
+        raise GateInputError(
+            "frameBudgetMs must equal the refresh period plus 10% "
+            "host-scheduling tolerance"
+        )
     if not isinstance(resolution, str) or RESOLUTION_RE.fullmatch(resolution) is None:
         raise GateInputError("resolutionPx must be WIDTHxHEIGHT with positive integers")
 
@@ -207,7 +215,8 @@ def load_run(path: Path) -> RunEvidence:
         p95_ms=_number(final, "sessionP95Ms"),
         p99_ms=_number(final, "sessionP99Ms"),
         maximum_frame_ms=_number(final, "sessionMaximumFrameMs"),
-        frames_over_16_7_ms=_integer(final, "sessionFramesOver16_7Ms"),
+        frame_budget_ms=_number(final, "frameBudgetMs"),
+        frames_over_budget=_integer(final, "sessionFramesOverBudget"),
         frames_over_33_3_ms=_integer(final, "sessionFramesOver33_3Ms"),
         resolution_px=str(final["resolutionPx"]),
         observed_resolutions_px=tuple(sorted(resolutions)),
@@ -233,10 +242,10 @@ def evaluate_run(run: RunEvidence, thresholds: Thresholds) -> list[str]:
         failures.append(
             f"P99 {run.p99_ms:.3f}ms > {thresholds.max_p99_ms:.3f}ms"
         )
-    if run.over_16_7_ratio > thresholds.max_over_16_7_ratio:
+    if run.over_budget_ratio > thresholds.max_over_budget_ratio:
         failures.append(
-            f">16.7ms ratio {run.over_16_7_ratio:.6f} "
-            f"> {thresholds.max_over_16_7_ratio:.6f}"
+            f">refresh-budget ratio {run.over_budget_ratio:.6f} "
+            f"> {thresholds.max_over_budget_ratio:.6f}"
         )
     if run.over_33_3_ratio > thresholds.max_over_33_3_ratio:
         failures.append(
@@ -280,9 +289,10 @@ def build_summary(
                 "p95Ms": round(run.p95_ms, 3),
                 "p99Ms": round(run.p99_ms, 3),
                 "maximumFrameMs": round(run.maximum_frame_ms, 3),
-                "framesOver16_7Ms": run.frames_over_16_7_ms,
+                "frameBudgetMs": round(run.frame_budget_ms, 3),
+                "framesOverBudget": run.frames_over_budget,
                 "framesOver33_3Ms": run.frames_over_33_3_ms,
-                "framesOver16_7Ratio": round(run.over_16_7_ratio, 8),
+                "framesOverBudgetRatio": round(run.over_budget_ratio, 8),
                 "framesOver33_3Ratio": round(run.over_33_3_ratio, 8),
                 "resolutionPx": run.resolution_px,
                 "observedResolutionsPx": list(run.observed_resolutions_px),
@@ -297,7 +307,7 @@ def build_summary(
 
     total_frames = sum(run.session_frames for run in runs)
     total_seconds = sum(run.session_seconds for run in runs)
-    total_over_16 = sum(run.frames_over_16_7_ms for run in runs)
+    total_over_budget = sum(run.frames_over_budget for run in runs)
     total_over_33 = sum(run.frames_over_33_3_ms for run in runs)
     aggregate = {
         "aggregation": (
@@ -311,9 +321,9 @@ def build_summary(
         "worstRunP95Ms": round(max(run.p95_ms for run in runs), 3),
         "worstRunP99Ms": round(max(run.p99_ms for run in runs), 3),
         "maximumFrameMs": round(max(run.maximum_frame_ms for run in runs), 3),
-        "framesOver16_7Ms": total_over_16,
+        "framesOverBudget": total_over_budget,
         "framesOver33_3Ms": total_over_33,
-        "framesOver16_7Ratio": round(total_over_16 / total_frames, 8),
+        "framesOverBudgetRatio": round(total_over_budget / total_frames, 8),
         "framesOver33_3Ratio": round(total_over_33 / total_frames, 8),
         "resolutionsPx": sorted(
             {value for run in runs for value in run.observed_resolutions_px}
@@ -345,7 +355,8 @@ def build_summary(
             "minimumDurationSecondsPerRun": thresholds.minimum_duration_seconds,
             "maxP95Ms": thresholds.max_p95_ms,
             "maxP99Ms": thresholds.max_p99_ms,
-            "maxFramesOver16_7Ratio": thresholds.max_over_16_7_ratio,
+            "maxFramesOverRefreshBudgetRatio":
+                thresholds.max_over_budget_ratio,
             "maxFramesOver33_3Ratio": thresholds.max_over_33_3_ratio,
             "highRefreshMinHz": thresholds.high_refresh_min_hz,
             "highRefreshMaxP95Ms": thresholds.high_refresh_max_p95_ms,
@@ -391,10 +402,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--minimum-duration-seconds", type=_positive, default=1800.0
     )
-    parser.add_argument("--max-p95-ms", type=_positive, default=16.7)
+    parser.add_argument("--max-p95-ms", type=_positive, default=18.4)
     parser.add_argument("--max-p99-ms", type=_positive, default=33.3)
     parser.add_argument(
-        "--max-over-16-7-ratio", type=_ratio, default=0.05
+        "--max-over-budget-ratio", type=_ratio, default=0.05
     )
     parser.add_argument(
         "--max-over-33-3-ratio", type=_ratio, default=0.01
@@ -422,7 +433,7 @@ def main(argv: list[str] | None = None) -> int:
         minimum_duration_seconds=args.minimum_duration_seconds,
         max_p95_ms=args.max_p95_ms,
         max_p99_ms=args.max_p99_ms,
-        max_over_16_7_ratio=args.max_over_16_7_ratio,
+        max_over_budget_ratio=args.max_over_budget_ratio,
         max_over_33_3_ratio=args.max_over_33_3_ratio,
         high_refresh_min_hz=args.high_refresh_min_hz,
         high_refresh_max_p95_ms=args.high_refresh_max_p95_ms,

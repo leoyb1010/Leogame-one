@@ -43,8 +43,9 @@ public final class BukovFrameTelemetry {
 
 	public static final float DEFAULT_REPORT_INTERVAL_SECONDS = 10f;
 
-	private static final double FRAME_BUDGET_60_HZ_MS = 16.7d;
 	private static final double FRAME_BUDGET_30_HZ_MS = 33.3d;
+	private static final double FRAME_BUDGET_TOLERANCE = 1.10d;
+	private static final int FALLBACK_REFRESH_HZ = 60;
 	private static final int HISTOGRAM_BUCKETS_PER_MILLISECOND = 10;
 	private static final int MAX_HISTOGRAM_MILLISECONDS = 10_000;
 	private static final int HISTOGRAM_BUCKET_COUNT =
@@ -56,6 +57,7 @@ public final class BukovFrameTelemetry {
 	private final int resolutionWidthPx;
 	private final int resolutionHeightPx;
 	private final int targetRefreshHz;
+	private final double frameBudgetMs;
 	private final int[] frameHistogram = new int[HISTOGRAM_BUCKET_COUNT];
 	private final int[] sessionFrameHistogram =
 			new int[HISTOGRAM_BUCKET_COUNT];
@@ -63,12 +65,12 @@ public final class BukovFrameTelemetry {
 
 	private double windowSeconds;
 	private long frameCount;
-	private long framesOver16_7Ms;
+	private long framesOverBudget;
 	private long framesOver33_3Ms;
 	private double maximumFrameMs;
 	private double sessionSeconds;
 	private long sessionFrameCount;
-	private long sessionFramesOver16_7Ms;
+	private long sessionFramesOverBudget;
 	private long sessionFramesOver33_3Ms;
 	private double sessionMaximumFrameMs;
 
@@ -105,6 +107,7 @@ public final class BukovFrameTelemetry {
 		this.resolutionWidthPx = resolutionWidthPx;
 		this.resolutionHeightPx = resolutionHeightPx;
 		this.targetRefreshHz = targetRefreshHz;
+		frameBudgetMs = toleratedFrameBudgetMs(targetRefreshHz);
 	}
 
 	/**
@@ -131,9 +134,9 @@ public final class BukovFrameTelemetry {
 		frameCount++;
 		sessionSeconds += rawRenderDeltaSeconds;
 		sessionFrameCount++;
-		if (frameMs > FRAME_BUDGET_60_HZ_MS) {
-			framesOver16_7Ms++;
-			sessionFramesOver16_7Ms++;
+		if (frameMs > frameBudgetMs) {
+			framesOverBudget++;
+			sessionFramesOverBudget++;
 		}
 		if (frameMs > FRAME_BUDGET_30_HZ_MS) {
 			framesOver33_3Ms++;
@@ -171,7 +174,8 @@ public final class BukovFrameTelemetry {
 				p50Ms,
 				p95Ms,
 				p99Ms,
-				framesOver16_7Ms,
+				frameBudgetMs,
+				framesOverBudget,
 				framesOver33_3Ms,
 				maximumFrameMs,
 				sessionSeconds,
@@ -179,7 +183,7 @@ public final class BukovFrameTelemetry {
 				sessionP50Ms,
 				sessionP95Ms,
 				sessionP99Ms,
-				sessionFramesOver16_7Ms,
+				sessionFramesOverBudget,
 				sessionFramesOver33_3Ms,
 				sessionMaximumFrameMs,
 				resolutionWidthPx,
@@ -204,11 +208,18 @@ public final class BukovFrameTelemetry {
 		return Math.max(1L, (long)Math.ceil(sampleCount * percentile));
 	}
 
+	static double toleratedFrameBudgetMs(int targetRefreshHz) {
+		int refresh = targetRefreshHz > 0
+				? targetRefreshHz
+				: FALLBACK_REFRESH_HZ;
+		return 1_000d / refresh * FRAME_BUDGET_TOLERANCE;
+	}
+
 	private void resetWindow() {
 		Arrays.fill(frameHistogram, 0);
 		windowSeconds = 0d;
 		frameCount = 0L;
-		framesOver16_7Ms = 0L;
+		framesOverBudget = 0L;
 		framesOver33_3Ms = 0L;
 		maximumFrameMs = 0d;
 	}
@@ -220,7 +231,8 @@ public final class BukovFrameTelemetry {
 		private double p50Ms;
 		private double p95Ms;
 		private double p99Ms;
-		private long framesOver16_7Ms;
+		private double frameBudgetMs;
+		private long framesOverBudget;
 		private long framesOver33_3Ms;
 		private double maximumFrameMs;
 		private double sessionSeconds;
@@ -228,7 +240,7 @@ public final class BukovFrameTelemetry {
 		private double sessionP50Ms;
 		private double sessionP95Ms;
 		private double sessionP99Ms;
-		private long sessionFramesOver16_7Ms;
+		private long sessionFramesOverBudget;
 		private long sessionFramesOver33_3Ms;
 		private double sessionMaximumFrameMs;
 		private int resolutionWidthPx;
@@ -244,7 +256,8 @@ public final class BukovFrameTelemetry {
 				double p50Ms,
 				double p95Ms,
 				double p99Ms,
-				long framesOver16_7Ms,
+				double frameBudgetMs,
+				long framesOverBudget,
 				long framesOver33_3Ms,
 				double maximumFrameMs,
 				double sessionSeconds,
@@ -252,7 +265,7 @@ public final class BukovFrameTelemetry {
 				double sessionP50Ms,
 				double sessionP95Ms,
 				double sessionP99Ms,
-				long sessionFramesOver16_7Ms,
+				long sessionFramesOverBudget,
 				long sessionFramesOver33_3Ms,
 				double sessionMaximumFrameMs,
 				int resolutionWidthPx,
@@ -263,7 +276,8 @@ public final class BukovFrameTelemetry {
 			this.p50Ms = p50Ms;
 			this.p95Ms = p95Ms;
 			this.p99Ms = p99Ms;
-			this.framesOver16_7Ms = framesOver16_7Ms;
+			this.frameBudgetMs = frameBudgetMs;
+			this.framesOverBudget = framesOverBudget;
 			this.framesOver33_3Ms = framesOver33_3Ms;
 			this.maximumFrameMs = maximumFrameMs;
 			this.sessionSeconds = sessionSeconds;
@@ -271,8 +285,8 @@ public final class BukovFrameTelemetry {
 			this.sessionP50Ms = sessionP50Ms;
 			this.sessionP95Ms = sessionP95Ms;
 			this.sessionP99Ms = sessionP99Ms;
-			this.sessionFramesOver16_7Ms =
-					sessionFramesOver16_7Ms;
+			this.sessionFramesOverBudget =
+					sessionFramesOverBudget;
 			this.sessionFramesOver33_3Ms =
 					sessionFramesOver33_3Ms;
 			this.sessionMaximumFrameMs = sessionMaximumFrameMs;
@@ -301,8 +315,12 @@ public final class BukovFrameTelemetry {
 			return p99Ms;
 		}
 
-		public long framesOver16_7Ms() {
-			return framesOver16_7Ms;
+		public double frameBudgetMs() {
+			return frameBudgetMs;
+		}
+
+		public long framesOverBudget() {
+			return framesOverBudget;
 		}
 
 		public long framesOver33_3Ms() {
@@ -333,8 +351,8 @@ public final class BukovFrameTelemetry {
 			return sessionP99Ms;
 		}
 
-		public long sessionFramesOver16_7Ms() {
-			return sessionFramesOver16_7Ms;
+		public long sessionFramesOverBudget() {
+			return sessionFramesOverBudget;
 		}
 
 		public long sessionFramesOver33_3Ms() {
@@ -360,7 +378,7 @@ public final class BukovFrameTelemetry {
 		public String toLogLine() {
 			return String.format(
 					Locale.ROOT,
-					"{\"schema\":\"bukov-render-frame-v2\","
+					"{\"schema\":\"bukov-render-frame-v3\","
 							+ "\"metricKind\":\"cpu-render-callback-frame-pacing\","
 							+ "\"measurement\":\"Gdx.graphics.getDeltaTime\","
 							+ "\"hardwareGpuCounter\":false,"
@@ -368,7 +386,8 @@ public final class BukovFrameTelemetry {
 							+ "\"frames\":%d,\"windowSeconds\":%.3f,"
 							+ "\"p50Ms\":%.3f,\"p95Ms\":%.3f,"
 							+ "\"p99Ms\":%.3f,"
-							+ "\"framesOver16_7Ms\":%d,"
+							+ "\"frameBudgetMs\":%.3f,"
+							+ "\"framesOverBudget\":%d,"
 							+ "\"framesOver33_3Ms\":%d,"
 							+ "\"maximumFrameMs\":%.3f,"
 							+ "\"sessionFrames\":%d,"
@@ -376,7 +395,7 @@ public final class BukovFrameTelemetry {
 							+ "\"sessionP50Ms\":%.3f,"
 							+ "\"sessionP95Ms\":%.3f,"
 							+ "\"sessionP99Ms\":%.3f,"
-							+ "\"sessionFramesOver16_7Ms\":%d,"
+							+ "\"sessionFramesOverBudget\":%d,"
 							+ "\"sessionFramesOver33_3Ms\":%d,"
 							+ "\"sessionMaximumFrameMs\":%.3f,"
 							+ "\"resolutionPx\":\"%dx%d\","
@@ -386,7 +405,8 @@ public final class BukovFrameTelemetry {
 					p50Ms,
 					p95Ms,
 					p99Ms,
-					framesOver16_7Ms,
+					frameBudgetMs,
+					framesOverBudget,
 					framesOver33_3Ms,
 					maximumFrameMs,
 					sessionFrameCount,
@@ -394,7 +414,7 @@ public final class BukovFrameTelemetry {
 					sessionP50Ms,
 					sessionP95Ms,
 					sessionP99Ms,
-					sessionFramesOver16_7Ms,
+					sessionFramesOverBudget,
 					sessionFramesOver33_3Ms,
 					sessionMaximumFrameMs,
 					resolutionWidthPx,
