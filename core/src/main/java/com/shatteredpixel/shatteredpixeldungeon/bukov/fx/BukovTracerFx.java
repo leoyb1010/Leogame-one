@@ -7,24 +7,28 @@ import com.watabou.noosa.Group;
 import com.watabou.utils.PointF;
 
 /**
- * Short-lived, hitscan tracer rendered as a real muzzle-to-impact line.
+ * Short-lived, hitscan tracer rendered as a moving head with a restrained tail.
  *
  * Coordinates are world-space pixels. This effect is intentionally independent
  * from the host game's arrow and magic-missile effects.
  */
 public final class BukovTracerFx extends Group {
 
-	/** Fast head travel followed by a short, readable residual streak. */
-	public static final float TRAVEL_SECONDS = 0.28f;
-	public static final float DURATION_SECONDS = 0.54f;
-	// Warm white stays readable against all six blue/green industrial themes.
+	/** Fast head travel followed by a brief endpoint fade. */
+	public static final float TRAVEL_SECONDS = 0.24f;
+	public static final float DURATION_SECONDS = 0.38f;
+	static final float MAX_TRAIL_PIXELS = 32f;
+	static final float MAX_TRAIL_FRACTION = 0.38f;
+	// Muted amber stays readable without resembling a full-length laser.
 	// ColorBlock consumes ARGB, so the alpha byte must be explicit.
-	public static final int FRIENDLY_COLOR = 0xFFFFF1A8;
-	public static final int HOSTILE_COLOR = 0xFFFF765E;
-	static final int HEAD_OUTLINE_COLOR = 0xFF101820;
+	public static final int FRIENDLY_COLOR = 0xFFFFD27A;
+	public static final int HOSTILE_COLOR = 0xFFFF725C;
+	static final int HEAD_OUTLINE_COLOR = 0xFF151B20;
 
 	private final float duration;
 	private final TraceGeometry geometry;
+	private final LightLine glowLine;
+	private final LightLine coreLine;
 	private final BulletHead bulletHeadOutline;
 	private final BulletHead bulletHead;
 	private float age;
@@ -34,6 +38,8 @@ public final class BukovTracerFx extends Group {
 		geometry = plan(from, to, intensity);
 		duration = DURATION_SECONDS;
 		if (!geometry.visible()) {
+			glowLine = null;
+			coreLine = null;
 			bulletHeadOutline = null;
 			bulletHead = null;
 			visible = false;
@@ -42,22 +48,21 @@ public final class BukovTracerFx extends Group {
 		}
 
 		int color = hostile ? HOSTILE_COLOR : FRIENDLY_COLOR;
-		add(new LightLine(
-				geometry.fromX(),
-				geometry.fromY(),
-				geometry.length(),
+		glowLine = new LightLine(
 				geometry.glowThickness(),
 				geometry.angleDegrees(),
 				color,
-				0.24f));
-		add(new LightLine(
-				geometry.fromX(),
-				geometry.fromY(),
-				geometry.length(),
+				0.16f);
+		add(glowLine);
+		coreLine = new LightLine(
 				geometry.coreThickness(),
 				geometry.angleDegrees(),
 				color,
-				1f));
+				0.72f);
+		add(coreLine);
+		TailSegment initialTail = tailSegmentAt(geometry, 0f);
+		glowLine.place(initialTail, 0f);
+		coreLine.place(initialTail, 0f);
 		bulletHeadOutline = new BulletHead(
 				geometry.fromX(),
 				geometry.fromY(),
@@ -84,12 +89,12 @@ public final class BukovTracerFx extends Group {
 		boolean hadPresentedTravelFrame = hasPresentedTravelFrame;
 		age += Game.elapsed;
 		float trailAlpha = trailAlphaAt(age);
-		for (int index = 0; index < length; index++) {
-			com.watabou.noosa.Gizmo child = members.get(index);
-			if (child instanceof LightLine) {
-				((LightLine) child).fade(trailAlpha);
-			}
+		if (age >= duration && !hadPresentedTravelFrame) {
+			trailAlpha = Math.max(0.45f, trailAlpha);
 		}
+		TailSegment tail = tailSegmentAt(geometry, age);
+		glowLine.place(tail, trailAlpha);
+		coreLine.place(tail, trailAlpha);
 		if (bulletHead != null) {
 			float progress = travelProgressAt(age, TRAVEL_SECONDS);
 			float headX = geometry.fromX()
@@ -132,8 +137,8 @@ public final class BukovTracerFx extends Group {
 				to.y,
 				length,
 				(float) Math.toDegrees(Math.atan2(dy, dx)),
-				1.05f + strength * 0.55f,
-				2.5f + strength * 1.3f);
+				0.65f + strength * 0.28f,
+				1.35f + strength * 0.70f);
 	}
 
 	public static float alphaAt(float age, float duration) {
@@ -180,20 +185,55 @@ public final class BukovTracerFx extends Group {
 		return clamp(residual * residual, 0f, 1f);
 	}
 
+	static float tailLengthFor(float traceLength) {
+		if (!finite(traceLength) || traceLength <= 0f) {
+			return 0f;
+		}
+		return Math.min(
+				MAX_TRAIL_PIXELS,
+				traceLength * MAX_TRAIL_FRACTION);
+	}
+
+	static TailSegment tailSegmentAt(TraceGeometry geometry, float age) {
+		if (geometry == null || !geometry.visible() || !finite(age) || age < 0f) {
+			return TailSegment.hidden();
+		}
+		float endProgress = travelProgressAt(age, TRAVEL_SECONDS);
+		float tailFraction = tailLengthFor(geometry.length()) / geometry.length();
+		float startProgress = Math.max(0f, endProgress - tailFraction);
+		float startX = geometry.fromX()
+				+ (geometry.toX() - geometry.fromX()) * startProgress;
+		float startY = geometry.fromY()
+				+ (geometry.toY() - geometry.fromY()) * startProgress;
+		float endX = geometry.fromX()
+				+ (geometry.toX() - geometry.fromX()) * endProgress;
+		float endY = geometry.fromY()
+				+ (geometry.toY() - geometry.fromY()) * endProgress;
+		float segmentLength = geometry.length() * (endProgress - startProgress);
+		return new TailSegment(
+				segmentLength > 0.01f,
+				startX,
+				startY,
+				endX,
+				endY,
+				segmentLength,
+				geometry.angleDegrees());
+	}
+
 	static float headWidthFor(float coreThickness) {
-		return Math.max(8f, coreThickness * 4.8f);
+		return Math.max(5.2f, coreThickness * 4.2f);
 	}
 
 	static float headHeightFor(float coreThickness) {
-		return Math.max(3.2f, coreThickness * 2.2f);
+		return Math.max(2.2f, coreThickness * 1.9f);
 	}
 
 	static float outlineWidthFor(float coreThickness) {
-		return Math.max(11f, coreThickness * 6.2f);
+		return Math.max(6.8f, coreThickness * 5.4f);
 	}
 
 	static float outlineHeightFor(float coreThickness) {
-		return Math.max(5f, coreThickness * 3f);
+		return Math.max(3.2f, coreThickness * 2.7f);
 	}
 
 	/**
@@ -225,25 +265,31 @@ public final class BukovTracerFx extends Group {
 
 	private static final class LightLine extends ColorBlock {
 
+		private final float thickness;
 		private final float alphaWeight;
 
-		private LightLine(float x,
-						  float y,
-						  float length,
-						  float thickness,
+		private LightLine(float thickness,
 						  float angle,
 						  int color,
 						  float alpha) {
-			super(length, thickness, color);
+			super(1f, thickness, color);
 			origin.set(0f, 0.5f);
-			this.x = x;
-			this.y = y - 0.5f;
 			this.angle = angle;
+			this.thickness = thickness;
 			alphaWeight = alpha;
-			fade(1f);
+			visible = false;
 		}
 
-		private void fade(float alpha) {
+		private void place(TailSegment segment, float alpha) {
+			if (segment == null || !segment.visible() || alpha <= 0f) {
+				visible = false;
+				return;
+			}
+			visible = true;
+			x = segment.startX();
+			y = segment.startY() - 0.5f;
+			angle = segment.angleDegrees();
+			size(segment.length(), thickness);
 			alpha(alpha * alphaWeight);
 		}
 
@@ -295,6 +341,66 @@ public final class BukovTracerFx extends Group {
 			if (additive) {
 				Blending.setNormalMode();
 			}
+		}
+	}
+
+	static final class TailSegment {
+
+		private final boolean visible;
+		private final float startX;
+		private final float startY;
+		private final float endX;
+		private final float endY;
+		private final float length;
+		private final float angleDegrees;
+
+		private TailSegment(
+				boolean visible,
+				float startX,
+				float startY,
+				float endX,
+				float endY,
+				float length,
+				float angleDegrees) {
+			this.visible = visible;
+			this.startX = startX;
+			this.startY = startY;
+			this.endX = endX;
+			this.endY = endY;
+			this.length = length;
+			this.angleDegrees = angleDegrees;
+		}
+
+		private static TailSegment hidden() {
+			return new TailSegment(false, 0f, 0f, 0f, 0f, 0f, 0f);
+		}
+
+		boolean visible() {
+			return visible;
+		}
+
+		float startX() {
+			return startX;
+		}
+
+		float startY() {
+			return startY;
+		}
+
+		float endX() {
+			return endX;
+		}
+
+		float endY() {
+			return endY;
+		}
+
+		float length() {
+			return length;
+		}
+
+		float angleDegrees() {
+			return angleDegrees;
 		}
 	}
 

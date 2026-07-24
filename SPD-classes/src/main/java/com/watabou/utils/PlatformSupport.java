@@ -85,6 +85,15 @@ public abstract class PlatformSupport {
 		Gdx.input.setOnscreenKeyboardVisible(value, Input.OnscreenKeyboardType.Default);
 	}
 
+	/**
+	 * Controls whether the current surface is intentionally accepting composed
+	 * text. Desktop backends use this to keep CJK IME candidate windows out of
+	 * gameplay while retaining normal physical-key events.
+	 */
+	public void setTextInputEnabled(boolean value) {
+		// Most platforms tie this state to their onscreen keyboard already.
+	}
+
 	//TODO should consider spinning this into its own class, rather than platform support getting ever bigger
 	protected static HashMap<FreeTypeFontGenerator, HashMap<Integer, BitmapFont>> fonts;
 

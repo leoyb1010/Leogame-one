@@ -104,6 +104,11 @@ public class DesktopPlatformSupport extends PlatformSupport {
 		return ControllerHandler.vibrationSupported();
 	}
 
+	@Override
+	public void setTextInputEnabled(boolean value) {
+		DesktopImeInput.setTextInputEnabled(value);
+	}
+
 	/* FONT SUPPORT */
 	
 	//custom pixel font, for use with Latin and Cyrillic languages

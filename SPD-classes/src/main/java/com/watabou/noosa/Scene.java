@@ -31,6 +31,9 @@ public class Scene extends Group {
 	private Signal.Listener<KeyEvent> keyListener;
 	
 	public void create() {
+		// A scene never accepts composed text by default. TextInput opts in for
+		// its exact lifetime after it owns keyboard focus.
+		Game.platform.setTextInputEnabled(false);
 		KeyEvent.addKeyListener( keyListener = new Signal.Listener<KeyEvent>() {
 			@Override
 			public boolean onSignal( KeyEvent event ) {

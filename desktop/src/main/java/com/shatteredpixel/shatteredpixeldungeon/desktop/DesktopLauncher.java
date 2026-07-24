@@ -25,7 +25,9 @@ import com.badlogic.gdx.Files;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3FileHandle;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Input;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Preferences;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Window;
 import com.badlogic.gdx.utils.Architecture;
 import com.badlogic.gdx.utils.Os;
 import com.badlogic.gdx.utils.SharedLibraryLoader;
@@ -98,11 +100,11 @@ public class DesktopLauncher {
 				if (exceptionMsg.contains("Couldn’t create window")){
 					TinyFileDialogs.tinyfd_messageBox(title + DesktopLaunchMessages.get("window_failure"),
 							String.format(DesktopLaunchMessages.get("window_failure_body"), Game.version, exceptionMsg),
-							"ok", "error", false);
+							"ok", "error", 0);
 				} else {
 					TinyFileDialogs.tinyfd_messageBox(title + DesktopLaunchMessages.get("fatal_error"),
 							String.format(DesktopLaunchMessages.get("fatal_error_body"), Game.version, exceptionMsg),
-							"ok", "error", false);
+							"ok", "error", 0);
 				}
 				System.exit(1);
 			}
@@ -187,6 +189,13 @@ public class DesktopLauncher {
 		config.setWindowIcon("icons/icon_16.png", "icons/icon_32.png", "icons/icon_48.png",
 				"icons/icon_64.png", "icons/icon_128.png", "icons/icon_256.png");
 
-		new Lwjgl3Application(new ShatteredPixelDungeon(new DesktopPlatformSupport()), config);
+		new Lwjgl3Application(
+				new ShatteredPixelDungeon(new DesktopPlatformSupport()),
+				config) {
+			@Override
+			public Lwjgl3Input createInput(Lwjgl3Window window) {
+				return new DesktopImeInput(window);
+			}
+		};
 	}
 }

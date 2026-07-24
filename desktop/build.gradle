@@ -142,12 +142,25 @@ dependencies {
     implementation "com.badlogicgames.gdx-controllers:gdx-controllers-desktop:$gdxControllersVersion"
 
     //we use LWJGL tinyFD directly to display crash messages
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3"
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-windows"
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-macos"
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-macos-arm64"
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux"
-    implementation "org.lwjgl:lwjgl-tinyfd:3.3.3:natives-linux-arm64"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion:natives-windows"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion:natives-macos"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion:natives-macos-arm64"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion:natives-linux"
+    implementation "org.lwjgl:lwjgl-tinyfd:$lwjglVersion:natives-linux-arm64"
+
+    // GLFW's IME focus control first ships in the LWJGL 3.4 line. Keep every
+    // transitive backend module on one native ABI instead of upgrading only
+    // lwjgl-glfw and mixing it with libGDX's older 3.3.3 runtime.
+    constraints {
+        implementation "org.lwjgl:lwjgl:$lwjglVersion"
+        implementation "org.lwjgl:lwjgl-glfw:$lwjglVersion"
+        implementation "org.lwjgl:lwjgl-jemalloc:$lwjglVersion"
+        implementation "org.lwjgl:lwjgl-openal:$lwjglVersion"
+        implementation "org.lwjgl:lwjgl-opengl:$lwjglVersion"
+        implementation "org.lwjgl:lwjgl-stb:$lwjglVersion"
+    }
+    implementation "org.jspecify:jspecify:1.0.0"
 
     implementation project(':services:updates:offlineUpdates')
     implementation project(':services:news:offlineNews')

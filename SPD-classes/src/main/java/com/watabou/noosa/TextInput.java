@@ -147,6 +147,7 @@ public class TextInput extends Component {
 
 		container.setActor(textField);
 		stage.setKeyboardFocus(textField);
+		Game.platform.setTextInputEnabled(true);
 		Game.platform.setOnscreenKeyboardVisible(true, multiline);
 	}
 
@@ -255,6 +256,7 @@ public class TextInput extends Component {
 	public synchronized void destroy() {
 		super.destroy();
 		if (stage != null) {
+			Game.platform.setTextInputEnabled(false);
 			stage.dispose();
 			skin.dispose();
 			Game.inputHandler.removeInputProcessor(stage);

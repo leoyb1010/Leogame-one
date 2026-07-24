@@ -27,8 +27,10 @@ public class BukovBallisticFxTest {
 				(float) Math.toDegrees(Math.atan2(5f, 12f)),
 				geometry.angleDegrees(),
 				0.0001f);
-		assertTrue(geometry.coreThickness() >= 1.5f);
-		assertTrue(geometry.glowThickness() >= 3.5f);
+		assertTrue(geometry.coreThickness() >= 0.8f);
+		assertTrue(geometry.coreThickness() <= 1.2f);
+		assertTrue(geometry.glowThickness() >= 1.8f);
+		assertTrue(geometry.glowThickness() <= 2.5f);
 		assertTrue(geometry.glowThickness() > geometry.coreThickness());
 	}
 
@@ -46,11 +48,11 @@ public class BukovBallisticFxTest {
 	}
 
 	@Test
-	public void tracerHasReadableResidualWindowAndHardExpiry() {
+	public void tracerHasBriefResidualWindowAndHardExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
 
-		assertTrue(duration >= 0.50f && duration <= 0.58f);
-		assertTrue(BukovTracerFx.TRAVEL_SECONDS >= 0.24f);
+		assertTrue(duration >= 0.30f && duration <= 0.42f);
+		assertTrue(BukovTracerFx.TRAVEL_SECONDS >= 0.20f);
 		assertTrue(BukovTracerFx.TRAVEL_SECONDS < duration);
 		assertEquals(1f, BukovTracerFx.alphaAt(0f, duration), 0f);
 		assertEquals(0.5f, BukovTracerFx.alphaAt(duration * 0.5f, duration), 0.0001f);
@@ -81,6 +83,56 @@ public class BukovBallisticFxTest {
 	}
 
 	@Test
+	public void tracerTailFollowsTheHeadWithoutDrawingTheWholeShotVector() {
+		BukovTracerFx.TraceGeometry geometry = BukovTracerFx.plan(
+				new PointF(0f, 0f),
+				new PointF(100f, 0f),
+				1f);
+
+		assertEquals(32f, BukovTracerFx.tailLengthFor(geometry.length()), 0f);
+		assertFalse(BukovTracerFx.tailSegmentAt(geometry, 0f).visible());
+
+		BukovTracerFx.TailSegment halfway = BukovTracerFx.tailSegmentAt(
+				geometry,
+				BukovTracerFx.TRAVEL_SECONDS * 0.5f);
+		assertTrue(halfway.visible());
+		assertEquals(18f, halfway.startX(), 0.0001f);
+		assertEquals(50f, halfway.endX(), 0.0001f);
+		assertEquals(32f, halfway.length(), 0.0001f);
+		assertTrue(halfway.length() < geometry.length());
+
+		BukovTracerFx.TailSegment endpoint = BukovTracerFx.tailSegmentAt(
+				geometry,
+				BukovTracerFx.TRAVEL_SECONDS);
+		assertEquals(68f, endpoint.startX(), 0.0001f);
+		assertEquals(100f, endpoint.endX(), 0.0001f);
+		assertEquals(32f, endpoint.length(), 0.0001f);
+
+		BukovTracerFx.TailSegment residual = BukovTracerFx.tailSegmentAt(
+				geometry,
+				0.32f);
+		assertEquals(endpoint.startX(), residual.startX(), 0f);
+		assertEquals(endpoint.endX(), residual.endX(), 0f);
+		assertEquals(endpoint.length(), residual.length(), 0f);
+	}
+
+	@Test
+	public void shortShotsUseAProportionalTailWithoutOvershootingTheMuzzle() {
+		BukovTracerFx.TraceGeometry geometry = BukovTracerFx.plan(
+				new PointF(10f, 20f),
+				new PointF(30f, 20f),
+				1f);
+
+		assertEquals(7.6f, BukovTracerFx.tailLengthFor(geometry.length()), 0.0001f);
+		BukovTracerFx.TailSegment early = BukovTracerFx.tailSegmentAt(
+				geometry,
+				BukovTracerFx.TRAVEL_SECONDS * 0.25f);
+		assertEquals(10f, early.startX(), 0.0001f);
+		assertEquals(15f, early.endX(), 0.0001f);
+		assertEquals(5f, early.length(), 0.0001f);
+	}
+
+	@Test
 	public void tracerDrawStateStaysVisibleAtSixtyAndOneHundredTwentyFps() {
 		float frame120 = 1f / 120f;
 		float frame60 = 1f / 60f;
@@ -95,8 +147,8 @@ public class BukovBallisticFxTest {
 		assertEquals(1f, BukovTracerFx.trailAlphaAt(frame60), 0f);
 		assertEquals(1f, BukovTracerFx.headAlphaAt(
 				BukovTracerFx.TRAVEL_SECONDS), 0f);
-		assertTrue(BukovTracerFx.trailAlphaAt(0.45f) > 0f);
-		assertTrue(BukovTracerFx.headAlphaAt(0.45f) > 0f);
+		assertTrue(BukovTracerFx.trailAlphaAt(0.32f) > 0f);
+		assertTrue(BukovTracerFx.headAlphaAt(0.32f) > 0f);
 		assertEquals(0f, BukovTracerFx.trailAlphaAt(
 				BukovTracerFx.DURATION_SECONDS), 0f);
 		assertEquals(0f, BukovTracerFx.headAlphaAt(
@@ -113,8 +165,10 @@ public class BukovBallisticFxTest {
 				new PointF(0f, 0f),
 				new PointF(16f, 0f),
 				1f).coreThickness();
-		assertTrue(BukovTracerFx.headWidthFor(coreThickness) >= 8f);
-		assertTrue(BukovTracerFx.headHeightFor(coreThickness) >= 3.2f);
+		assertTrue(BukovTracerFx.headWidthFor(coreThickness) >= 5.2f);
+		assertTrue(BukovTracerFx.headWidthFor(coreThickness) < 8f);
+		assertTrue(BukovTracerFx.headHeightFor(coreThickness) >= 2.2f);
+		assertTrue(BukovTracerFx.headHeightFor(coreThickness) < 3.2f);
 		assertTrue(BukovTracerFx.outlineWidthFor(coreThickness)
 				> BukovTracerFx.headWidthFor(coreThickness));
 		assertTrue(BukovTracerFx.outlineHeightFor(coreThickness)
@@ -124,7 +178,7 @@ public class BukovBallisticFxTest {
 	@Test
 	public void firstFrameHitchStillPresentsTheTracerEndpointBeforeExpiry() {
 		float duration = BukovTracerFx.DURATION_SECONDS;
-		float hitchAge = 0.65f;
+		float hitchAge = 0.50f;
 
 		assertEquals(1f, BukovTracerFx.travelProgressAt(
 				hitchAge,
