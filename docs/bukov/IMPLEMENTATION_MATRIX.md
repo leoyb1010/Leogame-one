@@ -15,14 +15,14 @@
 
 | 项目 | 当前代码/资产事实 | 最终平台证据 |
 |---|---|---|
-| 地图主题 | 6 个注册主题 | `PENDING EVIDENCE` |
-| 枪械与弹药 | 18 枪、8 弹药，按注册表口径配装 | `PENDING EVIDENCE` |
-| 敌人 | 13 个：9 普通、3 精英、1 Boss | `PENDING EVIDENCE` |
-| Raid 模式 | 4 个：远征、快速清扫、拾荒者、Boss 合同 | `PENDING EVIDENCE` |
-| 局外循环 | 仓库、配装、商店买卖与幂等交易已接入 | `PENDING EVIDENCE` |
-| 原创资产 | 72 帧物品/交互图标，73 个 PCM WAV | 台账静态通过；最终包复核待证据 |
-| 平台 | macOS 与 iOS 源码/构建入口存在；120 Hz 固定模拟与高刷新配置存在 | 最终 SHA 的 macOS/iOS 实机结果待证据 |
-| 存档/性能 | checkpoint、幂等结算、seed/save/performance 门禁存在 | 10k/100 次/30 分钟最终运行待证据 |
+| 地图主题 | 6 个注册主题；首关 500 个真实 `BukovLevel` seed 回归 | Alpha 14 仍需完整正式行动实机路线 |
+| 枪械与弹药 | 18 枪、8 弹药，按注册表口径配装 | Alpha 14 实机验证 Needle-9 弹匣 `12 → 11` |
+| 敌人 | 13 个：9 普通、3 精英、1 Boss | Alpha 14 暗图实机确认敌人身体、轮廓和生命反馈可见 |
+| Raid 模式 | 5 个：远征、快速清扫、拾荒者、Boss 合同、演练场 | macOS 演练场实机已进入 |
+| 局外循环 | 仓库、配装、商店买卖与幂等交易已接入 | 完整正式行动录像仍待补 |
+| 原创资产 | 72 帧物品/交互图标，73 个 PCM WAV | 发行清单与资产台账通过 |
+| 平台 | Alpha 14 macOS 与 iOS Simulator 同一源码重打 | 双端签名、SHA 与启动通过；物理设备未执行 |
+| 存档/性能 | checkpoint、幂等结算、seed/save/performance 门禁存在 | 10k/100 次/墙钟 30 分钟最终运行待证据 |
 
 机器状态以 `RELEASE_MANIFEST.json` 为准；人工结果使用
 `FINAL_QA_REPORT_TEMPLATE.md`。本次文档整理没有运行 Gradle，也没有把历史
@@ -37,20 +37,20 @@ macOS 截图或旧 iOS 编译记录升级成最终验收结论。
 | ❌ | 计划要求的能力尚未实现 |
 | ⚪ | 只缺可复核证据，不能据此宣称验收通过 |
 
-本表区分“代码存在”“自动测试通过”和“玩家实际验收”。当前所有 Bukov
-改动仍在未提交工作树中（44 个已修改、12 个未跟踪路径）；在形成唯一提交
-SHA 前，任何截图和报告都只能绑定到本地快照，不能视为最终交付证据。
+本表区分“代码存在”“自动测试通过”和“玩家实际验收”。Alpha 14 产物与截图
+绑定源码提交 `ae7505d0776c85eec353dc7bda5c55462ba0e379`；后续仅文档证据
+更新不改变该二进制身份。
 
 ## Gate 总表
 
 | Gate | 已完成并可核验 | 未完成 / 未签字 | 验收命令 | 当前判定 |
 |---|---|---|---|---|
-| 0 环境与保护 | 基线、分支、来源台账；当前 XML 报告为 core 238/238、desktop 2/2；`git diff --check` 通过 | 当前改动未提交；原 Leogame-one 模式在最终改动后的创建、存档、继续回归未留证 | `git status --short --branch`；`git diff --check`；`./scripts/apple-gradle core:test desktop:test desktop:build ios:compileJava --no-daemon` | 🟡 |
+| 0 环境与保护 | 基线、分支、来源台账；Alpha 14 为 core 703、desktop 7、iOS 6，0 failure/error；`git diff --check` 通过 | 原 Leogame-one 模式在最终改动后的创建、存档、继续录像未留证 | `git status --short --branch`；`git diff --check`；`./scripts/apple-gradle core:test desktop:test ios:test --no-daemon` | 🟡 |
 | 1 实时移动 | `FixedStepClock`、`RealtimeBody`、`GridCollision`、`RealtimeInput`、浮点精灵定位和 `GameScene` 模式分支已接入；runtime 测试存在且当前通过 | 键鼠/主流手柄各 20 分钟；60/120/144 Hz 等距；背包暂停；15 分钟无死锁均未留当前证据 | 完整测试命令；再按“人工验收矩阵”逐项录制 | 🟡 |
-| 2 枪战 | 6 枪、8 种弹药定义；FireControl、hitscan、伤害、换弹、弹种守恒、近战/远程敌人和宿主护甲路径已接入；枪口/曳光/命中事件接入 `GameScene` | 当前 VFX 仍复用火花占位；枪声复用宿主音效；城防-556 当前换弹为 2.35s，与计划 1.4s 不一致；完整手柄交火、声音/震动三层反馈未签字 | `./scripts/apple-gradle core:test --tests '*bukov.combat*' --tests '*bukov.ai*' --no-daemon`；实机逐枪射速/换弹/墙阻/敌人闭环 | 🟡 |
+| 2 枪战 | 18 枪、8 种弹药；FireControl、hitscan、伤害、换弹、弹种守恒、护甲路径和 13 类敌人已接入；Alpha 14 实机验证扣弹、敌人身体可见与短促曳光 | 城防-556 当前换弹为 2.35s，与 Gate 2 的 1.4s 规格不一致；实体手柄逐枪交火和所有 Boss 反馈未签字 | `./scripts/apple-gradle core:test --tests '*bukov.combat*' --tests '*bukov.ai*' --no-daemon`；实机逐枪射速/换弹/墙阻/敌人闭环 | 🟡 |
 | 3 搜打撤 | 独立 profile/raid 存档、临时文件+备份、断点恢复、UID、幂等结算、Heap 适配、仓库/配装窗口、可搜索容器、E01/E02/E03 撤离和死亡/成功结算已接入宿主 | “配装→搜 3 箱→交火→撤离→结算→仓库→死亡损失”尚无一次完整录像；手柄焦点全流程未签字；当前完整测试只按默认值执行 10 次压力循环 | `./scripts/bukov_save_stress.sh 100`；完整局人工录制；重复结算/异常退出复核 | 🟡 |
-| 4 第一关 | 程序化 Figure-eight 语义图与宿主 `BukovLevel`；26–34 个内容房、稳定语义锚点、三路线、三撤离；6 枪、8 弹药定义、4 普通+1 精英+1 Boss、至少 30 个战利品条目 | 3 套护甲、2 个背包、完整合同链未发现；敌人与 Boss 使用宿主占位精灵；当前完整测试只扫默认 20+固定 20 个种子，未保存本快照 10k 报告；10 局留存和 15–25 分钟整局未验收 | `./scripts/bukov_seed_sweep.sh 10000`；20 个固定回归种子；10 局人工体验表 | 🟡 |
-| 5 体验与表现 | 中英文品牌与 App 图标；`ui_tokens.json`；紧凑 HUD；仓库/配装/最近结算窗口；焦点模型；池化战斗事件；空间音频、关键声音可视化和表现零侵入模型均有测试 | UI/场景仍大量复用宿主美术；角色没有计划要求的 8 向 aim/fire/reload/hit/death 完整帧集；专属分层枪声、震屏/手柄震动、结算仪式、设置界面与持久化、12 项 UX 检查单均未完成 | `./scripts/bukov_ui_tokens_check.sh`；第 82 节 UX 检查单逐项录制 | 🟡 |
+| 4 第一关 | 程序化 Figure-eight 语义图与宿主 `BukovLevel`；26–34 房、三路线、三撤离；18 枪、8 弹药、3 护甲、2 背包、7 医疗、13 敌人和长期合同链均有实现 | 10k seed 报告、10 局留存和 15–25 分钟整局仍未验收 | `./scripts/bukov_seed_sweep.sh 10000`；20 个固定回归种子；10 局人工体验表 | 🟡 |
+| 5 体验与表现 | 中英文品牌、App 图标、8 向玩家动作、`ui_tokens.json`、HUD、结算仪式、设置持久化、焦点模型、73 个分层/空间音频资源和反馈模型均已接入 | UI Token 尚未封闭；HUD 缺脱战淡化与三路受击方向；VFX 生产对象未完整池化；首次启动校准、完整 UI 美术包及第 82 节 12 项签字仍缺 | `./scripts/bukov_ui_tokens_check.sh`；第 82 节 UX 检查单逐项录制 | 🟡 |
 | 6 性能与交付 | 60 秒 CPU 集成报告：30 敌人+200 弹道，P95 0.0250ms、P99 0.0335ms、74.70 B/frame、0 GC；RoboVM AOT 禁用 API 测试通过；来源登记存在 | CPU 测试不渲染 GPU；无 30 分钟 soak、真实帧时间/帧 pacing/显存/温度；当前 macOS `.app` 时间早于最新源码，必须重打；当前 iOS 可安装/可玩闭环仍未签字；全新机器离线与存档恢复未验收 | `./scripts/bukov_performance_e2e.sh 1800`；`./scripts/bukov_robovm_api_gate.py`；重打 macOS/iOS 包并做双端离线验收 | 🟡 |
 | 1.0 全内容 | 无 | 6 个地图主题、18–24 枪、12+ 敌人和长期经济循环尚未实施 | 计划第 68 节最终完成定义 | ❌ |
 
@@ -58,9 +58,9 @@ SHA 前，任何截图和报告都只能绑定到本地快照，不能视为最�
 
 | 证据 | 可证明什么 | 不能证明什么 |
 |---|---|---|
-| `core/build/test-results/test/`：66 个 XML、238 tests、0 failure/error/skipped，时间 2026-07-23 21:16 | 当前编译产物对应的 core 测试通过 | 不等于桌面/iOS 实际可玩 |
-| 其中 Bukov：62 个 XML、232 tests、0 failure/error/skipped | runtime、combat、AI、地图、raid、save、UI、表现合同的自动断言通过 | 不等于每项均已接入玩家可达流程 |
-| `desktop/build/test-results/test/`：2/2 | 桌面测试通过 | 不等于最新 macOS 包已重打 |
+| `core/build/test-results/test/`：193 个 XML、703 tests、0 failure/error/skipped | Alpha 14 源码对应的 core 全量测试通过 | 不等于所有长时实机要求均通过 |
+| `$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle/desktop/test-results/test/`：7/7 | desktop 测试通过 | 不替代实体手柄与墙钟稳定性 |
+| `$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle/ios/test-results/test/`：6/6 | iOS 测试与 AOT 源码门禁通过 | 不替代物理 iOS 设备 |
 | `BukovEndToEndPerformanceSmoke.xml` | 60 秒集成 CPU 模拟；30 AI、200 弹道、无 GC，P95 低于 4.5ms 预算 | 不包含 `GameScene`、GPU、音频、真实精灵批次和热负载 |
 | `BukovPerformanceSmoke.xml` | 60 秒内环微基准 P95 0.0031ms | 不是整局性能 |
 | `BukovSeedSweepTest.xml` | 20 固定种子 + 默认 20 个可选种子通过 | 没有保留 10,000 种子本快照报告 |

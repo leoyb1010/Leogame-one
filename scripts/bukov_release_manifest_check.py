@@ -168,7 +168,7 @@ def check_license_and_evidence(manifest: dict) -> None:
         == (
             "passed_mac_and_ios_simulator"
             if final_release
-            else "alpha6_platform_smoke_passed_full_e2e_pending"
+            else "platform_smoke_passed_full_e2e_pending"
         ),
         "platform claim must match the declared release scope",
     )
@@ -205,7 +205,7 @@ def main() -> None:
         manifest["product"]["releaseState"]
         in {
             "personal_build_validated_mac_and_ios_simulator",
-            "alpha6_automation_and_platform_smoke_passed_not_final",
+            "automation_and_platform_smoke_passed_not_final",
         },
         "release state must be an explicit validated or not-final scope",
     )

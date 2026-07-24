@@ -5,8 +5,8 @@
     "nameEn": "Escape from Bukov",
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
-    "releaseState": "alpha6_automation_and_platform_smoke_passed_not_final",
-    "releaseSourceCommit": "cd1068b6642d72681aa4ffd662a4a6343f19d1f3"
+    "releaseState": "automation_and_platform_smoke_passed_not_final",
+    "releaseSourceCommit": "ae7505d0776c85eec353dc7bda5c55462ba0e379"
   },
   "content": {
     "themes": {
@@ -67,15 +67,15 @@
       "implementation": "present",
       "packageEvidence": {
         "status": "passed",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫.app/Contents/MacOS/逃离布科夫",
-        "binarySha256": "cc3734c89cf5e6ce081615109094b5a7e1216be3b61de91a8c9eaf5dec57a7b7",
-        "builtAt": "2026-07-24T10:51:00+08:00",
-        "log": "build/evidence/alpha6-macos-package.log"
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "binarySha256": "38012f08b63bfc281ca8941b66dd3b53c585d343125f2850cdd8038906a7962b",
+        "builtAt": "2026-07-24T13:53:20+08:00",
+        "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
       },
       "interactiveQa": {
         "status": "partial_pass",
-        "evidenceDirectory": "build/evidence/final-qa",
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence",
         "report": "docs/bukov/FINAL_QA_REPORT.md"
       }
     },
@@ -83,11 +83,11 @@
       "implementation": "present",
       "aotEvidence": {
         "status": "passed",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫-iOS-Simulator.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha6-cd1068b66/逃离布科夫-iOS-Simulator.app/IOSLauncher",
-        "binarySha256": "37ccae9b61b110977787cc593156cc0165c098647cb15b544b0e37132ee6464b",
-        "builtAt": "2026-07-24T10:53:00+08:00",
-        "log": "build/evidence/alpha6-ios-simulator.log"
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app",
+        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app/IOSLauncher",
+        "binarySha256": "d0ef05a421565d2aa024a4a8cf3b85f9fb095fc211ab9aff2c64944013192346",
+        "builtAt": "2026-07-24T13:50:13+08:00",
+        "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
       },
       "simulatorQa": {
         "status": "partial_pass",
@@ -98,7 +98,7 @@
           "portrait",
           "landscape"
         ],
-        "evidenceDirectory": "build/evidence/final-qa"
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
       },
       "deviceQa": {
         "status": "not_run",
@@ -152,20 +152,20 @@
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
       "status": "passed",
-      "sourceCommit": "cd1068b6642d72681aa4ffd662a4a6343f19d1f3",
+      "sourceCommit": "ae7505d0776c85eec353dc7bda5c55462ba0e379",
       "tests": {
-        "core": 656,
-        "desktop": 4,
+        "core": 703,
+        "desktop": 7,
         "ios": 6,
         "failures": 0
       },
-      "log": "build/evidence/alpha6-release-suite.log"
+      "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
     }
   },
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
-    "currentPlatformClaim": "alpha6_platform_smoke_passed_full_e2e_pending",
+    "currentPlatformClaim": "platform_smoke_passed_full_e2e_pending",
     "rule": "Passed claims are bound to releaseSourceCommit and the local evidence directory.",
     "knownLimitations": [
       "Physical iOS device QA was not run.",
