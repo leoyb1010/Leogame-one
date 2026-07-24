@@ -60,8 +60,20 @@ public class WndBukovSettingsTest {
 		assertTrue(source.contains("legal/LICENSE.txt"));
 		assertTrue(source.contains("legal/THIRD_PARTY_NOTICES.txt"));
 		assertTrue(source.contains("不附带任何担保"));
+		assertTrue(source.contains(
+				"法律信息保留，不代表当前游戏的产品身份"));
 		assertFalse(source.contains("ShatteredPixel.com"));
 		assertFalse(source.contains("patreon.com"));
 		assertFalse(source.contains("AboutScene"));
+
+		String notices = new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/assets/legal/THIRD_PARTY_NOTICES.txt")),
+				StandardCharsets.UTF_8);
+		assertTrue(notices.contains("Shattered Pixel Dungeon"));
+		assertTrue(notices.contains("Pixel Dungeon"));
+		assertTrue(notices.contains(
+				"Required\nupstream attribution remains"));
+		assertFalse(notices.contains("in-game\ncredits"));
 	}
 }

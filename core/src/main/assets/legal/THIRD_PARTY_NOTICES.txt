@@ -11,9 +11,10 @@ https://github.com/leoyb1010/Leogame-one
 Upstream source:
 https://github.com/00-Evan/shattered-pixel-dungeon
 
-Existing upstream source files retain their copyright headers and in-game
-credits. Bukov-specific Java, JSON, validation scripts and procedural asset
-generators are distributed with the same corresponding source repository.
+Existing upstream source files retain their copyright headers. Required
+upstream attribution remains in this notice and the corresponding source tree.
+Bukov-specific Java, JSON, validation scripts and procedural asset generators
+are distributed with the same corresponding source repository.
 
 gdx-ai, Delver Engine, Mindustry and Seventh were design-research references
 only. Their source and game assets are not copied into this build.

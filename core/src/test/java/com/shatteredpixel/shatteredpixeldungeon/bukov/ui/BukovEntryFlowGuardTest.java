@@ -53,6 +53,41 @@ public class BukovEntryFlowGuardTest {
 	}
 
 	@Test
+	public void hostHeroSelectorHardRedirectsBukovBeforeRendering()
+			throws Exception {
+		String selector = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/HeroSelectScene.java");
+		int redirect = selector.indexOf("if (BukovMode.active())");
+		int firstHostSurface = selector.indexOf("Dungeon.hero = null;");
+
+		assertTrue(redirect >= 0);
+		assertTrue(firstHostSurface > redirect);
+		String guard = selector.substring(redirect, firstHostSurface);
+		assertTrue(guard.contains(
+				"ShatteredPixelDungeon.switchNoFade(BukovHubScene.class)"));
+		assertTrue(guard.contains("return;"));
+		assertFalse(selector.contains("BukovBranding"));
+		assertFalse(selector.contains("bukov_operator_"));
+		assertFalse(selector.contains("\"bukov_start\""));
+	}
+
+	@Test
+	public void hostSaveSlotsHardRedirectBukovBeforeRendering()
+			throws Exception {
+		String start = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/StartScene.java");
+		int redirect = start.indexOf("if (BukovMode.active())");
+		int firstHostSurface = start.indexOf("Badges.loadGlobal();");
+
+		assertTrue(redirect >= 0);
+		assertTrue(firstHostSurface > redirect);
+		String guard = start.substring(redirect, firstHostSurface);
+		assertTrue(guard.contains(
+				"ShatteredPixelDungeon.switchNoFade(BukovHubScene.class)"));
+		assertTrue(guard.contains("return;"));
+	}
+
+	@Test
 	public void everyPlayerVisiblePrimaryTitleActionRoutesToBukov()
 			throws Exception {
 		String title = source(

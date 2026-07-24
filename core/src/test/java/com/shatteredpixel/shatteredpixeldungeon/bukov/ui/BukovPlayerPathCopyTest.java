@@ -26,14 +26,6 @@ public class BukovPlayerPathCopyTest {
 			"scenes.gamescene.bukov_tutorial_mobile",
 			"scenes.gamescene.bukov_tutorial_desktop",
 			"scenes.gamescene.bukov_tutorial_controller",
-			"scenes.heroselectscene.bukov_title",
-			"scenes.heroselectscene.bukov_start",
-			"scenes.heroselectscene.bukov_operator_warrior",
-			"scenes.heroselectscene.bukov_operator_mage",
-			"scenes.heroselectscene.bukov_operator_rogue",
-			"scenes.heroselectscene.bukov_operator_huntress",
-			"scenes.heroselectscene.bukov_operator_duelist",
-			"scenes.heroselectscene.bukov_operator_cleric",
 			"scenes.titlescene.start_bukov",
 			"scenes.titlescene.continue_bukov",
 			"scenes.titlescene.rankings",
@@ -66,6 +58,32 @@ public class BukovPlayerPathCopyTest {
 				"src/main/assets/messages/windows/windows_zh.properties",
 				WINDOW_KEYS,
 				"地牢", "远征", "职业", "leo的");
+	}
+
+	@Test
+	public void bukovDoesNotRebrandHostHeroClassesAsOperators()
+			throws Exception {
+		for (String path : new String[] {
+				"src/main/assets/messages/scenes/scenes.properties",
+				"src/main/assets/messages/scenes/scenes_zh.properties"
+		}) {
+			Map<String, String> values = readProperties(new File(path));
+			assertFalse(values.containsKey(
+					"scenes.heroselectscene.bukov_title"));
+			assertFalse(values.containsKey(
+					"scenes.heroselectscene.bukov_start"));
+			for (String hostClass : new String[] {
+				"warrior", "mage", "rogue",
+				"huntress", "duelist", "cleric"
+			}) {
+				assertFalse(values.containsKey(
+						"scenes.heroselectscene.bukov_operator_"
+								+ hostClass));
+				assertFalse(values.containsKey(
+						"scenes.heroselectscene.bukov_operator_"
+								+ hostClass + "_desc"));
+			}
+		}
 	}
 
 	@Test

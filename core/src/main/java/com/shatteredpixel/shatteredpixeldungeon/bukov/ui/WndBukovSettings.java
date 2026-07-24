@@ -387,6 +387,8 @@ public final class WndBukovSettings extends Window {
 						+ "本程序依据 GNU GPLv3 或更高版本提供，"
 						+ "不附带任何担保。你可以依照该许可证复制、"
 						+ "修改与再发布。\n\n"
+						+ "技术来源、作者版权与第三方素材署名仅作为"
+						+ "法律信息保留，不代表当前游戏的产品身份。\n\n"
 						+ "完整本地文本：\n"
 						+ "legal/LICENSE.txt\n"
 						+ "legal/THIRD_PARTY_NOTICES.txt\n\n"
