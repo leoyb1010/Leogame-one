@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
-import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -157,11 +156,16 @@ public final class BukovUiTokens {
 		return require(typographyPx, token, "typography");
 	}
 
-	/** Returns the authored font role at the current global Bukov UI scale. */
+	/**
+	 * Returns the authored font role for scaled layouts.
+	 *
+	 * PixelScene already maps logical font pixels to device density. Scaling
+	 * the glyph size again made 150% layouts overflow their authored line
+	 * boxes on 3x iPhones. The accessibility scale therefore grows windows,
+	 * spacing and touch targets while typography keeps its tested role size.
+	 */
 	public int scaledTypographyPx(String token) {
-		return BukovUiScale.fontPixels(
-				typographyPx(token),
-				SPDSettings.bukovUiScale());
+		return typographyPx(token);
 	}
 
 	public float maximumShakePx() {

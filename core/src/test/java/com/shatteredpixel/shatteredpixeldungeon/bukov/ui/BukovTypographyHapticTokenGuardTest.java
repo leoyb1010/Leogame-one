@@ -60,6 +60,21 @@ public class BukovTypographyHapticTokenGuardTest {
 		assertTrue(registry.contains("uiTokens.haptic(type.name())"));
 	}
 
+	@Test
+	public void scaledLayoutsDoNotDoubleScaleDenseDeviceGlyphs()
+			throws Exception {
+		String tokens = source(UI.resolve("BukovUiTokens.java"));
+		int helper = tokens.indexOf(
+				"public int scaledTypographyPx(String token)");
+		int nextMethod = tokens.indexOf(
+				"public float maximumShakePx()", helper);
+		String body = tokens.substring(helper, nextMethod);
+
+		assertTrue(body.contains("return typographyPx(token);"));
+		assertFalse(body.contains("SPDSettings.bukovUiScale()"));
+		assertFalse(body.contains("BukovUiScale.fontPixels("));
+	}
+
 	private static void assertNoLiteralRenderedFontSize(Path path)
 			throws Exception {
 		String source = source(path);
@@ -74,13 +89,13 @@ public class BukovTypographyHapticTokenGuardTest {
 				textAndSize.matcher(source).find());
 		if (source.contains("private RenderedTextBlock text(")
 				|| source.contains("private RenderedTextBlock label(")) {
-				assertTrue(
-						path.getFileName()
-								+ " helper bypasses typography tokens",
-						source.contains("tokens.typographyPx(typography)")
-								|| source.contains(
-										"tokens.scaledTypographyPx(typography)"));
-			}
+			assertTrue(
+					path.getFileName()
+							+ " helper bypasses typography tokens",
+					source.contains("tokens.typographyPx(typography)")
+							|| source.contains(
+									"tokens.scaledTypographyPx(typography)"));
+		}
 	}
 
 	private static String source(Path path) throws Exception {
