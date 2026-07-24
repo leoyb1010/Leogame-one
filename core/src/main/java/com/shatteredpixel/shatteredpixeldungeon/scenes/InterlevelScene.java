@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.buffs.Buff;
 import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovLegacySceneGuard;
 import com.shatteredpixel.shatteredpixeldungeon.effects.ShadowBox;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.LostBackpack;
@@ -570,7 +571,7 @@ public class InterlevelScene extends PixelScene {
 				add( new WndError( errorMsg ) {
 					public void onBackPressed() {
 						super.onBackPressed();
-						Game.switchScene( StartScene.class );
+						BukovLegacySceneGuard.redirectToHub();
 					}
 				} );
 				thread = null;

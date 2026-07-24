@@ -13,7 +13,7 @@ import java.util.Properties;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LeoResourceParityTest {
+public class LocalizationResourceParityTest {
 	private static final String[] RESOURCE_GROUPS = {
 			"actors", "items", "journal", "levels", "misc",
 			"plants", "scenes", "ui", "windows"
@@ -28,11 +28,8 @@ public class LeoResourceParityTest {
 	}
 
 	@Test
-	public void leoEnglishAndChineseKeysStayInSync() throws IOException {
-		assertPrefixParity("messages/misc/misc.properties", "messages/misc/misc_zh.properties", "leoidentityconfig.");
+	public void requiredAttributionKeysStayInSync() throws IOException {
 		assertPrefixParity("messages/scenes/scenes.properties", "messages/scenes/scenes_zh.properties", "scenes.aboutscene.");
-		assertPrefixParity("messages/ui/ui.properties", "messages/ui/ui_zh.properties", "ui.changelist.leochanges.");
-		assertPrefixParity("messages/windows/windows.properties", "messages/windows/windows_zh.properties", "windows.wndleowelcome.");
 	}
 
 	private static void assertPrefixParity(String englishPath, String chinesePath, String prefix) throws IOException {

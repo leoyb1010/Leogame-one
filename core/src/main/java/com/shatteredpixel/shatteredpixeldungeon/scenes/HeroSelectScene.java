@@ -30,7 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.HeroClass;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovLegacySceneGuard;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
@@ -102,12 +102,7 @@ public class HeroSelectScene extends PixelScene {
 	public void create() {
 		super.create();
 
-		// The preserved host campaign owns this selector. A Bukov raid must
-		// never expose fantasy classes, splash art, tutorials or save slots.
-		if (BukovMode.active()) {
-			ShatteredPixelDungeon.switchNoFade(BukovHubScene.class);
-			return;
-		}
+		if (BukovLegacySceneGuard.redirectToHub()) return;
 
 		Dungeon.hero = null;
 

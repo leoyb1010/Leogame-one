@@ -11,11 +11,9 @@ usage() {
 Usage:
   scripts/bukov_prune_macos_versions.sh --keep VERSION_DIR [--output DIR] [--apply]
 
-Keeps exactly the named Escape from Bukov version directory and finds older
-direct children of DIR matching:
-  逃离布科夫-alpha*
-  逃离布科夫-v*
-  逃离布科夫-[numeric version]*
+Keeps exactly the named Escape from Bukov package directory and finds older
+direct children of DIR named 逃离布科夫-* that contain a valid archive-only
+PACKAGE_INFO.txt and SHA256SUMS.txt. Evidence/report directories are ignored.
 
 The default is a dry run. With --apply, old version directories are moved to a
 new timestamped folder under ~/.Trash after their .app bundles are unregistered
@@ -32,6 +30,27 @@ USAGE
 fail() {
   print -u2 "ERROR: $*"
   exit 1
+}
+
+info_value() {
+  local key="$1"
+  local file="$2"
+  /usr/bin/awk -F= -v wanted="$key" \
+    '$1 == wanted { print substr($0, index($0, "=") + 1); exit }' "$file"
+}
+
+is_personal_package_dir() {
+  local candidate="$1"
+  local package_info="${candidate}/PACKAGE_INFO.txt"
+  [[ -d "$candidate" && ! -L "$candidate" ]] || return 1
+  [[ "${candidate:t}" == 逃离布科夫-* ]] || return 1
+  [[ -f "$package_info" && -f "${candidate}/SHA256SUMS.txt" ]] || return 1
+  [[ "$(info_value product "$package_info")" == \
+      "逃离布科夫 / Escape from Bukov" ]] || return 1
+  [[ "$(info_value distribution "$package_info")" == \
+      verified-archives-only ]] || return 1
+  [[ "$(info_value source_commit "$package_info")" =~ \
+      '^[0-9a-f]{40}$' ]]
 }
 
 while (( $# > 0 )); do
@@ -74,29 +93,21 @@ fi
 [[ "${keep_dir:h}" == "$output_dir" ]] \
   || fail "--keep must be a direct child of $output_dir"
 [[ -d "$keep_dir" ]] || fail "version to keep does not exist: $keep_dir"
-
-keep_name="${keep_dir:t}"
-case "$keep_name" in
-  逃离布科夫-alpha*|逃离布科夫-v*|逃离布科夫-[0-9]*)
-    ;;
-  *)
-    fail "--keep does not match an Escape from Bukov version directory: $keep_name"
-    ;;
-esac
+is_personal_package_dir "$keep_dir" \
+  || fail "--keep is not a valid archive-only Escape from Bukov package: ${keep_dir:t}"
 
 typeset -a candidates
 candidates=()
 while IFS= read -r -d '' candidate; do
   candidate="${candidate:A}"
   [[ "$candidate" == "$keep_dir" ]] && continue
+  is_personal_package_dir "$candidate" || continue
   [[ "${candidate:h}" == "$output_dir" ]] \
     || fail "refusing candidate outside output directory: $candidate"
   candidates+=("$candidate")
 done < <(
   find "$output_dir" -mindepth 1 -maxdepth 1 -type d \
-    \( -name '逃离布科夫-alpha*' -o -name '逃离布科夫-v*' \
-       -o -name '逃离布科夫-[0-9]*' \) \
-    -print0
+    -name '逃离布科夫-*' -print0
 )
 
 print "Output: $output_dir"

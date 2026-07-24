@@ -9,6 +9,8 @@ The performance checks intentionally have two levels:
    movement collision, hitscan, 200 swept projectiles, queued damage,
    `RealtimeDamage`, `CombatFxEventPool`, and combat-feedback resolution.
 
+Both benchmarks execute a requested number of simulated 60 Hz frames as fast
+as the host allows. They are fast CPU regressions, not wall-clock soak tests.
 Both reports include average, P95, and P99 frame time. The end-to-end report
 also records current-thread allocated bytes as an allocation proxy plus JVM
 garbage-collection count and time. Its default gates are P95 below 4.5 ms for
@@ -26,12 +28,17 @@ remain separate Instruments/Metal evidence.
 
 ## Packaged-app render-callback gate
 
-`BukovFrameTelemetry` emits one `bukov-render-frame-v3` JSON record every
-reporting window. The v3 record keeps cumulative nearest-rank session
+`BukovFrameTelemetry` emits one `bukov-render-frame-v4` JSON record every
+reporting window. The v4 record keeps cumulative nearest-rank session
 P50/P95/P99 values at 0.1 ms histogram resolution and exact cumulative
 refresh-budget miss counts, so a 30-minute run can be gated without trying to
 reconstruct percentiles from 10-second summaries. Each record also includes
 the render resolution, target refresh rate, and the per-device frame budget.
+Each record embeds the build source commit, build ID, platform, monotonic
+sequence, active-gameplay duration, pause/suspend state, and discontinuity
+count. Pausing, suspending, receiving a resume-sized delta, or changing the
+viewport/refresh target resets the evidence session.
+
 The budget is the target refresh period plus 10% host-scheduling tolerance;
 this prevents a normal 60 Hz `16.67 ms` callback from being mislabeled as a
 drop merely because its measured delivery rounds to `16.7–17.0 ms`.
@@ -43,8 +50,9 @@ CPU work, presentation wait, and host scheduling visible between callbacks.
 It is **not** a hardware GPU counter and must not be presented as GPU frame
 time.
 
-Capture one uninterrupted packaged-app live gameplay scene per file. Prepend
-these two metadata lines to every capture:
+Capture one uninterrupted packaged-app live gameplay scene per file. The app
+records identity in every telemetry object; optional external metadata may be
+prepended for operator readability and must agree with the embedded identity:
 
 ```text
 source_commit=<full 40-character lowercase Git SHA>
@@ -70,11 +78,16 @@ python3 scripts/bukov_render_frame_gate.py \
 The default per-run thresholds are:
 
 - uninterrupted duration at least 1,800 seconds;
-- P95 at most 18.4 ms, tightened to 10.0 ms when the recorded target is
+- P95 at most 16.7 ms, tightened to 10.0 ms when the recorded target is
   120 Hz or higher;
 - P99 at most 33.3 ms;
 - no more than 5% of frames above the recorded refresh budget;
 - no more than 1% of frames above 33.3 ms;
+- delivered frame rate at least 80% of the recorded refresh target;
+- consecutive report sequence, no report gap above 15 seconds, and enough
+  reports to prove the full duration;
+- active gameplay only: no paused, suspended, discontinuous, resized, or
+  refresh-target-changing evidence;
 - known positive resolution and refresh target;
 - exact match to the sealed source commit when one is supplied.
 

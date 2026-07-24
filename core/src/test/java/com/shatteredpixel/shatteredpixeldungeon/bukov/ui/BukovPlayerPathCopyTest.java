@@ -32,13 +32,6 @@ public class BukovPlayerPathCopyTest {
 			"scenes.titlescene.journal"
 	};
 
-	private static final String[] WINDOW_KEYS = {
-			"windows.wndleowelcome.bukov_title",
-			"windows.wndleowelcome.bukov_body",
-			"windows.wndleowelcome.bukov_privacy",
-			"windows.wndleowelcome.bukov_accept"
-	};
-
 	@Test
 	public void englishAndChineseMainPathCopyIsPresentAndLegacyFree()
 			throws Exception {
@@ -49,14 +42,6 @@ public class BukovPlayerPathCopyTest {
 		assertBundle(
 				"src/main/assets/messages/scenes/scenes_zh.properties",
 				SCENE_KEYS,
-				"地牢", "远征", "职业", "leo的");
-		assertBundle(
-				"src/main/assets/messages/windows/windows.properties",
-				WINDOW_KEYS,
-				"dungeon", "expedition", "hero class", "leo's");
-		assertBundle(
-				"src/main/assets/messages/windows/windows_zh.properties",
-				WINDOW_KEYS,
 				"地牢", "远征", "职业", "leo的");
 	}
 
@@ -87,19 +72,15 @@ public class BukovPlayerPathCopyTest {
 	}
 
 	@Test
-	public void bukovBranchesOwnFirstLogHudAndWelcome() throws Exception {
+	public void bukovBranchesOwnFirstLogAndHud() throws Exception {
 		String gameScene = read(new File(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java"));
-		String welcome = read(new File(
-				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndLeoWelcome.java"));
 
 		assertTrue(gameScene.contains("Messages.get(this,")
 				&& gameScene.contains("\"bukov_enter\""));
 		assertTrue(gameScene.contains("new BukovRaidHud()"));
 		assertTrue(gameScene.contains("new BukovPauseButton("));
 		assertTrue(gameScene.contains("scene != null && !BukovMode.active()"));
-		assertTrue(welcome.contains("BukovBranding.messageKey(bukov, \"body\")"));
-		assertTrue(welcome.contains("BukovBranding.messageKey(bukov, \"accept\")"));
 	}
 
 	@Test

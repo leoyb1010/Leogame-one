@@ -1,5 +1,5 @@
 /*
- * Leo's Dungeon Siege combat feedback layer.
+ * Escape from Bukov combat feedback layer.
  * Copyright (C) 2026 Leo Yuan
  *
  * This program is free software: you can redistribute it and/or modify

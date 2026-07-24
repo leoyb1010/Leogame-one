@@ -73,7 +73,7 @@ public class BukovFrameTelemetryTest {
 		String line = telemetry.recordFrame(0.01f).toLogLine();
 
 		assertTrue(line.contains(
-				"\"schema\":\"bukov-render-frame-v3\""));
+				"\"schema\":\"bukov-render-frame-v4\""));
 		assertTrue(line.contains(
 				"\"metricKind\":\"cpu-render-callback-frame-pacing\""));
 		assertTrue(line.contains(
@@ -81,6 +81,14 @@ public class BukovFrameTelemetryTest {
 		assertTrue(line.contains("\"hardwareGpuCounter\":false"));
 		assertTrue(line.contains(
 				"\"scope\":\"render-callback-frame-pacing\""));
+		assertTrue(line.contains("\"sourceCommit\":"));
+		assertTrue(line.contains("\"buildId\":"));
+		assertTrue(line.contains("\"platform\":"));
+		assertTrue(line.contains("\"sequence\":1"));
+		assertTrue(line.contains("\"activeGameplay\":true"));
+		assertTrue(line.contains("\"paused\":false"));
+		assertTrue(line.contains("\"suspended\":false"));
+		assertTrue(line.contains("\"sessionDiscontinuities\":0"));
 		assertTrue(line.contains("\"frames\":1"));
 		assertTrue(line.contains("\"p50Ms\":10.000"));
 		assertTrue(line.contains("\"p95Ms\":10.000"));
@@ -90,6 +98,7 @@ public class BukovFrameTelemetryTest {
 		assertTrue(line.contains("\"framesOver33_3Ms\":0"));
 		assertTrue(line.contains("\"maximumFrameMs\":10.000"));
 		assertTrue(line.contains("\"sessionFrames\":1"));
+		assertTrue(line.contains("\"activeGameplaySeconds\":0.010"));
 		assertTrue(line.contains("\"sessionSeconds\":0.010"));
 		assertTrue(line.contains("\"sessionP50Ms\":10.000"));
 		assertTrue(line.contains("\"sessionP95Ms\":10.000"));
@@ -130,5 +139,52 @@ public class BukovFrameTelemetryTest {
 
 		assertEquals(1L, report.framesOverBudget());
 		assertEquals(1L, report.sessionFramesOverBudget());
+	}
+
+	@Test
+	public void pauseResumeAndResizeStartFreshEvidenceSequences() {
+		BukovFrameTelemetry telemetry =
+				new BukovFrameTelemetry(0.019f, 1920, 1080, 60);
+
+		assertNull(telemetry.recordFrame(0.01f));
+		assertNull(telemetry.recordFrame(
+				0.01f, false, true, false, 1920, 1080, 60));
+		assertNull(telemetry.recordFrame(0.01f));
+		BukovFrameTelemetry.Report afterPause =
+				telemetry.recordFrame(0.01f);
+		assertEquals(1L, afterPause.sequence());
+		assertEquals(2L, afterPause.sessionFrameCount());
+		assertEquals(0.02d, afterPause.sessionSeconds(), 0.0001d);
+
+		assertNull(telemetry.recordFrame(
+				0.01f, true, false, false, 2560, 1440, 120));
+		BukovFrameTelemetry.Report afterResize =
+				telemetry.recordFrame(
+						0.01f,
+						true,
+						false,
+						false,
+						2560,
+						1440,
+						120);
+		assertEquals(1L, afterResize.sequence());
+		assertEquals(2L, afterResize.sessionFrameCount());
+		assertEquals(2560, afterResize.resolutionWidthPx());
+		assertEquals(120, afterResize.targetRefreshHz());
+	}
+
+	@Test
+	public void suspendSizedDeltaIsNotCounted() {
+		BukovFrameTelemetry telemetry =
+				new BukovFrameTelemetry(0.019f, 1920, 1080, 60);
+
+		assertNull(telemetry.recordFrame(0.01f));
+		assertNull(telemetry.recordFrame(1.5f));
+		assertNull(telemetry.recordFrame(0.01f));
+		BukovFrameTelemetry.Report report =
+				telemetry.recordFrame(0.01f);
+
+		assertEquals(2L, report.sessionFrameCount());
+		assertEquals(0.02d, report.sessionSeconds(), 0.0001d);
 	}
 }

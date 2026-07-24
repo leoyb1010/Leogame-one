@@ -45,6 +45,7 @@ public final class BukovFrameTelemetry {
 
 	private static final double FRAME_BUDGET_30_HZ_MS = 33.3d;
 	private static final double FRAME_BUDGET_TOLERANCE = 1.10d;
+	private static final float MAX_CONTIGUOUS_FRAME_DELTA_SECONDS = 0.25f;
 	private static final int FALLBACK_REFRESH_HZ = 60;
 	private static final int HISTOGRAM_BUCKETS_PER_MILLISECOND = 10;
 	private static final int MAX_HISTOGRAM_MILLISECONDS = 10_000;
@@ -54,10 +55,11 @@ public final class BukovFrameTelemetry {
 					+ 1;
 
 	private final double reportIntervalSeconds;
-	private final int resolutionWidthPx;
-	private final int resolutionHeightPx;
-	private final int targetRefreshHz;
-	private final double frameBudgetMs;
+	private final BukovBuildIdentity buildIdentity;
+	private int resolutionWidthPx;
+	private int resolutionHeightPx;
+	private int targetRefreshHz;
+	private double frameBudgetMs;
 	private final int[] frameHistogram = new int[HISTOGRAM_BUCKET_COUNT];
 	private final int[] sessionFrameHistogram =
 			new int[HISTOGRAM_BUCKET_COUNT];
@@ -73,6 +75,7 @@ public final class BukovFrameTelemetry {
 	private long sessionFramesOverBudget;
 	private long sessionFramesOver33_3Ms;
 	private double sessionMaximumFrameMs;
+	private long sequence;
 
 	public BukovFrameTelemetry(
 			int resolutionWidthPx,
@@ -90,6 +93,20 @@ public final class BukovFrameTelemetry {
 			int resolutionWidthPx,
 			int resolutionHeightPx,
 			int targetRefreshHz) {
+		this(
+				reportIntervalSeconds,
+				resolutionWidthPx,
+				resolutionHeightPx,
+				targetRefreshHz,
+				BukovBuildIdentity.current());
+	}
+
+	BukovFrameTelemetry(
+			float reportIntervalSeconds,
+			int resolutionWidthPx,
+			int resolutionHeightPx,
+			int targetRefreshHz,
+			BukovBuildIdentity buildIdentity) {
 		if (!BukovNumbers.isFinite(reportIntervalSeconds)
 				|| reportIntervalSeconds <= 0f) {
 			throw new IllegalArgumentException(
@@ -103,10 +120,15 @@ public final class BukovFrameTelemetry {
 			throw new IllegalArgumentException(
 					"targetRefreshHz cannot be negative");
 		}
+		if (buildIdentity == null) {
+			throw new IllegalArgumentException(
+					"buildIdentity cannot be null");
+		}
 		this.reportIntervalSeconds = reportIntervalSeconds;
 		this.resolutionWidthPx = resolutionWidthPx;
 		this.resolutionHeightPx = resolutionHeightPx;
 		this.targetRefreshHz = targetRefreshHz;
+		this.buildIdentity = buildIdentity;
 		frameBudgetMs = toleratedFrameBudgetMs(targetRefreshHz);
 	}
 
@@ -116,8 +138,59 @@ public final class BukovFrameTelemetry {
 	 * @return a reusable report when the interval completes, otherwise null.
 	 */
 	public Report recordFrame(float rawRenderDeltaSeconds) {
+		return recordFrame(
+				rawRenderDeltaSeconds,
+				true,
+				false,
+				false,
+				resolutionWidthPx,
+				resolutionHeightPx,
+				targetRefreshHz);
+	}
+
+	/**
+	 * Samples one active, visible gameplay render callback.
+	 *
+	 * <p>Paused/suspended time, resume discontinuities and resolution or
+	 * refresh-rate changes reset the evidence session instead of contaminating
+	 * it. A log containing records from both sides of such a reset is rejected
+	 * by the sequence-aware gate.</p>
+	 */
+	public Report recordFrame(
+			float rawRenderDeltaSeconds,
+			boolean activeGameplay,
+			boolean paused,
+			boolean suspended,
+			int currentResolutionWidthPx,
+			int currentResolutionHeightPx,
+			int currentTargetRefreshHz) {
+		if (!activeGameplay || paused || suspended) {
+			interruptSession();
+			return null;
+		}
+		if (currentResolutionWidthPx <= 0
+				|| currentResolutionHeightPx <= 0
+				|| currentTargetRefreshHz < 0) {
+			interruptSession();
+			return null;
+		}
+		if (currentResolutionWidthPx != resolutionWidthPx
+				|| currentResolutionHeightPx != resolutionHeightPx
+				|| currentTargetRefreshHz != targetRefreshHz) {
+			interruptSession();
+			resolutionWidthPx = currentResolutionWidthPx;
+			resolutionHeightPx = currentResolutionHeightPx;
+			targetRefreshHz = currentTargetRefreshHz;
+			frameBudgetMs = toleratedFrameBudgetMs(targetRefreshHz);
+		}
 		if (!BukovNumbers.isFinite(rawRenderDeltaSeconds)
-				|| rawRenderDeltaSeconds <= 0f) {
+				|| rawRenderDeltaSeconds <= 0f
+				|| rawRenderDeltaSeconds
+						> MAX_CONTIGUOUS_FRAME_DELTA_SECONDS) {
+			if (rawRenderDeltaSeconds
+					> MAX_CONTIGUOUS_FRAME_DELTA_SECONDS) {
+				interruptSession();
+			}
 			return null;
 		}
 
@@ -154,6 +227,22 @@ public final class BukovFrameTelemetry {
 		return reusableReport;
 	}
 
+	public void interruptSession() {
+		if (frameCount == 0L
+				&& sessionFrameCount == 0L
+				&& sequence == 0L) {
+			return;
+		}
+		resetWindow();
+		Arrays.fill(sessionFrameHistogram, 0);
+		sessionSeconds = 0d;
+		sessionFrameCount = 0L;
+		sessionFramesOverBudget = 0L;
+		sessionFramesOver33_3Ms = 0L;
+		sessionMaximumFrameMs = 0d;
+		sequence = 0L;
+	}
+
 	private void fillReport() {
 		double p50Ms = percentile(
 				frameHistogram, frameCount, 0.50d);
@@ -168,7 +257,12 @@ public final class BukovFrameTelemetry {
 		double sessionP99Ms = percentile(
 				sessionFrameHistogram, sessionFrameCount, 0.99d);
 
+		sequence++;
 		reusableReport.set(
+				sequence,
+				buildIdentity.sourceCommit(),
+				buildIdentity.buildId(),
+				buildIdentity.platform(),
 				windowSeconds,
 				frameCount,
 				p50Ms,
@@ -226,6 +320,10 @@ public final class BukovFrameTelemetry {
 
 	public static final class Report {
 
+		private long sequence;
+		private String sourceCommit;
+		private String buildId;
+		private String platform;
 		private double windowSeconds;
 		private long frameCount;
 		private double p50Ms;
@@ -251,6 +349,10 @@ public final class BukovFrameTelemetry {
 		}
 
 		private void set(
+				long sequence,
+				String sourceCommit,
+				String buildId,
+				String platform,
 				double windowSeconds,
 				long frameCount,
 				double p50Ms,
@@ -271,6 +373,10 @@ public final class BukovFrameTelemetry {
 				int resolutionWidthPx,
 				int resolutionHeightPx,
 				int targetRefreshHz) {
+			this.sequence = sequence;
+			this.sourceCommit = sourceCommit;
+			this.buildId = buildId;
+			this.platform = platform;
 			this.windowSeconds = windowSeconds;
 			this.frameCount = frameCount;
 			this.p50Ms = p50Ms;
@@ -293,6 +399,10 @@ public final class BukovFrameTelemetry {
 			this.resolutionWidthPx = resolutionWidthPx;
 			this.resolutionHeightPx = resolutionHeightPx;
 			this.targetRefreshHz = targetRefreshHz;
+		}
+
+		public long sequence() {
+			return sequence;
 		}
 
 		public double windowSeconds() {
@@ -378,11 +488,19 @@ public final class BukovFrameTelemetry {
 		public String toLogLine() {
 			return String.format(
 					Locale.ROOT,
-					"{\"schema\":\"bukov-render-frame-v3\","
+					"{\"schema\":\"bukov-render-frame-v4\","
 							+ "\"metricKind\":\"cpu-render-callback-frame-pacing\","
 							+ "\"measurement\":\"Gdx.graphics.getDeltaTime\","
 							+ "\"hardwareGpuCounter\":false,"
 							+ "\"scope\":\"render-callback-frame-pacing\","
+							+ "\"sourceCommit\":\"%s\","
+							+ "\"buildId\":\"%s\","
+							+ "\"platform\":\"%s\","
+							+ "\"sequence\":%d,"
+							+ "\"activeGameplay\":true,"
+							+ "\"paused\":false,"
+							+ "\"suspended\":false,"
+							+ "\"sessionDiscontinuities\":0,"
 							+ "\"frames\":%d,\"windowSeconds\":%.3f,"
 							+ "\"p50Ms\":%.3f,\"p95Ms\":%.3f,"
 							+ "\"p99Ms\":%.3f,"
@@ -391,6 +509,7 @@ public final class BukovFrameTelemetry {
 							+ "\"framesOver33_3Ms\":%d,"
 							+ "\"maximumFrameMs\":%.3f,"
 							+ "\"sessionFrames\":%d,"
+							+ "\"activeGameplaySeconds\":%.3f,"
 							+ "\"sessionSeconds\":%.3f,"
 							+ "\"sessionP50Ms\":%.3f,"
 							+ "\"sessionP95Ms\":%.3f,"
@@ -400,6 +519,10 @@ public final class BukovFrameTelemetry {
 							+ "\"sessionMaximumFrameMs\":%.3f,"
 							+ "\"resolutionPx\":\"%dx%d\","
 							+ "\"targetRefreshHz\":%d}",
+					jsonString(sourceCommit),
+					jsonString(buildId),
+					jsonString(platform),
+					sequence,
 					frameCount,
 					windowSeconds,
 					p50Ms,
@@ -411,6 +534,7 @@ public final class BukovFrameTelemetry {
 					maximumFrameMs,
 					sessionFrameCount,
 					sessionSeconds,
+					sessionSeconds,
 					sessionP50Ms,
 					sessionP95Ms,
 					sessionP99Ms,
@@ -420,6 +544,13 @@ public final class BukovFrameTelemetry {
 					resolutionWidthPx,
 					resolutionHeightPx,
 					targetRefreshHz);
+		}
+
+		private static String jsonString(String value) {
+			if (value == null) return "";
+			return value
+					.replace("\\", "\\\\")
+					.replace("\"", "\\\"");
 		}
 	}
 }

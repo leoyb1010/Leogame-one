@@ -1086,9 +1086,25 @@ public class GameScene extends PixelScene {
 			if (bukovFrameTelemetry == null) {
 				return;
 			}
+			int targetRefreshHz = 0;
+			if (Gdx.graphics.getDisplayMode() != null) {
+				targetRefreshHz = Math.max(
+						0,
+						Gdx.graphics.getDisplayMode().refreshRate);
+			}
+			boolean paused = bukovWorld == null || bukovWorld.paused();
+			boolean activeGameplay = Dungeon.hero != null
+					&& Dungeon.hero.isAlive()
+					&& !paused;
 			BukovFrameTelemetry.Report report =
 					bukovFrameTelemetry.recordFrame(
-							Gdx.graphics.getDeltaTime());
+							Gdx.graphics.getDeltaTime(),
+							activeGameplay,
+							paused,
+							false,
+							Math.max(1, Gdx.graphics.getBackBufferWidth()),
+							Math.max(1, Gdx.graphics.getBackBufferHeight()),
+							targetRefreshHz);
 			if (report != null) {
 				DeviceCompat.log(
 						BUKOV_FRAME_TELEMETRY_TAG,
@@ -1619,6 +1635,9 @@ public class GameScene extends PixelScene {
 	@Override
 	public synchronized void onPause() {
 		resetBukovInputState();
+		if (bukovFrameTelemetry != null) {
+			bukovFrameTelemetry.interruptSession();
+		}
 		try {
 			if (!Dungeon.hero.ready) waitForActorThread(500, false);
 			if (BukovMode.active()) {

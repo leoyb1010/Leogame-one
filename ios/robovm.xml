@@ -13,6 +13,8 @@
 			</includes>
 			<excludes>
 				<exclude>**/*.ogg</exclude>
+				<exclude>interfaces/leo_*</exclude>
+				<exclude>splashes/title/leo_*</exclude>
 			</excludes>
 			<skipPngCrush>true</skipPngCrush>
 		</resource>

@@ -44,8 +44,8 @@ public class ShatteredPixelDungeon extends Game {
 	public static final int v3_3_0 = 883;
 	
 	public ShatteredPixelDungeon( PlatformSupport platform ) {
-		// Bukov is the product entry point. The preserved classic mode remains
-		// reachable from TitleScene, but a cold start must never resume it.
+		// Bukov is the only product entry point; inherited campaign code remains
+		// solely as an internal engine dependency.
 		super( sceneClass == null ? TitleScene.class : sceneClass, platform );
 
 		//pre-v3.3.0

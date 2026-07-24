@@ -43,18 +43,28 @@
 ./scripts/apple-gradle core:clean desktop:clean core:test desktop:build ios:compileJava --no-daemon
 ```
 
-打包并启动 macOS：
+生成 Apple 缓存构建后，封装并安装当前源码对应的唯一版本：
 
 ```bash
-./scripts/apple-gradle desktop:jpackageImage --no-daemon
-open "$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app"
+release_sha="$(git rev-parse HEAD)"
+release_short="$(git rev-parse --short=12 HEAD)"
+output_root="$HOME/Documents/日常/output"
+
+./scripts/apple-gradle desktop:jpackageImage ios:launchIPhoneSimulator --no-daemon
+./scripts/bukov_package_personal_build.sh \
+  --output "$output_root" \
+  --version "personal-${release_short}" \
+  --apply
+./scripts/bukov_install_personal_build.sh \
+  --package "$output_root/逃离布科夫-personal-${release_short}" \
+  --expected-source-commit "$release_sha" \
+  --device-udid "已启动的 iPhone Simulator UDID" \
+  --apply
 ```
 
-启动 iPhone 模拟器版本：
-
-```bash
-./scripts/apple-gradle ios:launchIPhoneSimulator --no-daemon
-```
+不要直接 `open` Gradle 缓存中的 `.app`。安装器会拒绝旧源码 SHA，关闭旧
+macOS 进程，从 `~/Applications/逃离布科夫.app` 启动并核验实际进程；iOS
+则只向指定且已启动的 Simulator 安装、重启，并生成可追溯安装回执。
 
 专项门禁：
 

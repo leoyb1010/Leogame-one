@@ -57,11 +57,11 @@ public class BukovEndToEndPerformanceSmoke {
 
 	@Test
 	public void integratedCombatPipelineMeetsCpuAndAllocationBudgets() {
-		int seconds = Integer.getInteger(
+		int simulatedSecondsAt60Hz = Integer.getInteger(
 				"bukov.performance.e2e.seconds",
 				60
 		);
-		int frames = Math.max(1, seconds * 60);
+		int frames = Math.max(1, simulatedSecondsAt60Hz * 60);
 		long[] samples = new long[frames];
 		ExperienceContract contract =
 				ExperienceContractTestFixture.load();
@@ -100,8 +100,12 @@ public class BukovEndToEndPerformanceSmoke {
 
 		System.out.println(String.format(
 				Locale.ROOT,
-				"{\"benchmark\":\"end-to-end-cpu\","
-						+ "\"gpuRendered\":false,\"seconds\":%d,"
+				"{\"benchmark\":\"simulated-integrated-cpu\","
+						+ "\"gpuRendered\":false,"
+						+ "\"wallClockSoak\":false,"
+						+ "\"productionGameplayPath\":false,"
+						+ "\"simulatedSecondsAt60Hz\":%d,"
+						+ "\"simulatedFrames\":%d,"
 						+ "\"map\":\"%dx%d-host-scale-collision\","
 						+ "\"enemies\":%d,\"projectiles\":%d,"
 						+ "\"averageFrameMs\":%.4f,"
@@ -117,7 +121,8 @@ public class BukovEndToEndPerformanceSmoke {
 						+ "\"feedbackResolved\":%d,"
 						+ "\"fxDrained\":%d,"
 						+ "\"collisionQueries\":%d}",
-				seconds,
+				simulatedSecondsAt60Hz,
+				frames,
 				MAP_SIZE,
 				MAP_SIZE,
 				ENEMIES,

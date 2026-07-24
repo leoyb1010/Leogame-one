@@ -24,6 +24,7 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Chrome;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovLegacySceneGuard;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
@@ -32,7 +33,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.ChangeInfo;
-import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.LeoChanges;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.WndChanges;
 import com.shatteredpixel.shatteredpixeldungeon.ui.changelist.WndChangesTabbed;
 import com.shatteredpixel.shatteredpixeldungeon.windows.IconTitle;
@@ -48,8 +48,8 @@ import java.util.ArrayList;
 
 public class ChangesScene extends PixelScene {
 
-	// Retained for the existing footer controls; every page now resolves to the
-	// Leo edition history so legacy English records never leak into Chinese UI.
+	// Retained for inherited serialization compatibility. This scene is blocked
+	// by BukovLegacySceneGuard before any campaign history can render.
 	public static int changesSelected = 0;
 
 	private NinePatch rightPanel;
@@ -60,6 +60,7 @@ public class ChangesScene extends PixelScene {
 	@Override
 	public void create() {
 		super.create();
+		if (BukovLegacySceneGuard.redirectToHub()) return;
 
 		Music.INSTANCE.playTracks(
 				new String[]{Assets.Music.THEME_1, Assets.Music.THEME_2},
@@ -136,7 +137,6 @@ public class ChangesScene extends PixelScene {
 		add( panel );
 		
 		final ArrayList<ChangeInfo> changeInfos = new ArrayList<>();
-		LeoChanges.addAllChanges(changeInfos);
 
 		ScrollPane list = new ScrollPane( new Component() ){
 

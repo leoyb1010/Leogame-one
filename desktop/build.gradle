@@ -21,6 +21,7 @@ def generateBukovBuildIdentity = tasks.register('generateBukovBuildIdentity') {
     def identityFile = bukovBuildIdentityDir.map { it.file('bukov-build-identity.properties') }
     inputs.property('bukovSourceCommit', bukovSourceCommit)
     inputs.property('bukovSourceWorktree', bukovSourceWorktree)
+    inputs.property('appVersionCode', appVersionCode)
     outputs.file(identityFile)
     doLast {
         def output = identityFile.get().asFile
@@ -28,13 +29,18 @@ def generateBukovBuildIdentity = tasks.register('generateBukovBuildIdentity') {
         output.text = [
                 "source_commit=${bukovSourceCommit}",
                 "source_worktree=${bukovSourceWorktree}",
+                "platform=macOS",
+                "build_id=${bukovSourceCommit}-${appVersionCode}-macos",
                 ""
         ].join(System.lineSeparator())
     }
 }
 processResources {
     dependsOn generateBukovBuildIdentity
-    from new File(project(':core').projectDir, "/src/main/assets")
+    from(new File(project(':core').projectDir, "/src/main/assets")) {
+        exclude 'interfaces/leo_*'
+        exclude 'splashes/title/leo_*'
+    }
     from new File(project(':desktop').projectDir,"/src/main/assets")
     from bukovBuildIdentityDir
 }
@@ -48,7 +54,7 @@ tasks.register('debug', JavaExec) {
 
     mainClass = appMainClass
     systemProperty 'Specification-Title', appName
-    systemProperty 'Implementation-Title', appPackageName
+    systemProperty 'Implementation-Title', appName
     systemProperty 'Specification-Version', appVersionName + "-INDEV"
     systemProperty 'Implementation-Version', appVersionCode
 
@@ -59,7 +65,7 @@ tasks.register('debug', JavaExec) {
 
 tasks.named('run', JavaExec) {
     systemProperty 'Specification-Title', appName
-    systemProperty 'Implementation-Title', appPackageName
+    systemProperty 'Implementation-Title', appName
     systemProperty 'Specification-Version', appVersionName + "-INDEV"
     systemProperty 'Implementation-Version', appVersionCode
 
@@ -72,7 +78,7 @@ tasks.withType(Jar).configureEach {
     manifest {
         attributes 'Main-Class': appMainClass
         attributes 'Specification-Title': appName
-        attributes 'Implementation-Title': appPackageName
+        attributes 'Implementation-Title': appName
         attributes 'Specification-Version': appVersionName
         attributes 'Implementation-Version': appVersionCode
     }

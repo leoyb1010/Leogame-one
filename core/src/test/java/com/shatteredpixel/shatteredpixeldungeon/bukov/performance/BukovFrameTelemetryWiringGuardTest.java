@@ -22,7 +22,11 @@ public class BukovFrameTelemetryWiringGuardTest {
 		assertTrue(scene.contains("new BukovFrameTelemetry("));
 		assertTrue(scene.contains(
 				"bukovFrameTelemetry.recordFrame("));
-		assertTrue(scene.contains("Gdx.graphics.getDeltaTime())"));
+		assertTrue(scene.contains("Gdx.graphics.getDeltaTime(),"));
+		assertTrue(scene.contains("activeGameplay,"));
+		assertTrue(scene.contains("paused,"));
+		assertTrue(scene.contains("Gdx.graphics.getBackBufferWidth()"));
+		assertTrue(scene.contains("bukovFrameTelemetry.interruptSession()"));
 		assertFalse(scene.contains(
 				"bukovFrameTelemetry.recordFrame(Game.elapsed)"));
 		assertTrue(scene.contains("DeviceCompat.log("));

@@ -53,38 +53,76 @@ public class BukovEntryFlowGuardTest {
 	}
 
 	@Test
-	public void hostHeroSelectorHardRedirectsBukovBeforeRendering()
+	public void hostHeroSelectorAlwaysRedirectsBeforeRendering()
 			throws Exception {
 		String selector = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/HeroSelectScene.java");
-		int redirect = selector.indexOf("if (BukovMode.active())");
+		int redirect = selector.indexOf(
+				"if (BukovLegacySceneGuard.redirectToHub()) return;");
 		int firstHostSurface = selector.indexOf("Dungeon.hero = null;");
 
 		assertTrue(redirect >= 0);
 		assertTrue(firstHostSurface > redirect);
-		String guard = selector.substring(redirect, firstHostSurface);
-		assertTrue(guard.contains(
-				"ShatteredPixelDungeon.switchNoFade(BukovHubScene.class)"));
-		assertTrue(guard.contains("return;"));
 		assertFalse(selector.contains("BukovBranding"));
 		assertFalse(selector.contains("bukov_operator_"));
 		assertFalse(selector.contains("\"bukov_start\""));
 	}
 
 	@Test
-	public void hostSaveSlotsHardRedirectBukovBeforeRendering()
+	public void hostSaveSlotsAlwaysRedirectBeforeRendering()
 			throws Exception {
 		String start = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/StartScene.java");
-		int redirect = start.indexOf("if (BukovMode.active())");
+		int redirect = start.indexOf(
+				"if (BukovLegacySceneGuard.redirectToHub()) return;");
 		int firstHostSurface = start.indexOf("Badges.loadGlobal();");
 
 		assertTrue(redirect >= 0);
 		assertTrue(firstHostSurface > redirect);
-		String guard = start.substring(redirect, firstHostSurface);
+	}
+
+	@Test
+	public void everyInheritedProductSceneUsesOneUnconditionalGuard()
+			throws Exception {
+		for (String scene : new String[] {
+				"StartScene.java",
+				"HeroSelectScene.java",
+				"RankingsScene.java",
+				"ChangesScene.java",
+				"SupporterScene.java",
+				"NewsScene.java",
+				"JournalScene.java"
+		}) {
+			String source = source(
+					"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/"
+							+ scene);
+			assertTrue(scene, source.contains(
+					"if (BukovLegacySceneGuard.redirectToHub()) return;"));
+		}
+
+		String guard = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/"
+						+ "BukovLegacySceneGuard.java");
+		assertTrue(guard.contains("BukovMode.enter();"));
 		assertTrue(guard.contains(
-				"ShatteredPixelDungeon.switchNoFade(BukovHubScene.class)"));
-		assertTrue(guard.contains("return;"));
+				"GamesInProgress.curSlot = BukovMode.SAVE_SLOT;"));
+		assertTrue(guard.contains(
+				"ShatteredPixelDungeon.switchNoFade(BukovHubScene.class);"));
+	}
+
+	@Test
+	public void inheritedInterlevelErrorsRecoverToBukovHub()
+			throws Exception {
+		String interlevel = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/"
+						+ "InterlevelScene.java");
+		String error = between(
+				interlevel,
+				"if (error != null)",
+				"} else if (thread != null");
+		assertTrue(error.contains(
+				"BukovLegacySceneGuard.redirectToHub();"));
+		assertFalse(error.contains("StartScene.class"));
 	}
 
 	@Test

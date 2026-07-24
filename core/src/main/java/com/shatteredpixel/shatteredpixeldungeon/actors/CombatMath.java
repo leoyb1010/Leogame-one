@@ -1,5 +1,5 @@
 /*
- * Leo's Dungeon Siege combat regression helpers.
+ * Escape from Bukov combat regression helpers.
  * Copyright (C) 2026 Leo Yuan
  *
  * This program is free software: you can redistribute it and/or modify

@@ -20,12 +20,14 @@ from pathlib import Path
 from typing import Any
 
 
-SCHEMA = "bukov-render-frame-v3"
+SCHEMA = "bukov-render-frame-v4"
 METRIC_KIND = "cpu-render-callback-frame-pacing"
 MEASUREMENT = "Gdx.graphics.getDeltaTime"
 SCOPE = "render-callback-frame-pacing"
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+BUILD_ID_RE = re.compile(r"^[A-Za-z0-9._:+-]{3,160}$")
 RESOLUTION_RE = re.compile(r"^([1-9][0-9]*)x([1-9][0-9]*)$")
+SUPPORTED_PLATFORMS = frozenset({"macOS", "iOS"})
 
 
 class GateInputError(ValueError):
@@ -41,14 +43,17 @@ class Thresholds:
     max_over_33_3_ratio: float
     high_refresh_min_hz: int
     high_refresh_max_p95_ms: float
+    minimum_delivered_fps_ratio: float
+    maximum_report_gap_seconds: float
 
 
 @dataclass(frozen=True)
 class RunEvidence:
     path: Path
     sha256: str
-    source_commit: str | None
-    platform: str | None
+    source_commit: str
+    build_id: str
+    platform: str
     report_count: int
     session_frames: int
     session_seconds: float
@@ -63,6 +68,8 @@ class RunEvidence:
     observed_resolutions_px: tuple[str, ...]
     target_refresh_hz: int
     observed_refresh_targets_hz: tuple[int, ...]
+    final_sequence: int
+    maximum_report_gap_seconds: float
 
     @property
     def over_budget_ratio(self) -> float:
@@ -71,6 +78,10 @@ class RunEvidence:
     @property
     def over_33_3_ratio(self) -> float:
         return self.frames_over_33_3_ms / self.session_frames
+
+    @property
+    def delivered_fps(self) -> float:
+        return self.session_frames / self.session_seconds
 
 
 def _number(record: dict[str, Any], key: str) -> float:
@@ -112,9 +123,30 @@ def _validate_record(record: dict[str, Any]) -> None:
         raise GateInputError("telemetry scope is not render-callback frame pacing")
     if record.get("hardwareGpuCounter") is not False:
         raise GateInputError("telemetry must explicitly state hardwareGpuCounter=false")
+    source_commit = record.get("sourceCommit")
+    build_id = record.get("buildId")
+    platform = record.get("platform")
+    if not isinstance(source_commit, str) or COMMIT_RE.fullmatch(source_commit) is None:
+        raise GateInputError("sourceCommit must be a full lowercase SHA-1")
+    if not isinstance(build_id, str) or BUILD_ID_RE.fullmatch(build_id) is None:
+        raise GateInputError("buildId must be a stable non-empty build token")
+    if platform not in SUPPORTED_PLATFORMS:
+        raise GateInputError("platform must be macOS or iOS")
+    sequence = _integer(record, "sequence")
+    if sequence <= 0:
+        raise GateInputError("sequence must be positive")
+    if record.get("activeGameplay") is not True:
+        raise GateInputError("telemetry must describe active gameplay")
+    if record.get("paused") is not False:
+        raise GateInputError("paused telemetry cannot be used as evidence")
+    if record.get("suspended") is not False:
+        raise GateInputError("suspended telemetry cannot be used as evidence")
+    if _integer(record, "sessionDiscontinuities") != 0:
+        raise GateInputError("discontinuous telemetry cannot be used as evidence")
 
     session_frames = _integer(record, "sessionFrames")
     session_seconds = _number(record, "sessionSeconds")
+    active_seconds = _number(record, "activeGameplaySeconds")
     p50 = _number(record, "sessionP50Ms")
     p95 = _number(record, "sessionP95Ms")
     p99 = _number(record, "sessionP99Ms")
@@ -127,6 +159,10 @@ def _validate_record(record: dict[str, Any]) -> None:
 
     if session_frames <= 0 or session_seconds <= 0:
         raise GateInputError("session frame count and duration must be positive")
+    if active_seconds <= 0 or abs(active_seconds - session_seconds) > 0.005:
+        raise GateInputError(
+            "sessionSeconds must equal positive activeGameplaySeconds"
+        )
     if not (0 <= over_33 <= over_budget <= session_frames):
         raise GateInputError("slow-frame counters are inconsistent")
     if not (0 <= p50 <= p95 <= p99 <= maximum):
@@ -154,6 +190,11 @@ def load_run(path: Path) -> RunEvidence:
     refresh_targets: set[int] = set()
     previous_frames = 0
     previous_seconds = 0.0
+    previous_sequence = 0
+    maximum_report_gap_seconds = 0.0
+    record_source_commit: str | None = None
+    record_build_id: str | None = None
+    record_platform: str | None = None
 
     with path.open(encoding="utf-8", errors="replace") as handle:
         for line_number, line in enumerate(handle, start=1):
@@ -182,7 +223,13 @@ def load_run(path: Path) -> RunEvidence:
                 raise GateInputError(f"{path}:{line_number}: {error}") from error
 
             current_frames = _integer(record, "sessionFrames")
-            current_seconds = _number(record, "sessionSeconds")
+            current_seconds = _number(record, "activeGameplaySeconds")
+            current_sequence = _integer(record, "sequence")
+            if current_sequence != previous_sequence + 1:
+                raise GateInputError(
+                    f"{path}:{line_number}: sequence must start at 1 and "
+                    "increase by exactly one"
+                )
             if current_frames <= previous_frames or current_seconds <= previous_seconds:
                 raise GateInputError(
                     f"{path}:{line_number}: cumulative session telemetry reset "
@@ -190,7 +237,33 @@ def load_run(path: Path) -> RunEvidence:
                     "scene per log"
                 )
             previous_frames = current_frames
+            maximum_report_gap_seconds = max(
+                maximum_report_gap_seconds,
+                current_seconds - previous_seconds,
+            )
             previous_seconds = current_seconds
+            previous_sequence = current_sequence
+            observed_source_commit = str(record["sourceCommit"])
+            observed_build_id = str(record["buildId"])
+            observed_platform = str(record["platform"])
+            if (
+                record_source_commit is not None
+                and observed_source_commit != record_source_commit
+            ):
+                raise GateInputError(
+                    f"{path}:{line_number}: sourceCommit changed during run"
+                )
+            if record_build_id is not None and observed_build_id != record_build_id:
+                raise GateInputError(
+                    f"{path}:{line_number}: buildId changed during run"
+                )
+            if record_platform is not None and observed_platform != record_platform:
+                raise GateInputError(
+                    f"{path}:{line_number}: platform changed during run"
+                )
+            record_source_commit = observed_source_commit
+            record_build_id = observed_build_id
+            record_platform = observed_platform
             resolutions.add(str(record["resolutionPx"]))
             refresh_targets.add(_integer(record, "targetRefreshHz"))
             reports.append(record)
@@ -202,15 +275,36 @@ def load_run(path: Path) -> RunEvidence:
     if platform is not None and not platform:
         raise GateInputError(f"empty platform metadata in {path}")
 
+    assert record_source_commit is not None
+    assert record_build_id is not None
+    assert record_platform is not None
+    if source_commit is not None and source_commit != record_source_commit:
+        raise GateInputError(
+            f"external source_commit metadata conflicts with telemetry in {path}"
+        )
+    if platform is not None and platform != record_platform:
+        raise GateInputError(
+            f"external platform metadata conflicts with telemetry in {path}"
+        )
+    if len(resolutions) != 1:
+        raise GateInputError(
+            f"resolution changed during run in {path}; capture one stable viewport"
+        )
+    if len(refresh_targets) != 1:
+        raise GateInputError(
+            f"target refresh changed during run in {path}; capture one stable mode"
+        )
+
     final = reports[-1]
     return RunEvidence(
         path=path.resolve(),
         sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
-        source_commit=source_commit,
-        platform=platform,
+        source_commit=record_source_commit,
+        build_id=record_build_id,
+        platform=record_platform,
         report_count=len(reports),
         session_frames=_integer(final, "sessionFrames"),
-        session_seconds=_number(final, "sessionSeconds"),
+        session_seconds=_number(final, "activeGameplaySeconds"),
         p50_ms=_number(final, "sessionP50Ms"),
         p95_ms=_number(final, "sessionP95Ms"),
         p99_ms=_number(final, "sessionP99Ms"),
@@ -222,6 +316,8 @@ def load_run(path: Path) -> RunEvidence:
         observed_resolutions_px=tuple(sorted(resolutions)),
         target_refresh_hz=_integer(final, "targetRefreshHz"),
         observed_refresh_targets_hz=tuple(sorted(refresh_targets)),
+        final_sequence=_integer(final, "sequence"),
+        maximum_report_gap_seconds=maximum_report_gap_seconds,
     )
 
 
@@ -235,6 +331,38 @@ def evaluate_run(run: RunEvidence, thresholds: Thresholds) -> list[str]:
         failures.append(
             f"duration {run.session_seconds:.3f}s "
             f"< {thresholds.minimum_duration_seconds:.3f}s"
+        )
+    minimum_reports = math.ceil(
+        thresholds.minimum_duration_seconds
+        / thresholds.maximum_report_gap_seconds
+    )
+    if run.report_count < minimum_reports:
+        failures.append(
+            f"report count {run.report_count} < {minimum_reports} required "
+            "for a continuous capture"
+        )
+    if run.final_sequence != run.report_count:
+        failures.append(
+            f"final sequence {run.final_sequence} != report count "
+            f"{run.report_count}"
+        )
+    if (
+        run.maximum_report_gap_seconds
+        > thresholds.maximum_report_gap_seconds + 0.005
+    ):
+        failures.append(
+            f"report gap {run.maximum_report_gap_seconds:.3f}s "
+            f"> {thresholds.maximum_report_gap_seconds:.3f}s"
+        )
+    minimum_fps = (
+        run.target_refresh_hz
+        * thresholds.minimum_delivered_fps_ratio
+    )
+    if run.delivered_fps < minimum_fps:
+        failures.append(
+            f"delivered FPS {run.delivered_fps:.3f} "
+            f"< {minimum_fps:.3f} "
+            f"({thresholds.minimum_delivered_fps_ratio:.0%} of target)"
         )
     if run.p95_ms > p95_limit:
         failures.append(f"P95 {run.p95_ms:.3f}ms > {p95_limit:.3f}ms")
@@ -281,10 +409,16 @@ def build_summary(
                 "path": str(run.path),
                 "sha256": run.sha256,
                 "sourceCommit": run.source_commit,
+                "buildId": run.build_id,
                 "platform": run.platform,
                 "reportCount": run.report_count,
+                "finalSequence": run.final_sequence,
                 "sessionFrames": run.session_frames,
-                "sessionSeconds": round(run.session_seconds, 3),
+                "activeGameplaySeconds": round(run.session_seconds, 3),
+                "deliveredFps": round(run.delivered_fps, 3),
+                "maximumReportGapSeconds": round(
+                    run.maximum_report_gap_seconds, 3
+                ),
                 "p50Ms": round(run.p50_ms, 3),
                 "p95Ms": round(run.p95_ms, 3),
                 "p99Ms": round(run.p99_ms, 3),
@@ -360,6 +494,10 @@ def build_summary(
             "maxFramesOver33_3Ratio": thresholds.max_over_33_3_ratio,
             "highRefreshMinHz": thresholds.high_refresh_min_hz,
             "highRefreshMaxP95Ms": thresholds.high_refresh_max_p95_ms,
+            "minimumDeliveredFpsRatio":
+                thresholds.minimum_delivered_fps_ratio,
+            "maximumReportGapSeconds":
+                thresholds.maximum_report_gap_seconds,
         },
         "aggregate": aggregate,
         "runs": run_payloads,
@@ -414,6 +552,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--high-refresh-max-p95-ms", type=_positive, default=10.0
     )
+    parser.add_argument(
+        "--minimum-delivered-fps-ratio", type=_ratio, default=0.80
+    )
+    parser.add_argument(
+        "--maximum-report-gap-seconds", type=_positive, default=15.0
+    )
     args = parser.parse_args(argv)
     if (
         args.expected_source_commit is not None
@@ -422,6 +566,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         parser.error("--expected-source-commit must be a full lowercase SHA-1")
     if args.high_refresh_min_hz <= 0:
         parser.error("--high-refresh-min-hz must be positive")
+    if args.minimum_delivered_fps_ratio <= 0:
+        parser.error("--minimum-delivered-fps-ratio must be greater than zero")
     if len(set(args.require_platform)) != len(args.require_platform):
         parser.error("--require-platform values must be unique")
     return args
@@ -437,6 +583,8 @@ def main(argv: list[str] | None = None) -> int:
         max_over_33_3_ratio=args.max_over_33_3_ratio,
         high_refresh_min_hz=args.high_refresh_min_hz,
         high_refresh_max_p95_ms=args.high_refresh_max_p95_ms,
+        minimum_delivered_fps_ratio=args.minimum_delivered_fps_ratio,
+        maximum_report_gap_seconds=args.maximum_report_gap_seconds,
     )
     try:
         runs = [load_run(path) for path in args.input]

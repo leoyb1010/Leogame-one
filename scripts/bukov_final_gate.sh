@@ -42,8 +42,8 @@ wide lock, records the exact commit and host environment, and runs:
   RoboVM API compatibility gate
   10,000-seed first-raid sweep
   100-iteration real disk save stress
-  1,800-second performance smoke and E2E gates
-  captured macOS and iOS render-callback frame-pacing evidence
+  108,000-frame simulated CPU smoke and integrated regression gates
+  captured macOS and iOS 1,800-second active-gameplay frame-pacing evidence
   macOS jpackage image and iOS Simulator app builds
   packaged legal check and final source-integrity check
 
@@ -61,7 +61,7 @@ Options:
                      (default: Codex Test iPhone 17 Pro).
   --render-frame-log FILE
                      Existing absolute packaged-app log containing one
-                     uninterrupted bukov-render-frame-v3 live gameplay scene.
+                     uninterrupted bukov-render-frame-v4 live gameplay scene.
                      Repeat for macOS and iOS. Required by --apply. Include
                      source_commit=<full SHA> and platform=macOS or platform=iOS.
   --self-test        Run syntax, argument, lock, and path-safety checks only.
@@ -307,7 +307,7 @@ execute_sequence() {
     --require-platform macOS
     --require-platform iOS
     --minimum-duration-seconds 1800
-    --max-p95-ms 18.4
+    --max-p95-ms 16.7
     --max-p99-ms 33.3
     --max-over-budget-ratio 0.05
     --max-over-33-3-ratio 0.01
@@ -408,10 +408,10 @@ execute_sequence() {
     "100-iteration in-memory and real-disk save stress gate" \
     "$script_dir/bukov_save_stress.sh" 100
   run_step "27-performance-smoke-1800" \
-    "1,800-second fixed-step performance smoke gate" \
+    "108,000-frame simulated CPU smoke regression (not wall-clock soak)" \
     "$script_dir/bukov_performance_smoke.sh" 1800
   run_step "28-performance-e2e-1800" \
-    "1,800-second 30-enemy/200-projectile E2E CPU gate" \
+    "108,000-frame simulated 30-enemy/200-projectile CPU regression" \
     "$script_dir/bukov_performance_e2e.sh" 1800
 
   run_step "29-build-macos" \
@@ -531,8 +531,9 @@ payload = {
     "parameters": {
         "seedCount": 10000,
         "saveIterations": 100,
-        "performanceSmokeSeconds": 1800,
-        "performanceE2eSeconds": 1800,
+        "simulatedPerformanceSmokeFrames": 108000,
+        "simulatedPerformanceE2eFrames": 108000,
+        "requiredActiveGameplaySoakSecondsPerPlatform": 1800,
     },
     "plannedStepCount": planned_step_count,
     "completedStepCount": len(steps),

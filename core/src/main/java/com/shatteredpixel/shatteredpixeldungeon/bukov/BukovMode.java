@@ -112,8 +112,7 @@ public final class BukovMode {
 	}
 
 	/**
-	 * Opens the Bukov hub once after a cold application start. Classic mode
-	 * remains available from the title screen, but is never resumed implicitly.
+	 * Opens the Bukov hub once after a cold application start.
 	 */
 	public static boolean consumeLaunchHubRequest() {
 		boolean requested = launchHubRequested;

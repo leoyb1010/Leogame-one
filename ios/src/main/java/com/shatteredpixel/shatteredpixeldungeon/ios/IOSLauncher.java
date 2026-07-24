@@ -71,6 +71,16 @@ public class IOSLauncher extends IOSApplication.Delegate {
 		} catch (Exception e) {
 			Game.versionCode = 0;
 		}
+		System.setProperty("bukov.platform", "iOS");
+		try {
+			System.setProperty(
+					"bukov.sourceCommit",
+					NSBundle.getMainBundle()
+							.getInfoDictionaryObject("BukovSourceCommit")
+							.description());
+		} catch (Exception ignored) {
+			System.setProperty("bukov.sourceCommit", "unknown");
+		}
 
 		if (UpdateImpl.supportsUpdates()) {
 			Updates.service = UpdateImpl.getUpdateService();

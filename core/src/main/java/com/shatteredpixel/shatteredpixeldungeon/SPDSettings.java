@@ -36,7 +36,6 @@ public class SPDSettings extends GameSettings {
 	//Version info
 	
 	public static final String KEY_VERSION      = "version";
-	public static final String KEY_LEO_IDENTITY_GRANTED = "leo_identity_granted";
 	
 	public static void version( int value)  {
 		put( KEY_VERSION, value );
@@ -46,14 +45,6 @@ public class SPDSettings extends GameSettings {
 		return getInt( KEY_VERSION, 0 );
 	}
 
-	public static void leoIdentityGranted(boolean value) {
-		put(KEY_LEO_IDENTITY_GRANTED, value);
-	}
-
-	public static boolean leoIdentityGranted() {
-		return getBoolean(KEY_LEO_IDENTITY_GRANTED, false);
-	}
-	
 	//Display
 	
 	public static final String KEY_FULLSCREEN	= "fullscreen"; //used to hide navbars on mobile

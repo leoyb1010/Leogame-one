@@ -193,10 +193,7 @@ def check_localization() -> None:
                 f"global English/Chinese key mismatch in {group}")
 
     pairs = (
-        ("misc/misc.properties", "misc/misc_zh.properties", "leoidentityconfig."),
         ("scenes/scenes.properties", "scenes/scenes_zh.properties", "scenes.aboutscene."),
-        ("ui/ui.properties", "ui/ui_zh.properties", "ui.changelist.leochanges."),
-        ("windows/windows.properties", "windows/windows_zh.properties", "windows.wndleowelcome."),
     )
     base = ROOT / "core/src/main/assets/messages"
     for english, chinese, prefix in pairs:
@@ -204,6 +201,24 @@ def check_localization() -> None:
         chinese_keys = property_keys(base / chinese, prefix)
         require(english_keys, f"no English keys for {prefix}")
         require(english_keys == chinese_keys, f"English/Chinese key mismatch for {prefix}")
+
+    removed_prefixes = (
+        ("misc/misc.properties", "leoidentityconfig."),
+        ("ui/ui.properties", "ui.changelist.leochanges."),
+        ("windows/windows.properties", "windows.wndleowelcome."),
+    )
+    for relative, prefix in removed_prefixes:
+        require(not property_keys(base / relative, prefix),
+                f"retired personal-edition resources returned: {prefix}")
+
+    for relative in (
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/LeoIdentityConfig.java",
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/ui/LeoStyledButton.java",
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/ui/changelist/LeoChanges.java",
+        "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/windows/WndLeoWelcome.java",
+    ):
+        require(not (ROOT / relative).exists(),
+                f"retired personal-edition source returned: {relative}")
 
     cjk_literal = re.compile(r'"(?:[^"\\]|\\.)*[\u3400-\u9fff](?:[^"\\]|\\.)*"')
     for relative in (

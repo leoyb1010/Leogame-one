@@ -22,8 +22,9 @@ public class BukovPerformanceSmoke {
 
 	@Test
 	public void thirtyEnemiesAndTwoHundredProjectilesMeetFixedStepBudget() {
-		int seconds = Integer.getInteger("bukov.performance.seconds", 60);
-		int frames = Math.max(1, seconds * 60);
+		int simulatedSecondsAt60Hz = Integer.getInteger(
+				"bukov.performance.seconds", 60);
+		int frames = Math.max(1, simulatedSecondsAt60Hz * 60);
 		long[] samples = new long[frames];
 
 		EnemyRangedCombatController.Config config =
@@ -64,10 +65,21 @@ public class BukovPerformanceSmoke {
 		double p99Ms = percentile(samples, 0.99d) / 1_000_000d;
 		System.out.println(String.format(
 				Locale.ROOT,
-				"{\"seconds\":%d,\"enemies\":%d,\"projectiles\":%d,"
+				"{\"benchmark\":\"simulated-inner-loop-cpu\","
+						+ "\"wallClockSoak\":false,"
+						+ "\"productionGameplayPath\":false,"
+						+ "\"simulatedSecondsAt60Hz\":%d,"
+						+ "\"simulatedFrames\":%d,"
+						+ "\"enemies\":%d,\"projectiles\":%d,"
 						+ "\"averageFrameMs\":%.4f,\"p95FrameMs\":%.4f,"
 						+ "\"p99FrameMs\":%.4f}",
-				seconds, ENEMIES, PROJECTILES, averageMs, p95Ms, p99Ms));
+				simulatedSecondsAt60Hz,
+				frames,
+				ENEMIES,
+				PROJECTILES,
+				averageMs,
+				p95Ms,
+				p99Ms));
 
 		// One rendered 60 Hz frame advances two fixed ticks. The approved
 		// simulation budget is P95 < 4.5 ms for that complete pair.
