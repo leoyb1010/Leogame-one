@@ -66,7 +66,12 @@ public class BukovTouchIconTest {
 
 		assertTrue(controls.contains("pointerArea.width = width;"));
 		assertTrue(controls.contains("pointerArea.height = height;"));
+		assertTrue(controls.contains("pointerArea.width = hitWidth;"));
+		assertTrue(controls.contains("pointerArea.height = hitHeight;"));
 		assertTrue(controls.contains("listener.onActionPressed(action);"));
+		assertTrue(controls.contains(
+				"if (inputBlocked || disabled || pointerId != -1)"));
+		assertTrue(controls.contains("liveActionAvailability("));
 		assertTrue(controls.contains("icon.visualState("));
 		assertTrue(controls.contains("setDisabled(blocked)"));
 		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.60f"));
@@ -79,6 +84,43 @@ public class BukovTouchIconTest {
 		assertFalse(icon.contains("ColorBlock"));
 		assertFalse(icon.contains("Icons.get("));
 		assertFalse(icon.contains("new Image("));
+	}
+
+	@Test
+	public void touchActionsUseRealShortWordsAndTwentyTwoPixelHitTargets() {
+		assertEquals(
+				"Use",
+				BukovTouchControls.compactActionLabel(
+						BukovTouchState.Action.INTERACT,
+						"Interact"));
+		assertEquals(
+				"Reload",
+				BukovTouchControls.compactActionLabel(
+						BukovTouchState.Action.RELOAD,
+						"Reload"));
+		assertEquals(
+				"Heal",
+				BukovTouchControls.compactActionLabel(
+						BukovTouchState.Action.MEDICAL,
+						"Medical"));
+		assertEquals(
+				"交互",
+				BukovTouchControls.compactActionLabel(
+						BukovTouchState.Action.INTERACT,
+						"交互"));
+		assertFalse("Inte.".equals(
+				BukovTouchControls.compactActionLabel(
+						BukovTouchState.Action.INTERACT,
+						"Interact")));
+		assertEquals(22f, BukovTouchControls.actionHitSize(19f), 0f);
+		assertEquals(28f, BukovTouchControls.actionHitSize(28f), 0f);
+	}
+
+	@Test
+	public void perActionAvailabilityMatchesItsInputState() {
+		assertFalse(BukovTouchControls.actionDisabled(false, true));
+		assertTrue(BukovTouchControls.actionDisabled(false, false));
+		assertTrue(BukovTouchControls.actionDisabled(true, true));
 	}
 
 	@Test

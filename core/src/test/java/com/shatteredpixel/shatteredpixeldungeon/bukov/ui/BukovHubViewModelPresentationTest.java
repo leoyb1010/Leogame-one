@@ -308,10 +308,22 @@ public class BukovHubViewModelPresentationTest {
 
 	@Test
 	public void portraitAndLandscapeKeepScrollableInventoryAboveFooter() {
-		assertEquals(67, WndBukovHub.inventoryViewportHeight(226, false));
-		assertEquals(48, WndBukovHub.inventoryViewportHeight(180, true));
-		assertEquals(58, WndBukovHub.inventoryViewportHeight(217, false));
-		assertEquals(20, WndBukovHub.inventoryViewportHeight(152, true));
+		assertEquals(42, WndBukovHub.inventoryViewportHeight(226, false));
+		assertEquals(23, WndBukovHub.inventoryViewportHeight(180, true));
+		assertEquals(33, WndBukovHub.inventoryViewportHeight(217, false));
+		assertEquals(38, WndBukovHub.inventoryViewportHeight(152, true));
+		assertEquals(5, WndBukovHub.inventoryViewportHeight(119, true));
+		assertEquals(22f, WndBukovHub.mobileControlHeight(15f), 0f);
+		assertEquals(24f, WndBukovHub.mobileControlHeight(24f), 0f);
+		assertEquals("Confirm", WndBukovHub.shortActionLabel(
+				"Confirm deployment"));
+		assertEquals("确认出击", WndBukovHub.shortActionLabel("确认出击"));
+		assertEquals("Filter", WndBukovHub.shortActionLabel(
+				"Filter: All · 12"));
+		assertEquals("筛选", WndBukovHub.shortActionLabel(
+				"筛选：全部 · 12"));
+		assertEquals("Extraor…", WndBukovHub.shortActionLabel(
+				"Extraordinary"));
 	}
 
 	@Test

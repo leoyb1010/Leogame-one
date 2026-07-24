@@ -23,12 +23,15 @@ public final class BukovTouchControls extends Component {
 	private static final float ACTION_ICON_MAX_PX = 16f;
 	private static final float ACTION_ICON_HEIGHT_RATIO = 0.60f;
 	private static final float ACTION_LABEL_HEIGHT_PX = 5f;
+	private static final float MIN_ACTION_HIT_SIZE_PX = 22f;
 
 	public interface Listener {
 		void onActionPressed(BukovTouchState.Action action);
 	}
 
 	private final BukovTouchState state = new BukovTouchState();
+	private final boolean[] actionUnavailable =
+			new boolean[BukovTouchState.Action.values().length];
 	private BukovUiTokens tokens;
 	private TouchStick movement;
 	private TouchStick aimFire;
@@ -126,6 +129,52 @@ public final class BukovTouchControls extends Component {
 	}
 
 	/**
+	 * Applies live gameplay availability without changing the input contract:
+	 * unavailable actions are both visibly disabled and unable to create a
+	 * pressed/held edge. The caller can update these flags every render frame.
+	 */
+	public void setActionEnabled(
+			BukovTouchState.Action action,
+			boolean enabled) {
+		if (action == null) {
+			throw new IllegalArgumentException("action is required");
+		}
+		if (actionUnavailable[action.ordinal()] == !enabled) {
+			return;
+		}
+		actionUnavailable[action.ordinal()] = !enabled;
+		if (!enabled) {
+			state.consumePressed(action);
+		}
+		TouchAction control = actionControl(action);
+		if (control != null) {
+			control.setDisabled(actionDisabled(inputBlocked, enabled));
+		}
+	}
+
+	public boolean actionEnabled(BukovTouchState.Action action) {
+		if (action == null) {
+			throw new IllegalArgumentException("action is required");
+		}
+		return !actionUnavailable[action.ordinal()];
+	}
+
+	public void liveActionAvailability(
+			boolean interactAvailable,
+			boolean reloadAvailable,
+			boolean medicalAvailable) {
+		setActionEnabled(
+				BukovTouchState.Action.INTERACT,
+				interactAvailable);
+		setActionEnabled(
+				BukovTouchState.Action.RELOAD,
+				reloadAvailable);
+		setActionEnabled(
+				BukovTouchState.Action.MEDICAL,
+				medicalAvailable);
+	}
+
+	/**
 	 * Insets are expressed in logical PixelScene pixels, not device pixels.
 	 */
 	public BukovTouchControls safeInsets(
@@ -165,12 +214,7 @@ public final class BukovTouchControls extends Component {
 		}
 		movement.setDisabled(blocked);
 		aimFire.setDisabled(blocked);
-		interact.setDisabled(blocked);
-		reload.setDisabled(blocked);
-		medical.setDisabled(blocked);
-		drop.setDisabled(blocked);
-		backpack.setDisabled(blocked);
-		pause.setDisabled(blocked);
+		refreshActionAvailability();
 		active = !blocked;
 	}
 
@@ -236,6 +280,48 @@ public final class BukovTouchControls extends Component {
 		return camera().screenToCamera((int)event.current.x, (int)event.current.y);
 	}
 
+	private void refreshActionAvailability() {
+		for (BukovTouchState.Action action
+				: BukovTouchState.Action.values()) {
+			TouchAction control = actionControl(action);
+			if (control != null) {
+				control.setDisabled(actionDisabled(
+						inputBlocked,
+						!actionUnavailable[action.ordinal()]));
+			}
+		}
+	}
+
+	private TouchAction actionControl(BukovTouchState.Action action) {
+		switch (action) {
+			case INTERACT:
+				return interact;
+			case RELOAD:
+				return reload;
+			case MEDICAL:
+				return medical;
+			case DROP:
+				return drop;
+			case BACKPACK:
+				return backpack;
+			case PAUSE:
+				return pause;
+			default:
+				throw new IllegalArgumentException(
+						"unsupported action: " + action);
+		}
+	}
+
+	static boolean actionDisabled(
+			boolean inputBlocked,
+			boolean actionAvailable) {
+		return inputBlocked || !actionAvailable;
+	}
+
+	static float actionHitSize(float visualSize) {
+		return Math.max(MIN_ACTION_HIT_SIZE_PX, visualSize);
+	}
+
 	static BukovTouchIcon.Glyph iconFor(BukovTouchState.Stick stick) {
 		if (stick == null) {
 			throw new IllegalArgumentException("stick is required");
@@ -267,17 +353,46 @@ public final class BukovTouchControls extends Component {
 		}
 	}
 
-	private static String compactActionLabel(String value) {
-		if (value == null) {
+	static String compactActionLabel(
+			BukovTouchState.Action action,
+			String value) {
+		if (action == null || value == null) {
 			return "";
 		}
 		String normalized = value.trim();
+		boolean latin = true;
+		for (int index = 0; index < normalized.length();) {
+			int codePoint = normalized.codePointAt(index);
+			if (codePoint > 0x7F) {
+				latin = false;
+				break;
+			}
+			index += Character.charCount(codePoint);
+		}
+		if (latin) {
+			switch (action) {
+				case INTERACT:
+					return "Use";
+				case RELOAD:
+					return "Reload";
+				case MEDICAL:
+					return "Heal";
+				case DROP:
+					return "Drop";
+				case BACKPACK:
+					return "Bag";
+				case PAUSE:
+					return "Pause";
+				default:
+					break;
+			}
+		}
 		int count = normalized.codePointCount(0, normalized.length());
-		if (count <= 5) {
+		if (count <= 4) {
 			return normalized;
 		}
-		int end = normalized.offsetByCodePoints(0, 4);
-		return normalized.substring(0, end) + ".";
+		int end = normalized.offsetByCodePoints(0, 3);
+		return normalized.substring(0, end) + "…";
 	}
 
 	private final class TouchStick extends Component {
@@ -358,7 +473,7 @@ public final class BukovTouchControls extends Component {
 
 				@Override
 				protected void onPointerDown(PointerEvent event) {
-					if (inputBlocked || pointerId != -1) {
+					if (inputBlocked || disabled || pointerId != -1) {
 						return;
 					}
 					PointF point = pointerPosition(event);
@@ -557,7 +672,7 @@ public final class BukovTouchControls extends Component {
 					tokens.color("text.disabled"));
 			add(icon);
 			label = PixelScene.renderTextBlock(
-					compactActionLabel(text),
+					compactActionLabel(action, text),
 					Math.max(
 							6,
 							tokens.typographyPx(
@@ -577,7 +692,7 @@ public final class BukovTouchControls extends Component {
 
 				@Override
 				protected void onPointerDown(PointerEvent event) {
-					if (inputBlocked || pointerId != -1) {
+					if (inputBlocked || disabled || pointerId != -1) {
 						return;
 					}
 					if (state.beginAction(action, event.id)) {
@@ -646,10 +761,12 @@ public final class BukovTouchControls extends Component {
 					bottom() - ACTION_LABEL_HEIGHT_PX,
 					Math.max(1f, width - 2f),
 					ACTION_LABEL_HEIGHT_PX);
-			pointerArea.x = x;
-			pointerArea.y = y;
-			pointerArea.width = width;
-			pointerArea.height = height;
+			float hitWidth = actionHitSize(width);
+			float hitHeight = actionHitSize(height);
+			pointerArea.x = x - (hitWidth - width) * 0.5f;
+			pointerArea.y = y - (hitHeight - height) * 0.5f;
+			pointerArea.width = hitWidth;
+			pointerArea.height = hitHeight;
 		}
 
 		private void setPressed(boolean pressed) {
@@ -687,6 +804,12 @@ public final class BukovTouchControls extends Component {
 		}
 
 		private void setDisabled(boolean disabled) {
+			if (this.disabled == disabled) {
+				return;
+			}
+			if (disabled) {
+				resetInteraction();
+			}
 			this.disabled = disabled;
 			setPressed(false);
 		}

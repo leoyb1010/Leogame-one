@@ -37,11 +37,14 @@ public final class WndBukovHub extends Window {
 	private static final int HEIGHT_L = 180;
 	private static final int ROW_HEIGHT = 16;
 	private static final int BUTTON_HEIGHT = 18;
+	private static final float MIN_MOBILE_CONTROL_HEIGHT = 22f;
 	private static final int GAP = 2;
 	private static final int MARGIN = 4;
-	private static final int INVENTORY_TOP_P = 107;
-	private static final int INVENTORY_TOP_L = 80;
-	private static final int FOOTER_RESERVED = 52;
+	private static final int INVENTORY_TOP_P = 124;
+	private static final int INVENTORY_TOP_L = 97;
+	private static final int INVENTORY_TOP_L_COMPACT = 66;
+	private static final int FOOTER_RESERVED = 60;
+	private static final int FOOTER_RESERVED_COMPACT = 48;
 
 	private final BukovHubController controller;
 	private final Callback deploy;
@@ -132,8 +135,11 @@ public final class WndBukovHub extends Window {
 
 	private void build(int windowWidth, int windowHeight) {
 		boolean landscape = PixelScene.landscape();
-		boolean compactLandscape = landscape && windowHeight < 150;
-		actionButtonHeight = compactLandscape ? 15f : BUTTON_HEIGHT;
+		boolean compactLandscape = landscape && windowHeight < 160;
+		actionButtonHeight = DeviceCompat.isDesktop()
+				? (compactLandscape ? 15f : BUTTON_HEIGHT)
+				: mobileControlHeight(
+						compactLandscape ? 15f : BUTTON_HEIGHT);
 		float y = 3;
 		ColorBlock header = new ColorBlock(
 				windowWidth,
@@ -243,8 +249,8 @@ public final class WndBukovHub extends Window {
 			y += 8;
 		}
 
-		float inventoryUtilityHeight =
-				DeviceCompat.isDesktop() ? 9f : 15f;
+		float inventoryUtilityHeight = DeviceCompat.isDesktop()
+				? 9f : mobileControlHeight(15f);
 		float inventoryUtilityWidth =
 				(windowWidth - MARGIN * 2 - GAP * 2f) / 3f;
 		filterButton = new FilterCycleButton();
@@ -361,6 +367,12 @@ public final class WndBukovHub extends Window {
 	static int inventoryViewportHeight(
 			int windowHeight,
 			boolean landscape) {
+		if (landscape && windowHeight < 160) {
+			return (int)inventoryViewportHeight(
+					windowHeight,
+					INVENTORY_TOP_L_COMPACT,
+					FOOTER_RESERVED_COMPACT);
+		}
 		return (int)inventoryViewportHeight(
 				windowHeight,
 				landscape ? INVENTORY_TOP_L : INVENTORY_TOP_P,
@@ -374,6 +386,10 @@ public final class WndBukovHub extends Window {
 		return Math.max(
 				1f,
 				windowHeight - inventoryTop - footerReserved);
+	}
+
+	static float mobileControlHeight(float requestedHeight) {
+		return Math.max(MIN_MOBILE_CONTROL_HEIGHT, requestedHeight);
 	}
 
 	static int windowHeightFor(
@@ -419,6 +435,35 @@ public final class WndBukovHub extends Window {
 			return value;
 		}
 		return value.substring(0, maxCharacters - 3) + "...";
+	}
+
+	static String shortActionLabel(String value) {
+		String normalized = value == null ? "" : value.trim();
+		int separator = normalized.indexOf('·');
+		if (separator > 0) {
+			normalized = normalized.substring(0, separator).trim();
+		}
+		int asciiColon = normalized.indexOf(':');
+		int fullWidthColon = normalized.indexOf('：');
+		int colon = asciiColon < 0
+				? fullWidthColon
+				: fullWidthColon < 0
+						? asciiColon
+						: Math.min(asciiColon, fullWidthColon);
+		if (colon > 0) {
+			normalized = normalized.substring(0, colon).trim();
+		}
+		int whitespace = normalized.indexOf(' ');
+		if (whitespace > 0) {
+			return normalized.substring(0, whitespace);
+		}
+		int codePoints = normalized.codePointCount(0, normalized.length());
+		if (codePoints <= 8) {
+			return normalized;
+		}
+		return normalized.substring(
+				0,
+				normalized.offsetByCodePoints(0, 7)) + "…";
 	}
 
 	private static void center(
@@ -1050,6 +1095,8 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock edge;
 		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
+		private boolean focused;
+		private boolean pointerPressed;
 
 		private FilterCycleButton() {
 			surface = new ColorBlock(
@@ -1063,10 +1110,10 @@ public final class WndBukovHub extends Window {
 			icon = hubIcon(BukovTouchIcon.Glyph.FILTER);
 			add(icon);
 			label = text(
-					BukovMessages.get(
+					shortActionLabel(BukovMessages.get(
 							"bukov.economy.hub.filter",
 							inventoryFilter.label,
-							inventoryItems.size()),
+							inventoryItems.size())),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1079,11 +1126,32 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
+			this.focused = focused;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshState();
+		}
+
+		private void refreshState() {
 			edge.hardlight(tokens.color(
-					focused ? "accent.interact" : "panel.border"));
-			surface.alpha(focused ? 0.34f : 0.15f);
+					pointerPressed || focused
+							? "accent.interact" : "panel.border"));
+			surface.alpha(pointerPressed
+					? 0.58f : focused ? 0.34f : 0.15f);
 			label.hardlight(tokens.color(
-					focused ? "accent.interact" : "text.secondary"));
+					pointerPressed || focused
+							? "accent.interact" : "text.secondary"));
+			icon.visualState(pointerPressed, false);
 		}
 
 		@Override
@@ -1094,7 +1162,7 @@ public final class WndBukovHub extends Window {
 			surface.size(width, height);
 			edge.x = x;
 			edge.y = y + height - 1;
-			edge.size(width, 1);
+			edge.size(width, pointerPressed ? 2f : 1f);
 			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
@@ -1105,6 +1173,8 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock edge;
 		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
+		private boolean focused;
+		private boolean pointerPressed;
 
 		private SortCycleButton() {
 			surface = new ColorBlock(
@@ -1118,9 +1188,9 @@ public final class WndBukovHub extends Window {
 			icon = hubIcon(BukovTouchIcon.Glyph.SORT);
 			add(icon);
 			label = text(
-					BukovMessages.get(
+					shortActionLabel(BukovMessages.get(
 							"bukov.economy.hub.sort",
-							inventorySort.label),
+							inventorySort.label)),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1133,11 +1203,32 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
+			this.focused = focused;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshState();
+		}
+
+		private void refreshState() {
 			edge.hardlight(tokens.color(
-					focused ? "accent.valuable" : "panel.border"));
-			surface.alpha(focused ? 0.34f : 0.15f);
+					pointerPressed || focused
+							? "accent.valuable" : "panel.border"));
+			surface.alpha(pointerPressed
+					? 0.58f : focused ? 0.34f : 0.15f);
 			label.hardlight(tokens.color(
-					focused ? "accent.valuable" : "text.secondary"));
+					pointerPressed || focused
+							? "accent.valuable" : "text.secondary"));
+			icon.visualState(pointerPressed, false);
 		}
 
 		@Override
@@ -1148,7 +1239,7 @@ public final class WndBukovHub extends Window {
 			surface.size(width, height);
 			edge.x = x;
 			edge.y = y + height - 1;
-			edge.size(width, 1);
+			edge.size(width, pointerPressed ? 2f : 1f);
 			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
@@ -1159,6 +1250,8 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock edge;
 		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
+		private boolean focused;
+		private boolean pointerPressed;
 
 		private InventorySearchButton() {
 			surface = new ColorBlock(
@@ -1172,12 +1265,12 @@ public final class WndBukovHub extends Window {
 			icon = hubIcon(BukovTouchIcon.Glyph.SEARCH);
 			add(icon);
 			label = text(
-					inventoryQuery.isEmpty()
+					shortActionLabel(inventoryQuery.isEmpty()
 							? BukovMessages.get(
 									"bukov.economy.hub.search")
 							: BukovMessages.get(
 									"bukov.economy.hub.search_query",
-									compact(inventoryQuery, 5)),
+									compact(inventoryQuery, 5))),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color(
 							inventoryQuery.isEmpty()
@@ -1193,15 +1286,35 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
+			this.focused = focused;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshState();
+		}
+
+		private void refreshState() {
 			edge.hardlight(tokens.color(
-					focused ? "accent.interact" : "panel.border"));
-			surface.alpha(focused ? 0.34f : 0.15f);
+					pointerPressed || focused
+							? "accent.interact" : "panel.border"));
+			surface.alpha(pointerPressed
+					? 0.58f : focused ? 0.34f : 0.15f);
 			label.hardlight(tokens.color(
-					focused
+					pointerPressed || focused
 							? "accent.interact"
 							: inventoryQuery.isEmpty()
 							? "text.secondary"
 							: "accent.interact"));
+			icon.visualState(pointerPressed, false);
 		}
 
 		@Override
@@ -1212,7 +1325,7 @@ public final class WndBukovHub extends Window {
 			surface.size(width, height);
 			edge.x = x;
 			edge.y = y + height - 1;
-			edge.size(width, 1);
+			edge.size(width, pointerPressed ? 2f : 1f);
 			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
@@ -1224,6 +1337,8 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock focusEdge;
 		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
+		private boolean focused;
+		private boolean pointerPressed;
 
 		private ModeSelectButton() {
 			surface = new ColorBlock(
@@ -1241,11 +1356,11 @@ public final class WndBukovHub extends Window {
 			icon = hubIcon(BukovTouchIcon.Glyph.MODE);
 			add(icon);
 			label = text(
-					BukovMessages.get(
+					shortActionLabel(BukovMessages.get(
 							viewModel.canEditLoadout
 									? "bukov.economy.hub.mode_select"
 									: "bukov.economy.hub.mode_locked",
-							viewModel.raidModeName),
+							viewModel.raidModeName)),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			add(label);
@@ -1257,10 +1372,29 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
-			focusEdge.visible = focused;
-			label.hardlight(focused
+			this.focused = focused;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshState();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshState();
+		}
+
+		private void refreshState() {
+			focusEdge.visible = focused || pointerPressed;
+			surface.alpha(pointerPressed ? 0.58f : 1f);
+			label.hardlight(focused || pointerPressed
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+			icon.visualState(pointerPressed, false);
 		}
 
 		@Override
@@ -1480,7 +1614,9 @@ public final class WndBukovHub extends Window {
 			icon = hubIcon(actionGlyph(action));
 			icon.visualState(false, !enabled);
 			add(icon);
-			label = text(value, BukovVisualContract.FONT_CAPTION,
+			label = text(
+					shortActionLabel(value),
+					BukovVisualContract.FONT_CAPTION,
 					enabled
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
@@ -1597,13 +1733,23 @@ public final class WndBukovHub extends Window {
 					BukovMessages.get("bukov.economy.hub.confirm_cancel"),
 					false,
 					tokens.color("panel.border"));
-			cancel.setRect(5, 59, 61, 19);
+			cancel.setRect(
+					5,
+					59,
+					61,
+					DeviceCompat.isDesktop()
+							? 19f : mobileControlHeight(19f));
 			add(cancel);
 			ConfirmButton accept = new ConfirmButton(
 					BukovMessages.get("bukov.economy.hub.confirm_accept"),
 					true,
 					tokens.color("accent.extract"));
-			accept.setRect(72, 59, 61, 19);
+			accept.setRect(
+					72,
+					59,
+					61,
+					DeviceCompat.isDesktop()
+							? 19f : mobileControlHeight(19f));
 			add(accept);
 		}
 
@@ -1641,9 +1787,12 @@ public final class WndBukovHub extends Window {
 			private final ColorBlock edge;
 			private final BukovTouchIcon icon;
 			private final RenderedTextBlock label;
+			private final int accent;
+			private boolean pointerPressed;
 
 			private ConfirmButton(String value, boolean accepts, int accent) {
 				this.accepts = accepts;
+				this.accent = accent;
 				surface = new ColorBlock(1, 1,
 						tokens.color("panel.surface"));
 				addToBack(surface);
@@ -1654,7 +1803,8 @@ public final class WndBukovHub extends Window {
 						: BukovTouchIcon.Glyph.BACK);
 				add(icon);
 				label = text(
-						value, BukovVisualContract.FONT_CAPTION,
+						shortActionLabel(value),
+						BukovVisualContract.FONT_CAPTION,
 						accepts
 								? tokens.color("text.primary")
 								: tokens.color("text.secondary"));
@@ -1672,6 +1822,31 @@ public final class WndBukovHub extends Window {
 			}
 
 			@Override
+			protected void onPointerDown() {
+				pointerPressed = true;
+				refreshPressedState();
+			}
+
+			@Override
+			protected void onPointerUp() {
+				pointerPressed = false;
+				refreshPressedState();
+			}
+
+			private void refreshPressedState() {
+				surface.alpha(pointerPressed ? 0.56f : 1f);
+				edge.hardlight(pointerPressed
+						? tokens.color("accent.interact") : accent);
+				label.hardlight(pointerPressed
+						? tokens.color("accent.interact")
+						: accepts
+								? tokens.color("text.primary")
+								: tokens.color("text.secondary"));
+				icon.visualState(pointerPressed, false);
+				layout();
+			}
+
+			@Override
 			protected void layout() {
 				super.layout();
 				surface.x = x;
@@ -1679,7 +1854,7 @@ public final class WndBukovHub extends Window {
 				surface.size(width, height);
 				edge.x = x;
 				edge.y = y;
-				edge.size(2, height);
+				edge.size(pointerPressed ? 3f : 2f, height);
 				layoutIconLabel(icon, label, x, y, width, height);
 			}
 		}

@@ -37,6 +37,10 @@ public class BukovHubVisualBoundaryGuardTest {
 		assertTrue(source.contains("SortCycleButton"));
 		assertTrue(source.contains("InventorySearchButton"));
 		assertTrue(source.contains("WndBukovInventorySearch"));
+		assertTrue(source.contains("MIN_MOBILE_CONTROL_HEIGHT = 22f"));
+		assertTrue(source.contains("protected void onPointerDown()"));
+		assertTrue(source.contains("pointerPressed ? 0.58f"));
+		assertTrue(source.contains("mobileControlHeight(19f)"));
 		assertTrue(source.contains("item.rarity.colorToken"));
 		assertTrue(source.contains("item.comparisonLabel()"));
 		assertTrue(viewModel.contains("InventorySort"));
