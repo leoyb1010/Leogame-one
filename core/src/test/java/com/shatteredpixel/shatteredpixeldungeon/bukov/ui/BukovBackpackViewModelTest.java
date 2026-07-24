@@ -43,6 +43,9 @@ public class BukovBackpackViewModelTest {
 
 		assertEquals(5, model.items.size());
 		assertEquals("4.82/40.00kg", model.weightSummary());
+		assertEquals(
+				"负重 4.82/40.00kg · 价值 4526",
+				model.totalsSummary());
 		assertEquals(4526L, model.totalValue);
 
 		BukovBackpackViewModel.ItemRow equipped = model.find("gun-a");
@@ -90,6 +93,9 @@ public class BukovBackpackViewModelTest {
 
 		assertTrue(model.items.isEmpty());
 		assertEquals("0.00/40.00kg", model.weightSummary());
+		assertEquals(
+				"负重 0.00/40.00kg · 价值 0",
+				model.totalsSummary());
 		assertEquals(0L, model.totalValue);
 	}
 

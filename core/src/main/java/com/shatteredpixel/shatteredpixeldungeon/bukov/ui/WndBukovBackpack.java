@@ -147,7 +147,7 @@ public final class WndBukovBackpack extends Window {
 		add(title);
 
 		RenderedTextBlock code = text(
-				"RAID INVENTORY",
+				"行动已暂停 · TAB关闭",
 				6,
 				tokens.color("text.secondary"));
 		code.setPos(windowWidth - MARGIN - code.width(), 5);
@@ -280,8 +280,7 @@ public final class WndBukovBackpack extends Window {
 	}
 
 	private void updateTotals() {
-		totals.text("负重 " + viewModel.weightSummary()
-				+ "    携带价值 " + viewModel.totalValue);
+		totals.text(viewModel.totalsSummary());
 	}
 
 	private void updateSelection() {

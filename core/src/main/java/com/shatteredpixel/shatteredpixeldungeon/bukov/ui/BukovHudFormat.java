@@ -112,7 +112,11 @@ public final class BukovHudFormat {
 				|| type == BukovRaidHudState.Interaction.EXTRACT
 				|| type == BukovRaidHudState.Interaction.MEDICAL)) {
 			return (desktop ? "按住 E" : "按住互动")
-					+ " · " + action + " " + oneDecimal(seconds) + "秒";
+					+ " · " + action + " · " + oneDecimal(seconds) + "秒";
+		}
+		if (type == BukovRaidHudState.Interaction.PICKUP) {
+			return (desktop ? "按 E" : "按互动")
+					+ " · " + action + " · 背包查看负重/价值";
 		}
 		return type == BukovRaidHudState.Interaction.LOCKED
 				? "不可交互 · " + action

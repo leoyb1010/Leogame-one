@@ -46,6 +46,12 @@ public class BukovGameUiShellGuardTest {
 		assertTrue(onBack.contains("if (BukovMode.active())"));
 		assertTrue(onBack.contains("new WndBukovPause"));
 		assertTrue(source.contains("new BukovPauseButton"));
+		assertTrue(source.contains("installBukovBackpackShortcut()"));
+		assertTrue(source.contains(
+				"KeyEvent.addKeyListener(bukovBackpackKeyListener)"));
+		assertTrue(source.contains(
+				"KeyEvent.removeKeyListener(bukovBackpackKeyListener)"));
+		assertTrue(source.contains("openBukovBackpack()"));
 
 		String show = between(
 				source,

@@ -232,6 +232,15 @@ public final class BukovBackpackViewModel {
 				+ formatWeight(maximumWeight) + "kg";
 	}
 
+	/**
+	 * One-line raid summary sized for the narrow portrait backpack header.
+	 * The old copy repeated labels and spaces until the carried value was
+	 * clipped off on the smallest supported viewport.
+	 */
+	public String totalsSummary() {
+		return "负重 " + weightSummary() + " · 价值 " + totalValue;
+	}
+
 	public static String formatWeight(float weight) {
 		return String.format(Locale.ROOT, "%.2f", weight);
 	}

@@ -45,14 +45,14 @@ public class BukovHudFormatTest {
 				BukovHudFormat.status(0.4f, true, 0.2f, 2.5f, 0f));
 		assertEquals("换弹 35%", BukovHudFormat.reload(true, 0.35f));
 		assertEquals(
-				"按住互动 · 搜索容器 1.2秒",
+				"按住互动 · 搜索容器 · 1.2秒",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
 						"搜索容器",
 						0f,
 						1.2f));
 		assertEquals(
-				"按住 E · 搜索容器 1.2秒",
+				"按住 E · 搜索容器 · 1.2秒",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
 						"搜索容器",
@@ -60,7 +60,7 @@ public class BukovHudFormatTest {
 						1.2f,
 						true));
 		assertEquals(
-				"按 E · 拾取物资",
+				"按 E · 拾取物资 · 背包查看负重/价值",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.PICKUP,
 						"拾取物资",

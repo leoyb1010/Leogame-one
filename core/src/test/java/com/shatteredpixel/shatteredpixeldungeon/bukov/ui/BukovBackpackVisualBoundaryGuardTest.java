@@ -35,8 +35,8 @@ public class BukovBackpackVisualBoundaryGuardTest {
 		assertTrue(source.contains("BukovItemSprite"));
 		assertTrue(source.contains("frameForDefinition(item.definitionId)"));
 		assertFalse(source.contains("RedButton"));
-		assertTrue(source.contains("RAID INVENTORY"));
 		assertTrue(source.contains("行动背包"));
+		assertTrue(source.contains("行动已暂停 · TAB关闭"));
 		assertTrue(source.contains("setBackpackOpen(true)"));
 		assertTrue(source.contains("setBackpackOpen(false)"));
 		assertTrue(source.contains("任务档案不可丢弃"));

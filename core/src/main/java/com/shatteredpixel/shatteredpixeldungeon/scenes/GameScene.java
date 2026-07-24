@@ -86,6 +86,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContrac
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHudFormat;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovBackpackViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovNavigation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovPauseButton;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHud;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
@@ -178,6 +179,7 @@ import com.shatteredpixel.shatteredpixeldungeon.windows.WndUpgrade;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.glwrap.Blending;
 import com.watabou.input.ControllerHandler;
+import com.watabou.input.KeyEvent;
 import com.watabou.input.KeyBindings;
 import com.watabou.input.PointerEvent;
 import com.watabou.noosa.Camera;
@@ -202,6 +204,7 @@ import com.watabou.utils.Point;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 import com.watabou.utils.RectF;
+import com.watabou.utils.Signal;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -274,6 +277,7 @@ public class GameScene extends PixelScene {
 	private BukovPauseButton bukovPause;
 	private BukovTouchControls bukovTouchControls;
 	private WndBukovBackpack bukovBackpack;
+	private Signal.Listener<KeyEvent> bukovBackpackKeyListener;
 	private BukovCombatPresentation bukovCombatPresentation;
 	private BukovExperienceSettings bukovAudioDefaults;
 	private BukovAudioBusMix bukovAudioMix;
@@ -998,6 +1002,7 @@ public class GameScene extends PixelScene {
 					bukovTouchControls.hudBottom(bukovHud.bottom() + 2f);
 				}
 				add(bukovHud);
+				installBukovBackpackShortcut();
 			}
 
 		}
@@ -1476,6 +1481,7 @@ public class GameScene extends PixelScene {
 			bukovHud = null;
 			bukovPause = null;
 			bukovBackpack = null;
+			uninstallBukovBackpackShortcut();
 			if (bukovTouchControls != null) {
 				bukovTouchControls.resetInput();
 				bukovTouchControls = null;
@@ -1913,6 +1919,33 @@ public class GameScene extends PixelScene {
 		});
 		add(bukovBackpack);
 		playBukovUiCue(BukovUiSoundPlayer.Cue.CONFIRM);
+	}
+
+	/**
+	 * Opens the raid backpack directly from the UI event stream. Routing TAB
+	 * only through the fixed-step input snapshot made the shortcut dependent
+	 * on a simulation tick; this listener pauses the world in the same event
+	 * that opens the window. The window itself remains the first listener while
+	 * open and consumes TAB/Y to close.
+	 */
+	private void installBukovBackpackShortcut() {
+		if (bukovBackpackKeyListener != null) return;
+		bukovBackpackKeyListener = event -> {
+			if (!event.pressed || !BukovNavigation.inventory(event)) {
+				return false;
+			}
+			if (!showingWindow()) {
+				openBukovBackpack();
+			}
+			return true;
+		};
+		KeyEvent.addKeyListener(bukovBackpackKeyListener);
+	}
+
+	private void uninstallBukovBackpackShortcut() {
+		if (bukovBackpackKeyListener == null) return;
+		KeyEvent.removeKeyListener(bukovBackpackKeyListener);
+		bukovBackpackKeyListener = null;
 	}
 
 	private void closeBukovBackpack() {

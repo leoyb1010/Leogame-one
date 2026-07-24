@@ -368,6 +368,7 @@ public final class BukovRaidHud extends Component {
 			timerText.text(
 					"行动 "
 							+ BukovHudFormat.clock(elapsed)
+							+ "\n"
 							+ controlHint(DeviceCompat.isDesktop()));
 		}
 
@@ -535,7 +536,8 @@ public final class BukovRaidHud extends Component {
 		reloadFill.y = reloadTrack.y;
 		reloadFill.size(
 				(rightWidth - PADDING) * live.reloadProgress(), 2f);
-		timerText.setPos(rightX, y + actualHeight - 10f);
+		timerText.maxWidth((int)(rightWidth - PADDING));
+		timerText.setPos(rightX, y + 24f);
 		positionBoss(centerLeft, y + actualHeight + 2f, centerWidth);
 	}
 
@@ -566,6 +568,7 @@ public final class BukovRaidHud extends Component {
 		reloadFill.x = rightX;
 		reloadFill.y = reloadTrack.y;
 		reloadFill.size(barWidth * live.reloadProgress(), 2f);
+		timerText.maxWidth((int)barWidth);
 		timerText.setPos(rightX, y + 30f);
 
 		float missionX = x + width * 0.36f;
@@ -795,7 +798,7 @@ public final class BukovRaidHud extends Component {
 	}
 
 	public static String controlHint(boolean desktop) {
-		return desktop ? " · TAB 背包" : " · 背包键";
+		return desktop ? "TAB 背包 · 暂停" : "背包键 · 暂停";
 	}
 
 	private Firearm equippedFirearm() {
