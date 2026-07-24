@@ -317,9 +317,9 @@ public final class BukovHubScene extends PixelScene {
 		float innerWidth = width - 10f;
 		float cardHeight = wide
 				? Math.max(32f,
-						Math.min(46f, height - actionHeight - 25f))
+						Math.min(46f, height - actionHeight - 41f))
 				: Math.max(29f,
-						Math.min(38f, height - actionHeight - 31f));
+						Math.min(38f, height - actionHeight - 47f));
 
 		BukovRaidMode selectedMode = controller.selectedRaidMode();
 		boolean training = selectedMode.trainingGround();
@@ -354,7 +354,9 @@ public final class BukovHubScene extends PixelScene {
 		readiness.setPos(innerX, modeCard.bottom() + uiGap);
 		add(readiness);
 
-		float actionsY = readiness.bottom() + uiGap;
+		float actionsY = Math.min(
+				readiness.bottom() + uiGap,
+				y + height - actionHeight - 6f);
 		float third = (innerWidth - uiGap * 2f) / 3f;
 		addButton(
 				state.canDeploy

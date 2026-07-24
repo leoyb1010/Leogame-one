@@ -113,6 +113,10 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(hubScene.contains("class AbandonConfirmWindow"));
 		assertTrue(hubScene.contains("extends BukovIconLabelButton"));
 		assertFalse(hubScene.contains("new WndOptions("));
+		assertTrue(hubScene.contains(
+				"height - actionHeight - 41f"));
+		assertTrue(hubScene.contains(
+				"y + height - actionHeight - 6f"));
 	}
 
 	private static String source(String file) throws Exception {
