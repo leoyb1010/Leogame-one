@@ -11,6 +11,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -117,25 +118,30 @@ public class FirstRaidMissionRuntimeTest {
 		archiveHeap.items.add(new BukovMissionArchive());
 
 		assertEquals(
-				"搜索维修间档案柜",
+				BukovMessages.get(
+						"bukov.raid.runtime.search_archive"),
 				BukovRealtimeWorld.containerSearchLabel(
 						FirstRaidMission.ARCHIVE_LOOT_TABLE_ID,
 						false));
 		assertEquals(
-				"正在搜索维修间档案柜",
+				BukovMessages.get(
+						"bukov.raid.runtime.search_archive_active"),
 				BukovRealtimeWorld.containerSearchLabel(
 						FirstRaidMission.ARCHIVE_LOOT_TABLE_ID,
 						true));
 		assertEquals(
-				"搜查高价值仓",
+				BukovMessages.get(
+						"bukov.raid.runtime.search_high_value"),
 				BukovRealtimeWorld.containerSearchLabel(
 						FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID,
 						false));
 		assertEquals(
-				"拾取维修通道档案",
+				BukovMessages.get(
+						"bukov.raid.runtime.pickup_archive"),
 				BukovRealtimeWorld.heapPickupLabel(archiveHeap));
 		assertEquals(
-				"拾取物资",
+				BukovMessages.get(
+						"bukov.raid.runtime.pickup_loot"),
 				BukovRealtimeWorld.heapPickupLabel(new Heap()));
 	}
 

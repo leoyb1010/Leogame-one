@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
@@ -63,7 +64,7 @@ public final class WndBukovPause extends Window {
 		add(headerEdge);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"RAID CONTROL  /  LOCAL SESSION",
+				BukovMessages.get("bukov.raid.pause.eyebrow"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
@@ -71,7 +72,7 @@ public final class WndBukovPause extends Window {
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"行动暂停",
+				BukovMessages.get("bukov.raid.pause.title"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
@@ -87,7 +88,8 @@ public final class WndBukovPause extends Window {
 		statusSurface.y = y;
 		add(statusSurface);
 		RenderedTextBlock status = PixelScene.renderTextBlock(
-				"检查点已保护\n离开行动前会再次写入本地存档",
+				BukovMessages.get(
+						"bukov.raid.pause.checkpoint_status"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		status.hardlight(tokens.color("text.secondary"));
@@ -95,11 +97,17 @@ public final class WndBukovPause extends Window {
 		add(status);
 		y += 28;
 
-		addButton(new ActionButton("继续行动", "RESUME", CONTINUE), windowWidth);
-		addButton(new ActionButton("行动设置", "OPTIONS", SETTINGS), windowWidth);
 		addButton(new ActionButton(
-				"保存并返回藏身处",
-				"LEAVE RAID",
+				BukovMessages.get("bukov.raid.pause.resume_label"),
+				BukovMessages.get("bukov.raid.pause.resume_code"),
+				CONTINUE), windowWidth);
+		addButton(new ActionButton(
+				BukovMessages.get("bukov.raid.pause.settings_label"),
+				BukovMessages.get("bukov.raid.pause.settings_code"),
+				SETTINGS), windowWidth);
+		addButton(new ActionButton(
+				BukovMessages.get("bukov.raid.pause.leave_label"),
+				BukovMessages.get("bukov.raid.pause.leave_code"),
 				SAVE_AND_RETURN),
 				windowWidth);
 

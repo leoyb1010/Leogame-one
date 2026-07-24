@@ -2,8 +2,12 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
+import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
@@ -86,7 +90,7 @@ public final class WndBukovSettings extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"SYSTEM / ACCESSIBILITY / AUDIO",
+				entryMessage("settings.eyebrow"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
@@ -94,14 +98,14 @@ public final class WndBukovSettings extends Window {
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"行动体验设置",
+				entryMessage("settings.title"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN + 2, 14);
 		add(title);
 		RenderedTextBlock saved = PixelScene.renderTextBlock(
-				"即时生效 · 本地保存",
+				entryMessage("settings.saved"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		saved.hardlight(tokens.color("accent.extract"));
@@ -198,6 +202,7 @@ public final class WndBukovSettings extends Window {
 	}
 
 	private enum Setting {
+		LANGUAGE,
 		REDUCE_MOTION,
 		REDUCE_FLASHES,
 		COLORBLIND,
@@ -298,6 +303,9 @@ public final class WndBukovSettings extends Window {
 		protected void onClick() {
 			focus.focus(setting.ordinal());
 			switch (setting) {
+				case LANGUAGE:
+					switchLanguage();
+					return;
 				case REDUCE_MOTION:
 					SPDSettings.bukovReduceMotion(
 							!SPDSettings.bukovReduceMotion());
@@ -393,17 +401,30 @@ public final class WndBukovSettings extends Window {
 
 		private void showLegalNotice() {
 			ShatteredPixelDungeon.scene().addToFront(new WndMessage(
-					"开源许可 / LEGAL\n\n"
-						+ "本程序依据 GNU GPLv3 或更高版本提供，"
-						+ "不附带任何担保。你可以依照该许可证复制、"
-						+ "修改与再发布。\n\n"
-						+ "技术来源、作者版权与第三方素材署名仅作为"
-						+ "法律信息保留，不代表当前游戏的产品身份。\n\n"
-						+ "完整本地文本：\n"
-						+ "legal/LICENSE.txt\n"
-						+ "legal/THIRD_PARTY_NOTICES.txt\n\n"
-						+ "对应源码：\n"
-						+ "https://github.com/leoyb1010/Leogame-one"));
+					entryMessage("settings.legal_notice")));
+		}
+
+		private void switchLanguage() {
+			final Languages language =
+					nextLanguage(SPDSettings.language());
+			// Persist before rebuilding so a platform interruption cannot
+			// leave the visible language and stored preference out of sync.
+			SPDSettings.language(language);
+			Messages.setup(language);
+			hide();
+			ShatteredPixelDungeon.seamlessResetScene(
+					new Game.SceneChangeCallback() {
+						@Override
+						public void beforeCreate() {
+							GameLog.wipe();
+							Game.platform.resetGenerators();
+						}
+
+						@Override
+						public void afterCreate() {
+							// The rebuilt Bukov scene reads the new bundle.
+						}
+					});
 		}
 
 		private void setDeadZone(boolean left, int profile) {
@@ -434,98 +455,108 @@ public final class WndBukovSettings extends Window {
 
 		private void refreshLabel() {
 			switch (setting) {
+				case LANGUAGE:
+					setCopy(
+							entryMessage("settings.language.label"),
+							languageLabel());
+					break;
 				case REDUCE_MOTION:
-					setCopy("减少动效",
+					setCopy(entryMessage("settings.reduce_motion"),
 							enabled(SPDSettings.bukovReduceMotion()));
 					break;
 				case REDUCE_FLASHES:
-					setCopy("降低闪光",
+					setCopy(entryMessage("settings.reduce_flashes"),
 							enabled(SPDSettings.bukovReduceFlashes()));
 					break;
 				case COLORBLIND:
-					setCopy("色盲辅助",
+					setCopy(entryMessage("settings.colorblind"),
 							enabled(SPDSettings.bukovColorblindAssist()));
 					break;
 				case SOUND_VISUALIZATION:
-					setCopy("关键声音视觉化",
+					setCopy(entryMessage("settings.sound_visualization"),
 							enabled(SPDSettings.bukovSoundVisualization()));
 					break;
 				case MASTER:
-					setCopy("主音量",
+					setCopy(entryMessage("settings.master"),
 							volumeLabel(SPDSettings.bukovMasterVolume()));
 					break;
 				case MUSIC:
-					setCopy("音乐音量",
+					setCopy(entryMessage("settings.music"),
 							volumeLabel(SPDSettings.bukovMusicVolume()));
 					break;
 				case SFX:
-					setCopy("音效音量",
+					setCopy(entryMessage("settings.sfx"),
 							volumeLabel(SPDSettings.bukovSfxVolume()));
 					break;
 				case AMBIENCE:
-					setCopy("环境声音量",
+					setCopy(entryMessage("settings.ambience"),
 							volumeLabel(SPDSettings.bukovAmbienceVolume()));
 					break;
 				case PERFORMANCE:
-					setCopy("性能档",
+					setCopy(entryMessage("settings.performance"),
 							performanceLabel(
 									SPDSettings.bukovPerformanceProfile()));
 					break;
 				case UI_SCALE:
-					setCopy("UI 缩放",
+					setCopy(entryMessage("settings.ui_scale"),
 							percentLevel(SPDSettings.bukovUiScale()));
 					break;
 				case SHAKE:
-					setCopy("屏幕震动",
+					setCopy(entryMessage("settings.shake"),
 							scaleLabel(SPDSettings.screenShake(), 4));
 					break;
 				case VIBRATION:
-					setCopy("手柄震动",
+					setCopy(entryMessage("settings.vibration"),
 							threeLevel(
 									SPDSettings.bukovControllerVibration()));
 					break;
 				case DAMAGE_NUMBERS:
-					setCopy("伤害数字",
+					setCopy(entryMessage("settings.damage_numbers"),
 							damageNumbersLabel(
 									SPDSettings.bukovDamageNumbers()));
 					break;
 				case AIM_ASSIST:
-					setCopy("辅助瞄准",
+					setCopy(entryMessage("settings.aim_assist"),
 							aimAssistLabel(SPDSettings.bukovAimAssist()));
 					break;
 				case LEFT_DEAD_ZONE:
-					setCopy("左摇杆死区",
+					setCopy(entryMessage("settings.left_dead_zone"),
 							deadZoneLabel(
 									SPDSettings.bukovLeftInnerDeadZone(),
 									SPDSettings.bukovLeftOuterDeadZone()));
 					break;
 				case RIGHT_DEAD_ZONE:
-					setCopy("右摇杆死区",
+					setCopy(entryMessage("settings.right_dead_zone"),
 							deadZoneLabel(
 									SPDSettings.bukovRightInnerDeadZone(),
 									SPDSettings.bukovRightOuterDeadZone()));
 					break;
 				case AIM_CURVE:
-					setCopy("瞄准曲线",
+					setCopy(entryMessage("settings.aim_curve"),
 							SPDSettings.bukovAimCurve() == 0
-									? "线性" : "经典 S");
+									? entryMessage("settings.linear")
+									: entryMessage("settings.classic_s"));
 					break;
 				case TRIGGER:
-					setCopy("扳机阈值",
+					setCopy(entryMessage("settings.trigger"),
 							SPDSettings.bukovTriggerPress()
 							+ "% / "
 							+ SPDSettings.bukovTriggerRelease()
 							+ "%");
 					break;
 				case BRIGHTNESS:
-					setCopy("地图亮度",
+					setCopy(entryMessage("settings.brightness"),
 							brightnessLabel(SPDSettings.brightness()));
 					break;
 				case LEGAL:
-					setCopy("开源许可 / Legal", "查看");
+					setCopy(
+							entryMessage("settings.legal"),
+							entryMessage("settings.view"));
 					break;
 				case CLOSE:
-					setCopy("完成并返回", "BACK");
+					setCopy(
+							entryMessage("settings.close"),
+							entryMessage("settings.back"));
 					break;
 				default:
 					throw new IllegalStateException(
@@ -570,19 +601,20 @@ public final class WndBukovSettings extends Window {
 	}
 
 	static String enabled(boolean value) {
-		return value ? "开启" : "关闭";
+		return entryMessage(value ? "settings.on" : "settings.off");
 	}
 
 	static String scaleLabel(int value, int maximum) {
-		if (value <= 0) return "关闭";
-		if (value >= maximum) return "强";
-		return value == 1 ? "低" : "标准";
+		if (value <= 0) return entryMessage("settings.off");
+		if (value >= maximum) return entryMessage("settings.strong");
+		return entryMessage(
+				value == 1 ? "settings.low" : "settings.standard");
 	}
 
 	static String brightnessLabel(int value) {
-		if (value < 0) return "柔暗";
-		if (value > 0) return "明亮";
-		return "标准";
+		if (value < 0) return entryMessage("settings.dim");
+		if (value > 0) return entryMessage("settings.bright");
+		return entryMessage("settings.standard");
 	}
 
 	static int nextThreeLevel(int value, int maximum) {
@@ -596,22 +628,24 @@ public final class WndBukovSettings extends Window {
 	}
 
 	static String volumeLabel(int value) {
-		return value <= 0 ? "静音" : value * 10 + "%";
+		return value <= 0
+				? entryMessage("settings.muted")
+				: value * 10 + "%";
 	}
 
 	static String performanceLabel(int profile) {
 		switch (profile) {
 			case 0:
-				return "高画质";
+				return entryMessage("settings.quality");
 			case 1:
-				return "平衡";
+				return entryMessage("settings.balanced");
 			default:
-				return "高帧";
+				return entryMessage("settings.framerate");
 		}
 	}
 
 	static String threeLevel(int level) {
-		if (level <= 0) return "关闭";
+		if (level <= 0) return entryMessage("settings.off");
 		return level == 1 ? "50%" : "100%";
 	}
 
@@ -620,13 +654,20 @@ public final class WndBukovSettings extends Window {
 	}
 
 	static String damageNumbersLabel(int level) {
-		if (level <= 0) return "关闭";
-		return level == 1 ? "仅大伤害" : "全部";
+		if (level <= 0) return entryMessage("settings.off");
+		return entryMessage(
+				level == 1
+						? "settings.large_damage"
+						: "settings.all");
 	}
 
 	static String aimAssistLabel(int level) {
-		if (level <= 0) return "关闭";
-		return level == 1 ? "轻 15%" : "标准 30%";
+		if (level <= 0) return entryMessage("settings.off");
+		return entryMessage(
+				level == 1
+						? "settings.light_percent"
+						: "settings.standard_percent",
+				level == 1 ? 15 : 30);
 	}
 
 	static String deadZoneLabel(int inner, int outer) {
@@ -649,5 +690,21 @@ public final class WndBukovSettings extends Window {
 			}
 		}
 		return 0;
+	}
+
+	static Languages nextLanguage(Languages current) {
+		return current == Languages.ENGLISH
+				? Languages.CHI_SMPL
+				: Languages.ENGLISH;
+	}
+
+	static String languageLabel() {
+		return entryMessage(SPDSettings.language() == Languages.ENGLISH
+				? "settings.language.english"
+				: "settings.language.chinese");
+	}
+
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
 	}
 }

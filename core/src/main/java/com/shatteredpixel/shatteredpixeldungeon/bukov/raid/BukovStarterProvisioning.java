@@ -84,7 +84,8 @@ public final class BukovStarterProvisioning {
 		RaidItem weapon = findDeployableDefinition(
 				profile,
 				"firearm:needle_9",
-				BukovGearRules.BASE_WEIGHT_CAPACITY_KG);
+				BukovGearRules.BASE_WEIGHT_CAPACITY_KG
+						- ammunition * 0.012f);
 		RaidItem ammo = findDeployableDefinition(
 				profile,
 				"ammo:ammo_9_standard",
@@ -153,11 +154,22 @@ public final class BukovStarterProvisioning {
 	}
 
 	private static boolean supportedFirearm(RaidItem item) {
-		return item != null
-				&& item.totalWeight()
-						< BukovGearRules.BASE_WEIGHT_CAPACITY_KG
-				&& recoveryAmmunitionOffer(
-						item.definitionId()) != null;
+		if (item == null) {
+			return false;
+		}
+		String recoveryOfferId =
+				recoveryAmmunitionOffer(item.definitionId());
+		if (recoveryOfferId == null) {
+			return false;
+		}
+		BukovVendorCatalog.Offer recovery =
+				BukovVendorCatalog.require(recoveryOfferId);
+		float recoveredPairWeight = item.totalWeight()
+				+ recovery.quantity * recovery.unitWeight;
+		return com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+				.isFinite(recoveredPairWeight)
+				&& recoveredPairWeight
+						<= BukovGearRules.BASE_WEIGHT_CAPACITY_KG;
 	}
 
 	private static RaidItem findDefinition(

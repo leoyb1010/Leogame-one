@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -137,7 +138,7 @@ public final class WndBukovSettlement extends Window {
 		float y = 3;
 
 		RenderedTextBlock eyebrow = text(
-				"行动结算 · 确认可跳过",
+				BukovMessages.get("bukov.economy.settlement.skip_hint"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setRect(5, y, width - 10, 9);
@@ -162,7 +163,9 @@ public final class WndBukovSettlement extends Window {
 		outcomeStampArt.alpha(0.48f);
 		add(outcomeStampArt);
 		outcomeStamp = text(
-				success ? "[ 撤离确认 ]" : "[ 行动损失 ]",
+				BukovMessages.get(success
+						? "bukov.economy.settlement.stamp_success"
+						: "bukov.economy.settlement.stamp_failed"),
 				BukovVisualContract.FONT_BODY,
 				accent);
 		outcomeStamp.setRect(5, y + 11, width - 10, 8);
@@ -222,7 +225,8 @@ public final class WndBukovSettlement extends Window {
 		float footerY = height - BUTTON_HEIGHT - 3;
 		if (repeatLastLoadout == null) {
 			ActionButton button = new ActionButton(
-					"确认并返回藏身处",
+					BukovMessages.get(
+							"bukov.economy.settlement.confirm_return"),
 					accent,
 					false);
 			button.setRect(5, footerY, width - 10, BUTTON_HEIGHT);
@@ -231,14 +235,16 @@ public final class WndBukovSettlement extends Window {
 		} else {
 			float half = (width - 12) / 2f;
 			ActionButton repeat = new ActionButton(
-					"沿用配装",
+					BukovMessages.get(
+							"bukov.economy.settlement.repeat_loadout"),
 					tokens.color("accent.interact"),
 					true);
 			repeat.setRect(5, footerY, half, BUTTON_HEIGHT);
 			add(repeat);
 			actionButtons[0] = repeat;
 			ActionButton button = new ActionButton(
-					"返回藏身处",
+					BukovMessages.get(
+							"bukov.economy.settlement.return_hideout"),
 					accent,
 					false);
 			button.setRect(7 + half, footerY, half, BUTTON_HEIGHT);
@@ -362,7 +368,9 @@ public final class WndBukovSettlement extends Window {
 					: error.getMessage();
 			com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon
 					.scene().addToFront(new WndMessage(
-							"沿用配装失败：\n" + detail));
+							BukovMessages.get(
+									"bukov.economy.settlement.repeat_failed",
+									detail)));
 			return;
 		}
 		returnToHideout();

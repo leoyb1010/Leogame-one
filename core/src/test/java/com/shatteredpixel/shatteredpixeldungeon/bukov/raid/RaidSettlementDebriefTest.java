@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveServ
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
@@ -93,10 +94,28 @@ public class RaidSettlementDebriefTest {
 				19L,
 				"coordinator-debrief",
 				40f,
-				Collections.singletonList(ExtractionState.basic()));
+				Collections.singletonList(ExtractionState.basic()),
+				Arrays.asList(
+						new BukovContainerDefinition(
+								FirstRaidMission.ARCHIVE_CONTAINER_ID,
+								31,
+								FirstRaidMission.ARCHIVE_LOOT_TABLE_ID,
+								1,
+								1.4f,
+								false),
+						new BukovContainerDefinition(
+								"L01",
+								87,
+								FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID,
+								2,
+								2f,
+								false)));
 		raid.session().recordKill();
 		raid.session().recordKill();
 		assertTrue(raid.completeEvent(FirstRaidMission.EVENT_ID));
+		assertTrue(raid.completeEvent(
+				FirstRaidMission.HIGH_VALUE_EVENT_ID));
+		assertTrue(raid.firstRaidMissionCompleted());
 		assertTrue(raid.beginExtraction("E01"));
 		raid.tick(5f, ExtractionState.Interaction.ACTIVE);
 

@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLandmarkTilema
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.painters.BukovPainter;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.watabou.utils.Bundle;
 import com.watabou.noosa.Game;
@@ -114,8 +115,14 @@ public class BukovSemanticVisualLayerTest {
 		for (int terrain : level.map) {
 			assertFalse(isFantasyTerrain(terrain));
 		}
-		assertTrue(level.tileName(Terrain.STATUE).contains("掩体"));
-		assertTrue(level.tileName(Terrain.EMBERS).contains("危险"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.content.tile_industrial_cover"),
+				level.tileName(Terrain.STATUE));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.content.tile_hazard_marking"),
+				level.tileName(Terrain.EMBERS));
 	}
 
 	@Test

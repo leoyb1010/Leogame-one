@@ -13,6 +13,7 @@ import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class FirstRaidCriticalPathTest {
@@ -28,7 +29,8 @@ public class FirstRaidCriticalPathTest {
 				FirstRaidMission.Stage.RECOVER_ARCHIVE,
 				raid.firstRaidStage());
 		assertEquals(
-				FirstRaidMission.LOCKED_OBJECTIVE,
+				FirstRaidMission.objective(
+						FirstRaidMission.Stage.RECOVER_ARCHIVE),
 				raid.firstRaidObjective());
 		assertTrue(raid.beginExtraction("E01"));
 		raid.cancelExtraction();
@@ -42,7 +44,8 @@ public class FirstRaidCriticalPathTest {
 				FirstRaidMission.Stage.SECURE_HIGH_VALUE_CACHE,
 				raid.firstRaidStage());
 		assertEquals(
-				FirstRaidMission.HIGH_VALUE_OBJECTIVE,
+				FirstRaidMission.objective(
+						FirstRaidMission.Stage.SECURE_HIGH_VALUE_CACHE),
 				raid.firstRaidObjective());
 		assertFalse(raid.beginExtraction("E02"));
 		assertEquals(
@@ -65,7 +68,8 @@ public class FirstRaidCriticalPathTest {
 				FirstRaidMission.Stage.EXTRACT,
 				raid.firstRaidStage());
 		assertEquals(
-				FirstRaidMission.UNLOCKED_OBJECTIVE,
+				FirstRaidMission.objective(
+						FirstRaidMission.Stage.EXTRACT),
 				raid.firstRaidObjective());
 		assertTrue(raid.firstRaidConditionalExtractionUnlocked());
 		raid.saveCheckpoint();
@@ -98,6 +102,79 @@ public class FirstRaidCriticalPathTest {
 
 		assertTrue(raid.completeEvent(FirstRaidMission.EVENT_ID));
 		assertTrue(raid.beginContainerSearch("L01"));
+	}
+
+	@Test
+	public void emergencyExtractionSurvivesButDoesNotCompleteSkippedMission()
+			throws IOException {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovRaidCoordinator raid =
+				start(saves, "emergency-mission-skipped");
+
+		assertTrue(raid.completeEvent(FirstRaidMission.EVENT_ID));
+		assertFalse(raid.firstRaidMissionCompleted());
+		assertTrue(raid.beginExtraction("E01"));
+		raid.tick(5f, ExtractionState.Interaction.ACTIVE);
+
+		RaidResult result = raid.settleSuccess();
+		assertEquals(RaidOutcome.SUCCESS, result.outcome());
+		assertFalse(result.missionCompleted());
+		assertFalse(
+				saves.loadProfile().completedContracts().contains(
+						FirstRaidMission.EVENT_ID));
+	}
+
+	@Test
+	public void emergencyExtractionCompletesMissionAfterBothObjectives()
+			throws IOException {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovRaidCoordinator raid =
+				start(saves, "emergency-mission-complete");
+
+		assertTrue(raid.completeEvent(FirstRaidMission.EVENT_ID));
+		assertTrue(raid.beginContainerSearch("L01"));
+		assertEquals(
+				BukovSearchableContainer.UpdateResult.COMPLETED,
+				raid.updateContainerSearch(
+						"L01",
+						2f,
+						true,
+						false,
+						false,
+						highValueTable()));
+		assertTrue(raid.firstRaidMissionCompleted());
+		assertTrue(raid.beginExtraction("E01"));
+		raid.tick(5f, ExtractionState.Interaction.ACTIVE);
+
+		RaidResult result = raid.settleSuccess();
+		assertTrue(result.missionCompleted());
+		assertTrue(
+				saves.loadProfile().completedContracts().contains(
+						FirstRaidMission.EVENT_ID));
+	}
+
+	@Test
+	public void completedFirstContractDoesNotRepeatArchiveGate()
+			throws IOException {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovProfile profile = saves.loadProfile();
+		profile.completeContract(FirstRaidMission.EVENT_ID);
+		saves.saveProfile(profile);
+
+		BukovRaidCoordinator raid =
+				start(saves, "post-first-contract");
+
+		assertFalse(raid.firstRaidMissionActive());
+		assertNull(raid.container(
+				FirstRaidMission.ARCHIVE_CONTAINER_ID));
+		assertEquals(
+				BukovSearchableContainer.State.UNSEARCHED,
+				raid.container("L01").state);
+		assertTrue(raid.beginContainerSearch("L01"));
+		assertTrue(raid.beginExtraction("E01"));
 	}
 
 	@Test

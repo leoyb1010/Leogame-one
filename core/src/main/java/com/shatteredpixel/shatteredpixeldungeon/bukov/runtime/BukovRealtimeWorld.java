@@ -88,6 +88,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
@@ -150,6 +151,7 @@ public final class BukovRealtimeWorld
 	private final BukovRaidPersistence persistence;
 	private final BukovTutorialGuide tutorialGuide;
 	private final BukovRaidMode raidMode;
+	private final boolean missionEnabled;
 	private final ThemeDefinition raidTheme;
 	private final BukovHeapLootAdapter lootAdapter;
 	private final RealtimeStatusState medicalStatus;
@@ -298,6 +300,7 @@ public final class BukovRealtimeWorld
 				raid == null ? null : raid.playerSoundEvents());
 		raidMode = raid == null
 				? BukovRaidMode.EXPEDITION : raid.session().raidMode();
+		missionEnabled = raid != null && raid.firstRaidMissionActive();
 		raidTheme = resolveRaidTheme();
 		tutorialGuide = raid == null ? null : new BukovTutorialGuide(raid);
 		persistence = persistenceCommit == null
@@ -348,13 +351,13 @@ public final class BukovRealtimeWorld
 		missionGateCells = resolveMissionGateCells();
 		missionGateCell = missionGateCells.length == 0
 				? -1 : missionGateCells[0];
-		if (raid != null && Dungeon.level instanceof BukovLevel
+		if (missionEnabled && Dungeon.level instanceof BukovLevel
 				&& missionGateCell < 0) {
 			throw new IllegalStateException(
 					"Bukov first-raid layout is missing the mission gate anchor");
 		}
-		missionGateUnlocked = raid != null
-				&& raid.eventCompleted(FirstRaidMission.EVENT_ID);
+		missionGateUnlocked = !missionEnabled
+				|| raid.eventCompleted(FirstRaidMission.EVENT_ID);
 		applyMissionGateTerrain();
 		if (recoverHeroCheckpoint(hero, heroBody, collisionMap)) {
 			refreshHeroVisibility();
@@ -470,12 +473,22 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public String raidObjective() {
-		if (raid != null && raid.firstRaidMissionActive()) {
+		if (raidMode.trainingGround()) {
+			return trainingObjective();
+		}
+		if (missionEnabled) {
 			return raid.firstRaidObjective();
 		}
-		return missionGateUnlocked
-				? FirstRaidMission.UNLOCKED_OBJECTIVE
-				: FirstRaidMission.LOCKED_OBJECTIVE;
+		return FirstRaidMission.objective(
+				FirstRaidMission.Stage.EXTRACT);
+	}
+
+	static String trainingObjective() {
+		return BukovMessages.get("bukov.raid.touch.movement")
+				+ " · " + BukovMessages.get("bukov.raid.touch.aim_fire")
+				+ " · " + BukovMessages.get("bukov.raid.touch.reload")
+				+ " · " + BukovMessages.get(
+						"bukov.raid.hud.interaction_extract");
 	}
 
 	/**
@@ -494,7 +507,8 @@ public final class BukovRealtimeWorld
 		resolveEquippedFirearm();
 		if (equippedFirearm != null && equippedDefinition != null) {
 			target.weapon(
-					equippedDefinition.name,
+					BukovBackpackViewModel.localizedFirearmName(
+							equippedDefinition),
 					equippedDefinition.fireMode == FireMode.AUTO,
 					equippedFirearm.magazineAmmo(),
 					equippedDefinition.magazineSize,
@@ -545,7 +559,9 @@ public final class BukovRealtimeWorld
 						target,
 						BukovRaidHudState.Cue.EXTRACTION,
 						activeCell,
-						"撤离 " + activeExtractionId,
+						BukovMessages.get(
+								"bukov.raid.runtime.extraction_label_format",
+								activeExtractionId),
 						extractionAvailable(active, elapsed));
 				target.extraction(
 						availableExtractions,
@@ -556,7 +572,8 @@ public final class BukovRealtimeWorld
 						active.interactionSeconds());
 				target.interaction(
 						BukovRaidHudState.Interaction.EXTRACT,
-						"撤离中",
+						BukovMessages.get(
+								"bukov.raid.runtime.extracting"),
 						active.progressFraction(),
 						active.interactionSeconds());
 				return;
@@ -588,7 +605,8 @@ public final class BukovRealtimeWorld
 		if (medicalSystem != null && medicalSystem.isUsing()) {
 			target.interaction(
 					BukovRaidHudState.Interaction.MEDICAL,
-					"治疗中",
+					BukovMessages.get(
+							"bukov.raid.runtime.medical_in_progress"),
 					medicalSystem.useProgress(),
 					0f);
 			return;
@@ -612,18 +630,21 @@ public final class BukovRealtimeWorld
 					target,
 					BukovRaidHudState.Cue.EXTRACTION,
 					nearbyExtractionCell,
-					"撤离 " + nearbyExtraction.extractionId(),
+					BukovMessages.get(
+							"bukov.raid.runtime.extraction_label_format",
+							nearbyExtraction.extractionId()),
 					extractionAvailable(nearbyExtraction, elapsed));
 			target.interaction(
 					extractionAvailable(nearbyExtraction, elapsed)
 							? BukovRaidHudState.Interaction.EXTRACT
 							: BukovRaidHudState.Interaction.LOCKED,
 					extractionAvailable(nearbyExtraction, elapsed)
-							? "开始撤离 "
-									+ nearbyExtraction.extractionId()
-							: "撤离 "
-									+ nearbyExtraction.extractionId()
-									+ " 未开放",
+							? BukovMessages.get(
+									"bukov.raid.runtime.start_extraction_format",
+									nearbyExtraction.extractionId())
+							: BukovMessages.get(
+									"bukov.raid.runtime.extraction_locked_format",
+									nearbyExtraction.extractionId()),
 					0f,
 					nearbyExtraction.interactionSeconds());
 			return;
@@ -638,14 +659,22 @@ public final class BukovRealtimeWorld
 					ready
 							? BukovRaidHudState.Interaction.LOCKED
 							: BukovRaidHudState.Interaction.PUMP,
-					ready ? "泵站供电正常" : "启动泵站",
+					ready
+							? BukovMessages.get(
+									"bukov.raid.runtime.pump_power_ready")
+							: BukovMessages.get(
+									"bukov.raid.runtime.start_pump"),
 					0f,
 					0f);
 			pointHudNavigation(
 					target,
 					BukovRaidHudState.Cue.MISSION,
 					pumpCell,
-					ready ? "泵站已启动" : "启动泵站",
+					ready
+							? BukovMessages.get(
+									"bukov.raid.runtime.pump_started")
+							: BukovMessages.get(
+									"bukov.raid.runtime.start_pump"),
 					!ready);
 			return;
 		}
@@ -666,10 +695,14 @@ public final class BukovRealtimeWorld
 							? BukovRaidHudState.Interaction.LOCKED
 							: BukovRaidHudState.Interaction.SEARCH,
 					maintenanceUnlock
-							? "使用维修钥匙解锁"
+							? BukovMessages.get(
+									"bukov.raid.runtime.unlock_with_maintenance_key")
 							: maintenanceLock
-									? "需要维修钥匙"
-							: locked ? "容器已锁定"
+									? BukovMessages.get(
+											"bukov.raid.runtime.maintenance_key_required")
+							: locked
+									? BukovMessages.get(
+											"bukov.raid.runtime.container_locked")
 									: containerSearchLabel(
 											nearby.lootTableId,
 											false),
@@ -697,8 +730,10 @@ public final class BukovRealtimeWorld
 					BukovRaidHudState.Cue.PICKUP,
 					heapCell,
 					containsMissionArchive(nearbyHeap)
-							? "拾取维修通道档案"
-							: "可拾取物资",
+							? BukovMessages.get(
+									"bukov.raid.runtime.pickup_archive")
+							: BukovMessages.get(
+									"bukov.raid.runtime.loot_available"),
 					true);
 			return;
 		}
@@ -710,7 +745,9 @@ public final class BukovRealtimeWorld
 					target,
 					BukovRaidHudState.Cue.EXTRACTION,
 					nearbyExtractionCell,
-					"撤离 " + nearbyExtraction.extractionId(),
+					BukovMessages.get(
+							"bukov.raid.runtime.extraction_label_format",
+							nearbyExtraction.extractionId()),
 					available);
 			target.interaction(
 					BukovRaidHudState.Interaction.LOCKED,
@@ -727,18 +764,21 @@ public final class BukovRealtimeWorld
 				Dungeon.level.width(),
 				Dungeon.level.length(),
 				missionGateCells);
-		if (!missionGateUnlocked
+		if (missionEnabled
+				&& !missionGateUnlocked
 				&& withinInteractionRange(hero.pos, nearbyGateCell)) {
 			target.interaction(
 					BukovRaidHudState.Interaction.LOCKED,
-					"通道锁定 · 先找到维修档案",
+					BukovMessages.get(
+							"bukov.raid.runtime.gate_locked_hint"),
 					0f,
 					0f);
 			pointHudNavigation(
 					target,
 					BukovRaidHudState.Cue.MISSION,
 					nearbyGateCell,
-					"维修通道",
+					BukovMessages.get(
+							"bukov.raid.runtime.maintenance_gate"),
 					false);
 		}
 	}
@@ -754,7 +794,7 @@ public final class BukovRealtimeWorld
 			return;
 		}
 		target.event = tutorialEvent;
-		target.message = tutorialEvent.message;
+		target.message = tutorialEvent.message();
 		target.remainingSeconds = tutorialRemaining;
 	}
 
@@ -828,11 +868,13 @@ public final class BukovRealtimeWorld
 			heroBody.velocityX = 0f;
 			heroBody.velocityY = 0f;
 		}
-		if (!missionGateUnlocked
+		if (missionEnabled
+				&& !missionGateUnlocked
 				&& missionGateHintCooldown <= 0f
 				&& movementWasBlocked(deltaX, deltaY)
 				&& movementPointsTowardMissionGate(deltaX, deltaY)) {
-			showHeroStatus("通道锁定：先找到维修档案");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.gate_locked_status"));
 			missionGateHintCooldown = 1.25f;
 		}
 		moving = Math.abs(heroBody.x - heroBody.previousX) > 0.00001f
@@ -1038,7 +1080,11 @@ public final class BukovRealtimeWorld
 			enemy.brain.recordSound(best.x(), best.y());
 			if (hasAbility(enemy, "INVESTIGATE_SOUND")
 					|| hasAbility(enemy, "CALL_INVESTIGATORS")) {
-				showEnemyStatus(enemy, CharSprite.WARNING, "听到动静");
+				showEnemyStatus(
+						enemy,
+						CharSprite.WARNING,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_heard_noise"));
 			}
 		}
 	}
@@ -1207,7 +1253,8 @@ public final class BukovRealtimeWorld
 						showEnemyStatus(
 								enemy,
 								CharSprite.NEUTRAL,
-								"护甲吸收");
+								BukovMessages.get(
+										"bukov.raid.runtime.armor_absorbed"));
 					}
 					damage = armored;
 				}
@@ -1359,7 +1406,8 @@ public final class BukovRealtimeWorld
 			return;
 		}
 		applyModeConvergence();
-		if (!missionGateUnlocked
+		if (missionEnabled
+				&& !missionGateUnlocked
 				&& missionEventRetryCooldown <= 0f
 				&& carriesMissionArchive()) {
 			unlockMissionGateIfCarried();
@@ -1402,10 +1450,12 @@ public final class BukovRealtimeWorld
 				showExtractionCountdown(extraction);
 			} else if (extractionInteraction
 					== ExtractionState.Interaction.LIGHT_HIT) {
-				showHeroStatus("撤离受干扰 · 进度回退");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.extraction_disrupted"));
 			} else if (extractionInteraction != ExtractionState.Interaction.NONE) {
 				lastExtractionCountdown = Integer.MIN_VALUE;
-				showHeroStatus("撤离中断");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.extraction_interrupted"));
 			}
 			return;
 		}
@@ -1435,7 +1485,8 @@ public final class BukovRealtimeWorld
 				if (result == BukovSearchableContainer.UpdateResult.INTERRUPTED) {
 					activeContainerId = null;
 					lastContainerCountdown = Integer.MIN_VALUE;
-					showHeroStatus("搜索中断");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.search_interrupted"));
 					checkpointLootChange();
 					return;
 				}
@@ -1450,12 +1501,12 @@ public final class BukovRealtimeWorld
 					releaseCompletedContainer(active.containerId);
 					if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(
 							active.lootTableId)) {
-						showHeroStatus(
-								"档案柜已打开，按E拾取维修通道档案");
+						showHeroStatus(BukovMessages.get(
+								"bukov.raid.runtime.archive_cabinet_opened"));
 					} else if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
 							active.lootTableId)) {
-						showHeroStatus(
-								"高价值物资已确认，条件撤离许可已解锁");
+						showHeroStatus(BukovMessages.get(
+								"bukov.raid.runtime.high_value_confirmed"));
 					}
 					return;
 				}
@@ -1494,7 +1545,8 @@ public final class BukovRealtimeWorld
 				if (isMaintenanceCache(container)) {
 					unlockMaintenanceCache(container);
 				} else {
-					showHeroStatus("容器已锁定");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.container_locked"));
 				}
 			} else if (raid.beginContainerSearch(container.containerId)) {
 				activeContainerId = container.containerId;
@@ -1536,7 +1588,8 @@ public final class BukovRealtimeWorld
 				extractionInteraction = ExtractionState.Interaction.ACTIVE;
 				showExtractionCountdown(extraction);
 			} else if (extractionHintCooldown <= 0f) {
-				showHeroStatus("撤离点未开放");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.extraction_unavailable"));
 				extractionHintCooldown = 0.75f;
 			}
 			return;
@@ -1578,12 +1631,13 @@ public final class BukovRealtimeWorld
 					medicalSystem.track(carried);
 				}
 				showHeroStatus(
-						"拾取 "
-								+ item.name()
-								+ " · "
-								+ formatWeight(carried.totalWeight())
-								+ "kg · "
-								+ carried.totalValue()
+						BukovMessages.get(
+								"bukov.raid.runtime.pickup_result_format",
+								BukovBackpackViewModel.localizedDisplayName(
+										carried.definitionId(),
+										firearmRegistry),
+								formatWeight(carried.totalWeight()),
+								carried.totalValue())
 				);
 			}
 			if (carried != null
@@ -1596,16 +1650,19 @@ public final class BukovRealtimeWorld
 			checkpointLootChange();
 		} else if (result == LootTransaction.PickupResult.OVERWEIGHT) {
 			showTutorial(BukovTutorialEvent.OVERWEIGHT);
-			showHeroStatus("负重已满");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.overweight"));
 		} else {
-			showHeroStatus("该物品已拾取");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.item_already_picked_up"));
 		}
 	}
 
 	private void dropLatestCarriedItem() {
 		List<RaidItem> carried = raid.loot().items();
 		if (carried.isEmpty()) {
-			showHeroStatus("没有可丢弃物品");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.no_droppable_item"));
 			return;
 		}
 		RaidItem latest = carried.get(carried.size() - 1);
@@ -1615,11 +1672,13 @@ public final class BukovRealtimeWorld
 	public BukovHeapLootAdapter.DropResult dropCarriedItem(String itemUid) {
 		RaidItem carriedItem = carried(itemUid);
 		if (carriedItem == null) {
-			showHeroStatus("物品已不在背包");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.item_not_in_backpack"));
 			return BukovHeapLootAdapter.DropResult.UNKNOWN_UID;
 		}
 		if (FirstRaidMission.isArchive(carriedItem)) {
-			showHeroStatus("维修档案是任务物品，不能丢弃");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.archive_cannot_drop"));
 			return BukovHeapLootAdapter.DropResult.PROTECTED_ITEM;
 		}
 		Heap heap = Dungeon.level.heaps.get(hero.pos);
@@ -1630,7 +1689,8 @@ public final class BukovRealtimeWorld
 			heap.seen = true;
 			created = true;
 		} else if (heap.type != Heap.Type.HEAP) {
-			showHeroStatus("这里无法丢弃");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.cannot_drop_here"));
 			return BukovHeapLootAdapter.DropResult.UNKNOWN_UID;
 		}
 
@@ -1640,11 +1700,14 @@ public final class BukovRealtimeWorld
 		if (dropResult != BukovHeapLootAdapter.DropResult.DROPPED) {
 			showHeroStatus(
 					dropResult == BukovHeapLootAdapter.DropResult.PROTECTED_ITEM
-							? "任务物品不能丢弃"
+							? BukovMessages.get(
+									"bukov.raid.runtime.mission_item_cannot_drop")
 							: dropResult
 									== BukovHeapLootAdapter.DropResult.IN_USE_ITEM
-									? "治疗中的物品不能丢弃"
-									: "丢弃失败");
+									? BukovMessages.get(
+											"bukov.raid.runtime.in_use_item_cannot_drop")
+									: BukovMessages.get(
+											"bukov.raid.runtime.drop_failed"));
 			return dropResult;
 		}
 		if (created) {
@@ -1652,8 +1715,9 @@ public final class BukovRealtimeWorld
 			GameScene.add(heap);
 		}
 		showHeroStatus(
-				"丢弃 "
-						+ (hostItem == null
+				BukovMessages.get(
+						"bukov.raid.runtime.drop_result_format",
+						hostItem == null
 								? carriedItem.definitionId()
 								: hostItem.name())
 		);
@@ -1708,7 +1772,8 @@ public final class BukovRealtimeWorld
 								.MAINTENANCE_KEY_DEFINITION_ID,
 						raid.loot());
 		if (result == BukovKeyDoorState.UnlockResult.KEY_MISSING) {
-			showHeroStatus("需要维修钥匙");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.maintenance_key_required"));
 			return false;
 		}
 		if (result == BukovKeyDoorState.UnlockResult.UNLOCKED
@@ -1730,11 +1795,13 @@ public final class BukovRealtimeWorld
 				|| containerChanged) {
 			checkpointLootChange();
 		}
-		showHeroStatus("维修柜已解锁，按E搜索");
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.maintenance_cache_unlocked"));
 		return true;
 	}
 
 	private boolean unlockMissionGateIfCarried() {
+		if (!missionEnabled) return true;
 		if (missionGateUnlocked) return true;
 		if (raid == null || !carriesMissionArchive()) return false;
 		try {
@@ -1749,12 +1816,14 @@ public final class BukovRealtimeWorld
 					0.9f,
 					1f
 			);
-			showHeroStatus("档案验证成功，维修通道已开放 · 前往高价值仓");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.archive_verified"));
 			return true;
 		} catch (IOException failure) {
 			ShatteredPixelDungeon.reportException(failure);
 			missionEventRetryCooldown = 2f;
-			showHeroStatus("档案已取得，但通道状态保存失败，正在重试");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.archive_save_retry"));
 			return false;
 		}
 	}
@@ -1767,7 +1836,8 @@ public final class BukovRealtimeWorld
 		Throwable failure = persistence.lastFailure();
 		if (failure != null) {
 			ShatteredPixelDungeon.reportException(failure);
-			showHeroStatus("检查点保存失败");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.checkpoint_save_failed"));
 		}
 	}
 
@@ -1857,8 +1927,10 @@ public final class BukovRealtimeWorld
 			}
 		}
 		showHeroStatus(finalResult == RealtimeMedicalSystem.BeginResult.NO_EFFECT
-				? "当前状态无需治疗"
-				: "没有可用医疗品");
+				? BukovMessages.get(
+						"bukov.raid.runtime.medical_not_needed")
+				: BukovMessages.get(
+						"bukov.raid.runtime.no_medical_available"));
 	}
 
 	public RealtimeMedicalSystem.BeginResult beginMedical(String itemUid) {
@@ -1878,10 +1950,12 @@ public final class BukovRealtimeWorld
 					null,
 					1f);
 			RaidItem item = carried(itemUid);
-			showHeroStatus("开始使用 "
-					+ (item == null
-					? "医疗品"
-					: medicalDisplayName(item)));
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.medical_start_format",
+					item == null
+							? BukovMessages.get(
+									"bukov.raid.runtime.medical_item")
+							: medicalDisplayName(item)));
 		}
 		return result;
 	}
@@ -1892,13 +1966,15 @@ public final class BukovRealtimeWorld
 		}
 		Item hostItem = lootAdapter.carriedHostItem(itemUid);
 		if (!(hostItem instanceof Firearm)) {
-			showHeroStatus("该物品不是可装备枪械");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.not_equippable_firearm"));
 			return false;
 		}
 		Firearm next = (Firearm)hostItem;
 		resolveEquippedFirearm();
 		if (next == equippedFirearm) {
-			showHeroStatus("该武器已经装备");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.weapon_already_equipped"));
 			return false;
 		}
 		Firearm previous = equippedFirearm;
@@ -1911,7 +1987,10 @@ public final class BukovRealtimeWorld
 		next.activate(hero);
 		resetFireControlForWeaponSwap();
 		resolveEquippedFirearm();
-		showHeroStatus("已装备 " + equippedDefinition.name);
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.weapon_equipped_format",
+				BukovBackpackViewModel.localizedFirearmName(
+						equippedDefinition)));
 		checkpointLootChange();
 		return true;
 	}
@@ -1930,28 +2009,34 @@ public final class BukovRealtimeWorld
 				int bucket = percent / 10;
 				if (bucket != lastMedicalCountdown) {
 					lastMedicalCountdown = bucket;
-					showHeroStatus("治疗中 " + percent + "%");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.medical_progress_format",
+							percent));
 				}
 				break;
 			case COMPLETED:
 				emitMedicalEnded();
 				medicalSystem.writeBack(raid.loot());
 				syncMedicalHostQuantity(activeUid);
-				showHeroStatus("治疗完成");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.medical_completed"));
 				lastMedicalCountdown = Integer.MIN_VALUE;
 				checkpointLootChange();
 				break;
 			case INTERRUPTED_DAMAGE:
 				emitMedicalEnded();
-				showHeroStatus("治疗被受击中断");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.medical_interrupted_damage"));
 				break;
 			case INTERRUPTED_MOVE:
 				emitMedicalEnded();
-				showHeroStatus("治疗被移动中断");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.medical_interrupted_move"));
 				break;
 			case INTERRUPTED_SHOT:
 				emitMedicalEnded();
-				showHeroStatus("治疗被射击中断");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.medical_interrupted_shot"));
 				break;
 			case CANCELED_NO_EFFECT:
 			case DEAD:
@@ -1984,13 +2069,27 @@ public final class BukovRealtimeWorld
 
 	private static String medicalDisplayName(RaidItem item) {
 		String id = item.definitionId();
-		if ("bandage".equals(id)) return "绷带";
-		if ("first_aid".equals(id)) return "急救包";
-		if ("tourniquet".equals(id)) return "止血带";
-		if ("painkiller".equals(id)) return "止痛药";
-		if ("antiseptic".equals(id)) return "消毒剂";
-		if ("splint".equals(id)) return "夹板";
-		if ("stim".equals(id)) return "战地注射器";
+		if ("bandage".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.bandage");
+		}
+		if ("first_aid".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.first_aid");
+		}
+		if ("tourniquet".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.tourniquet");
+		}
+		if ("painkiller".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.painkiller");
+		}
+		if ("antiseptic".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.antiseptic");
+		}
+		if ("splint".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.splint");
+		}
+		if ("stim".equals(id)) {
+			return BukovMessages.get("bukov.raid.item.stim");
+		}
 		return id;
 	}
 
@@ -2117,18 +2216,32 @@ public final class BukovRealtimeWorld
 			String lootTableId,
 			boolean active) {
 		if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(lootTableId)) {
-			return active ? "正在搜索维修间档案柜" : "搜索维修间档案柜";
+			return active
+					? BukovMessages.get(
+							"bukov.raid.runtime.search_archive_active")
+					: BukovMessages.get(
+							"bukov.raid.runtime.search_archive");
 		}
 		if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(lootTableId)) {
-			return active ? "正在搜查高价值仓" : "搜查高价值仓";
+			return active
+					? BukovMessages.get(
+							"bukov.raid.runtime.search_high_value_active")
+					: BukovMessages.get(
+							"bukov.raid.runtime.search_high_value");
 		}
-		return active ? "正在搜索容器" : "搜索容器";
+		return active
+				? BukovMessages.get(
+						"bukov.raid.runtime.search_container_active")
+				: BukovMessages.get(
+						"bukov.raid.runtime.search_container");
 	}
 
 	static String heapPickupLabel(Heap heap) {
 		return containsMissionArchive(heap)
-				? "拾取维修通道档案"
-				: "拾取物资";
+				? BukovMessages.get(
+						"bukov.raid.runtime.pickup_archive")
+				: BukovMessages.get(
+						"bukov.raid.runtime.pickup_loot");
 	}
 
 	private static boolean containsMissionArchive(Heap heap) {
@@ -2536,7 +2649,8 @@ public final class BukovRealtimeWorld
 	public void dryFire() {
 		playSfx(Assets.Sounds.Bukov.DRY_FIRE, 0.75f, 1f);
 		showTutorial(BukovTutorialEvent.EMPTY_MAGAZINE);
-		showHeroStatus("空仓");
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.empty_magazine"));
 	}
 
 	@Override
@@ -2550,7 +2664,8 @@ public final class BukovRealtimeWorld
 				null,
 				1f,
 				seconds);
-		showHeroStatus("换弹");
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.reload"));
 	}
 
 	@Override
@@ -2592,9 +2707,12 @@ public final class BukovRealtimeWorld
 				1f);
 		if (equippedFirearm != null) {
 			if (equippedFirearm.magazineAmmo() == 0) {
-				showHeroStatus("没有备用弹药");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.no_reserve_ammo"));
 			} else {
-				showHeroStatus("弹匣 " + equippedFirearm.magazineAmmo());
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.magazine_count_format",
+						equippedFirearm.magazineAmmo()));
 			}
 		}
 	}
@@ -3011,12 +3129,14 @@ public final class BukovRealtimeWorld
 			}
 			if (!modeConvergenceAnnounced) {
 				modeConvergenceAnnounced = true;
-				showHeroStatus("行动进入收束阶段 · 额外撤离点已开放");
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.convergence_started"));
 			}
 		}
 		if (raidMode.overtime(elapsed) && !modeOvertimeAnnounced) {
 			modeOvertimeAnnounced = true;
-			showHeroStatus("行动超时 · 敌方增援压力上升");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.overtime_pressure"));
 		}
 	}
 
@@ -3190,20 +3310,40 @@ public final class BukovRealtimeWorld
 		if (!enemy.brain.seesPlayer()) return;
 		switch (maneuver) {
 			case ANCHOR_AND_SUPPRESS:
-				showEnemyStatus(enemy, CharSprite.WARNING, "火力压制");
+				showEnemyStatus(
+						enemy,
+						CharSprite.WARNING,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_suppressing"));
 				break;
 			case FLANK_LEFT:
-				showEnemyStatus(enemy, CharSprite.WARNING, "左侧迂回");
+				showEnemyStatus(
+						enemy,
+						CharSprite.WARNING,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_flank_left"));
 				break;
 			case FLANK_RIGHT:
-				showEnemyStatus(enemy, CharSprite.WARNING, "右侧迂回");
+				showEnemyStatus(
+						enemy,
+						CharSprite.WARNING,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_flank_right"));
 				break;
 			case DASH:
 				playEnemyRush(enemy);
-				showEnemyStatus(enemy, CharSprite.NEGATIVE, "突进");
+				showEnemyStatus(
+						enemy,
+						CharSprite.NEGATIVE,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_dash"));
 				break;
 			case RETREAT:
-				showEnemyStatus(enemy, CharSprite.NEUTRAL, "战术换位");
+				showEnemyStatus(
+						enemy,
+						CharSprite.NEUTRAL,
+						BukovMessages.get(
+								"bukov.raid.runtime.enemy_reposition"));
 				break;
 			default:
 				break;
@@ -3234,10 +3374,18 @@ public final class BukovRealtimeWorld
 				enemy.rangedIntent.action();
 		if (action == EnemyRangedCombatIntent.Action.AIM
 				&& enemy.previousRangedAction != action) {
-			showEnemyStatus(enemy, CharSprite.WARNING, "锁定");
+			showEnemyStatus(
+					enemy,
+					CharSprite.WARNING,
+					BukovMessages.get(
+							"bukov.raid.runtime.enemy_aiming"));
 		} else if (enemy.rangedIntent.reloadStarted()) {
 			playEnemyReload(enemy);
-			showEnemyStatus(enemy, CharSprite.NEUTRAL, "换弹");
+			showEnemyStatus(
+					enemy,
+					CharSprite.NEUTRAL,
+					BukovMessages.get(
+							"bukov.raid.runtime.reload"));
 			playSfx(
 					Assets.Sounds.Bukov.RELOAD_START,
 					0.28f,
@@ -3245,7 +3393,11 @@ public final class BukovRealtimeWorld
 			);
 		} else if (action == EnemyRangedCombatIntent.Action.OUT_OF_AMMO
 				&& enemy.previousRangedAction != action) {
-			showEnemyStatus(enemy, CharSprite.NEUTRAL, "空仓");
+			showEnemyStatus(
+					enemy,
+					CharSprite.NEUTRAL,
+					BukovMessages.get(
+							"bukov.raid.runtime.empty_magazine"));
 		}
 
 		if (action == EnemyRangedCombatIntent.Action.FIRE) {
@@ -3264,7 +3416,11 @@ public final class BukovRealtimeWorld
 				null,
 				1f);
 		playEnemyGunshot(enemy, enemyGunNoiseRadius(enemy));
-		showEnemyStatus(enemy, CharSprite.NEGATIVE, "砰");
+		showEnemyStatus(
+				enemy,
+				CharSprite.NEGATIVE,
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_gunshot"));
 		combatFx.muzzle(
 				enemy.stableId,
 				enemy.rangedIntent.shotSequence(),
@@ -3428,22 +3584,32 @@ public final class BukovRealtimeWorld
 	}
 
 	static String enemyRoleLabel(EnemyArchetypeDefinition definition) {
-		if (definition == null || definition.role == null) return "敌对目标";
+		if (definition == null || definition.role == null) {
+			return BukovMessages.get(
+					"bukov.raid.runtime.enemy_role_default");
+		}
 		switch (definition.role) {
 			case RANGED_SKIRMISHER:
-				return "游击射手";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_skirmisher");
 			case MELEE_RUSHER:
-				return "突击近战";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_rusher");
 			case ARMORED_SUPPRESSOR:
-				return "正面装甲";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_armored");
 			case SCOUT_ALARM:
-				return "侦测报警";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_scout");
 			case ELITE_COMMANDER:
-				return "精英指挥";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_commander");
 			case OPTIONAL_BOSS:
-				return "可选Boss · 白线";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_white_line");
 			default:
-				return "敌对目标";
+				return BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_default");
 		}
 	}
 
@@ -3917,13 +4083,17 @@ public final class BukovRealtimeWorld
 				source,
 				CharSprite.WARNING,
 				hasAbility(source, "ORDER_FLANK")
-						? "指挥夹击" : "广播警报");
+						? BukovMessages.get(
+								"bukov.raid.runtime.enemy_order_flank")
+						: BukovMessages.get(
+								"bukov.raid.runtime.enemy_broadcast_alarm"));
 		if (raid != null && hasAbility(source, "CALL_INVESTIGATORS")) {
 			nextEnemySpawnSeconds = Math.min(
 					nextEnemySpawnSeconds,
 					raid.session().elapsedSeconds
 							+ ALARM_REINFORCEMENT_DELAY_SECONDS);
-			showHeroStatus("警报已广播 · 敌方增援正在接近");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.enemy_reinforcements_incoming"));
 		}
 	}
 
@@ -3979,7 +4149,10 @@ public final class BukovRealtimeWorld
 				boss,
 				CharSprite.NEGATIVE,
 				phase == WhiteLineBossStateMachine.Phase.DECOY_SEARCH
-						? "诱饵冲击" : "雾灯过载");
+						? BukovMessages.get(
+								"bukov.raid.runtime.boss_decoy_impact")
+						: BukovMessages.get(
+								"bukov.raid.runtime.boss_fog_overload"));
 		boss.bossPulseRemaining = phase
 				== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
 				? WHITE_LINE_PHASE_TWO_PULSE_SECONDS
@@ -4034,7 +4207,11 @@ public final class BukovRealtimeWorld
 	}
 
 	private boolean ensureReleasedMissionArchiveExists() {
-		if (missionGateUnlocked || carriesMissionArchive()) return false;
+		if (!missionEnabled
+				|| missionGateUnlocked
+				|| carriesMissionArchive()) {
+			return false;
+		}
 		BukovRaidCoordinator.ContainerSnapshot missionContainer =
 				raid.container(FirstRaidMission.ARCHIVE_CONTAINER_ID);
 		if (missionContainer == null
@@ -4109,7 +4286,8 @@ public final class BukovRealtimeWorld
 		if (mechanism == null
 				|| mechanism.bodyTraceCells.length
 						!= boss.bossState.bodyCount()) {
-			showHeroStatus("白线轨迹锚点损坏，仍可选择非Boss撤离");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.boss_trace_anchor_damaged"));
 			return;
 		}
 		for (int i = 0; i < mechanism.bodyTraceCells.length; i++) {
@@ -4222,8 +4400,12 @@ public final class BukovRealtimeWorld
 				|| extractionId.trim().isEmpty()
 				? "--" : extractionId.trim();
 		return available
-				? "撤离 " + target + " 就在脚下 · 请站入标记"
-				: "撤离 " + target + " 未开放 · 请站入标记查看";
+				? BukovMessages.get(
+						"bukov.raid.runtime.extraction_approach_available_format",
+						target)
+				: BukovMessages.get(
+						"bukov.raid.runtime.extraction_approach_locked_format",
+						target);
 	}
 
 	private BukovRaidCoordinator.ContainerSnapshot containerWithinRange(
@@ -4251,13 +4433,14 @@ public final class BukovRealtimeWorld
 			BukovRaidHudState target,
 			float elapsed) {
 		if (raid == null) return;
-		if (!missionGateUnlocked) {
+		if (missionEnabled && !missionGateUnlocked) {
 			if (carriesMissionArchive()) {
 				pointHudNavigation(
 						target,
 						BukovRaidHudState.Cue.MISSION,
 						missionGateCell,
-						"维修通道",
+						BukovMessages.get(
+								"bukov.raid.runtime.maintenance_gate"),
 						true);
 				return;
 			}
@@ -4268,7 +4451,8 @@ public final class BukovRealtimeWorld
 						target,
 						BukovRaidHudState.Cue.MISSION,
 						archive.cell,
-						"维修档案",
+						BukovMessages.get(
+								"bukov.raid.runtime.maintenance_archive"),
 						archive.state
 								!= BukovSearchableContainer.State.LOCKED);
 				return;
@@ -4281,14 +4465,15 @@ public final class BukovRealtimeWorld
 							target,
 							BukovRaidHudState.Cue.PICKUP,
 							heap.pos,
-							"拾取维修档案",
+							BukovMessages.get(
+									"bukov.raid.runtime.pickup_archive"),
 							true);
 					return;
 				}
 			}
 		}
 
-		if (raid.firstRaidMissionActive()
+		if (missionEnabled
 				&& raid.firstRaidStage()
 						== FirstRaidMission.Stage.SECURE_HIGH_VALUE_CACHE) {
 			for (BukovRaidCoordinator.ContainerSnapshot container :
@@ -4302,7 +4487,8 @@ public final class BukovRealtimeWorld
 						target,
 						BukovRaidHudState.Cue.MISSION,
 						container.cell,
-						"搜查高价值仓",
+						BukovMessages.get(
+								"bukov.raid.runtime.search_high_value"),
 						container.state
 								!= BukovSearchableContainer.State.LOCKED);
 				return;
@@ -4317,7 +4503,8 @@ public final class BukovRealtimeWorld
 						target,
 						BukovRaidHudState.Cue.MISSION,
 						boss.mob.pos,
-						"Boss 合同（可选）· 击败白线",
+						BukovMessages.get(
+								"bukov.raid.runtime.boss_contract_navigation"),
 						true);
 				return;
 			}
@@ -4333,7 +4520,9 @@ public final class BukovRealtimeWorld
 					target,
 					BukovRaidHudState.Cue.EXTRACTION,
 					resolveExtractionCell(nearest.extractionId()),
-					"撤离 " + nearest.extractionId(),
+					BukovMessages.get(
+							"bukov.raid.runtime.extraction_label_format",
+							nearest.extractionId()),
 					true);
 		}
 	}
@@ -4381,7 +4570,9 @@ public final class BukovRealtimeWorld
 				deltaY,
 				distance,
 				nearest.definition == null
-						? "敌人" : nearest.definition.name,
+						? BukovMessages.get(
+								"bukov.raid.runtime.enemy_default")
+						: enemyRoleLabel(nearest.definition),
 				distance <= 4f);
 	}
 
@@ -4420,15 +4611,18 @@ public final class BukovRealtimeWorld
 		ExtractionState conditional = raid.extraction(
 				CONDITIONAL_EXTRACTION_ID);
 		if (conditional == null) {
-			showHeroStatus("泵站没有连接撤离系统");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.pump_not_connected"));
 			return;
 		}
 		if (conditional.conditionMet()) {
-			showHeroStatus("泵站供电正常");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.pump_power_ready"));
 			return;
 		}
 		raid.setExtractionCondition(CONDITIONAL_EXTRACTION_ID, true);
-		showHeroStatus("泵站供电已恢复，E02撤离点开放");
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.pump_restored_extraction"));
 		checkpointLootChange();
 	}
 
@@ -4461,9 +4655,13 @@ public final class BukovRealtimeWorld
 						facingX, facingY, approachX, approachY);
 				if (result
 						== WhiteLineBossStateMachine.Result.MECHANISM_REJECTED) {
-					showHeroStatus("伞盾正面封锁，绕到白线侧后方再交互");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.boss_umbrella_front_blocked"));
 					showEnemyStatus(
-							boss, CharSprite.WARNING, "正面免疫");
+							boss,
+							CharSprite.WARNING,
+							BukovMessages.get(
+									"bukov.raid.runtime.boss_front_immune"));
 					return true;
 				}
 				break;
@@ -4473,7 +4671,8 @@ public final class BukovRealtimeWorld
 				result = boss.bossState.identifyTrueBody(bodyIndex);
 				if (result
 						== WhiteLineBossStateMachine.Result.MECHANISM_REJECTED) {
-					showHeroStatus("诱饵信号空洞，寻找缓慢同步的稳定轨迹");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.boss_decoy_false"));
 					return true;
 				}
 				break;
@@ -4485,7 +4684,8 @@ public final class BukovRealtimeWorld
 						PUMP_SEMANTIC_ID);
 				if (result
 						== WhiteLineBossStateMachine.Result.MECHANISM_REJECTED) {
-					showHeroStatus("需要操作泵站的雾灯控制器");
+					showHeroStatus(BukovMessages.get(
+							"bukov.raid.runtime.boss_fog_controller_required"));
 					return true;
 				}
 				break;
@@ -4503,7 +4703,8 @@ public final class BukovRealtimeWorld
 					== WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD) {
 				activatePump();
 			}
-			showHeroStatus("白线弱点已暴露");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.boss_weakpoint_exposed"));
 			checkpointRuntimeCombatState();
 			return true;
 		}
@@ -4553,7 +4754,11 @@ public final class BukovRealtimeWorld
 		WhiteLineBossStateMachine.Result result =
 				enemy.bossState.applyDamage(damage);
 		if (result == WhiteLineBossStateMachine.Result.DAMAGE_BLOCKED) {
-			showEnemyStatus(enemy, CharSprite.WARNING, "机制保护");
+			showEnemyStatus(
+					enemy,
+					CharSprite.WARNING,
+					BukovMessages.get(
+							"bukov.raid.runtime.boss_mechanism_protected"));
 			return result;
 		}
 		enemy.mob.HP = Math.max(1, enemy.bossState.health());
@@ -4603,14 +4808,17 @@ public final class BukovRealtimeWorld
 		String text;
 		switch (enemy.bossState.objective()) {
 			case FLANK_UMBRELLA:
-				text = "预警：绕至侧后方交互破伞盾";
+				text = BukovMessages.get(
+						"bukov.raid.runtime.boss_warning_flank");
 				break;
 			case IDENTIFY_TRUE_BODY:
-				text = "预警：检查四个轨迹，稳定慢闪为真身";
+				text = BukovMessages.get(
+						"bukov.raid.runtime.boss_warning_trace");
 				refreshBossMechanismMarkers();
 				break;
 			case DISABLE_FOG_LAMPS:
-				text = "预警：前往泵站操作雾灯控制器";
+				text = BukovMessages.get(
+						"bukov.raid.runtime.boss_warning_fog");
 				break;
 			default:
 				return;
@@ -4712,7 +4920,8 @@ public final class BukovRealtimeWorld
 			created = true;
 		} else if (heap.type != Heap.Type.HEAP
 				&& heap.type != Heap.Type.CHEST) {
-			showHeroStatus("容器内容无法释放");
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.container_release_failed"));
 			return;
 		}
 
@@ -4726,8 +4935,11 @@ public final class BukovRealtimeWorld
 			heap.sprite.drop();
 		}
 		showHeroStatus(released > 0
-				? "搜索完成，发现 " + released + " 件物品"
-				: "搜索完成，容器为空");
+				? BukovMessages.get(
+						"bukov.raid.runtime.search_completed_items_format",
+						released)
+				: BukovMessages.get(
+						"bukov.raid.runtime.search_completed_empty"));
 		checkpointLootChange();
 	}
 
@@ -4888,8 +5100,11 @@ public final class BukovRealtimeWorld
 		lastExtractionCountdown = remaining;
 		showHeroStatus(
 				remaining > 0
-						? "撤离 " + remaining + "秒"
-						: "撤离完成"
+						? BukovMessages.get(
+								"bukov.raid.runtime.extraction_countdown_format",
+								remaining)
+						: BukovMessages.get(
+								"bukov.raid.runtime.extraction_completed")
 		);
 	}
 
@@ -4904,7 +5119,9 @@ public final class BukovRealtimeWorld
 		);
 		if (remaining == lastContainerCountdown) return;
 		lastContainerCountdown = remaining;
-		showHeroStatus("搜索 " + remaining + "秒");
+		showHeroStatus(BukovMessages.get(
+				"bukov.raid.runtime.search_countdown_format",
+				remaining));
 	}
 
 	private void showHeroStatus(String text) {
@@ -5000,7 +5217,11 @@ public final class BukovRealtimeWorld
 		recordDirectHitDirection(attacker, damage);
 		showHeroStatus(shouldShowDamageNumber(
 				SPDSettings.bukovDamageNumbers(), damage, hero.HT)
-				? "受击 -" + damage : "受击");
+				? BukovMessages.get(
+						"bukov.raid.runtime.player_hit_damage_format",
+						damage)
+				: BukovMessages.get(
+						"bukov.raid.runtime.player_hit"));
 		float intensity = Math.max(
 				0.45f,
 				Math.min(
@@ -5087,7 +5308,8 @@ public final class BukovRealtimeWorld
 				continue;
 			}
 			target.boss(
-					"白线",
+					BukovMessages.get(
+							"bukov.raid.runtime.boss_white_line"),
 					bossPhase(enemy.bossState.phase()),
 					3,
 					bossPhaseLabel(enemy.bossState.phase()),
@@ -5110,13 +5332,16 @@ public final class BukovRealtimeWorld
 	private static String bossPhaseLabel(
 			WhiteLineBossStateMachine.Phase phase) {
 		if (phase == WhiteLineBossStateMachine.Phase.UMBRELLA_SHIELD) {
-			return "伞盾封锁";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_phase_umbrella");
 		}
 		if (phase == WhiteLineBossStateMachine.Phase.DECOY_SEARCH) {
-			return "诱饵搜索";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_phase_decoy");
 		}
 		if (phase == WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD) {
-			return "雾灯过载";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_phase_fog");
 		}
 		return "";
 	}
@@ -5124,17 +5349,21 @@ public final class BukovRealtimeWorld
 	private static String bossObjectiveLabel(
 			WhiteLineBossStateMachine.Objective objective) {
 		if (objective == WhiteLineBossStateMachine.Objective.FLANK_UMBRELLA) {
-			return "绕开伞盾";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_objective_flank");
 		}
 		if (objective
 				== WhiteLineBossStateMachine.Objective.IDENTIFY_TRUE_BODY) {
-			return "识别真身";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_objective_identify");
 		}
 		if (objective
 				== WhiteLineBossStateMachine.Objective.DISABLE_FOG_LAMPS) {
-			return "关闭雾灯";
+			return BukovMessages.get(
+					"bukov.raid.runtime.boss_objective_disable_fog");
 		}
-		return "攻击弱点";
+		return BukovMessages.get(
+				"bukov.raid.runtime.boss_objective_attack");
 	}
 
 	private void emitMedicalEnded() {

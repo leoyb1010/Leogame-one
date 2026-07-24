@@ -72,6 +72,28 @@ public class BukovUiTokenBoundaryGuardTest {
 	}
 
 	@Test
+	public void directionArcTexturesUseInjectableSolidToken()
+			throws Exception {
+		for (String file : new String[] {
+				"BukovHitDirectionArc.java",
+				"BukovSoundDirectionArc.java"
+		}) {
+			String source = source(file);
+			assertTrue(
+					file + " must accept the shared token contract",
+					source.contains("BukovUiTokens tokens"));
+			assertTrue(
+					file + " must use the named solid texture token",
+					source.contains(
+							"tokens.colorWithAlpha("
+									+ "\"combat.fx.solid\", 255)"));
+			assertFalse(
+					file + " must not embed an opaque white texture literal",
+					source.contains("0xFFFFFFFF"));
+		}
+	}
+
+	@Test
 	public void playerUiClassesAvoidRgbLiteralsExceptTechnicalMasks()
 			throws Exception {
 		Pattern literalColor = Pattern.compile(
@@ -185,11 +207,6 @@ public class BukovUiTokenBoundaryGuardTest {
 			String file,
 			String line,
 			String literal) {
-		if ("BukovHitDirectionArc.java".equals(file)
-				|| "BukovSoundDirectionArc.java".equals(file)) {
-			return "0xFFFFFFFF".equals(literal)
-					&& line.contains("TextureCache.createSolid(");
-		}
 		if ("BukovUiTokens.java".equals(file)) {
 			return "0xFFFFFF".equals(literal)
 					&& line.contains("&");

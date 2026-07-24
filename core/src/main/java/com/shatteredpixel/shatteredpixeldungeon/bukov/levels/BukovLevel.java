@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.PlatformRo
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.RuinsRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StandardRoom;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.StripedRoom;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.standard.WaterBridgeRoom;
 import com.shatteredpixel.shatteredpixeldungeon.plants.Plant;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
@@ -206,21 +207,28 @@ public class BukovLevel extends RegularLevel {
 	public String tileName(int tile) {
 		switch (tile) {
 			case Terrain.EMPTY_DECO:
-				return "磨损金属地面";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_worn_metal");
 			case Terrain.EMPTY_SP:
-				return "防滑钢板";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_anti_slip");
 			case Terrain.CUSTOM_DECO_EMPTY:
-				return "维护区地面";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_maintenance_floor");
 			case Terrain.EMBERS:
-				return "危险标线";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_hazard_marking");
 			case Terrain.WALL_DECO:
-				return "设备墙";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_equipment_wall");
 			case Terrain.STATUE:
 			case Terrain.STATUE_SP:
-				return "工业掩体";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_industrial_cover");
 			case Terrain.REGION_DECO:
 			case Terrain.REGION_DECO_ALT:
-				return "废弃工业设备";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_abandoned_equipment");
 			default:
 				return super.tileName(tile);
 		}
@@ -232,17 +240,22 @@ public class BukovLevel extends RegularLevel {
 			case Terrain.EMPTY_DECO:
 			case Terrain.EMPTY_SP:
 			case Terrain.CUSTOM_DECO_EMPTY:
-				return "潮湿磨损的仓储区作业地面。";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_desc_floor");
 			case Terrain.EMBERS:
-				return "褪色的安全警示线，标出了设备和车辆通道。";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_desc_hazard");
 			case Terrain.WALL_DECO:
-				return "墙体上固定着线缆、通风格栅和检修面板。";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_desc_wall");
 			case Terrain.STATUE:
 			case Terrain.STATUE_SP:
-				return "由货箱、混凝土块或沙袋构成的低矮掩体。";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_desc_cover");
 			case Terrain.REGION_DECO:
 			case Terrain.REGION_DECO_ALT:
-				return "已经停机的泵组、控制柜或仓储设备。";
+				return BukovMessages.get(
+						"bukov.economy.content.tile_desc_equipment");
 			default:
 				return super.tileDesc(tile);
 		}

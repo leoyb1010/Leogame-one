@@ -31,6 +31,28 @@ public class BukovMouseWheelZoomGuardTest {
 				StandardCharsets.UTF_8);
 		assertTrue(scene.contains(
 				"Camera.main.zoom(BukovMode.active()"
-						+ "\n\t\t\t\t? Math.round(defaultZoom)"));
+						+ "\n\t\t\t\t? BukovCameraPolicy.resolveWorldZoom("));
+		assertTrue(scene.contains("Camera.main.screenWidth(),"));
+		assertTrue(scene.contains(
+				"Camera.main.screenWidth()"
+						+ "\n\t\t\t\t\t\t\t\t>= Camera.main.screenHeight(),"));
+		assertTrue(scene.contains("DungeonTilemap.SIZE,"));
+	}
+
+	@Test
+	public void realtimeRaidDisablesLegacyPinchDragAndZoomBindings()
+			throws Exception {
+		Path source = Paths.get(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/CellSelector.java");
+		String text = new String(
+				Files.readAllBytes(source),
+				StandardCharsets.UTF_8);
+
+		assertTrue(text.contains(
+				"active = !BukovMode.active();"));
+		assertTrue(text.contains(
+				"if (!BukovMode.active() && action == SPDAction.ZOOM_IN)"));
+		assertTrue(text.contains(
+				"} else if (!BukovMode.active() && action == SPDAction.ZOOM_OUT)"));
 	}
 }

@@ -10,12 +10,15 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+
 /** Pure formatting helpers kept independent from Noosa for small unit tests. */
 public final class BukovHudFormat {
 
-	public static final String DEFAULT_OBJECTIVE = "搜集物资并前往撤离点";
+	public static final String DEFAULT_OBJECTIVE =
+			BukovMessages.get("bukov.raid.hud.default_objective");
 	public static final String TOUCH_OBJECTIVE =
-			"左拖移动 · 右拖射击 · 左上互动 · 右上装填";
+			BukovMessages.get("bukov.raid.hud.touch_objective");
 
 	private BukovHudFormat() {
 	}
@@ -25,20 +28,41 @@ public final class BukovHudFormat {
 		int safeCurrent = clamp(current, 0, safeMaximum);
 		int safeShield = Math.max(0, shield);
 		return safeShield > 0
-				? "HP " + safeCurrent + "/" + safeMaximum + " +" + safeShield
-				: "HP " + safeCurrent + "/" + safeMaximum;
+				? BukovMessages.get(
+						"bukov.raid.hud.health_with_shield_format",
+						safeCurrent,
+						safeMaximum,
+						safeShield)
+				: BukovMessages.get(
+						"bukov.raid.hud.health_format",
+						safeCurrent,
+						safeMaximum);
 	}
 
 	public static String armor(Integer minimumReduction, Integer maximumReduction) {
-		if (minimumReduction == null || maximumReduction == null) return "护甲 --";
+		if (minimumReduction == null || maximumReduction == null) {
+			return BukovMessages.get("bukov.raid.hud.armor_unavailable");
+		}
 		int minimum = Math.max(0, minimumReduction);
 		int maximum = Math.max(minimum, maximumReduction);
-		return minimum == maximum ? "护甲 " + maximum : "护甲 " + minimum + "-" + maximum;
+		return minimum == maximum
+				? BukovMessages.get(
+						"bukov.raid.hud.armor_value_format",
+						maximum)
+				: BukovMessages.get(
+						"bukov.raid.hud.armor_range_format",
+						minimum,
+						maximum);
 	}
 
 	public static String ammo(Integer magazine, Integer reserve) {
-		if (magazine == null) return "弹药 -- / --";
-		return "弹药 " + Math.max(0, magazine) + " / " + Math.max(0, reserve == null ? 0 : reserve);
+		if (magazine == null) {
+			return BukovMessages.get("bukov.raid.hud.ammo_unavailable");
+		}
+		return BukovMessages.get(
+				"bukov.raid.hud.ammo_format",
+				Math.max(0, magazine),
+				Math.max(0, reserve == null ? 0 : reserve));
 	}
 
 	public static String tacticalAmmo(
@@ -48,20 +72,32 @@ public final class BukovHudFormat {
 			int reserve) {
 		if (weaponName == null || weaponName.trim().isEmpty()
 				|| magazineCapacity <= 0) {
-			return "-- | --";
+			return BukovMessages.get(
+					"bukov.raid.hud.tactical_ammo_unavailable");
 		}
-		return Math.max(0, Math.min(magazine, magazineCapacity))
-				+ " | " + Math.max(0, reserve);
+		return BukovMessages.get(
+				"bukov.raid.hud.tactical_ammo_format",
+				Math.max(0, Math.min(magazine, magazineCapacity)),
+				Math.max(0, reserve));
 	}
 
 	public static String weapon(String name, boolean automatic) {
-		if (name == null || name.trim().isEmpty()) return "未装备枪械";
-		return name.trim() + " · " + (automatic ? "自动" : "单发");
+		if (name == null || name.trim().isEmpty()) {
+			return BukovMessages.get("bukov.raid.hud.weapon_unarmed");
+		}
+		return BukovMessages.get(
+				"bukov.raid.hud.weapon_format",
+				name.trim(),
+				automatic
+						? BukovMessages.get("bukov.raid.hud.weapon_mode_auto")
+						: BukovMessages.get("bukov.raid.hud.weapon_mode_single"));
 	}
 
 	public static String reload(boolean reloading, float progress) {
 		if (!reloading) return "";
-		return "换弹 " + percent(progress);
+		return BukovMessages.get(
+				"bukov.raid.hud.reload_format",
+				percent(progress));
 	}
 
 	/**
@@ -77,7 +113,9 @@ public final class BukovHudFormat {
 				|| Float.isInfinite(remainingSeconds)) {
 			return "∞";
 		}
-		return Math.max(1, (int)Math.ceil(remainingSeconds)) + "s";
+		return BukovMessages.get(
+				"bukov.raid.hud.injury_seconds_format",
+				Math.max(1, (int)Math.ceil(remainingSeconds)));
 	}
 
 	public static String status(
@@ -88,17 +126,31 @@ public final class BukovHudFormat {
 			float stimulantRemaining) {
 		StringBuilder result = new StringBuilder();
 		if (bleedingPerSecond > 0.001f) {
-			append(result, "流血 " + oneDecimal(bleedingPerSecond) + "/秒");
+			append(result, BukovMessages.get(
+					"bukov.raid.hud.status_bleeding_format",
+					oneDecimal(bleedingPerSecond)));
 		}
-		if (fractured) append(result, "骨折");
+		if (fractured) {
+			append(result, BukovMessages.get(
+					"bukov.raid.hud.status_fractured"));
+		}
 		if (concussionRemaining > 0.001f) {
-			append(result, "震荡 " + oneDecimal(concussionRemaining) + "秒");
+			append(result, BukovMessages.get(
+					"bukov.raid.hud.status_concussion_format",
+					oneDecimal(concussionRemaining)));
 		}
-		if (painSeverity > 0.001f) append(result, "疼痛");
+		if (painSeverity > 0.001f) {
+			append(result, BukovMessages.get(
+					"bukov.raid.hud.status_pain"));
+		}
 		if (stimulantRemaining > 0.001f) {
-			append(result, "强化 " + oneDecimal(stimulantRemaining) + "秒");
+			append(result, BukovMessages.get(
+					"bukov.raid.hud.status_stimulant_format",
+					oneDecimal(stimulantRemaining)));
 		}
-		return result.length() == 0 ? "状态稳定" : result.toString();
+		return result.length() == 0
+				? BukovMessages.get("bukov.raid.hud.status_stable")
+				: result.toString();
 	}
 
 	public static String interaction(
@@ -121,22 +173,38 @@ public final class BukovHudFormat {
 		String action = label == null || label.trim().isEmpty()
 				? interactionVerb(type) : label.trim();
 		if (progress > 0f) {
-			return action + " " + percent(progress);
+			return BukovMessages.get(
+					"bukov.raid.hud.interaction_progress_format",
+					action,
+					percent(progress));
 		}
 		if (seconds > 0f
 				&& (type == BukovRaidHudState.Interaction.SEARCH
 				|| type == BukovRaidHudState.Interaction.EXTRACT
 				|| type == BukovRaidHudState.Interaction.MEDICAL)) {
-			return (desktop ? "按住 E" : "按住互动")
-					+ " · " + action + " · " + oneDecimal(seconds) + "秒";
+			return BukovMessages.get(
+					desktop
+							? "bukov.raid.hud.interaction_hold_desktop_format"
+							: "bukov.raid.hud.interaction_hold_touch_format",
+					action,
+					oneDecimal(seconds));
 		}
 		if (type == BukovRaidHudState.Interaction.PICKUP) {
-			return (desktop ? "按 E" : "按互动")
-					+ " · " + action + " · 背包查看负重/价值";
+			return BukovMessages.get(
+					desktop
+							? "bukov.raid.hud.interaction_pickup_desktop_format"
+							: "bukov.raid.hud.interaction_pickup_touch_format",
+					action);
 		}
 		return type == BukovRaidHudState.Interaction.LOCKED
-				? "不可交互 · " + action
-				: (desktop ? "按 E" : "按互动") + " · " + action;
+				? BukovMessages.get(
+						"bukov.raid.hud.interaction_locked_format",
+						action)
+				: BukovMessages.get(
+						desktop
+								? "bukov.raid.hud.interaction_prompt_desktop_format"
+								: "bukov.raid.hud.interaction_prompt_touch_format",
+						action);
 	}
 
 	public static String extraction(
@@ -148,12 +216,24 @@ public final class BukovHudFormat {
 			float seconds) {
 		if (active) {
 			float remaining = Math.max(0f, seconds * (1f - clamp01(progress)));
-			return "撤离 " + id(extractionId) + " · " + oneDecimal(remaining) + "秒";
+			return BukovMessages.get(
+					"bukov.raid.hud.extraction_active_format",
+					id(extractionId),
+					oneDecimal(remaining));
 		}
 		if (extractionId != null) {
-			return "撤离 " + id(extractionId) + (available ? " · 可用" : " · 未开放");
+			return BukovMessages.get(
+					"bukov.raid.hud.extraction_state_format",
+					id(extractionId),
+					available
+							? BukovMessages.get(
+									"bukov.raid.hud.extraction_available")
+							: BukovMessages.get(
+									"bukov.raid.hud.extraction_unavailable"));
 		}
-		return "撤离点 " + Math.max(0, availableCount) + " 可用";
+		return BukovMessages.get(
+				"bukov.raid.hud.extraction_count_format",
+				Math.max(0, availableCount));
 	}
 
 	public static String clock(float elapsedSeconds) {
@@ -203,19 +283,26 @@ public final class BukovHudFormat {
 	private static String interactionVerb(BukovRaidHudState.Interaction type) {
 		switch (type) {
 			case SEARCH:
-				return "搜索容器";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_search");
 			case PICKUP:
-				return "拾取物资";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_pickup");
 			case EXTRACT:
-				return "开始撤离";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_extract");
 			case PUMP:
-				return "启动泵站";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_pump");
 			case MEDICAL:
-				return "治疗";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_medical");
 			case UNLOCK:
-				return "解锁";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_unlock");
 			case LOCKED:
-				return "目标未开放";
+				return BukovMessages.get(
+						"bukov.raid.hud.interaction_unavailable");
 			default:
 				return "";
 		}

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -129,13 +130,21 @@ public class BukovRaidHudStateTest {
 		assertEquals(3, state.bossPhase());
 		assertEquals(180, state.bossHealth());
 		assertEquals(1f, state.bossHealthFraction(), 0f);
-		assertTrue(BukovCombatHudFormat.sound(state).contains("↖ 西北"));
-		assertTrue(BukovCombatHudFormat.sound(state).contains("○ 远"));
-		assertTrue(BukovCombatHudFormat.hit(state).contains("→ 东"));
+		assertTrue(BukovCombatHudFormat.sound(state).contains(
+				"↖ " + BukovMessages.get(
+						"bukov.raid.combat.direction_northwest")));
+		assertTrue(BukovCombatHudFormat.sound(state).contains(
+				"○ " + BukovMessages.get(
+						"bukov.raid.combat.distance_far")));
+		assertTrue(BukovCombatHudFormat.hit(state).contains(
+				"→ " + BukovMessages.get(
+						"bukov.raid.combat.direction_east")));
 		assertTrue(BukovCombatHudFormat.bossObjective(state)
-				.contains("◇ 弱点开放"));
+				.contains(BukovMessages.get(
+						"bukov.raid.combat.boss_weak_open")));
 		assertTrue(BukovCombatHudFormat.bossObjective(state)
-				.contains("⚠ 建议撤离"));
+				.contains(BukovMessages.get(
+						"bukov.raid.combat.boss_retreat_warning")));
 	}
 
 	@Test
@@ -159,10 +168,18 @@ public class BukovRaidHudStateTest {
 		assertEquals(
 				BukovRaidHudState.Direction.S,
 				state.hitDirection(2));
-		assertTrue(BukovCombatHudFormat.hit(state).contains("↑ 北"));
-		assertTrue(BukovCombatHudFormat.hit(state).contains("→ 东"));
-		assertTrue(BukovCombatHudFormat.hit(state).contains("↓ 南"));
-		assertFalse(BukovCombatHudFormat.hit(state).contains("← 西"));
+		assertTrue(BukovCombatHudFormat.hit(state).contains(
+				"↑ " + BukovMessages.get(
+						"bukov.raid.combat.direction_north")));
+		assertTrue(BukovCombatHudFormat.hit(state).contains(
+				"→ " + BukovMessages.get(
+						"bukov.raid.combat.direction_east")));
+		assertTrue(BukovCombatHudFormat.hit(state).contains(
+				"↓ " + BukovMessages.get(
+						"bukov.raid.combat.direction_south")));
+		assertFalse(BukovCombatHudFormat.hit(state).contains(
+				"← " + BukovMessages.get(
+						"bukov.raid.combat.direction_west")));
 	}
 
 	@Test
@@ -190,10 +207,25 @@ public class BukovRaidHudStateTest {
 				BukovRaidHudState.Distance.FAR,
 				state.navigationDistance());
 		assertEquals(
-				"◆ ↖ 维修档案 · 远 · 未开放",
+				BukovMessages.get(
+						"bukov.raid.combat.navigation_format",
+						"◆",
+						"↖",
+						"维修档案",
+						BukovMessages.get(
+								"bukov.raid.combat.distance_far"),
+						BukovMessages.get(
+								"bukov.raid.combat."
+										+ "navigation_unavailable")),
 				BukovCombatHudFormat.navigation(state));
 		assertEquals(
-				"⚠ → 拾荒枪手 · 中",
+				BukovMessages.get(
+						"bukov.raid.combat.threat_format",
+						"⚠ ",
+						"→",
+						"拾荒枪手",
+						BukovMessages.get(
+								"bukov.raid.combat.distance_mid")),
 				BukovCombatHudFormat.threat(state));
 	}
 

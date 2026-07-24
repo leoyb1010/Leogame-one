@@ -131,7 +131,7 @@ public class BukovFirstRaidLootTablesTest {
 	public void dataDrivenLootSurvivesBundleRoundTrip() {
 		BukovLootItem original = new BukovLootItem().configure(
 				"test_medical",
-				"测试医疗包",
+				"Test Medkit",
 				BukovLootItem.Category.MEDICAL,
 				0.45f,
 				640);
@@ -143,7 +143,7 @@ public class BukovFirstRaidLootTablesTest {
 		restored.restoreFromBundle(bundle);
 
 		assertEquals("test_medical", restored.bukovDefinitionId());
-		assertEquals("测试医疗包", restored.name());
+		assertEquals("Test Medkit", restored.name());
 		assertEquals(BukovLootItem.Category.MEDICAL, restored.category());
 		assertEquals(0.45f, restored.bukovUnitWeight(), 0.0001f);
 		assertEquals(640, restored.bukovUnitValue());

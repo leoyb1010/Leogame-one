@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRole;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyTier;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -19,12 +20,30 @@ public class FirstRaidEnemyProductionWiringTest {
 
 	@Test
 	public void fourCommonRolesEliteAndBossHaveReadableIdentity() {
-		assertEquals("游击射手", label(EnemyRole.RANGED_SKIRMISHER));
-		assertEquals("突击近战", label(EnemyRole.MELEE_RUSHER));
-		assertEquals("正面装甲", label(EnemyRole.ARMORED_SUPPRESSOR));
-		assertEquals("侦测报警", label(EnemyRole.SCOUT_ALARM));
-		assertEquals("精英指挥", label(EnemyRole.ELITE_COMMANDER));
-		assertEquals("可选Boss · 白线", label(EnemyRole.OPTIONAL_BOSS));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_skirmisher"),
+				label(EnemyRole.RANGED_SKIRMISHER));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_rusher"),
+				label(EnemyRole.MELEE_RUSHER));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_armored"),
+				label(EnemyRole.ARMORED_SUPPRESSOR));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_scout"),
+				label(EnemyRole.SCOUT_ALARM));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_commander"),
+				label(EnemyRole.ELITE_COMMANDER));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.runtime.enemy_role_white_line"),
+				label(EnemyRole.OPTIONAL_BOSS));
 	}
 
 	@Test

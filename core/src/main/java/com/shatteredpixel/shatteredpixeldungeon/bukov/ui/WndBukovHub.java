@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -44,6 +45,7 @@ public final class WndBukovHub extends Window {
 
 	private final BukovHubController controller;
 	private final Callback deploy;
+	private final Callback closed;
 	private final BukovHubViewModel viewModel;
 	private final BukovHubViewModel.InventoryFilter inventoryFilter;
 	private final BukovHubViewModel.InventorySort inventorySort;
@@ -63,9 +65,18 @@ public final class WndBukovHub extends Window {
 			new BukovFocusRepeater();
 
 	public WndBukovHub(BukovHubController controller, Callback deploy) {
+		this(controller, deploy, () -> {
+		});
+	}
+
+	public WndBukovHub(
+			BukovHubController controller,
+			Callback deploy,
+			Callback closed) {
 		this(
 				controller,
 				deploy,
+				closed,
 				0,
 				BukovHubViewModel.InventoryFilter.ALL,
 				BukovHubViewModel.InventorySort.STASH_ORDER,
@@ -75,6 +86,7 @@ public final class WndBukovHub extends Window {
 	private WndBukovHub(
 			BukovHubController controller,
 			Callback deploy,
+			Callback closed,
 			int restoredFocus,
 			BukovHubViewModel.InventoryFilter inventoryFilter,
 			BukovHubViewModel.InventorySort inventorySort,
@@ -87,6 +99,7 @@ public final class WndBukovHub extends Window {
 			throw new IllegalArgumentException("controller is required");
 		}
 		if (deploy == null
+				|| closed == null
 				|| inventoryFilter == null
 				|| inventorySort == null
 				|| inventoryQuery == null) {
@@ -95,6 +108,7 @@ public final class WndBukovHub extends Window {
 		}
 		this.controller = controller;
 		this.deploy = deploy;
+		this.closed = closed;
 		this.inventoryFilter = inventoryFilter;
 		this.inventorySort = inventorySort;
 		this.inventoryQuery = inventoryQuery;
@@ -134,9 +148,9 @@ public final class WndBukovHub extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = text(
-				viewModel.activeRaid
-						? "HIDEOUT / ACTIVE RAID"
-						: "HIDEOUT / LOADOUT",
+				BukovMessages.get(viewModel.activeRaid
+						? "bukov.economy.hub.eyebrow_active"
+						: "bukov.economy.hub.eyebrow_loadout"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(windowWidth - MARGIN - eyebrow.width(), y);
@@ -146,9 +160,9 @@ public final class WndBukovHub extends Window {
 		add(eyebrow);
 
 		RenderedTextBlock title = text(
-				viewModel.activeRaid
-						? "继续布科夫行动"
-						: "布科夫行动整备",
+				BukovMessages.get(viewModel.activeRaid
+						? "bukov.economy.hub.title_active"
+						: "bukov.economy.hub.title_loadout"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, y);
@@ -199,8 +213,11 @@ public final class WndBukovHub extends Window {
 		add(modeButton);
 		addAction(
 				viewModel.activeRaid
-						? "交易锁定"
-						: "补给商店 · " + viewModel.currency,
+						? BukovMessages.get(
+								"bukov.economy.hub.vendor_locked")
+						: BukovMessages.get(
+								"bukov.economy.hub.vendor",
+								viewModel.currency),
 				BukovHubFocusModel.ACTION_VENDOR,
 				MARGIN + utilityWidth + GAP,
 				y,
@@ -292,10 +309,13 @@ public final class WndBukovHub extends Window {
 		float half = (windowWidth - MARGIN * 2 - GAP) / 2f;
 		addAction(
 				viewModel.activeRaid
-						? "结束本次行动"
+						? BukovMessages.get(
+								"bukov.economy.hub.end_raid")
 						: viewModel.canRepeatLoadout
-								? "沿用上次"
-								: "推荐配装",
+								? BukovMessages.get(
+										"bukov.economy.hub.repeat")
+								: BukovMessages.get(
+										"bukov.economy.hub.recommend"),
 				BukovHubFocusModel.ACTION_REPEAT,
 				MARGIN,
 				y,
@@ -303,10 +323,13 @@ public final class WndBukovHub extends Window {
 				viewModel.activeRaid ? "accent.danger" : "accent.interact");
 		addAction(
 				viewModel.activeRaid
-						? "配装已锁定"
+						? BukovMessages.get(
+								"bukov.economy.hub.loadout_locked")
 						: viewModel.canRepeatLoadout
-								? "智能配装"
-								: "清空配装",
+								? BukovMessages.get(
+										"bukov.economy.hub.smart_loadout")
+								: BukovMessages.get(
+										"bukov.economy.hub.clear_loadout"),
 				BukovHubFocusModel.ACTION_CLEAR,
 				MARGIN + half + GAP,
 				y,
@@ -316,15 +339,18 @@ public final class WndBukovHub extends Window {
 
 		addAction(
 				viewModel.activeRaid
-						? "继续行动"
-						: !viewModel.canDeploy ? "补齐并出击" : "确认出击",
+						? BukovMessages.get(
+								"bukov.economy.hub.resume")
+						: BukovMessages.get(!viewModel.canDeploy
+								? "bukov.economy.hub.repair_deploy"
+								: "bukov.economy.hub.confirm_deploy"),
 				BukovHubFocusModel.ACTION_DEPLOY,
 				MARGIN,
 				y,
 				half,
 				!viewModel.canDeploy ? "accent.danger" : "accent.extract");
 		addAction(
-				"返回藏身处",
+				BukovMessages.get("bukov.economy.hub.back"),
 				BukovHubFocusModel.ACTION_BACK,
 				MARGIN + half + GAP,
 				y,
@@ -408,24 +434,29 @@ public final class WndBukovHub extends Window {
 
 	private String settlementText() {
 		if (viewModel.activeRaid) {
-			return "行动进行中  /  " + viewModel.activeRaidSummary();
+			return BukovMessages.get(
+					"bukov.economy.hub.status_active",
+					viewModel.activeRaidSummary());
 		}
 		if (!viewModel.canDeploy) {
-			return "无法出击  /  " + viewModel.deploymentBlockReason;
+			return BukovMessages.get(
+					"bukov.economy.hub.status_blocked",
+					viewModel.deploymentBlockReason);
 		}
 		if (viewModel.latestSettlement == null) {
 			return viewModel.deploymentReadinessHeadline();
 		}
 		boolean success = viewModel.latestSettlement.outcome == RaidOutcome.SUCCESS;
-		return "配装已就绪 / 可立即出击 · "
-				+ (success ? "上次已撤离 +" : "上次未归还 -")
-				+ viewModel.latestSettlement.value
-				+ " · "
-				+ viewModel.latestSettlement.kills
-				+ " 击杀"
-				+ (viewModel.latestSettlement.missionCompleted
-						? " · 任务完成"
-						: "");
+		return BukovMessages.get(
+				viewModel.latestSettlement.missionCompleted
+						? success
+								? "bukov.economy.hub.status_last_success_mission"
+								: "bukov.economy.hub.status_last_failed_mission"
+						: success
+								? "bukov.economy.hub.status_last_success"
+								: "bukov.economy.hub.status_last_failed",
+				viewModel.latestSettlement.value,
+				viewModel.latestSettlement.kills);
 	}
 
 	private int settlementColor() {
@@ -473,7 +504,9 @@ public final class WndBukovHub extends Window {
 			controller.toggleItem(itemUid);
 			reopen();
 		} catch (IOException | RuntimeException error) {
-			showError("配装保存失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.hub.loadout_save_failed"),
+					error);
 		}
 	}
 
@@ -490,6 +523,7 @@ public final class WndBukovHub extends Window {
 								new WndBukovHub(
 										controller,
 										deploy,
+										closed,
 										restoredFocus,
 										inventoryFilter,
 										inventorySort,
@@ -509,6 +543,7 @@ public final class WndBukovHub extends Window {
 				new WndBukovHub(
 						controller,
 						deploy,
+						closed,
 						nextFilterFocus,
 						next,
 						inventorySort,
@@ -527,6 +562,7 @@ public final class WndBukovHub extends Window {
 				new WndBukovHub(
 						controller,
 						deploy,
+						closed,
 						nextSortFocus,
 						inventoryFilter,
 						next,
@@ -549,6 +585,7 @@ public final class WndBukovHub extends Window {
 									new WndBukovHub(
 											controller,
 											deploy,
+											closed,
 											searchFocus,
 											inventoryFilter,
 											inventorySort,
@@ -602,10 +639,13 @@ public final class WndBukovHub extends Window {
 					break;
 				default:
 					hide();
+					closed.call();
 					break;
 			}
 		} catch (IOException | RuntimeException error) {
-			showError("藏身处保存失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.hub.hideout_save_failed"),
+					error);
 		}
 	}
 
@@ -630,6 +670,7 @@ public final class WndBukovHub extends Window {
 								new WndBukovHub(
 										controller,
 										deploy,
+										closed,
 										restoredFocus,
 										inventoryFilter,
 										inventorySort,
@@ -642,7 +683,9 @@ public final class WndBukovHub extends Window {
 			hide();
 			deploy.call();
 		} catch (IOException | RuntimeException error) {
-			showError("出击确认失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.hub.deploy_failed"),
+					error);
 		}
 	}
 
@@ -653,6 +696,7 @@ public final class WndBukovHub extends Window {
 				new WndBukovHub(
 						controller,
 						deploy,
+						closed,
 						restoredFocus,
 						inventoryFilter,
 						inventorySort,
@@ -665,7 +709,10 @@ public final class WndBukovHub extends Window {
 				? error.getClass().getSimpleName()
 				: error.getMessage();
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndMessage(title + "：\n" + detail));
+				new WndMessage(BukovMessages.get(
+						"bukov.economy.common.error_detail",
+						title,
+						detail)));
 	}
 
 	@Override
@@ -775,23 +822,31 @@ public final class WndBukovHub extends Window {
 			dividerA = statusDivider();
 			dividerB = statusDivider();
 			dividerC = statusDivider();
-			cash = text("现金\n" + viewModel.currency,
+			cash = text(BukovMessages.get(
+							"bukov.economy.hub.cash",
+							viewModel.currency),
 					BukovVisualContract.FONT_BODY,
 					tokens.color("accent.valuable"));
 			add(cash);
-			stash = text("仓库价值\n" + viewModel.stashValue,
+			stash = text(BukovMessages.get(
+							"bukov.economy.hub.stash_value",
+							viewModel.stashValue),
 					BukovVisualContract.FONT_BODY,
 					tokens.color("text.secondary"));
 			add(stash);
 			risk = text(
-					(viewModel.activeRaid ? "行动携带\n" : "本次风险\n")
-							+ viewModel.riskValue,
+					BukovMessages.get(viewModel.activeRaid
+									? "bukov.economy.hub.carried_value"
+									: "bukov.economy.hub.risk_value",
+							viewModel.riskValue),
 					BukovVisualContract.FONT_BODY,
 					viewModel.riskValue > 0
 							? tokens.color("accent.valuable")
 							: tokens.color("text.secondary"));
 			add(risk);
-			weight = text("负重\n" + viewModel.loadoutSummary(),
+			weight = text(BukovMessages.get(
+							"bukov.economy.hub.weight",
+							viewModel.loadoutSummary()),
 					BukovVisualContract.FONT_BODY,
 					viewModel.overweight
 							? tokens.color("accent.danger")
@@ -856,20 +911,26 @@ public final class WndBukovHub extends Window {
 					1,
 					tokens.colorWithAlpha("accent.interact", 28));
 			stateSurface.visible =
-					!"未配置".equals(viewModel.slotSummary(slot));
+					!BukovMessages.get("bukov.economy.hub.slot_empty")
+							.equals(viewModel.slotSummary(slot));
 			addToBack(stateSurface);
 			edge = new ColorBlock(1, 1,
-					"未配置".equals(viewModel.slotSummary(slot))
+					BukovMessages.get("bukov.economy.hub.slot_empty")
+							.equals(viewModel.slotSummary(slot))
 							? tokens.color("panel.border")
 							: tokens.color("accent.interact"));
 			add(edge);
-			code = text(slot.code + "  " + slot.label,
+			code = text(BukovMessages.get(
+							"bukov.economy.hub.slot_heading",
+							slot.code,
+							slot.label),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(code);
 			value = text(viewModel.slotSummary(slot),
 					BukovVisualContract.FONT_BODY,
-					"未配置".equals(viewModel.slotSummary(slot))
+					BukovMessages.get("bukov.economy.hub.slot_empty")
+							.equals(viewModel.slotSummary(slot))
 							? tokens.color("text.disabled")
 							: tokens.color("text.primary"));
 			add(value);
@@ -907,12 +968,15 @@ public final class WndBukovHub extends Window {
 			if (inventoryItems.isEmpty()) {
 				RenderedTextBlock empty = text(
 						viewModel.stashItems.isEmpty()
-								? "仓库为空 · 完成撤离可带回物资"
+								? BukovMessages.get(
+										"bukov.economy.hub.empty_stash")
 								: !inventoryQuery.isEmpty()
-								? "没有匹配“"
-										+ compact(inventoryQuery, 12)
-										+ "”的物资"
-								: inventoryFilter.label + "分类暂无物资",
+								? BukovMessages.get(
+										"bukov.economy.hub.empty_search",
+										compact(inventoryQuery, 12))
+								: BukovMessages.get(
+										"bukov.economy.hub.empty_filter",
+										inventoryFilter.label),
 						BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 4, listWidth - 8, ROW_HEIGHT - 4);
@@ -945,8 +1009,10 @@ public final class WndBukovHub extends Window {
 					1, 1, tokens.color("panel.border"));
 			add(edge);
 			label = text(
-					"筛选 " + inventoryFilter.label
-							+ " " + inventoryItems.size(),
+					BukovMessages.get(
+							"bukov.economy.hub.filter",
+							inventoryFilter.label,
+							inventoryItems.size()),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -996,7 +1062,9 @@ public final class WndBukovHub extends Window {
 					1, 1, tokens.color("panel.border"));
 			add(edge);
 			label = text(
-					"排序 " + inventorySort.label,
+					BukovMessages.get(
+							"bukov.economy.hub.sort",
+							inventorySort.label),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1047,8 +1115,11 @@ public final class WndBukovHub extends Window {
 			add(edge);
 			label = text(
 					inventoryQuery.isEmpty()
-							? "搜索"
-							: "搜索 " + compact(inventoryQuery, 5),
+							? BukovMessages.get(
+									"bukov.economy.hub.search")
+							: BukovMessages.get(
+									"bukov.economy.hub.search_query",
+									compact(inventoryQuery, 5)),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color(
 							inventoryQuery.isEmpty()
@@ -1110,10 +1181,11 @@ public final class WndBukovHub extends Window {
 			focusEdge.visible = false;
 			add(focusEdge);
 			label = text(
-					"模式  " + viewModel.raidModeName
-							+ (viewModel.canEditLoadout
-									? "  [选择]"
-									: "  [查看/锁定]"),
+					BukovMessages.get(
+							viewModel.canEditLoadout
+									? "bukov.economy.hub.mode_select"
+									: "bukov.economy.hub.mode_locked",
+							viewModel.raidModeName),
 					BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			add(label);
@@ -1425,7 +1497,8 @@ public final class WndBukovHub extends Window {
 			resize(confirmWidth, confirmHeight);
 
 			RenderedTextBlock eyebrow = text(
-					"DEPLOYMENT AUTHORIZATION",
+					BukovMessages.get(
+							"bukov.economy.hub.confirm_eyebrow"),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			eyebrow.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1433,7 +1506,8 @@ public final class WndBukovHub extends Window {
 			add(eyebrow);
 
 			RenderedTextBlock heading = text(
-					"确认进入封锁区",
+					BukovMessages.get(
+							"bukov.economy.hub.confirm_heading"),
 					BukovVisualContract.FONT_BODY,
 					tokens.color("accent.extract"));
 			heading.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1441,9 +1515,10 @@ public final class WndBukovHub extends Window {
 			add(heading);
 
 			RenderedTextBlock warning = text(
-					"带入物资将承担损失风险\n"
-							+ "风险价值 " + viewModel.riskValue
-							+ "  ·  负重 " + viewModel.loadoutSummary(),
+					BukovMessages.get(
+							"bukov.economy.hub.confirm_warning",
+							viewModel.riskValue,
+							viewModel.loadoutSummary()),
 					BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			warning.maxWidth(confirmWidth - 14);
@@ -1452,13 +1527,13 @@ public final class WndBukovHub extends Window {
 			add(warning);
 
 			ConfirmButton cancel = new ConfirmButton(
-					"返回整备",
+					BukovMessages.get("bukov.economy.hub.confirm_cancel"),
 					false,
 					tokens.color("panel.border"));
 			cancel.setRect(5, 59, 61, 19);
 			add(cancel);
 			ConfirmButton accept = new ConfirmButton(
-					"进入行动",
+					BukovMessages.get("bukov.economy.hub.confirm_accept"),
 					true,
 					tokens.color("accent.extract"));
 			accept.setRect(72, 59, 61, 19);

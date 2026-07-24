@@ -74,9 +74,12 @@ public class BukovGameUiShellGuardTest {
 		String pause = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovPause.java");
 
-		assertTrue(pause.contains("\"继续行动\""));
-		assertTrue(pause.contains("\"行动设置\""));
-		assertTrue(pause.contains("\"保存并返回藏身处\""));
+		assertTrue(pause.contains(
+				"\"bukov.raid.pause.resume_label\""));
+		assertTrue(pause.contains(
+				"\"bukov.raid.pause.settings_label\""));
+		assertTrue(pause.contains(
+				"\"bukov.raid.pause.leave_label\""));
 		assertTrue(pause.contains("new BukovFocusModel(3, CONTINUE)"));
 		assertTrue(pause.contains("new ActionButton[3]"));
 		assertFalse(pause.contains("WndGame"));

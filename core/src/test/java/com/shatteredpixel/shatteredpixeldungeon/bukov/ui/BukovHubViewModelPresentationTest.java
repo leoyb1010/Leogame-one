@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgressio
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,9 +47,16 @@ public class BukovHubViewModelPresentationTest {
 
 		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
 
-		assertEquals("针蜂-9", model.stashItems.get(0).label);
-		assertEquals("9毫米标准弹", model.stashItems.get(1).label);
-		assertEquals("战术绷带", model.stashItems.get(2).label);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.item.firearm_needle_9"),
+				model.stashItems.get(0).label);
+		assertEquals(
+				BukovMessages.get("bukov.economy.item.ammo_9_standard"),
+				model.stashItems.get(1).label);
+		assertEquals(
+				BukovMessages.get("bukov.economy.item.bandage"),
+				model.stashItems.get(2).label);
 		assertFalse(model.stashItems.get(0).summary().contains("needle_9"));
 		assertFalse(model.stashItems.get(1).summary().contains("ammo_9_standard"));
 		assertEquals(
@@ -61,11 +69,13 @@ public class BukovHubViewModelPresentationTest {
 				BukovHubViewModel.LoadoutSlot.MEDICAL,
 				model.stashItems.get(2).slot);
 		assertTrue(model.slotSummary(
-				BukovHubViewModel.LoadoutSlot.PRIMARY).contains("针蜂-9"));
+				BukovHubViewModel.LoadoutSlot.PRIMARY).contains(
+						BukovMessages.get(
+								"bukov.economy.item.firearm_needle_9")));
 		assertTrue(model.canDeploy);
 		assertEquals(null, model.deploymentBlockReason);
 		assertEquals(
-				"配装已就绪 · 可立即确认出击",
+				BukovMessages.get("bukov.economy.hub.readiness_ready"),
 				model.deploymentReadinessHeadline());
 	}
 
@@ -82,12 +92,15 @@ public class BukovHubViewModelPresentationTest {
 		BukovHubViewModel missing =
 				BukovHubViewModel.from(profile, 40f);
 		assertFalse(missing.canDeploy);
-		assertEquals("针蜂-9缺少兼容弹药",
+		assertEquals(BukovMessages.get(
+						"bukov.economy.hub.block_no_ammo",
+						BukovMessages.get(
+								"bukov.economy.item.firearm_needle_9")),
 				missing.deploymentBlockReason);
-		assertTrue(missing.deploymentReadinessHeadline()
-				.contains("配装待完善"));
-		assertTrue(missing.deploymentReadinessHeadline()
-				.contains("兼容弹药"));
+		assertEquals(BukovMessages.get(
+						"bukov.economy.hub.readiness_blocked",
+						missing.deploymentBlockReason),
+				missing.deploymentReadinessHeadline());
 
 		depositAndSelect(profile, item(
 				"wrong-ammo",
@@ -98,7 +111,10 @@ public class BukovHubViewModelPresentationTest {
 		BukovHubViewModel wrong =
 				BukovHubViewModel.from(profile, 40f);
 		assertFalse(wrong.canDeploy);
-		assertEquals("针蜂-9缺少兼容弹药",
+		assertEquals(BukovMessages.get(
+						"bukov.economy.hub.block_no_ammo",
+						BukovMessages.get(
+								"bukov.economy.item.firearm_needle_9")),
 				wrong.deploymentBlockReason);
 
 		depositAndSelect(profile, item(
@@ -117,9 +133,9 @@ public class BukovHubViewModelPresentationTest {
 		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
 
 		assertFalse(model.canDeploy);
-		assertTrue(model.deploymentBlockReason.contains("正式行动"));
-		assertTrue(model.deploymentBlockReason.contains("配装"));
-		assertTrue(model.deploymentBlockReason.contains("演练场"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.hub.block_no_primary"),
+				model.deploymentBlockReason);
 	}
 
 	@Test
@@ -133,7 +149,8 @@ public class BukovHubViewModelPresentationTest {
 
 		assertTrue(model.canDeploy);
 		assertEquals(
-				"演练装备已就绪 · 可立即测试",
+				BukovMessages.get(
+						"bukov.economy.hub.readiness_training"),
 				model.deploymentReadinessHeadline());
 	}
 
@@ -181,7 +198,7 @@ public class BukovHubViewModelPresentationTest {
 				BukovHubViewModel.displayName(
 						"utility:compact_field_radio"));
 		assertEquals(
-				"未知物资",
+				BukovMessages.get("bukov.economy.item.unknown"),
 				BukovHubViewModel.displayName(""));
 	}
 
@@ -230,7 +247,11 @@ public class BukovHubViewModelPresentationTest {
 		assertTrue(model.stashItems.get(0).valueComparisonPercent < 0);
 		assertTrue(model.stashItems.get(1).valueComparisonPercent > 0);
 		assertEquals(
-				"武器 2/3",
+				BukovMessages.get(
+						"bukov.economy.hub.filter_summary",
+						BukovHubViewModel.InventoryFilter.WEAPONS.label,
+						2,
+						3),
 				model.inventoryFilterSummary(
 						BukovHubViewModel.InventoryFilter.WEAPONS));
 	}
@@ -263,7 +284,8 @@ public class BukovHubViewModelPresentationTest {
 				model.inventoryItems(
 						BukovHubViewModel.InventoryFilter.ALL,
 						BukovHubViewModel.InventorySort.VALUE_DESC,
-						"武器").get(0).itemUid);
+						BukovHubViewModel.LoadoutSlot.PRIMARY.label)
+						.get(0).itemUid);
 		assertEquals(
 				"needle",
 				model.inventoryItems(
@@ -275,11 +297,13 @@ public class BukovHubViewModelPresentationTest {
 				model.inventoryItems(
 						BukovHubViewModel.InventoryFilter.MEDICAL,
 						BukovHubViewModel.InventorySort.NAME_ASC,
-						"战术").get(0).itemUid);
+						BukovMessages.get(
+								"bukov.economy.item.bandage"))
+						.get(0).itemUid);
 		assertTrue(model.inventoryItems(
 				BukovHubViewModel.InventoryFilter.ALL,
 				BukovHubViewModel.InventorySort.STASH_ORDER,
-				"不存在").isEmpty());
+				"no-match-token").isEmpty());
 	}
 
 	@Test
@@ -315,10 +339,18 @@ public class BukovHubViewModelPresentationTest {
 		assertFalse(model.canEditLoadout);
 		assertFalse(model.canRepeatLoadout);
 		assertEquals("active-ui", model.activeRaidId);
-		assertEquals("检查点已保存 · 02:05", model.activeRaidSummary());
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.checkpoint_summary",
+						2,
+						5),
+				model.activeRaidSummary());
 		assertEquals(1, model.stashItems.size());
 		assertTrue(model.stashItems.get(0).selected);
-		assertEquals("针蜂-9", model.stashItems.get(0).label);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.item.firearm_needle_9"),
+				model.stashItems.get(0).label);
 	}
 
 	@Test
@@ -328,9 +360,22 @@ public class BukovHubViewModelPresentationTest {
 
 		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
 
-		assertEquals("合同 0/5 · 区域 1/6", model.careerSummary);
-		assertEquals("找回维修档案", model.activeContract);
-		assertTrue(model.activeContractObjective.contains("维修间档案"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.career_summary",
+						0,
+						5,
+						1,
+						6),
+				model.careerSummary);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.contract_rust_workshop_title"),
+				model.activeContract);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.contract_rust_workshop_objective"),
+				model.activeContractObjective);
 		assertFalse(model.activeContract.contains("maintenance_"));
 	}
 

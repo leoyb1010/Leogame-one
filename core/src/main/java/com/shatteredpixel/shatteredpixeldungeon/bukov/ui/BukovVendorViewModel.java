@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovVendorCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,7 +51,10 @@ public final class BukovVendorViewModel {
 			itemValue = item.totalValue();
 			sellable = BukovEconomyService.sellable(item);
 			price = sellable ? BukovEconomyService.appraisal(item) : 0L;
-			blockReason = sellable ? null : "任务或补给物资不可出售";
+			blockReason = sellable
+					? null
+					: BukovMessages.get(
+							"bukov.economy.vendor.unsellable_mission");
 		}
 	}
 

@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgression;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovGearRules;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovVendorCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovInsuranceService;
@@ -17,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.SettlementReceipt;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.io.IOException;
 import java.util.List;
@@ -157,11 +159,13 @@ public final class BukovHubController {
 		BukovProfile working = profile.copy();
 		if (!working.loadout().contains(itemUid)) {
 			throw new IllegalArgumentException(
-					"只能为已选带入物资投保");
+					BukovMessages.get(
+							"bukov.economy.feedback.insurance_selected_only"));
 		}
 		RaidItem item = working.stash().item(itemUid);
 		if (item == null) {
-			throw new IllegalArgumentException("仓库物资不存在");
+			throw new IllegalArgumentException(BukovMessages.get(
+					"bukov.economy.feedback.stash_item_missing"));
 		}
 		RaidItem updated = item.withInsured(!item.insured());
 		working.stash().replace(updated);
@@ -177,12 +181,14 @@ public final class BukovHubController {
 		BukovProfile working = profile.copy();
 		RaidItem item = working.stash().item(firearmUid);
 		if (item == null || !item.definitionId().startsWith("firearm:")) {
-			throw new IllegalArgumentException("仓库枪械不存在");
+			throw new IllegalArgumentException(BukovMessages.get(
+					"bukov.economy.feedback.stash_firearm_missing"));
 		}
 		if (!BukovServicesViewModel.supportsFirearm(
 				item.definitionId())) {
 			throw new IllegalArgumentException(
-					"该旧版枪械型号暂不支持改装");
+					BukovMessages.get(
+							"bukov.economy.feedback.firearm_unsupported"));
 		}
 		FirearmBuild build = working.firearmBuilds().build(firearmUid);
 		if (build == null) build = new FirearmBuild(firearmUid);
@@ -288,19 +294,25 @@ public final class BukovHubController {
 
 	public int repeatLastLoadout() throws IOException {
 		requireEditableLoadout();
-		profile.loadout().clear();
+		BukovProfile working = profile.copy();
+		working.loadout().clear();
 		int selected = 0;
-		for (String definitionId : profile.lastLoadoutDefinitions()) {
-			for (RaidItem item : profile.stash().items()) {
+		for (String definitionId : working.lastLoadoutDefinitions()) {
+			for (RaidItem item : working.stash().items()) {
 				if (definitionId.equals(item.definitionId())
-						&& !profile.loadout().contains(item.itemUid())) {
-					profile.loadout().select(item.itemUid(), profile.stash());
+						&& !working.loadout().contains(item.itemUid())) {
+					working.loadout().select(
+							item.itemUid(), working.stash());
 					selected++;
 					break;
 				}
 			}
 		}
-		saves.saveProfile(profile);
+		if (working.selectedRaidMode().usesPlayerLoadout()
+				&& !viewModel(working).canDeploy) {
+			applyRecommendedLoadout(working);
+		}
+		commitProfile(working);
 		return selected;
 	}
 
@@ -323,7 +335,11 @@ public final class BukovHubController {
 		}
 		BukovHubViewModel state = viewModel();
 		if (!state.canDeploy) {
-			throw new IllegalStateException(state.deploymentBlockReason);
+			// Every production entry point shares the same recovery behavior.
+			// This also protects callers whose visible hub state became stale
+			// while the loadout editor was open.
+			prepareAndConfirmDeployment();
+			return;
 		}
 		saves.saveProfile(profile);
 	}
@@ -335,11 +351,13 @@ public final class BukovHubController {
 	 */
 	public RaidResult abandonActiveRaid() throws IOException {
 		if (activeCheckpoint == null) {
-			throw new IllegalStateException("当前没有可放弃的行动");
+			throw new IllegalStateException(BukovMessages.get(
+					"bukov.economy.feedback.no_active_raid"));
 		}
 		BukovRaidCoordinator raid = BukovRaidCoordinator.resume(saves);
 		if (raid == null) {
-			throw new IllegalStateException("行动检查点已经结束");
+			throw new IllegalStateException(BukovMessages.get(
+					"bukov.economy.feedback.checkpoint_finished"));
 		}
 		RaidResult result = raid.settleDeath();
 		profile = saves.loadProfile();
@@ -348,42 +366,38 @@ public final class BukovHubController {
 
 	public String summary() {
 		if (activeCheckpoint != null) {
-			return "行动进行中 / "
-					+ activeCheckpoint.session().raidId
-					+ "\n携带 "
-					+ activeCheckpoint.loot().distinctItemCount()
-					+ " 件 / "
-					+ formatWeight(activeCheckpoint.loot().totalWeight())
-					+ " kg / 价值 "
-					+ activeCheckpoint.loot().totalValue();
+			return BukovMessages.get(
+					"bukov.economy.hub.controller_active_summary",
+					activeCheckpoint.session().raidId,
+					activeCheckpoint.loot().distinctItemCount(),
+					formatWeight(activeCheckpoint.loot().totalWeight()),
+					activeCheckpoint.loot().totalValue());
 		}
-		StringBuilder out = new StringBuilder();
-		out.append("仓库 ")
-				.append(profile.stash().distinctItemCount())
-				.append(" 件 / 总价值 ")
-				.append(profile.stash().totalValue())
-				.append('\n')
-				.append("出战 ")
-				.append(profile.loadout().distinctItemCount())
-				.append(" 件 / ")
-				.append(formatWeight(profile.loadout().totalWeight(profile.stash())))
-				.append(" kg / 风险价值 ")
-				.append(profile.loadout().totalValue(profile.stash()));
+		StringBuilder out = new StringBuilder(BukovMessages.get(
+				"bukov.economy.hub.controller_summary",
+				profile.stash().distinctItemCount(),
+				profile.stash().totalValue(),
+				profile.loadout().distinctItemCount(),
+				formatWeight(profile.loadout().totalWeight(profile.stash())),
+				profile.loadout().totalValue(profile.stash())));
 
 		for (RaidItem item : profile.loadout().items(profile.stash())) {
-			out.append("\n• ")
-					.append(item.definitionId())
-					.append(" ×")
-					.append(item.quantity());
+			out.append(BukovMessages.get(
+					"bukov.economy.hub.controller_item",
+					BukovHubViewModel.displayName(item.definitionId()),
+					item.quantity()));
 		}
 
 		List<SettlementReceipt> receipts = profile.settlements();
 		if (!receipts.isEmpty()) {
 			SettlementReceipt latest = receipts.get(receipts.size() - 1);
-			out.append("\n\n最近结算：")
-					.append(latest.outcome() == RaidOutcome.SUCCESS
-							? "已撤离 +" + latest.transferredValue()
-							: "未归还 -" + latest.lostValue());
+			out.append(BukovMessages.get(
+					latest.outcome() == RaidOutcome.SUCCESS
+							? "bukov.economy.hub.controller_last_success"
+							: "bukov.economy.hub.controller_last_failed",
+					latest.outcome() == RaidOutcome.SUCCESS
+							? latest.transferredValue()
+							: latest.lostValue()));
 		}
 		return out.toString();
 	}
@@ -396,6 +410,7 @@ public final class BukovHubController {
 		working.loadout().clear();
 		RaidItem firearm = null;
 		RaidItem compatibleAmmo = null;
+		float lightestPairWeight = Float.POSITIVE_INFINITY;
 		for (RaidItem candidate : working.stash().items()) {
 			if (!candidate.definitionId().startsWith("firearm:")) {
 				continue;
@@ -404,18 +419,28 @@ public final class BukovHubController {
 				if (BukovHubViewModel.compatible(
 						candidate.definitionId(),
 						ammunition.definitionId())) {
-					firearm = candidate;
-					compatibleAmmo = ammunition;
-					break;
+					float pairWeight = candidate.totalWeight()
+							+ ammunition.totalWeight();
+					if (com.shatteredpixel.shatteredpixeldungeon.bukov
+							.BukovNumbers.isFinite(pairWeight)
+							&& pairWeight <= FIRST_RAID_WEIGHT_LIMIT
+							&& (pairWeight < lightestPairWeight
+									|| pairWeight == lightestPairWeight
+									&& pairKey(candidate, ammunition)
+											.compareTo(pairKey(
+													firearm,
+													compatibleAmmo)) < 0)) {
+						firearm = candidate;
+						compatibleAmmo = ammunition;
+						lightestPairWeight = pairWeight;
+					}
 				}
-			}
-			if (firearm != null) {
-				break;
 			}
 		}
 		if (firearm == null || compatibleAmmo == null) {
 			throw new IllegalStateException(
-					"无法准备主武器与兼容弹药，请重新进入藏身处");
+					BukovMessages.get(
+							"bukov.economy.feedback.loadout_pair_failed"));
 		}
 		working.loadout().select(firearm.itemUid(), working.stash());
 		working.loadout().select(
@@ -444,7 +469,9 @@ public final class BukovHubController {
 			BukovProfile working,
 			String prefix) {
 		for (RaidItem item : working.stash().items()) {
-			if (item.definitionId().startsWith(prefix)) {
+			if (item.definitionId().startsWith(prefix)
+					&& (BukovGearRules.slotFor(item.definitionId()) == null
+							|| item.quantity() == 1)) {
 				working.loadout().select(
 						item.itemUid(),
 						working.stash());
@@ -467,6 +494,15 @@ public final class BukovHubController {
 		}
 	}
 
+	private static String pairKey(
+			RaidItem firearm,
+			RaidItem ammunition) {
+		if (firearm == null || ammunition == null) {
+			return "\uFFFF";
+		}
+		return firearm.itemUid() + "\u0000" + ammunition.itemUid();
+	}
+
 	private static BukovHubViewModel viewModel(BukovProfile working) {
 		return BukovHubViewModel.from(
 				working,
@@ -477,7 +513,8 @@ public final class BukovHubController {
 	private void requireEditableLoadout() {
 		if (activeCheckpoint != null) {
 			throw new IllegalStateException(
-					"行动进行中，当前配装由行动检查点锁定");
+					BukovMessages.get(
+							"bukov.economy.feedback.loadout_raid_locked"));
 		}
 	}
 

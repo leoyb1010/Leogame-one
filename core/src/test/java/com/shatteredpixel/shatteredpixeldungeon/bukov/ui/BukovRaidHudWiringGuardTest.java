@@ -22,6 +22,9 @@ public class BukovRaidHudWiringGuardTest {
 
 		assertTrue(world.contains("implements RealtimeRaidSystem.World, FireControl.Sink,"));
 		assertTrue(world.contains("RaidObjectiveSource, BukovRaidHudSource"));
+		assertTrue(world.contains("BukovTutorialHintSource"));
+		assertTrue(world.contains(
+				"void readTutorialHint(BukovTutorialHintState target)"));
 		assertTrue(world.contains("void readRaidHudState(BukovRaidHudState target)"));
 		assertTrue(world.contains("fireControl.reloadRemaining()"));
 		assertTrue(world.contains("medicalStatus.bleedingPerSecond()"));
@@ -47,6 +50,12 @@ public class BukovRaidHudWiringGuardTest {
 
 		assertTrue(hud.contains("final BukovRaidHudState live"));
 		assertTrue(hud.contains("hudSource.readRaidHudState(live)"));
+		assertTrue(hud.contains(
+				"objectiveSource instanceof BukovTutorialHintSource"));
+		assertTrue(hud.contains(
+				"tutorialSource.readTutorialHint(tutorialHint)"));
+		assertTrue(hud.contains("tutorialText.text(tutorialHint.message)"));
+		assertTrue(hud.contains("layoutTutorialHint("));
 		assertTrue(hud.contains("live.reloadProgress()"));
 		assertTrue(hud.contains("live.interactionProgress()"));
 		assertTrue(hud.contains("live.extractionProgress()"));
@@ -107,7 +116,7 @@ public class BukovRaidHudWiringGuardTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHudLayout.java");
 		assertTrue(hud.contains("BukovRaidHudLayout.preferredHeight("));
 		assertTrue(layout.contains("private static final float WIDE_HEIGHT = 46f"));
-		assertTrue(layout.contains("private static final float COMPACT_HEIGHT = 79f"));
+		assertTrue(layout.contains("private static final float COMPACT_HEIGHT = 90f"));
 		assertTrue(layout.contains("compactObjective("));
 		assertTrue(layout.contains("public final Rect medicalHint"));
 		assertTrue(hud.contains("layoutCombatOverlay(actualHeight)"));
@@ -133,10 +142,14 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(input.contains("Input.Keys.NUM_4"));
 		assertTrue(input.contains("controllerMedicalPressed = true"));
 		assertTrue(touch.contains("BukovTouchState.Action.MEDICAL"));
-		assertTrue(touch.contains("\"医疗\""));
-		assertTrue(hud.contains("\"1–4 / H · 快速医疗\""));
-		assertTrue(hud.contains("\"方向键 · 快速医疗\""));
-		assertTrue(hud.contains("\"医疗键 · 快速医疗\""));
+		assertTrue(touch.contains(
+				"\"bukov.raid.touch.medical\""));
+		assertTrue(hud.contains(
+				"\"bukov.raid.hud.medical_hint_desktop\""));
+		assertTrue(hud.contains(
+				"\"bukov.raid.hud.medical_hint_controller\""));
+		assertTrue(hud.contains(
+				"\"bukov.raid.hud.medical_hint_touch\""));
 	}
 
 	@Test

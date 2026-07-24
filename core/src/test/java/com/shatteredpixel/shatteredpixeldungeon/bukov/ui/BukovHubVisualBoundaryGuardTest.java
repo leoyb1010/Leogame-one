@@ -27,11 +27,11 @@ public class BukovHubVisualBoundaryGuardTest {
 
 		assertFalse(source.contains("RedButton"));
 		assertFalse(source.contains("CheckBox"));
-		assertFalse(source.contains("再次确认出击"));
-		assertTrue(source.contains("HIDEOUT / LOADOUT"));
-		assertTrue(source.contains("推荐配装"));
-		assertTrue(source.contains("清空配装"));
-		assertTrue(source.contains("确认出击"));
+		assertFalse(source.contains("bukov.economy.hub.reconfirm"));
+		assertTrue(source.contains("bukov.economy.hub.eyebrow_loadout"));
+		assertTrue(source.contains("bukov.economy.hub.recommend"));
+		assertTrue(source.contains("bukov.economy.hub.clear_loadout"));
+		assertTrue(source.contains("bukov.economy.hub.confirm_deploy"));
 		assertTrue(source.contains("DeploymentConfirmWindow"));
 		assertTrue(source.contains("FilterCycleButton"));
 		assertTrue(source.contains("SortCycleButton"));
@@ -41,9 +41,14 @@ public class BukovHubVisualBoundaryGuardTest {
 		assertTrue(source.contains("item.comparisonLabel()"));
 		assertTrue(viewModel.contains("InventorySort"));
 		assertTrue(viewModel.contains("matchesQuery("));
-		assertTrue(viewModel.contains("主武器"));
-		assertTrue(viewModel.contains("弹药"));
-		assertTrue(viewModel.contains("医疗"));
+		assertTrue(viewModel.contains(
+				"BukovMessages.get(\"bukov.economy.hub.slot_\" + key)"));
+		assertTrue(viewModel.contains(
+				"BukovMessages.get(\"bukov.economy.hub.slot_\" + key"
+						+ " + \"_code\")"));
+		assertTrue(viewModel.contains("PRIMARY(\"primary\")"));
+		assertTrue(viewModel.contains("AMMUNITION(\"ammunition\")"));
+		assertTrue(viewModel.contains("MEDICAL(\"medical\")"));
 	}
 
 	@Test

@@ -7,7 +7,12 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveServ
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -17,11 +22,18 @@ import static org.junit.Assert.assertTrue;
 public class BukovTutorialContractTest {
 
 	@Test
-	public void everyHintIsShortAndNonModal() {
+	public void everyHintIsShortAndNonModal() throws Exception {
 		assertEquals(8, BukovTutorialEvent.values().length);
-		for (BukovTutorialEvent event : BukovTutorialEvent.values()) {
-			assertTrue(event.message.length() <= 38);
-			assertTrue(event.message.split("\\n", -1).length <= 2);
+		for (String suffix : new String[] {"", "_zh"}) {
+			Properties messages = raidMessages(suffix);
+			for (BukovTutorialEvent event : BukovTutorialEvent.values()) {
+				String message = messages.getProperty(event.messageKey());
+				assertTrue(event.messageKey(), message != null);
+				assertTrue(event.messageKey(), message.length() <= 38);
+				assertTrue(
+						event.messageKey(),
+						message.split("\\n", -1).length <= 2);
+			}
 		}
 		assertEquals(4f, BukovTutorialGuide.DISPLAY_SECONDS, 0f);
 	}
@@ -30,7 +42,7 @@ public class BukovTutorialContractTest {
 	public void reusableHintStateClearsWithoutAllocatingAReplacement() {
 		BukovTutorialHintState state = new BukovTutorialHintState();
 		state.event = BukovTutorialEvent.BLEEDING;
-		state.message = BukovTutorialEvent.BLEEDING.message;
+		state.message = BukovTutorialEvent.BLEEDING.message();
 		state.remainingSeconds = 2f;
 		assertTrue(state.visible());
 
@@ -86,7 +98,18 @@ public class BukovTutorialContractTest {
 				ordinal,
 				"tutorial-" + ordinal,
 				40f,
-				Collections.singletonList(
-						ExtractionState.basic()));
+					Collections.singletonList(
+							ExtractionState.basic()));
+	}
+
+	private static Properties raidMessages(String suffix) throws Exception {
+		Properties properties = new Properties();
+		try (Reader reader = Files.newBufferedReader(
+				Paths.get("src/main/assets/messages/bukov_raid/"
+						+ "bukov_raid" + suffix + ".properties"),
+				StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		return properties;
 	}
 }

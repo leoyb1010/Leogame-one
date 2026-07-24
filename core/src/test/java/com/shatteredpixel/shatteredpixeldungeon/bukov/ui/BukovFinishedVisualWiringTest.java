@@ -26,7 +26,8 @@ public class BukovFinishedVisualWiringTest {
 		}
 		assertTrue(title.contains("controlHeight(touch)"));
 		assertTrue(hub.contains("controlHeight("));
-		assertTrue(deployment.contains("ACTION CHECK  /  行动检查"));
+		assertTrue(deployment.contains(
+				"entryMessage(\"deployment.eyebrow\")"));
 	}
 
 	@Test
@@ -34,8 +35,10 @@ public class BukovFinishedVisualWiringTest {
 			throws Exception {
 		String hud = readBukovUi("BukovRaidHud.java");
 		assertTrue(hud.contains("tokens.typographyPx(typography)"));
-		assertTrue(hud.contains("TAB 背包"));
-		assertTrue(hud.contains("背包键"));
+		assertTrue(hud.contains(
+				"\"bukov.raid.hud.control_hint_desktop\""));
+		assertTrue(hud.contains(
+				"\"bukov.raid.hud.control_hint_touch\""));
 		assertFalse(hud.contains(".zoom("));
 	}
 

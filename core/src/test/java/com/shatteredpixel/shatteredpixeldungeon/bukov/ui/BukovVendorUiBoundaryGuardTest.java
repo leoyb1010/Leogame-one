@@ -17,8 +17,8 @@ public class BukovVendorUiBoundaryGuardTest {
 	public void hubExposesCashAndDedicatedVendorEntry() throws Exception {
 		String hub = source("WndBukovHub.java");
 
-		assertTrue(hub.contains("\"现金\\n\" + viewModel.currency"));
-		assertTrue(hub.contains("\"补给商店 · \" + viewModel.currency"));
+		assertTrue(hub.contains("bukov.economy.hub.cash"));
+		assertTrue(hub.contains("bukov.economy.hub.vendor"));
 		assertTrue(hub.contains("new WndBukovVendor("));
 		assertTrue(hub.contains("ACTION_VENDOR"));
 		assertTrue(hub.contains("int restoredFocus = focus.index()"));

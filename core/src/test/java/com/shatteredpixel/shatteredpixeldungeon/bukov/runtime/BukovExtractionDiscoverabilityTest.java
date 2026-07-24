@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -133,15 +134,21 @@ public class BukovExtractionDiscoverabilityTest {
 	@Test
 	public void adjacentPromptNamesEveryTargetAndRequestsMarkerEntry() {
 		assertEquals(
-				"撤离 E01 就在脚下 · 请站入标记",
+				BukovMessages.get(
+						"bukov.raid.runtime.extraction_approach_available_format",
+						"E01"),
 				BukovRealtimeWorld.extractionApproachLabel(
 						"E01", true));
 		assertEquals(
-				"撤离 E02 未开放 · 请站入标记查看",
+				BukovMessages.get(
+						"bukov.raid.runtime.extraction_approach_locked_format",
+						"E02"),
 				BukovRealtimeWorld.extractionApproachLabel(
 						"E02", false));
 		assertEquals(
-				"撤离 E03 就在脚下 · 请站入标记",
+				BukovMessages.get(
+						"bukov.raid.runtime.extraction_approach_available_format",
+						"E03"),
 				BukovRealtimeWorld.extractionApproachLabel(
 						"E03", true));
 	}

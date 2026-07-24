@@ -15,6 +15,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDef
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,17 +30,17 @@ import java.util.Map;
 public final class BukovHubViewModel {
 
 	public enum InventoryFilter {
-		ALL("全部"),
-		WEAPONS("武器"),
-		AMMUNITION("弹药"),
-		MEDICAL("医疗"),
-		EQUIPMENT("装备"),
-		GEAR("物资");
+		ALL("all"),
+		WEAPONS("weapons"),
+		AMMUNITION("ammunition"),
+		MEDICAL("medical"),
+		EQUIPMENT("equipment"),
+		GEAR("gear");
 
 		public final String label;
 
-		InventoryFilter(String label) {
-			this.label = label;
+		InventoryFilter(String key) {
+			label = BukovMessages.get("bukov.economy.hub.filter_" + key);
 		}
 
 		public InventoryFilter next() {
@@ -61,15 +62,15 @@ public final class BukovHubViewModel {
 	}
 
 	public enum InventorySort {
-		STASH_ORDER("入库"),
-		VALUE_DESC("价值"),
-		WEIGHT_ASC("重量"),
-		NAME_ASC("名称");
+		STASH_ORDER("stash"),
+		VALUE_DESC("value"),
+		WEIGHT_ASC("weight"),
+		NAME_ASC("name");
 
 		public final String label;
 
-		InventorySort(String label) {
-			this.label = label;
+		InventorySort(String key) {
+			label = BukovMessages.get("bukov.economy.hub.sort_" + key);
 		}
 
 		public InventorySort next() {
@@ -79,34 +80,34 @@ public final class BukovHubViewModel {
 	}
 
 	public enum ItemRarity {
-		COMMON("普通", "rarity.common"),
-		UNCOMMON("精良", "rarity.uncommon"),
-		RARE("稀有", "rarity.rare"),
-		LEGENDARY("珍品", "rarity.legendary");
+		COMMON("common", "rarity.common"),
+		UNCOMMON("uncommon", "rarity.uncommon"),
+		RARE("rare", "rarity.rare"),
+		LEGENDARY("legendary", "rarity.legendary");
 
 		public final String label;
 		public final String colorToken;
 
-		ItemRarity(String label, String colorToken) {
-			this.label = label;
+		ItemRarity(String key, String colorToken) {
+			label = BukovMessages.get("bukov.economy.hub.rarity_" + key);
 			this.colorToken = colorToken;
 		}
 	}
 
 	public enum LoadoutSlot {
-		PRIMARY("主武器", "WEAPON"),
-		AMMUNITION("弹药", "AMMO"),
-		MEDICAL("医疗", "MED"),
-		ARMOR("护甲", "ARMOR"),
-		BACKPACK("背包", "PACK"),
-		GEAR("物资", "GEAR");
+		PRIMARY("primary"),
+		AMMUNITION("ammunition"),
+		MEDICAL("medical"),
+		ARMOR("armor"),
+		BACKPACK("backpack"),
+		GEAR("gear");
 
 		public final String label;
 		public final String code;
 
-		LoadoutSlot(String label, String code) {
-			this.label = label;
-			this.code = code;
+		LoadoutSlot(String key) {
+			label = BukovMessages.get("bukov.economy.hub.slot_" + key);
+			code = BukovMessages.get("bukov.economy.hub.slot_" + key + "_code");
 		}
 	}
 
@@ -144,14 +145,23 @@ public final class BukovHubViewModel {
 		}
 
 		public String summary() {
-			return label + " ×" + quantity + "  "
-					+ formatWeight(weight) + "kg · 价值" + value;
+			return BukovMessages.get(
+					"bukov.economy.hub.item_summary",
+					label,
+					quantity,
+					formatWeight(weight),
+					value);
 		}
 
 		public String comparisonLabel() {
-			if (valueComparisonPercent == 0) return "同类基准";
-			return "同类" + (valueComparisonPercent > 0 ? "+" : "")
-					+ valueComparisonPercent + "%";
+			if (valueComparisonPercent == 0) {
+				return BukovMessages.get(
+						"bukov.economy.hub.comparison_baseline");
+			}
+			return BukovMessages.get(
+					"bukov.economy.hub.comparison",
+					valueComparisonPercent > 0 ? "+" : "",
+					valueComparisonPercent);
 		}
 	}
 
@@ -182,9 +192,12 @@ public final class BukovHubViewModel {
 		}
 
 		public String headline() {
-			return outcome == RaidOutcome.SUCCESS
-					? "撤离成功 · 带回 " + quantity + " 件 · 价值+" + value
-					: "行动失败 · 损失 " + quantity + " 件 · 价值-" + value;
+			return BukovMessages.get(
+					outcome == RaidOutcome.SUCCESS
+							? "bukov.economy.hub.settlement_success"
+							: "bukov.economy.hub.settlement_failed",
+					quantity,
+					value);
 		}
 	}
 
@@ -249,14 +262,28 @@ public final class BukovHubViewModel {
 		this.canEditLoadout = !activeRaid;
 		this.weightLimit = weightLimit;
 		this.raidMode = raidMode;
-		raidModeName = raidMode.displayName;
-		raidModeSummary = raidMode.summary;
-		careerSummary = career.careerSummary();
-		activeContract = career.activeContract;
-		activeContractObjective = career.activeObjective;
+		raidModeName = BukovRaidModeSelectionViewModel.modeName(raidMode);
+		raidModeSummary = BukovMessages.get(
+				"bukov.economy.mode.summary_"
+						+ raidMode.name().toLowerCase(Locale.ROOT));
+		careerSummary = BukovMessages.get(
+				"bukov.economy.hub.career_summary",
+				career.completedContracts,
+				career.totalContracts,
+				career.unlockedMaps,
+				career.totalMaps);
+		String careerKey = career.nextMapId == null
+				? "complete"
+				: career.nextMapId;
+		activeContract = BukovMessages.get(
+				"bukov.economy.hub.contract_" + careerKey + "_title");
+		activeContractObjective = BukovMessages.get(
+				"bukov.economy.hub.contract_" + careerKey + "_objective");
 		this.selectedMapId = selectedMapId;
-		selectedMapName =
-				BukovCareerProgression.mapDisplayName(selectedMapId);
+		selectedMapName = BukovMessages.get(
+				BukovCareerProgression.allMapIds().contains(selectedMapId)
+						? "bukov.economy.hub.map_" + selectedMapId
+						: "bukov.economy.hub.map_unknown");
 	}
 
 	static BukovHubViewModel from(BukovProfile profile, float weightLimit) {
@@ -376,9 +403,9 @@ public final class BukovHubViewModel {
 			FirearmRegistry firearms,
 			AmmoRegistry ammunition) {
 		if (overweight) {
-			return "出战配置超过 "
-					+ formatWeight(weightLimit)
-					+ " kg 上限";
+			return BukovMessages.get(
+					"bukov.economy.hub.block_overweight",
+					formatWeight(weightLimit));
 		}
 		RaidItem primary = null;
 		for (RaidItem item : selectedItems) {
@@ -388,8 +415,8 @@ public final class BukovHubViewModel {
 			}
 		}
 		if (primary == null) {
-			return "正式行动至少需要一把主武器；请在配装中选择枪械，"
-					+ "或进入演练场使用免费装备";
+			return BukovMessages.get(
+					"bukov.economy.hub.block_no_primary");
 		}
 		for (RaidItem item : selectedItems) {
 			if (compatible(
@@ -400,7 +427,9 @@ public final class BukovHubViewModel {
 				return null;
 			}
 		}
-		return displayName(primary.definitionId()) + "缺少兼容弹药";
+		return BukovMessages.get(
+				"bukov.economy.hub.block_no_ammo",
+				displayName(primary.definitionId()));
 	}
 
 	static boolean compatible(
@@ -526,9 +555,10 @@ public final class BukovHubViewModel {
 	}
 
 	public String loadoutSummary() {
-		return formatWeight(totalWeight) + "/"
-				+ formatWeight(weightLimit)
-				+ "kg";
+		return BukovMessages.get(
+				"bukov.economy.hub.weight_summary",
+				formatWeight(totalWeight),
+				formatWeight(weightLimit));
 	}
 
 	/**
@@ -538,15 +568,19 @@ public final class BukovHubViewModel {
 	 */
 	public String deploymentReadinessHeadline() {
 		if (activeRaid) {
-			return "行动检查点已就绪 · 可立即继续";
+			return BukovMessages.get(
+					"bukov.economy.hub.readiness_resume");
 		}
 		if (!canDeploy) {
-			return "配装待完善 · " + deploymentBlockReason;
+			return BukovMessages.get(
+					"bukov.economy.hub.readiness_blocked",
+					deploymentBlockReason);
 		}
 		if (!raidMode.usesPlayerLoadout()) {
-			return "演练装备已就绪 · 可立即测试";
+			return BukovMessages.get(
+					"bukov.economy.hub.readiness_training");
 		}
-		return "配装已就绪 · 可立即确认出击";
+		return BukovMessages.get("bukov.economy.hub.readiness_ready");
 	}
 
 	public String activeRaidSummary() {
@@ -556,8 +590,10 @@ public final class BukovHubViewModel {
 		int elapsed = Math.max(0, (int) activeElapsedSeconds);
 		int minutes = elapsed / 60;
 		int seconds = elapsed % 60;
-		return "检查点已保存 · "
-				+ String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
+		return BukovMessages.get(
+				"bukov.economy.hub.checkpoint_summary",
+				minutes,
+				seconds);
 	}
 
 	public String slotSummary(LoadoutSlot slot) {
@@ -574,16 +610,29 @@ public final class BukovHubViewModel {
 			}
 		}
 		if (first == null) {
-			return "未配置";
+			return BukovMessages.get("bukov.economy.hub.slot_empty");
 		}
 		if (slot == LoadoutSlot.AMMUNITION) {
-			return quantity + " 发" + (stacks > 1 ? " / " + stacks + "组" : "");
+			return BukovMessages.get(
+					stacks > 1
+							? "bukov.economy.hub.ammo_stacks"
+							: "bukov.economy.hub.ammo_single",
+					quantity,
+					stacks);
 		}
 		first = compact(first, slot == LoadoutSlot.MEDICAL ? 7 : 10);
 		if (stacks == 1) {
-			return first + (quantity > 1 ? " ×" + quantity : "");
+			return quantity > 1
+					? BukovMessages.get(
+							"bukov.economy.hub.slot_quantity",
+							first,
+							quantity)
+					: first;
 		}
-		return first + " +" + (stacks - 1);
+		return BukovMessages.get(
+				"bukov.economy.hub.slot_more",
+				first,
+				stacks - 1);
 	}
 
 	public List<ItemRow> inventoryItems(InventoryFilter filter) {
@@ -654,8 +703,11 @@ public final class BukovHubViewModel {
 	}
 
 	public String inventoryFilterSummary(InventoryFilter filter) {
-		return filter.label + " " + inventoryItems(filter).size()
-				+ "/" + stashItems.size();
+		return BukovMessages.get(
+				"bukov.economy.hub.filter_summary",
+				filter.label,
+				inventoryItems(filter).size(),
+				stashItems.size());
 	}
 
 	private static int comparisonPercent(
@@ -708,7 +760,7 @@ public final class BukovHubViewModel {
 	static String displayName(String definitionId) {
 		String normalized = definitionId == null ? "" : definitionId.trim();
 		if (normalized.isEmpty()) {
-			return "未知物资";
+			return BukovMessages.get("bukov.economy.item.unknown");
 		}
 		String known = KNOWN_NAMES.get(normalized.toLowerCase(Locale.ROOT));
 		if (known != null) {
@@ -743,7 +795,9 @@ public final class BukovHubViewModel {
 				friendly.append(word.substring(1));
 			}
 		}
-		return friendly.length() == 0 ? "未知物资" : friendly.toString();
+		return friendly.length() == 0
+				? BukovMessages.get("bukov.economy.item.unknown")
+				: friendly.toString();
 	}
 
 	static String formatWeight(float value) {
@@ -754,28 +808,48 @@ public final class BukovHubViewModel {
 
 	private static Map<String, String> knownNames() {
 		Map<String, String> values = new LinkedHashMap<>();
-		values.put("firearm:needle_9", "针蜂-9");
-		values.put("firearm:shuttle_9", "梭子-9");
-		values.put("firearm:ward_556", "城防-556");
-		values.put("firearm:mountain_762", "山路-762");
-		values.put("firearm:bolt_12", "门栓-12");
-		values.put("firearm:longstreet_762", "长街-762");
-		values.put("ammo:ammo_9_training", "9毫米训练弹");
-		values.put("ammo:ammo_9_standard", "9毫米标准弹");
-		values.put("ammo:ammo_9_subsonic", "9毫米亚音速弹");
-		values.put("ammo:ammo_556_standard", "5.56毫米标准弹");
-		values.put("ammo:ammo_556_armor_piercing", "5.56毫米硬芯弹");
-		values.put("ammo:ammo_762_standard", "7.62毫米标准弹");
-		values.put("ammo:ammo_762_expanding", "7.62毫米扩张弹");
-		values.put("ammo:ammo_12g_buckshot", "12号鹿弹");
-		values.put("bandage", "战术绷带");
-		values.put("medical:bandage", "战术绷带");
-		values.put("medical:field_medkit", "野战医疗包");
-		values.put("armor:soft_vest", "软质防弹衣");
-		values.put("armor:patrol_vest", "巡逻防弹背心");
-		values.put("armor:ceramic_rig", "陶瓷战术甲");
-		values.put("backpack:scout_pack", "侦察背包");
-		values.put("backpack:field_pack", "野战背包");
+		putName(values, "firearm:needle_9", "firearm_needle_9");
+		putName(values, "firearm:shuttle_9", "firearm_shuttle_9");
+		putName(values, "firearm:ward_556", "firearm_ward_556");
+		putName(values, "firearm:mountain_762", "firearm_mountain_762");
+		putName(values, "firearm:bolt_12", "firearm_bolt_12");
+		putName(values, "firearm:longstreet_762", "firearm_longstreet_762");
+		putName(values, "firearm:sentinel_9", "firearm_sentinel_9");
+		putName(values, "firearm:sparrow_9", "firearm_sparrow_9");
+		putName(values, "firearm:hive_9", "firearm_hive_9");
+		putName(values, "firearm:whisper_9", "firearm_whisper_9");
+		putName(values, "firearm:jackal_9", "firearm_jackal_9");
+		putName(values, "firearm:river_556", "firearm_river_556");
+		putName(values, "firearm:foundry_762", "firearm_foundry_762");
+		putName(values, "firearm:carbine_556", "firearm_carbine_556");
+		putName(values, "firearm:breaker_12", "firearm_breaker_12");
+		putName(values, "firearm:rainstorm_12", "firearm_rainstorm_12");
+		putName(values, "firearm:watchtower_556", "firearm_watchtower_556");
+		putName(values, "firearm:frontier_762", "firearm_frontier_762");
+		putName(values, "ammo:ammo_9_training", "ammo_9_training");
+		putName(values, "ammo:ammo_9_standard", "ammo_9_standard");
+		putName(values, "ammo:ammo_9_subsonic", "ammo_9_subsonic");
+		putName(values, "ammo:ammo_556_standard", "ammo_556_standard");
+		putName(values, "ammo:ammo_556_armor_piercing",
+				"ammo_556_armor_piercing");
+		putName(values, "ammo:ammo_762_standard", "ammo_762_standard");
+		putName(values, "ammo:ammo_762_expanding", "ammo_762_expanding");
+		putName(values, "ammo:ammo_12g_buckshot", "ammo_12g_buckshot");
+		putName(values, "bandage", "bandage");
+		putName(values, "medical:bandage", "bandage");
+		putName(values, "medical:field_medkit", "field_medkit");
+		putName(values, "armor:soft_vest", "soft_vest");
+		putName(values, "armor:patrol_vest", "patrol_vest");
+		putName(values, "armor:ceramic_rig", "ceramic_rig");
+		putName(values, "backpack:scout_pack", "scout_pack");
+		putName(values, "backpack:field_pack", "field_pack");
 		return Collections.unmodifiableMap(values);
+	}
+
+	private static void putName(
+			Map<String, String> values, String definitionId, String key) {
+		values.put(
+				definitionId,
+				BukovMessages.get("bukov.economy.item." + key));
 	}
 }

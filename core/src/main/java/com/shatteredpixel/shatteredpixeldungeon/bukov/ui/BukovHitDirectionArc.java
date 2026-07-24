@@ -23,13 +23,21 @@ final class BukovHitDirectionArc extends Visual {
 	private static final float HALF_SWEEP_RADIANS =
 			(float)Math.toRadians(30f);
 
-	private final SmartTexture texture =
-			TextureCache.createSolid(0xFFFFFFFF);
+	private final SmartTexture texture;
 	private final FloatBuffer vertices;
 	private final ShortBuffer indices;
 
 	BukovHitDirectionArc(int color) {
+		this(color, BukovUiTokens.loadDefault());
+	}
+
+	BukovHitDirectionArc(int color, BukovUiTokens tokens) {
 		super(0f, 0f, 0f, 0f);
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		texture = TextureCache.createSolid(
+				tokens.colorWithAlpha("combat.fx.solid", 255));
 		hardlight(color);
 		vertices = ByteBuffer.allocateDirect(
 				SEGMENTS * 4 * 4 * Float.SIZE / 8)

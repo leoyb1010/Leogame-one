@@ -16,6 +16,14 @@ public class BukovRaidHudLayoutTest {
 
 			assertTrue(layout.compact);
 			assertFalse(layout.vitals.overlaps(layout.firepower));
+			assertBandBelow(
+					layout.vitalSecondary,
+					layout.vitalPrimary);
+			assertBandBelow(
+					layout.firepowerSecondary,
+					layout.firepowerPrimary);
+			assertTrue(layout.condition.width > layout.vitals.width);
+			assertEquals(0f, layout.medicalHint.width, 0f);
 			assertFalse(layout.condition.overlaps(layout.clock));
 			assertFalse(layout.condition.overlaps(layout.medicalHint));
 			assertFalse(layout.medicalHint.overlaps(layout.clock));
@@ -26,6 +34,118 @@ public class BukovRaidHudLayoutTest {
 			assertBandBelow(layout.extraction, layout.clock);
 			assertBandBelow(layout.objective, layout.extraction);
 			assertTrue(layout.objective.bottom() < layout.height);
+		}
+	}
+
+	@Test
+	public void realIphonePointViewportUsesPortraitBandsNotWideColumns() {
+		for (int scaleLevel = 0; scaleLevel <= 2; scaleLevel++) {
+			BukovRaidHudLayout portrait =
+					BukovRaidHudLayout.calculate(
+							402f,
+							874f,
+							scaleLevel);
+			assertTrue(portrait.compact);
+			assertFalse(portrait.vitals.overlaps(portrait.firepower));
+			assertBandBelow(portrait.condition, portrait.vitals);
+			assertBandBelow(portrait.clock, portrait.condition);
+			assertBandBelow(portrait.extraction, portrait.clock);
+			assertBandBelow(portrait.objective, portrait.extraction);
+			assertTrue(portrait.objective.bottom() < portrait.height);
+		}
+
+		assertFalse(BukovRaidHudLayout.calculate(
+				874f, 402f, 0).compact);
+		assertFalse(BukovRaidHudLayout.calculate(
+				960f, 600f, 0).compact);
+		assertEquals(
+				46f,
+				BukovRaidHudLayout.preferredHeight(
+						874f, 402f, 2),
+				0f);
+	}
+
+	@Test
+	public void realIphoneChineseAndEnglishPriorityCopyStaysSingleLine() {
+		BukovRaidHudLayout portrait =
+				BukovRaidHudLayout.calculate(402f, 874f, 0);
+		String chineseHealth =
+				BukovRaidHudLayout.compactPrimaryLine(
+						"HP 100/100 +999",
+						portrait.vitalPrimary.width - 10f,
+						0);
+		String chineseStatus =
+				BukovRaidHudLayout.compactLine(
+						"流血 2.5/秒 · 骨折 · 震荡 12.5秒 · 疼痛",
+						portrait.condition.width,
+						0);
+		String englishWeapon =
+				BukovRaidHudLayout.compactLine(
+						"Needle-9 · Single",
+						portrait.firepowerSecondary.width,
+						0);
+		String englishExtraction =
+				BukovRaidHudLayout.compactLine(
+						"Extraction points available: 2",
+						portrait.extraction.width,
+						0);
+
+		assertFalse(chineseHealth.contains("\n"));
+		assertFalse(chineseStatus.contains("\n"));
+		assertFalse(englishWeapon.contains("\n"));
+		assertFalse(englishExtraction.contains("\n"));
+		assertTrue(chineseHealth.codePointCount(
+				0, chineseHealth.length()) <= 24);
+		assertTrue(chineseStatus.codePointCount(
+				0, chineseStatus.length()) <= 32);
+		assertTrue(englishWeapon.codePointCount(
+				0, englishWeapon.length()) <= 32);
+		assertTrue(englishExtraction.codePointCount(
+				0, englishExtraction.length()) <= 32);
+	}
+
+	@Test
+	public void iphonePortraitTutorialOwnsASeparateRowFromHudAndControls() {
+		float viewportWidth = 135f;
+		float viewportHeight = 291f;
+		float safeTop = 6f;
+		float hudTop = safeTop + 4f;
+		for (int scaleLevel = 0; scaleLevel <= 2; scaleLevel++) {
+			BukovRaidHudLayout hud =
+					BukovRaidHudLayout.calculate(127f, scaleLevel);
+			float hudBottom = hudTop + hud.height;
+			BukovRaidHudLayout.Rect feedback =
+					BukovRaidHudLayout.mobileFeedback(
+							viewportWidth,
+							viewportHeight,
+							4f,
+							hudBottom);
+			BukovRaidHudLayout.Rect tutorial =
+					BukovRaidHudLayout.portraitTutorialHint(
+							viewportWidth,
+							viewportHeight,
+							hudBottom,
+							scaleLevel);
+			BukovTouchLayout touch = BukovTouchLayout.calculate(
+					viewportWidth,
+					viewportHeight,
+					4f,
+					safeTop,
+					4f,
+					10f,
+					hudBottom + 2f);
+
+			assertTrue(tutorial.y >= hudBottom);
+			assertTrue(tutorial.bottom() <= viewportHeight);
+			assertFalse(tutorial.overlaps(feedback));
+			assertFalse(overlaps(tutorial, touch.backpack));
+			assertFalse(overlaps(tutorial, touch.pause));
+			assertFalse(overlaps(tutorial, touch.movement));
+			assertFalse(overlaps(tutorial, touch.aimFire));
+			assertFalse(overlaps(tutorial, touch.interact));
+			assertFalse(overlaps(tutorial, touch.reload));
+			assertFalse(overlaps(tutorial, touch.medical));
+			assertFalse(overlaps(tutorial, touch.drop));
 		}
 	}
 
@@ -105,6 +225,10 @@ public class BukovRaidHudLayoutTest {
 				"状态稳定🙂但需要继续检查装备",
 				48f,
 				2);
+		String primary = BukovRaidHudLayout.compactPrimaryLine(
+				"HP 100/100 +999",
+				47f,
+				0);
 
 		assertTrue(chinese.endsWith("…"));
 		assertTrue(chinese.codePointCount(0, chinese.length()) <= 32);
@@ -112,6 +236,9 @@ public class BukovRaidHudLayoutTest {
 		assertTrue(english.codePointCount(0, english.length()) <= 28);
 		assertTrue(emoji.endsWith("…"));
 		assertFalse(emoji.contains("\uFFFD"));
+		assertTrue(primary.endsWith("…"));
+		assertFalse(primary.contains("\n"));
+		assertTrue(primary.codePointCount(0, primary.length()) <= 8);
 		assertEquals("状态 稳定", BukovRaidHudLayout.compactLine(
 				"  状态   稳定  ", 100f, 0));
 	}

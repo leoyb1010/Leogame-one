@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -123,21 +124,27 @@ public final class WndBukovVendor extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = text(
-				"TRADING POST / " + tab.name(),
+				BukovMessages.get(tab == Tab.BUY
+						? "bukov.economy.vendor.eyebrow_buy"
+						: "bukov.economy.vendor.eyebrow_sell"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 
 		RenderedTextBlock cash = text(
-				"现金余额  " + viewModel.currency,
+				BukovMessages.get(
+						"bukov.economy.vendor.balance",
+						viewModel.currency),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		cash.setPos(windowWidth - MARGIN - cash.width(), 3);
 		add(cash);
 
 		RenderedTextBlock title = text(
-				tab == Tab.BUY ? "购买补给" : "出售仓库物资",
+				BukovMessages.get(tab == Tab.BUY
+						? "bukov.economy.vendor.title_buy"
+						: "bukov.economy.vendor.title_sell"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, 14);
@@ -145,10 +152,13 @@ public final class WndBukovVendor extends Window {
 
 		RenderedTextBlock hint = text(
 				viewModel.tradingLocked
-						? "行动进行中，交易已锁定"
+						? BukovMessages.get(
+								"bukov.economy.vendor.state_locked")
 						: tab == Tab.BUY
-						? "选择物资，再确认购买"
-						: "仅可出售未配装的仓库物资",
+						? BukovMessages.get(
+								"bukov.economy.vendor.state_buy")
+						: BukovMessages.get(
+								"bukov.economy.vendor.state_sell"),
 				BukovVisualContract.FONT_BODY,
 				viewModel.tradingLocked
 						? tokens.color("accent.danger")
@@ -188,7 +198,9 @@ public final class WndBukovVendor extends Window {
 		float third = (windowWidth - MARGIN * 2 - GAP * 2) / 3f;
 		float buttonY = windowHeight - BUTTON_HEIGHT - MARGIN;
 		addAction(
-				tab == Tab.BUY ? "查看出售" : "查看购买",
+				BukovMessages.get(tab == Tab.BUY
+						? "bukov.economy.vendor.view_sell"
+						: "bukov.economy.vendor.view_buy"),
 				BukovVendorFocusModel.ACTION_TAB,
 				MARGIN,
 				buttonY,
@@ -204,7 +216,7 @@ public final class WndBukovVendor extends Window {
 				tradeEnabled(),
 				tab == Tab.BUY ? "accent.valuable" : "accent.extract");
 		addAction(
-				"返回基地",
+				BukovMessages.get("bukov.economy.vendor.back"),
 				BukovVendorFocusModel.ACTION_BACK,
 				MARGIN + (third + GAP) * 2,
 				buttonY,
@@ -227,38 +239,50 @@ public final class WndBukovVendor extends Window {
 
 	private String selectionSummary() {
 		if (rowCount() == 0 || focus.selectedItem() < 0) {
-			return tab == Tab.BUY
-					? "商店暂无库存"
-					: "没有可浏览的未配装物资";
+			return BukovMessages.get(tab == Tab.BUY
+					? "bukov.economy.vendor.empty_buy"
+					: "bukov.economy.vendor.empty_sell");
 		}
 		if (tab == Tab.BUY) {
 			BukovVendorViewModel.BuyRow row =
 					viewModel.offers.get(focus.selectedItem());
-			return row.label + " · 单价 " + row.price
-					+ (row.affordable ? "" : " · 资金不足");
+			return BukovMessages.get(
+					row.affordable
+							? "bukov.economy.vendor.selection_buy"
+							: "bukov.economy.vendor.selection_buy_short",
+					row.label,
+					row.price);
 		}
 		BukovVendorViewModel.SellRow row =
 				viewModel.stash.get(focus.selectedItem());
 		return row.sellable
-				? row.label + " · 回收 " + row.price
-				: row.label + " · " + row.blockReason;
+				? BukovMessages.get(
+						"bukov.economy.vendor.selection_sell",
+						row.label,
+						row.price)
+				: BukovMessages.get(
+						"bukov.economy.vendor.selection_blocked",
+						row.label,
+						row.blockReason);
 	}
 
 	private String tradeLabel() {
 		if (viewModel.tradingLocked) {
-			return "交易锁定";
+			return BukovMessages.get("bukov.economy.vendor.action_locked");
 		}
 		if (rowCount() == 0 || focus.selectedItem() < 0) {
-			return tab == Tab.BUY ? "无库存" : "无物资";
+			return BukovMessages.get(tab == Tab.BUY
+					? "bukov.economy.vendor.action_no_stock"
+					: "bukov.economy.vendor.action_no_item");
 		}
 		if (tab == Tab.BUY) {
 			return viewModel.offers.get(focus.selectedItem()).affordable
-					? "确认购买"
-					: "资金不足";
+					? BukovMessages.get("bukov.economy.vendor.confirm_buy")
+					: BukovMessages.get("bukov.economy.vendor.insufficient");
 		}
 		return viewModel.stash.get(focus.selectedItem()).sellable
-				? "确认出售"
-				: "不可出售";
+				? BukovMessages.get("bukov.economy.vendor.confirm_sell")
+				: BukovMessages.get("bukov.economy.vendor.unsellable");
 	}
 
 	private boolean tradeEnabled() {
@@ -346,25 +370,33 @@ public final class WndBukovVendor extends Window {
 						pendingTransactionId,
 						row.offerId);
 				result = receipt.alreadyCommitted
-						? "购买已确认 · 余额 " + receipt.balanceAfter
-						: "购买完成 · -" + (-receipt.currencyDelta)
-								+ " · 余额 " + receipt.balanceAfter;
+						? BukovMessages.get(
+								"bukov.economy.vendor.buy_retry",
+								receipt.balanceAfter)
+						: BukovMessages.get(
+								"bukov.economy.vendor.buy_done",
+								-receipt.currencyDelta,
+								receipt.balanceAfter);
 			} else {
 				BukovVendorViewModel.SellRow row =
 						viewModel.stash.get(focus.selectedItem());
 				receipt = controller.sell(
 						pendingTransactionId,
 						row.itemUid);
-				result = (receipt.alreadyCommitted
-						? "出售已确认 · +" : "出售完成 · +")
-						+ receipt.currencyDelta
-						+ " · 余额 " + receipt.balanceAfter;
+				result = BukovMessages.get(
+						receipt.alreadyCommitted
+								? "bukov.economy.vendor.sell_retry"
+								: "bukov.economy.vendor.sell_done",
+						receipt.currencyDelta,
+						receipt.balanceAfter);
 			}
 			pendingTransactionId = null;
 			reopen(tab, focus.selectedItem(), result);
 		} catch (IOException | RuntimeException error) {
 			submitting = false;
-			showError("交易失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.vendor.trade_failed"),
+					error);
 		}
 	}
 
@@ -404,7 +436,10 @@ public final class WndBukovVendor extends Window {
 				? error.getClass().getSimpleName()
 				: error.getMessage();
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndMessage(title + "：\n" + detail));
+				new WndMessage(BukovMessages.get(
+						"bukov.economy.common.error_detail",
+						title,
+						detail)));
 	}
 
 	@Override
@@ -477,8 +512,10 @@ public final class WndBukovVendor extends Window {
 			if (rowCount() == 0) {
 					RenderedTextBlock empty = text(
 						tab == Tab.BUY
-								? "库存正在整理"
-								: "未配装仓库为空",
+								? BukovMessages.get(
+										"bukov.economy.vendor.stock_loading")
+								: BukovMessages.get(
+										"bukov.economy.vendor.stash_empty"),
 							BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 5, listWidth - 8, ROW_HEIGHT - 4);
@@ -544,7 +581,9 @@ public final class WndBukovVendor extends Window {
 				quantity = row.quantity;
 				weight = row.weight;
 				value = row.itemValue;
-				priceText = "购买 " + row.price;
+				priceText = BukovMessages.get(
+						"bukov.economy.vendor.row_buy",
+						row.price);
 				tradeable = row.affordable;
 			} else {
 				BukovVendorViewModel.SellRow row =
@@ -553,20 +592,31 @@ public final class WndBukovVendor extends Window {
 				quantity = row.quantity;
 				weight = row.weight;
 				value = row.itemValue;
-				priceText = row.sellable ? "回收 " + row.price : "不可出售";
+				priceText = row.sellable
+						? BukovMessages.get(
+								"bukov.economy.vendor.row_sell",
+								row.price)
+						: BukovMessages.get(
+								"bukov.economy.vendor.unsellable");
 				tradeable = row.sellable;
 			}
 			name = text(
-					compact(rowName, PixelScene.landscape() ? 18 : 12)
-							+ " ×" + quantity,
+					BukovMessages.get(
+							"bukov.economy.vendor.row_name",
+							compact(
+									rowName,
+									PixelScene.landscape() ? 18 : 12),
+							quantity),
 					BukovVisualContract.FONT_BODY,
 					tradeable
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
 			add(name);
 			metrics = text(
-					BukovHubViewModel.formatWeight(weight)
-							+ "kg · 价值" + value,
+					BukovMessages.get(
+							"bukov.economy.vendor.row_details",
+							BukovHubViewModel.formatWeight(weight),
+							value),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(metrics);

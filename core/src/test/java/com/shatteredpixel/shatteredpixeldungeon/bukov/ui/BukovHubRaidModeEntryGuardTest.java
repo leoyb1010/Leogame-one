@@ -30,7 +30,7 @@ public class BukovHubRaidModeEntryGuardTest {
 				"private void buildActiveRaidPanel(");
 
 		assertTrue(panel.contains("controller.selectedRaidMode()"));
-		assertTrue(panel.contains("点击查看全部5种模式"));
+		assertTrue(panel.contains("\"hub.mode_detail\""));
 		assertTrue(panel.contains("openRaidModeSelection();"));
 		assertFalse(panel.contains("controller.cycleFormalRaidMode()"));
 		assertFalse(panel.contains("controller.selectTrainingGround()"));

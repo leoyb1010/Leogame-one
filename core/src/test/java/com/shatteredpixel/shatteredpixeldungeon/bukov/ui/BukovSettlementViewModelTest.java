@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidSettlement;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -35,12 +36,19 @@ public class BukovSettlementViewModelTest {
 		BukovSettlementViewModel viewModel =
 				BukovSettlementViewModel.from(result, 125f, 4);
 
-		assertEquals("已撤离", viewModel.headline);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.settlement.headline_success"),
+				viewModel.headline);
 		assertEquals("02:05", viewModel.duration);
 		assertEquals(4, viewModel.kills);
 		assertEquals(3L, viewModel.quantity);
 		assertEquals(540L, viewModel.value);
-		assertEquals("绷带 ×3    价值 540",
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.item_summary",
+						BukovMessages.get("bukov.economy.item.bandage"),
+						3,
+						540L),
 				viewModel.items.get(0).summary());
 		assertFalse(viewModel.legacyDetails);
 	}
@@ -65,10 +73,23 @@ public class BukovSettlementViewModelTest {
 		BukovSettlementViewModel viewModel =
 				BukovSettlementViewModel.from(result, 9f, 0);
 
-		assertEquals("未归还", viewModel.headline);
-		assertEquals("行动损失", viewModel.manifestTitle);
-		assertTrue(viewModel.totals().contains("损失 1 件"));
-		assertEquals("针蜂-9 ×1    价值 850",
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.headline_failed"),
+				viewModel.headline);
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.manifest_failed"),
+				viewModel.manifestTitle);
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.totals_failed",
+						1L,
+						850L),
+				viewModel.totals());
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.item_summary",
+						BukovMessages.get(
+								"bukov.economy.item.firearm_needle_9"),
+						1,
+						850L),
 				viewModel.items.get(0).summary());
 	}
 
@@ -98,8 +119,17 @@ public class BukovSettlementViewModelTest {
 		assertEquals("03:05", viewModel.duration);
 		assertEquals(6, viewModel.kills);
 		assertTrue(viewModel.missionCompleted);
-		assertEquals("任务：维修档案已带回", viewModel.mission());
-		assertTrue(viewModel.totals().contains("带回 1 件"));
-		assertEquals("本局收益 +900", viewModel.earnings());
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.mission_returned"),
+				viewModel.mission());
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.totals_success",
+						1L,
+						900L),
+				viewModel.totals());
+		assertEquals(BukovMessages.get(
+						"bukov.economy.settlement.earnings_success",
+						900L),
+				viewModel.earnings());
 	}
 }

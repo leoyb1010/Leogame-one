@@ -136,6 +136,36 @@ public final class BukovTouchLayout {
 		stick = Math.min(stick, (safe.width - margin * 3f) * 0.5f);
 		stick = Math.max(36f, stick);
 
+		float estimatedAction = clamp(stick * 0.38f, 19f, 28f);
+		float estimatedGap = clamp(estimatedAction * 0.18f, 3f, 5f);
+		float pauseWidth = clamp(safe.width * 0.15f, 34f, 52f);
+		float pauseHeight = clamp(shortest * 0.10f, 18f, 24f);
+		float navigationY = clamp(
+				Math.max(safe.y, hudBottom),
+				safe.y,
+				Math.max(safe.y, safe.bottom() - pauseHeight)
+		);
+
+		/*
+		 * The navigation row is reserved from the HUD's real scaled height.
+		 * On narrow portrait iPhones, UI scale 2 can move that row far enough
+		 * down to intersect the right stick. Preserve two distinct hit regions
+		 * by reducing the stick square to the remaining lower rail.
+		 * The 24 logical-pixel floor is used only when the scaled HUD leaves no
+		 * room for the normal 36-pixel minimum.
+		 */
+		if (!landscape) {
+			float availableBelowNavigation =
+					safe.bottom()
+							- margin
+							- navigationY
+							- pauseHeight
+							- estimatedGap;
+			stick = Math.min(
+					stick,
+					Math.max(24f, availableBelowNavigation));
+		}
+
 		Rect movement = new Rect(
 				safe.x + margin,
 				safe.bottom() - margin - stick,
@@ -182,43 +212,35 @@ public final class BukovTouchLayout {
 			medical = new Rect(
 					rightColumnX, bottomRowY, action, action);
 		} else {
-			float actionColumnX = Math.max(
-					safe.x + margin,
-					aim.x - gap - action
-			);
-			float lowerY = aim.bottom() - action;
-			medical = new Rect(
-					actionColumnX, lowerY, action, action);
-			reload = new Rect(
-					actionColumnX,
-					lowerY - gap - action,
+			/*
+			 * Portrait keeps all four actions in the lane between the sticks.
+			 * The former two-above/two-left arrangement intersected the
+			 * backpack/pause row after the scaled HUD reserved more height.
+			 */
+			float laneLeft = movement.right() + gap;
+			float laneRight = aim.x - gap;
+			float laneWidth = Math.max(1f, laneRight - laneLeft);
+			action = Math.min(
 					action,
-					action);
-
-			float upperY = Math.max(
-					safe.y + margin,
-					aim.y - gap - action);
-			interact = new Rect(
-					aim.right() - action,
-					upperY,
-					action,
-					action);
+					Math.max(1f, (laneWidth - gap) * 0.5f));
+			float rightColumnX = laneRight - action;
+			float topRowY = aim.y;
+			float bottomRowY = aim.bottom() - action;
+			if (topRowY + action + gap > bottomRowY) {
+				topRowY = Math.max(
+						navigationY + pauseHeight + gap,
+						bottomRowY - gap - action);
+			}
 			drop = new Rect(
-					Math.max(
-							safe.x + margin,
-							interact.x - gap - action),
-					upperY,
-					action,
-					action);
+					laneLeft, topRowY, action, action);
+			interact = new Rect(
+					rightColumnX, topRowY, action, action);
+			reload = new Rect(
+					laneLeft, bottomRowY, action, action);
+			medical = new Rect(
+					rightColumnX, bottomRowY, action, action);
 		}
 
-		float pauseWidth = clamp(safe.width * 0.15f, 34f, 52f);
-		float pauseHeight = clamp(shortest * 0.10f, 18f, 24f);
-		float navigationY = clamp(
-				Math.max(safe.y, hudBottom),
-				safe.y,
-				Math.max(safe.y, safe.bottom() - pauseHeight)
-		);
 		Rect pause = new Rect(
 				safe.right() - pauseWidth,
 				navigationY,

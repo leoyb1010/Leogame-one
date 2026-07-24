@@ -27,15 +27,23 @@ final class BukovSoundDirectionArc extends Visual {
 	private static final float LONG_HALF_SWEEP_RADIANS =
 			(float)Math.toRadians(21f);
 
-	private final SmartTexture texture =
-			TextureCache.createSolid(0xFFFFFFFF);
+	private final SmartTexture texture;
 	private final FloatBuffer shortVertices = vertexBuffer();
 	private final FloatBuffer longVertices = vertexBuffer();
 	private final ShortBuffer indices;
 	private boolean longArc;
 
 	BukovSoundDirectionArc(int color) {
+		this(color, BukovUiTokens.loadDefault());
+	}
+
+	BukovSoundDirectionArc(int color, BukovUiTokens tokens) {
 		super(0f, 0f, 0f, 0f);
+		if (tokens == null) {
+			throw new IllegalArgumentException("tokens are required");
+		}
+		texture = TextureCache.createSolid(
+				tokens.colorWithAlpha("combat.fx.solid", 255));
 		hardlight(color);
 		indices = ByteBuffer.allocateDirect(
 				SEGMENTS * 6 * Short.SIZE / 8)

@@ -109,8 +109,11 @@ public class BukovPlayerPathCopyTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/WelcomeScene.java"));
 
 		assertFalse(welcome.contains("ChangesScene.class"));
-		assertTrue(welcome.contains("\"bukov_intro\""));
-		assertTrue(welcome.contains("\"bukov_save_warning\""));
+		assertTrue(welcome.contains("entryMessage(\"welcome.intro\")"));
+		assertTrue(welcome.contains(
+				"entryMessage(\"welcome.save_warning\")"));
+		assertTrue(welcome.contains(
+				"BukovMessages.get(\"bukov.entry.\" + key, args)"));
 		assertFalse(welcome.contains("\"bukov_update\""));
 		assertFalse(welcome.contains("\"bukov_future_save\""));
 		assertFalse(welcome.contains("Messages.get(this, \"update_intro\")"));
@@ -124,6 +127,8 @@ public class BukovPlayerPathCopyTest {
 		String hud = read(new File(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovHudFormat.java"));
 		assertTrue(hud.contains(
+				"BukovMessages.get(\"bukov.raid.hud.touch_objective\")"));
+		assertFalse(hud.contains(
 				"左拖移动 · 右拖射击 · 左上互动 · 右上装填"));
 		assertFalse(hud.contains("点击一个位置以进行移动"));
 	}

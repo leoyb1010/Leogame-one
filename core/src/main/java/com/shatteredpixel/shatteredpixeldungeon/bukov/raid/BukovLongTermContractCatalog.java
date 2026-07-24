@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -14,35 +15,35 @@ public final class BukovLongTermContractCatalog {
 	public static final String HUNTER = "longterm:hunter";
 	public static final String VETERAN = "longterm:veteran";
 
-	private static final Map<String, BukovLongTermContractDefinition> DEFINITIONS =
+	private static final Map<String, Spec> SPECS =
 			new LinkedHashMap<>();
 
 	static {
-		register(new BukovLongTermContractDefinition(
+		register(new Spec(
 				SURVIVOR,
-				"活着回来",
-				"累计成功撤离 3 次",
+				"bukov.economy.services.contract_survivor_title",
+				"bukov.economy.services.contract_survivor_objective",
 				BukovLongTermContractDefinition.Metric.SUCCESSFUL_EXTRACTIONS,
 				3L,
 				600L));
-		register(new BukovLongTermContractDefinition(
+		register(new Spec(
 				SUPPLIER,
-				"回收专家",
-				"累计带回价值 15000 的物资",
+				"bukov.economy.services.contract_supplier_title",
+				"bukov.economy.services.contract_supplier_objective",
 				BukovLongTermContractDefinition.Metric.EXTRACTED_VALUE,
 				15000L,
 				1200L));
-		register(new BukovLongTermContractDefinition(
+		register(new Spec(
 				HUNTER,
-				"清场行动",
-				"在正式突袭中累计击杀 25 名敌人",
+				"bukov.economy.services.contract_hunter_title",
+				"bukov.economy.services.contract_hunter_objective",
 				BukovLongTermContractDefinition.Metric.KILLS,
 				25L,
 				1000L));
-		register(new BukovLongTermContractDefinition(
+		register(new Spec(
 				VETERAN,
-				"老兵记录",
-				"完成 10 次正式突袭",
+				"bukov.economy.services.contract_veteran_title",
+				"bukov.economy.services.contract_veteran_objective",
 				BukovLongTermContractDefinition.Metric.RAIDS_COMPLETED,
 				10L,
 				1800L));
@@ -52,22 +53,64 @@ public final class BukovLongTermContractCatalog {
 	}
 
 	public static BukovLongTermContractDefinition require(String id) {
-		BukovLongTermContractDefinition definition = DEFINITIONS.get(id);
-		if (definition == null) {
+		Spec spec = SPECS.get(id);
+		if (spec == null) {
 			throw new IllegalArgumentException("Unknown long-term contract: " + id);
 		}
-		return definition;
+		return spec.definition();
 	}
 
 	public static List<BukovLongTermContractDefinition> all() {
-		return Collections.unmodifiableList(
-				new ArrayList<>(DEFINITIONS.values()));
+		List<BukovLongTermContractDefinition> result = new ArrayList<>();
+		for (Spec spec : SPECS.values()) {
+			result.add(spec.definition());
+		}
+		return Collections.unmodifiableList(result);
 	}
 
-	private static void register(BukovLongTermContractDefinition definition) {
-		if (DEFINITIONS.put(definition.id, definition) != null) {
+	private static void register(Spec spec) {
+		if (SPECS.put(spec.id, spec) != null) {
 			throw new IllegalStateException(
-					"Duplicate long-term contract: " + definition.id);
+					"Duplicate long-term contract: " + spec.id);
+		}
+	}
+
+	/**
+	 * Stable gameplay data is cached, localized presentation is resolved when
+	 * a screen asks for it. This keeps an in-session language change from
+	 * leaving contract cards in the previous language.
+	 */
+	private static final class Spec {
+		final String id;
+		final String titleKey;
+		final String objectiveKey;
+		final BukovLongTermContractDefinition.Metric metric;
+		final long target;
+		final long rewardCurrency;
+
+		Spec(
+				String id,
+				String titleKey,
+				String objectiveKey,
+				BukovLongTermContractDefinition.Metric metric,
+				long target,
+				long rewardCurrency) {
+			this.id = id;
+			this.titleKey = titleKey;
+			this.objectiveKey = objectiveKey;
+			this.metric = metric;
+			this.target = target;
+			this.rewardCurrency = rewardCurrency;
+		}
+
+		BukovLongTermContractDefinition definition() {
+			return new BukovLongTermContractDefinition(
+					id,
+					BukovMessages.get(titleKey),
+					BukovMessages.get(objectiveKey),
+					metric,
+					target,
+					rewardCurrency);
 		}
 	}
 }

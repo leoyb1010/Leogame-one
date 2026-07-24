@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.content;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovLootTable;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -22,7 +23,10 @@ public class BukovMaintenanceKeyLootTest {
 
 		assertNotNull(item);
 		assertTrue(item instanceof BukovLootItem);
-		assertEquals("维修钥匙", item.name());
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.content.item_key_maintenance"),
+				item.name());
 		assertEquals(
 				BukovLootItem.Category.TOOL,
 				((BukovLootItem)item).category());

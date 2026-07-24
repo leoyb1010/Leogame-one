@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -47,7 +48,8 @@ public final class WndBukovInventorySearch extends Window {
 				BukovWindowLayout.safeHeight(HEIGHT));
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"仓库搜索 / STASH SEARCH",
+				BukovMessages.get(
+						"bukov.economy.search.title"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_SECTION));
 		title.hardlight(tokens.color("accent.valuable"));
@@ -55,7 +57,8 @@ public final class WndBukovInventorySearch extends Window {
 		add(title);
 
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
-				"名称、类别、稀有度或物品代号",
+				BukovMessages.get(
+						"bukov.economy.search.hint"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
@@ -91,7 +94,7 @@ public final class WndBukovInventorySearch extends Window {
 
 		float buttonWidth = (width - MARGIN * 2 - 3f) / 2f;
 		SearchButton apply = new SearchButton(
-				"应用筛选",
+				BukovMessages.get("bukov.economy.search.apply"),
 				"accent.interact") {
 			@Override
 			protected void onClick() {
@@ -106,7 +109,7 @@ public final class WndBukovInventorySearch extends Window {
 		add(apply);
 
 		SearchButton clear = new SearchButton(
-				"清除搜索",
+				BukovMessages.get("bukov.economy.search.clear"),
 				"panel.border") {
 			@Override
 			protected void onClick() {

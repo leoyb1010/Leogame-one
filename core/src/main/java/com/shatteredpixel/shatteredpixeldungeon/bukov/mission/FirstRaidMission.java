@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.mission;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 /** Shared identifiers and objective copy for the first-raid archive gate. */
 public final class FirstRaidMission {
@@ -22,12 +23,6 @@ public final class FirstRaidMission {
 	public static final String EVENT_ID = "maintenance_archive_recovered";
 	public static final String HIGH_VALUE_EVENT_ID =
 			"first_raid_high_value_cache_searched";
-	public static final String LOCKED_OBJECTIVE =
-			"主线 1/3：搜索维修间，取得通道档案";
-	public static final String HIGH_VALUE_OBJECTIVE =
-			"主线 2/3：通道已开放，搜查高价值仓";
-	public static final String UNLOCKED_OBJECTIVE =
-			"主线 3/3：物资已确认，前往撤离点";
 
 	private FirstRaidMission() {
 	}
@@ -52,11 +47,14 @@ public final class FirstRaidMission {
 		}
 		switch (stage) {
 			case RECOVER_ARCHIVE:
-				return LOCKED_OBJECTIVE;
+				return BukovMessages.get(
+						"bukov.raid.mission.objective_recover_archive");
 			case SECURE_HIGH_VALUE_CACHE:
-				return HIGH_VALUE_OBJECTIVE;
+				return BukovMessages.get(
+						"bukov.raid.mission.objective_high_value");
 			case EXTRACT:
-				return UNLOCKED_OBJECTIVE;
+				return BukovMessages.get(
+						"bukov.raid.mission.objective_extract");
 			default:
 				throw new IllegalStateException(
 						"Unsupported first-raid stage: " + stage);

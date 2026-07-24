@@ -23,7 +23,7 @@ source_branch=""
 started_utc=""
 lock_held=false
 evidence_created=false
-planned_step_count=27
+planned_step_count=28
 
 usage() {
   cat <<'USAGE'
@@ -332,83 +332,86 @@ execute_sequence() {
   run_step "02-static-release" \
     "Release metadata, branding, provenance, and manifest validation" \
     python3 "$script_dir/validate_release.py"
-  run_step "03-static-content-scale" \
+  run_step "03-static-localization" \
+    "English and Simplified Chinese resource and player-path gate" \
+    /bin/bash "$script_dir/bukov_localization_gate.sh"
+  run_step "04-static-content-scale" \
     "Authored content scale and obtainability gate" \
     python3 "$script_dir/bukov_content_scale_gate.py"
-  run_step "04-static-audio" \
+  run_step "05-static-audio" \
     "Bukov audio assets and runtime wiring gate" \
     /bin/bash "$script_dir/bukov_audio_gate.sh"
-  run_step "05-static-audio-model" \
+  run_step "06-static-audio-model" \
     "Standalone audio model gate" \
     /bin/bash "$script_dir/bukov_audio_model_test.sh"
-  run_step "06-static-enemy-sprites" \
+  run_step "07-static-enemy-sprites" \
     "Enemy sprite generation and wiring gate" \
     /bin/bash "$script_dir/bukov_enemy_sprite_gate.sh"
-  run_step "07-static-item-atlas" \
+  run_step "08-static-item-atlas" \
     "Item and interaction atlas gate" \
     /bin/bash "$script_dir/bukov_item_atlas_gate.sh"
-  run_step "08-static-legal-bundle" \
+  run_step "09-static-legal-bundle" \
     "Repository legal bundle gate" \
     /bin/sh "$script_dir/bukov_legal_bundle_gate.sh"
-  run_step "09-static-loot" \
+  run_step "10-static-loot" \
     "Loot discoverability gate" \
     /bin/bash "$script_dir/bukov_loot_discoverability_gate.sh"
-  run_step "10-static-map" \
+  run_step "11-static-map" \
     "Map scale, traversal, fog, and camera source gate" \
     /bin/bash "$script_dir/bukov_map_visibility_gate.sh"
-  run_step "11-static-original-visuals" \
+  run_step "12-static-original-visuals" \
     "Original operator and landmark visual gate" \
     /bin/bash "$script_dir/bukov_original_visual_gate.sh"
-  run_step "12-static-theme-visuals" \
+  run_step "13-static-theme-visuals" \
     "Six-theme visual gate" \
     /bin/bash "$script_dir/bukov_theme_visual_gate.sh"
-  run_step "13-static-camera" \
+  run_step "14-static-camera" \
     "Standalone realtime camera and world-bounds gate" \
     /bin/bash "$script_dir/bukov_realtime_camera_test.sh"
-  run_step "14-render-frame-pacing" \
+  run_step "15-render-frame-pacing" \
     "Real packaged-app CPU render-callback frame-pacing gate" \
     "${render_frame_gate_command[@]}"
 
-  run_step "15-gradle-clean" \
+  run_step "16-gradle-clean" \
     "Clean Core, Desktop, and iOS build outputs" \
     "$gradle" :core:clean :desktop:clean :ios:clean --no-daemon
-  run_step "16-test-core" \
+  run_step "17-test-core" \
     "Complete Core test suite" \
     "$gradle" :core:test --rerun-tasks --no-daemon
-  run_step "17-test-desktop" \
+  run_step "18-test-desktop" \
     "Complete Desktop test suite" \
     "$gradle" :desktop:test --rerun-tasks --no-daemon
-  run_step "18-test-ios" \
+  run_step "19-test-ios" \
     "Complete iOS test suite" \
     "$gradle" :ios:test --rerun-tasks --no-daemon
-  run_step "19-robovm-api" \
+  run_step "20-robovm-api" \
     "RoboVM AOT API compatibility gate" \
     python3 "$script_dir/bukov_robovm_api_gate.py"
 
-  run_step "20-seed-10000" \
+  run_step "21-seed-10000" \
     "10,000-seed synthetic and real first-raid critical-path sweep" \
     "$script_dir/bukov_seed_sweep.sh" 10000
-  run_step "21-save-100" \
+  run_step "22-save-100" \
     "100-iteration in-memory and real-disk save stress gate" \
     "$script_dir/bukov_save_stress.sh" 100
-  run_step "22-performance-smoke-1800" \
+  run_step "23-performance-smoke-1800" \
     "1,800-second fixed-step performance smoke gate" \
     "$script_dir/bukov_performance_smoke.sh" 1800
-  run_step "23-performance-e2e-1800" \
+  run_step "24-performance-e2e-1800" \
     "1,800-second 30-enemy/200-projectile E2E CPU gate" \
     "$script_dir/bukov_performance_e2e.sh" 1800
 
-  run_step "24-build-macos" \
+  run_step "25-build-macos" \
     "Build the macOS jpackage application image" \
     "$gradle" :desktop:jpackageImage --rerun-tasks --no-daemon
-  run_step "25-build-ios-simulator" \
+  run_step "26-build-ios-simulator" \
     "Build and launch the iOS Simulator application" \
     "$gradle" :ios:launchIPhoneSimulator \
       "-Probovm.device.name=$ios_device" --rerun-tasks --no-daemon
-  run_step "26-packaged-legal" \
+  run_step "27-packaged-legal" \
     "Verify legal payloads in both built application bundles" \
     /bin/sh "$script_dir/bukov_packaged_legal_gate.sh" "$mac_app" "$ios_app"
-  run_step "27-source-integrity" \
+  run_step "28-source-integrity" \
     "Verify final HEAD and clean worktree still match the sealed source" \
     /bin/zsh -c \
       '[[ "$(git -C "$1" rev-parse HEAD)" == "$2" ]] && [[ -z "$(git -C "$1" status --porcelain --untracked-files=all)" ]]' \

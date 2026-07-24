@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.content;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 
 import java.util.ArrayList;
@@ -35,12 +36,14 @@ public final class BukovMissionArchive extends Item
 
 	@Override
 	public String name() {
-		return "维修通道档案";
+		return BukovMessages.get(
+				"bukov.economy.content.mission_archive_name");
 	}
 
 	@Override
 	public String desc() {
-		return "记录了雾灯泵站维修通道的机械解锁顺序。任务物品，不可丢弃。";
+		return BukovMessages.get(
+				"bukov.economy.content.mission_archive_desc");
 	}
 
 	@Override

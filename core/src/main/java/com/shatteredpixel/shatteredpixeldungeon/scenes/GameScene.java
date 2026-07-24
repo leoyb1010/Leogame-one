@@ -75,8 +75,9 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovGearRules;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRuntimeLoadoutAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovRealtimeWorld;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovCameraPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovRaidPersistence;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovRealtimeWorld;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.BukovViewport;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.RealtimeRaidSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
@@ -329,7 +330,13 @@ public class GameScene extends PixelScene {
 		
 		super.create();
 		Camera.main.zoom(BukovMode.active()
-				? Math.round(defaultZoom)
+				? BukovCameraPolicy.resolveWorldZoom(
+						Camera.main.screenWidth(),
+						DungeonTilemap.SIZE,
+						Camera.main.screenWidth()
+								>= Camera.main.screenHeight(),
+						minZoom,
+						maxZoom)
 				: GameMath.gate(
 						minZoom,
 						defaultZoom + SPDSettings.zoom(),
@@ -1015,6 +1022,7 @@ public class GameScene extends PixelScene {
 						hudWidth,
 						BukovRaidHud.preferredHeight(
 								hudWidth,
+								uiCamera.height,
 								SPDSettings.bukovUiScale())
 				);
 				if (bukovTouchControls != null) {
@@ -1256,20 +1264,27 @@ public class GameScene extends PixelScene {
 				if (!(Dungeon.level instanceof BukovLevel)) {
 					return Collections.emptyList();
 				}
+				BukovLevel level = (BukovLevel)Dungeon.level;
+				boolean missionEnabled = !level.raidMode().trainingGround();
 				List<BukovContainerDefinition> result = new ArrayList<>();
 				for (BukovRaidLayout.LootAnchor anchor :
-						((BukovLevel)Dungeon.level).lootAnchors()) {
+						level.lootAnchors()) {
 					if (anchor.cell < 0) continue;
+					if (!missionEnabled
+							&& FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+									anchor.lootTableId)) {
+						continue;
+					}
 					result.add(new BukovContainerDefinition(
 							anchor.id,
 							anchor.cell,
 							anchor.lootTableId,
-							"high_value".equals(anchor.lootTableId) ? 3 : 2,
+							FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+									anchor.lootTableId) ? 3 : 2,
 							anchor.searchSeconds,
 							false));
 				}
-				int maintenanceCell = ((BukovLevel)Dungeon.level)
-						.semanticCell("scrap_compactor");
+				int maintenanceCell = level.semanticCell("scrap_compactor");
 				if (maintenanceCell < 0) {
 					throw new IllegalStateException(
 							"Bukov raid is missing the optional maintenance cache anchor");
@@ -1282,8 +1297,11 @@ public class GameScene extends PixelScene {
 						3,
 						3.2f,
 						true));
+				if (!missionEnabled) {
+					return result;
+				}
 				BukovRaidLayout.MissionGate missionGate =
-						((BukovLevel)Dungeon.level).missionGate();
+						level.missionGate();
 				if (missionGate == null || missionGate.archiveCell < 0) {
 					throw new IllegalStateException(
 							"Bukov first-raid layout is missing Q01 archive anchor");

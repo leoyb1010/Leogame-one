@@ -55,6 +55,7 @@ public class CellSelector extends ScrollArea {
 	public CellSelector( DungeonTilemap map ) {
 		super( map );
 		camera = map.camera();
+		active = !BukovMode.active();
 		
 		dragThreshold = PixelScene.defaultZoom * DungeonTilemap.SIZE / 2;
 		
@@ -284,12 +285,12 @@ public class CellSelector extends ScrollArea {
 			GameAction action = KeyBindings.getActionForKey( event );
 			if (!event.pressed){
 
-				if (action == SPDAction.ZOOM_IN){
+				if (!BukovMode.active() && action == SPDAction.ZOOM_IN){
 					zoom( camera.zoom+1 );
 					mouseZoom = camera.zoom;
 					return true;
 
-				} else if (action == SPDAction.ZOOM_OUT){
+				} else if (!BukovMode.active() && action == SPDAction.ZOOM_OUT){
 					zoom( camera.zoom-1 );
 					mouseZoom = camera.zoom;
 					return true;
@@ -513,6 +514,13 @@ public class CellSelector extends ScrollArea {
 		if (enabled != value){
 			enabled = value;
 		}
+		/*
+		 * Bukov owns the complete pointer surface through its two sticks and
+		 * action controls. Leaving this legacy PointerArea active makes a
+		 * perfectly normal two-thumb gesture look like a map pinch/drag,
+		 * changing world zoom and stealing the follow camera on iOS.
+		 */
+		active = !BukovMode.active();
 	}
 	
 	@Override

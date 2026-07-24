@@ -159,7 +159,11 @@ public class BukovServicesControllerTest {
 					legacy.itemUid(), FirearmAttachmentSlot.OPTIC);
 			fail("unsupported legacy firearm must reject workshop changes");
 		} catch (IllegalArgumentException expected) {
-			assertTrue(expected.getMessage().contains("不支持改装"));
+			assertEquals(
+					com.shatteredpixel.shatteredpixeldungeon.messages
+							.BukovMessages.get(
+									"bukov.economy.feedback.firearm_unsupported"),
+					expected.getMessage());
 		}
 		assertEquals(0, saves.loadProfile().firearmBuilds().size());
 	}

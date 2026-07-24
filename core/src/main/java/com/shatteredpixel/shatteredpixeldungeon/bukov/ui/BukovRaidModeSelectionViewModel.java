@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +32,7 @@ public final class BukovRaidModeSelectionViewModel {
 				boolean current) {
 			this.mode = mode;
 			this.code = code;
-			name = mode.displayName;
+			name = modeName(mode);
 			this.equipmentSource = equipmentSource;
 			this.deathLoss = deathLoss;
 			this.durationAndExtraction = durationAndExtraction;
@@ -53,8 +54,8 @@ public final class BukovRaidModeSelectionViewModel {
 		this.currentMode = currentMode;
 		this.locked = locked;
 		stateMessage = locked
-				? "行动进行中 · 模式只读锁定"
-				: "选择模式并应用 · 出击仍需单独确认";
+				? BukovMessages.get("bukov.economy.mode.state_locked")
+				: BukovMessages.get("bukov.economy.mode.state_select");
 	}
 
 	public static BukovRaidModeSelectionViewModel from(
@@ -85,59 +86,73 @@ public final class BukovRaidModeSelectionViewModel {
 	private static String equipmentSource(BukovRaidMode mode) {
 		switch (mode) {
 			case SCAVENGER:
-				return "装备：系统拾荒套装";
+				return BukovMessages.get("bukov.economy.mode.equipment_scavenger");
 			case TRAINING_GROUND:
-				return "装备：免费制式装备";
+				return BukovMessages.get("bukov.economy.mode.equipment_training");
 			default:
-				return "装备：自备仓库配装";
+				return BukovMessages.get("bukov.economy.mode.equipment_player");
 		}
 	}
 
 	private static String deathLoss(BukovRaidMode mode) {
 		switch (mode) {
 			case QUICK_SWEEP:
-				return "死亡：保留最高价值带入物";
+				return BukovMessages.get("bukov.economy.mode.loss_quick");
 			case SCAVENGER:
-				return "死亡：拾取物损失，仓库无风险";
+				return BukovMessages.get("bukov.economy.mode.loss_scavenger");
 			case TRAINING_GROUND:
-				return "死亡：无仓库损失，不计经济结算";
+				return BukovMessages.get("bukov.economy.mode.loss_training");
 			default:
-				return "死亡：带入与拾取物全部损失";
+				return BukovMessages.get("bukov.economy.mode.loss_formal");
 		}
 	}
 
 	private static String durationAndExtraction(BukovRaidMode mode) {
-		String duration = String.format(
-				Locale.ROOT,
-				"%.0f–%.0f分钟",
+		String duration = BukovMessages.get(
+				"bukov.economy.mode.duration",
 				mode.targetMinutesMinimum,
 				mode.targetMinutesMaximum);
 		switch (mode) {
 			case QUICK_SWEEP:
-				return duration + " · 快速撤离，超时增压";
+				return BukovMessages.get(
+						"bukov.economy.mode.extraction_quick", duration);
 			case SCAVENGER:
-				return duration + " · 拾荒撤离，超时增压";
+				return BukovMessages.get(
+						"bukov.economy.mode.extraction_scavenger", duration);
 			case BOSS_CONTRACT:
-				return duration + " · Boss目标/条件撤离";
+				return BukovMessages.get(
+						"bukov.economy.mode.extraction_boss", duration);
 			case TRAINING_GROUND:
-				return duration + " · 随时撤离，短程演练";
+				return BukovMessages.get(
+						"bukov.economy.mode.extraction_training", duration);
 			default:
-				return duration + " · 条件撤离，超时增压";
+				return BukovMessages.get(
+						"bukov.economy.mode.extraction_formal", duration);
 		}
 	}
 
 	private static String rewardAndBoss(BukovRaidMode mode) {
-		String multiplier = String.format(
-				Locale.ROOT,
-				"倍率 ×%.2f",
+		String multiplier = BukovMessages.get(
+				"bukov.economy.mode.multiplier",
 				mode.lootValueMultiplier);
 		if (mode == BukovRaidMode.TRAINING_GROUND) {
-			return multiplier + "（不结算） · Boss关闭";
+			return BukovMessages.get(
+					"bukov.economy.mode.reward_training", multiplier);
 		}
 		if (mode == BukovRaidMode.BOSS_CONTRACT) {
-			return multiplier + " · Boss合同目标";
+			return BukovMessages.get(
+					"bukov.economy.mode.reward_boss", multiplier);
 		}
-		return multiplier + " · Boss"
-				+ (mode.bossEnabled ? "开启" : "关闭");
+		return BukovMessages.get(
+				mode.bossEnabled
+						? "bukov.economy.mode.reward_enabled"
+						: "bukov.economy.mode.reward_disabled",
+				multiplier);
+	}
+
+	static String modeName(BukovRaidMode mode) {
+		return BukovMessages.get(
+				"bukov.economy.mode.name_" + mode.name().toLowerCase(
+						Locale.ROOT));
 	}
 }

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -94,13 +95,13 @@ public final class WndBukovRaidModeSelection extends Window {
 		add(rule);
 
 		RenderedTextBlock eyebrow = text(
-				"OPERATION PROFILE / FIVE MODES",
+				BukovMessages.get("bukov.economy.mode.eyebrow"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 		RenderedTextBlock title = text(
-				"选择行动模式",
+				BukovMessages.get("bukov.economy.mode.title"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, 13);
@@ -221,7 +222,9 @@ public final class WndBukovRaidModeSelection extends Window {
 			closeToHubAfterCommit();
 		} catch (IOException | RuntimeException error) {
 			committing = false;
-			showError("模式保存失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.mode.save_failed"),
+					error);
 		}
 	}
 
@@ -245,7 +248,10 @@ public final class WndBukovRaidModeSelection extends Window {
 				? error.getClass().getSimpleName()
 				: error.getMessage();
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndMessage(title + "：\n" + detail));
+				new WndMessage(BukovMessages.get(
+						"bukov.economy.common.error_detail",
+						title,
+						detail)));
 	}
 
 	@Override
@@ -410,8 +416,15 @@ public final class WndBukovRaidModeSelection extends Window {
 					draft ? "accent.interact" : "panel.surface"));
 			surface.alpha(draft ? 0.27f : current ? 0.20f : 0.13f);
 			String badge = current
-					? viewModel.locked ? "  [当前/锁定]" : "  [当前]"
-					: draft ? "  [待应用]" : "";
+					? viewModel.locked
+							? BukovMessages.get(
+									"bukov.economy.mode.badge_current_locked")
+							: BukovMessages.get(
+									"bukov.economy.mode.badge_current")
+					: draft
+							? BukovMessages.get(
+									"bukov.economy.mode.badge_pending")
+							: "";
 			heading.text(card.code + "  " + card.name + badge);
 			heading.hardlight(tokens.color(
 					focused
@@ -527,14 +540,17 @@ public final class WndBukovRaidModeSelection extends Window {
 
 	private String actionLabel(int action) {
 		if (action == BukovRaidModeFocusModel.ACTION_BACK) {
-			return "返回整备";
+			return BukovMessages.get("bukov.economy.mode.back");
 		}
 		if (viewModel.locked) {
-			return "行动中锁定";
+			return BukovMessages.get("bukov.economy.mode.action_locked");
 		}
 		if (!focus.hasPendingSelection()) {
-			return "当前模式已应用";
+			return BukovMessages.get("bukov.economy.mode.applied");
 		}
-		return "应用 " + focus.draftMode().displayName;
+		return BukovMessages.get(
+				"bukov.economy.mode.apply",
+				BukovRaidModeSelectionViewModel.modeName(
+						focus.draftMode()));
 	}
 }

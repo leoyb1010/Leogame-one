@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -24,17 +25,17 @@ public class BukovRaidModeSelectionViewModelTest {
 			assertEquals(BukovRaidMode.values()[index], card.mode);
 			assertEquals(String.format("%02d", index + 1), card.code);
 			assertFalse(card.name.isEmpty());
-			assertTrue(card.equipmentSource.startsWith("装备："));
-			assertTrue(card.deathLoss.startsWith("死亡："));
-			assertTrue(card.durationAndExtraction.contains("分钟"));
-			assertTrue(card.durationAndExtraction.contains("撤离"));
-			assertTrue(card.rewardAndBoss.contains("倍率 ×"));
-			assertTrue(card.rewardAndBoss.contains("Boss"));
+			assertFalse(card.equipmentSource.isEmpty());
+			assertFalse(card.deathLoss.isEmpty());
+			assertFalse(card.durationAndExtraction.isEmpty());
+			assertFalse(card.rewardAndBoss.isEmpty());
 			if (card.current) currentCount++;
 		}
 		assertEquals(1, currentCount);
 		assertTrue(model.cards.get(BukovRaidMode.QUICK_SWEEP.ordinal()).current);
-		assertTrue(model.stateMessage.contains("出击仍需单独确认"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.state_select"),
+				model.stateMessage);
 	}
 
 	@Test
@@ -46,32 +47,56 @@ public class BukovRaidModeSelectionViewModelTest {
 
 		BukovRaidModeSelectionViewModel.ModeCard expedition =
 				model.cards.get(BukovRaidMode.EXPEDITION.ordinal());
-		assertTrue(expedition.equipmentSource.contains("自备"));
-		assertTrue(expedition.deathLoss.contains("全部损失"));
-		assertTrue(expedition.rewardAndBoss.contains("×1.00"));
-		assertTrue(expedition.rewardAndBoss.contains("Boss开启"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.equipment_player"),
+				expedition.equipmentSource);
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.loss_formal"),
+				expedition.deathLoss);
+		assertEquals(
+				reward("bukov.economy.mode.reward_enabled", 1f),
+				expedition.rewardAndBoss);
 
 		BukovRaidModeSelectionViewModel.ModeCard quick =
 				model.cards.get(BukovRaidMode.QUICK_SWEEP.ordinal());
-		assertTrue(quick.deathLoss.contains("保留最高价值"));
-		assertTrue(quick.rewardAndBoss.contains("×0.72"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.loss_quick"),
+				quick.deathLoss);
+		assertEquals(
+				reward("bukov.economy.mode.reward_disabled", 0.72f),
+				quick.rewardAndBoss);
 
 		BukovRaidModeSelectionViewModel.ModeCard scavenger =
 				model.cards.get(BukovRaidMode.SCAVENGER.ordinal());
-		assertTrue(scavenger.equipmentSource.contains("系统拾荒"));
-		assertTrue(scavenger.deathLoss.contains("仓库无风险"));
-		assertTrue(scavenger.rewardAndBoss.contains("Boss关闭"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.mode.equipment_scavenger"),
+				scavenger.equipmentSource);
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.loss_scavenger"),
+				scavenger.deathLoss);
+		assertEquals(
+				reward("bukov.economy.mode.reward_disabled", 0.58f),
+				scavenger.rewardAndBoss);
 
 		BukovRaidModeSelectionViewModel.ModeCard boss =
 				model.cards.get(BukovRaidMode.BOSS_CONTRACT.ordinal());
-		assertTrue(boss.rewardAndBoss.contains("×1.25"));
-		assertTrue(boss.rewardAndBoss.contains("Boss合同目标"));
+		assertEquals(
+				reward("bukov.economy.mode.reward_boss", 1.25f),
+				boss.rewardAndBoss);
 
 		BukovRaidModeSelectionViewModel.ModeCard training =
 				model.cards.get(BukovRaidMode.TRAINING_GROUND.ordinal());
-		assertTrue(training.equipmentSource.contains("免费制式"));
-		assertTrue(training.deathLoss.contains("无仓库损失"));
-		assertTrue(training.rewardAndBoss.contains("不结算"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.mode.equipment_training"),
+				training.equipmentSource);
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.loss_training"),
+				training.deathLoss);
+		assertEquals(
+				reward("bukov.economy.mode.reward_training", 1f),
+				training.rewardAndBoss);
 	}
 
 	@Test
@@ -83,8 +108,18 @@ public class BukovRaidModeSelectionViewModelTest {
 
 		assertTrue(model.locked);
 		assertEquals(BukovRaidMode.BOSS_CONTRACT, model.currentMode);
-		assertTrue(model.stateMessage.contains("只读锁定"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.mode.state_locked"),
+				model.stateMessage);
 		assertTrue(model.cards.get(
 				BukovRaidMode.BOSS_CONTRACT.ordinal()).current);
+	}
+
+	private static String reward(String key, float multiplier) {
+		return BukovMessages.get(
+				key,
+				BukovMessages.get(
+						"bukov.economy.mode.multiplier",
+						multiplier));
 	}
 }

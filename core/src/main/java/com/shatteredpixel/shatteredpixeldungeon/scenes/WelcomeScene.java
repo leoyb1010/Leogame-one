@@ -28,11 +28,10 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
-import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndHardNotification;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.input.ControllerHandler;
@@ -69,9 +68,9 @@ public class WelcomeScene extends PixelScene {
 		if (!triedCleaningTemp && FileUtils.cleanTempFiles()) {
 			add(new WndHardNotification(
 					Icons.get(Icons.WARNING),
-					Messages.get(WndError.class, "title"),
-					Messages.get(this, "bukov_save_warning"),
-					Messages.get(this, "continue"),
+					entryMessage("welcome.error_title"),
+					entryMessage("welcome.save_warning"),
+					entryMessage("welcome.continue"),
 					5) {
 				@Override
 				public void hide() {
@@ -111,23 +110,23 @@ public class WelcomeScene extends PixelScene {
 		float contentWidth = panelWidth - 14f;
 
 		RenderedTextBlock eyebrow = label(
-				Messages.get(this, "bukov_eyebrow"),
+				entryMessage("welcome.eyebrow"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		RenderedTextBlock title = label(
-				Messages.get(this, "bukov_title"),
+				entryMessage("welcome.title"),
 				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		RenderedTextBlock englishTitle = label(
-				Messages.get(this, "bukov_english_title"),
+				entryMessage("welcome.english_title"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		RenderedTextBlock briefing = label(
-				Messages.get(this, "bukov_briefing"),
+				entryMessage("welcome.briefing"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("accent.extract"));
 		RenderedTextBlock message = renderTextBlock(
-				Messages.get(this, "bukov_intro"),
+				entryMessage("welcome.intro"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_BODY));
 		message.maxWidth(Math.max(1, (int)contentWidth));
@@ -194,7 +193,7 @@ public class WelcomeScene extends PixelScene {
 		cursor = message.bottom() + 8f;
 
 		WelcomeActionButton enter = new WelcomeActionButton(
-				Messages.get(this, "bukov_enter"),
+				entryMessage("welcome.enter"),
 				previousVersion == 0);
 		enter.setRect(
 				contentLeft,
@@ -207,9 +206,9 @@ public class WelcomeScene extends PixelScene {
 				&& ControllerHandler.isControllerConnected()) {
 			addToFront(new WndHardNotification(
 					Icons.CONTROLLER.get(),
-					Messages.get(WelcomeScene.class, "controller_title"),
-					Messages.get(WelcomeScene.class, "controller_body"),
-					Messages.get(WelcomeScene.class, "controller_okay"),
+					entryMessage("welcome.controller_title"),
+					entryMessage("welcome.controller_body"),
+					entryMessage("welcome.controller_okay"),
 					0) {
 				@Override
 				public void onBackPressed() {
@@ -249,6 +248,10 @@ public class WelcomeScene extends PixelScene {
 				value, tokens.typographyPx(typography));
 		block.hardlight(color);
 		return block;
+	}
+
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
 	}
 
 	private void enterBukov(boolean brandNewProfile) {

@@ -25,6 +25,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovFirstRunCalibration;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -134,21 +135,21 @@ public class TitleScene extends PixelScene {
 				tokens.color("accent.interact"));
 
 		eyebrow = label(
-				"OFFLINE EXTRACTION / 单机搜打撤",
+				entryMessage("title.eyebrow"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(identityLeft + 7f, identityTop + 5f);
 		add(eyebrow);
 
 		title = label(
-				"逃离布科夫",
+				entryMessage("brand.chinese_title"),
 				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		title.setPos(identityLeft + 7f, eyebrow.bottom() + 3f);
 		add(title);
 
 		englishTitle = label(
-				"ESCAPE FROM BUKOV",
+				entryMessage("brand.english_title"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		englishTitle.setPos(
@@ -167,8 +168,8 @@ public class TitleScene extends PixelScene {
 
 		status = label(
 				activeRaid
-						? "ACTIVE RAID  /  CHECKPOINT READY"
-						: "HIDEOUT  /  LOADOUT READY",
+						? entryMessage("title.status_active")
+						: entryMessage("title.status_ready"),
 				BukovVisualContract.FONT_CAPTION,
 				activeRaid
 						? tokens.color("accent.extract")
@@ -181,7 +182,7 @@ public class TitleScene extends PixelScene {
 		float buttonTop = status.bottom() + 4f;
 		if (activeRaid) {
 			btnContinue = new TacticalTitleButton(
-					"继续行动  /  CONTINUE",
+					entryMessage("title.continue"),
 					tokens.color("accent.extract"),
 					SPDAction.TAG_ATTACK) {
 				@Override
@@ -197,8 +198,8 @@ public class TitleScene extends PixelScene {
 
 		btnBukov = new TacticalTitleButton(
 				activeRaid
-						? "进入基地  /  HIDEOUT"
-						: "进入基地  /  START",
+						? entryMessage("title.enter_hideout")
+						: entryMessage("title.start"),
 				tokens.color("accent.interact"),
 				activeRaid ? SPDAction.TAG_LOOT : SPDAction.TAG_ATTACK) {
 			@Override
@@ -212,7 +213,7 @@ public class TitleScene extends PixelScene {
 
 		float secondaryTop = btnBukov.bottom() + 3f;
 		btnSettings = new TacticalTitleButton(
-				"设置",
+				entryMessage("title.settings"),
 				tokens.color("panel.border"),
 				SPDAction.TAG_RESUME) {
 			@Override
@@ -293,6 +294,10 @@ public class TitleScene extends PixelScene {
 			ShatteredPixelDungeon.reportException(error);
 			return false;
 		}
+	}
+
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
 	}
 
 	private void openBukovMode() {

@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -82,16 +83,20 @@ public class BukovRaidHudPresentationModelTest {
 	@Test
 	public void medicalHintMatchesEveryLiveInputSurface() {
 		assertEquals(
-				"1–4 / H · 快速医疗",
+				BukovMessages.get(
+						"bukov.raid.hud.medical_hint_desktop"),
 				BukovRaidHud.medicalHint(true, false));
 		assertEquals(
-				"方向键 · 快速医疗",
+				BukovMessages.get(
+						"bukov.raid.hud.medical_hint_controller"),
 				BukovRaidHud.medicalHint(true, true));
 		assertEquals(
-				"医疗键 · 快速医疗",
+				BukovMessages.get(
+						"bukov.raid.hud.medical_hint_touch"),
 				BukovRaidHud.medicalHint(false, false));
 		assertEquals(
-				"方向键 · 快速医疗",
+				BukovMessages.get(
+						"bukov.raid.hud.medical_hint_controller"),
 				BukovRaidHud.medicalHint(false, true));
 	}
 }

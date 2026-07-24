@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -18,7 +19,8 @@ public class BukovCareerProgressionTest {
 		assertEquals(1, profile.unlockedMaps().size());
 		assertTrue(profile.unlockedMaps().contains("fog_depot"));
 		assertEquals(
-				"找回维修档案",
+				BukovMessages.get(
+						"bukov.economy.hub.contract_rust_workshop_title"),
 				BukovCareerProgression.snapshot(profile).activeContract);
 
 		settleSuccess(profile, "career-1", 500, true);
@@ -52,7 +54,10 @@ public class BukovCareerProgressionTest {
 		assertEquals(5, complete.totalContracts);
 		assertEquals(6, complete.unlockedMaps);
 		assertEquals(6, complete.totalMaps);
-		assertEquals("全部合同已完成", complete.activeContract);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.contract_complete_title"),
+				complete.activeContract);
 	}
 
 	@Test

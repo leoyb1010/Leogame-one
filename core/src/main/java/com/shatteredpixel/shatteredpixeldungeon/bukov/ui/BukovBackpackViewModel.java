@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.LootTransaction;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,17 +22,17 @@ import java.util.Locale;
 public final class BukovBackpackViewModel {
 
 	public enum Category {
-		FIREARM("武器", "GUN"),
-		AMMUNITION("弹药", "AMMO"),
-		MEDICAL("医疗", "MED"),
-		MISSION("任务", "TASK"),
-		LOOT("物资", "LOOT");
+		FIREARM("bukov.raid.backpack.category_firearm", "GUN"),
+		AMMUNITION("bukov.raid.backpack.category_ammunition", "AMMO"),
+		MEDICAL("bukov.raid.backpack.category_medical", "MED"),
+		MISSION("bukov.raid.backpack.category_mission", "TASK"),
+		LOOT("bukov.raid.backpack.category_loot", "LOOT");
 
 		public final String label;
 		public final String code;
 
-		Category(String label, String code) {
-			this.label = label;
+		Category(String labelKey, String code) {
+			label = BukovMessages.get(labelKey);
 			this.code = code;
 		}
 	}
@@ -98,7 +99,7 @@ public final class BukovBackpackViewModel {
 			itemUid = item.itemUid();
 			definitionId = item.definitionId();
 			category = category(item.definitionId());
-			name = displayName(item.definitionId(), firearms);
+			name = localizedDisplayName(item.definitionId(), firearms);
 			quantity = item.quantity();
 			unitWeight = item.unitWeight();
 			totalWeight = item.totalWeight();
@@ -118,15 +119,19 @@ public final class BukovBackpackViewModel {
 						? equippedFirearm.magazineAmmo
 						: 0;
 				weaponProfile = definition == null
-						? "武器数据不可用"
-						: firearmClassName(definition.weaponClass)
-								+ " · " + definition.caliber
-								+ " · " + (definition.fireMode.name().equals("AUTO")
-										? "全自动" : "半自动")
-								+ " · 伤害"
-								+ compactNumber(definition.damage)
-								+ " · 后坐"
-								+ compactNumber(definition.recoilPerShot);
+						? BukovMessages.get(
+								"bukov.raid.backpack.weapon_data_unavailable")
+						: BukovMessages.get(
+								"bukov.raid.backpack.weapon_profile_format",
+								firearmClassName(definition.weaponClass),
+								definition.caliber,
+								definition.fireMode.name().equals("AUTO")
+										? BukovMessages.get(
+												"bukov.raid.backpack.fire_mode_auto")
+										: BukovMessages.get(
+												"bukov.raid.backpack.fire_mode_semi"),
+								compactNumber(definition.damage),
+								compactNumber(definition.recoilPerShot));
 			} else {
 				magazineCapacity = 0;
 				magazineAmmo = 0;
@@ -138,38 +143,56 @@ public final class BukovBackpackViewModel {
 		}
 
 		public String title() {
-			return (equipped ? "已装备 · " : "") + name + " ×" + quantity;
+			return BukovMessages.get(
+					equipped
+							? "bukov.raid.backpack.item_title_equipped_format"
+							: "bukov.raid.backpack.item_title_format",
+					name,
+					quantity);
 		}
 
 		public String economySummary() {
-			return formatWeight(unitWeight) + "kg/件 · 共"
-					+ formatWeight(totalWeight) + "kg · 价值"
-					+ unitValue + "/件 · 共" + totalValue;
+			return BukovMessages.get(
+					"bukov.raid.backpack.economy_summary_format",
+					formatWeight(unitWeight),
+					formatWeight(totalWeight),
+					unitValue,
+					totalValue);
 		}
 
 		/** Compact enough for a 154px iPhone portrait tactical row. */
 		public String rowEconomySummary() {
-			return "单" + formatWeight(unitWeight) + "kg"
-					+ " · 总" + formatWeight(totalWeight) + "kg"
-					+ " · 值" + totalValue;
+			return BukovMessages.get(
+					"bukov.raid.backpack.row_economy_summary_format",
+					formatWeight(unitWeight),
+					formatWeight(totalWeight),
+					totalValue);
 		}
 
 		public String stateSummary() {
 			if (category == Category.FIREARM) {
-				return weaponProfile + "\n弹匣 "
-						+ magazineAmmo + "/" + magazineCapacity
-						+ " · 耐久 " + Math.round(durability * 100f) + "%";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_state_format",
+						weaponProfile,
+						magazineAmmo,
+						magazineCapacity,
+						Math.round(durability * 100f));
 			}
 			if (category == Category.MISSION) {
-				return "任务档案 · 不可丢弃";
+				return BukovMessages.get(
+						"bukov.raid.backpack.mission_state");
 			}
 			if (category == Category.AMMUNITION) {
-				return "携带 " + quantity + " 发";
+				return BukovMessages.get(
+						"bukov.raid.backpack.ammunition_state_format",
+						quantity);
 			}
 			if (category == Category.MEDICAL) {
-				return "可在行动中使用 · 使用时会关闭背包";
+				return BukovMessages.get(
+						"bukov.raid.backpack.medical_state");
 			}
-			return "搜刽物资 · 成功撤离后进入仓库";
+			return BukovMessages.get(
+					"bukov.raid.backpack.loot_state");
 		}
 	}
 
@@ -238,7 +261,10 @@ public final class BukovBackpackViewModel {
 	 * clipped off on the smallest supported viewport.
 	 */
 	public String totalsSummary() {
-		return "负重 " + weightSummary() + " · 价值 " + totalValue;
+		return BukovMessages.get(
+				"bukov.raid.backpack.totals_format",
+				weightSummary(),
+				totalValue);
 	}
 
 	public static String formatWeight(float weight) {
@@ -254,24 +280,35 @@ public final class BukovBackpackViewModel {
 	}
 
 	private static String firearmClassName(FirearmClass weaponClass) {
-		if (weaponClass == null) return "枪械";
+		if (weaponClass == null) {
+			return BukovMessages.get(
+					"bukov.raid.backpack.firearm_class_default");
+		}
 		switch (weaponClass) {
 			case PISTOL:
-				return "手枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_pistol");
 			case SUBMACHINE_GUN:
-				return "冲锋枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_smg");
 			case CARBINE:
-				return "卡宾枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_carbine");
 			case ASSAULT_RIFLE:
-				return "突击步枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_assault_rifle");
 			case SHOTGUN:
-				return "霰弹枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_shotgun");
 			case MARKSMAN_RIFLE:
-				return "精确步枪";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_marksman");
 			case HEAVY_WEAPON:
-				return "重型武器";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_heavy");
 			default:
-				return "枪械";
+				return BukovMessages.get(
+						"bukov.raid.backpack.firearm_class_default");
 		}
 	}
 
@@ -292,17 +329,29 @@ public final class BukovBackpackViewModel {
 		return Category.LOOT;
 	}
 
-	private static String displayName(
+	public static String localizedDisplayName(
 			String definitionId,
 			FirearmRegistry firearms) {
 		FirearmDefinition firearm = firearmDefinition(definitionId, firearms);
 		if (firearm != null) {
-			return firearm.name;
+			return localizedFirearmName(firearm);
 		}
 		String normalized = normalize(definitionId);
 		String knownAmmo = ammoName(normalized);
 		if (knownAmmo != null) {
 			return knownAmmo;
+		}
+		String knownMedical = medicalName(normalized);
+		if (knownMedical != null) {
+			return knownMedical;
+		}
+		if (FirstRaidMission.ARCHIVE_DEFINITION_ID.equals(normalized)) {
+			return BukovMessages.get(
+					"bukov.raid.item.maintenance_access_archive");
+		}
+		String knownLoot = lootName(normalized);
+		if (knownLoot != null) {
+			return knownLoot;
 		}
 		Item authored = BukovFirstRaidLootTables
 				.createByEconomicDefinitionId(definitionId);
@@ -315,7 +364,79 @@ public final class BukovBackpackViewModel {
 			readable = readable.substring(separator + 1);
 		}
 		readable = readable.replace('_', ' ').trim();
-		return readable.isEmpty() ? "未知物资" : readable;
+		return readable.isEmpty()
+				? BukovMessages.get(
+						"bukov.raid.backpack.unknown_item")
+				: readable;
+	}
+
+	public static String localizedFirearmName(
+			FirearmDefinition definition) {
+		if (definition == null || definition.id == null) {
+			return BukovMessages.get(
+					"bukov.raid.backpack.unknown_item");
+		}
+		switch (definition.id) {
+			case "needle_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_needle_9");
+			case "shuttle_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_shuttle_9");
+			case "ward_556":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_ward_556");
+			case "mountain_762":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_mountain_762");
+			case "bolt_12":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_bolt_12");
+			case "longstreet_762":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_longstreet_762");
+			case "sentinel_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_sentinel_9");
+			case "sparrow_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_sparrow_9");
+			case "hive_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_hive_9");
+			case "whisper_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_whisper_9");
+			case "jackal_9":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_jackal_9");
+			case "river_556":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_river_556");
+			case "foundry_762":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_foundry_762");
+			case "carbine_556":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_carbine_556");
+			case "breaker_12":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_breaker_12");
+			case "rainstorm_12":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_rainstorm_12");
+			case "watchtower_556":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_watchtower_556");
+			case "frontier_762":
+				return BukovMessages.get(
+						"bukov.raid.item.firearm_frontier_762");
+			default:
+				return definition.name == null
+						? BukovMessages.get(
+								"bukov.raid.backpack.unknown_item")
+						: definition.name;
+		}
 	}
 
 	private static FirearmDefinition firearmDefinition(
@@ -337,21 +458,168 @@ public final class BukovBackpackViewModel {
 	private static String ammoName(String definitionId) {
 		switch (definitionId) {
 			case "ammo:ammo_9_training":
-				return "9毫米训练弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_9_training");
 			case "ammo:ammo_9_standard":
-				return "9毫米标准弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_9_standard");
 			case "ammo:ammo_9_subsonic":
-				return "9毫米亚音速弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_9_subsonic");
 			case "ammo:ammo_556_standard":
-				return "5.56毫米标准弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_556_standard");
 			case "ammo:ammo_556_armor_piercing":
-				return "5.56毫米硬芯弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_556_armor_piercing");
 			case "ammo:ammo_762_standard":
-				return "7.62毫米标准弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_762_standard");
 			case "ammo:ammo_762_expanding":
-				return "7.62毫米扩张弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_762_expanding");
 			case "ammo:ammo_12g_buckshot":
-				return "12号鹿弹";
+				return BukovMessages.get(
+						"bukov.raid.item.ammo_12g_buckshot");
+			default:
+				return null;
+		}
+	}
+
+	private static String medicalName(String definitionId) {
+		switch (definitionId) {
+			case "bandage":
+				return BukovMessages.get("bukov.raid.item.bandage");
+			case "first_aid":
+				return BukovMessages.get("bukov.raid.item.first_aid");
+			case "tourniquet":
+				return BukovMessages.get("bukov.raid.item.tourniquet");
+			case "painkiller":
+				return BukovMessages.get("bukov.raid.item.painkiller");
+			case "antiseptic":
+				return BukovMessages.get("bukov.raid.item.antiseptic");
+			case "splint":
+				return BukovMessages.get("bukov.raid.item.splint");
+			case "stim":
+				return BukovMessages.get("bukov.raid.item.stim");
+			default:
+				return null;
+		}
+	}
+
+	private static String lootName(String definitionId) {
+		switch (definitionId) {
+			case "canned_food":
+				return BukovMessages.get(
+						"bukov.raid.item.canned_food");
+			case "water_filter":
+				return BukovMessages.get(
+						"bukov.raid.item.water_filter");
+			case "duct_tape":
+				return BukovMessages.get(
+						"bukov.raid.item.duct_tape");
+			case "bolts":
+				return BukovMessages.get("bukov.raid.item.bolts");
+			case "scrap_metal":
+				return BukovMessages.get(
+						"bukov.raid.item.scrap_metal");
+			case "cloth_roll":
+				return BukovMessages.get(
+						"bukov.raid.item.cloth_roll");
+			case "battery":
+				return BukovMessages.get("bukov.raid.item.battery");
+			case "ceramic_shard":
+				return BukovMessages.get(
+						"bukov.raid.item.ceramic_shard");
+			case "rubber_hose":
+				return BukovMessages.get(
+						"bukov.raid.item.rubber_hose");
+			case "sealed_coffee":
+				return BukovMessages.get(
+						"bukov.raid.item.sealed_coffee");
+			case "lighter":
+				return BukovMessages.get("bukov.raid.item.lighter");
+			case "maintenance_key":
+				return BukovMessages.get(
+						"bukov.raid.item.maintenance_key");
+			case "copper_wire":
+				return BukovMessages.get(
+						"bukov.raid.item.copper_wire");
+			case "electric_motor":
+				return BukovMessages.get(
+						"bukov.raid.item.electric_motor");
+			case "bearing":
+				return BukovMessages.get("bukov.raid.item.bearing");
+			case "circuit_board":
+				return BukovMessages.get(
+						"bukov.raid.item.circuit_board");
+			case "fuel_can":
+				return BukovMessages.get("bukov.raid.item.fuel_can");
+			case "tool_set":
+				return BukovMessages.get("bukov.raid.item.tool_set");
+			case "welding_rod":
+				return BukovMessages.get(
+						"bukov.raid.item.welding_rod");
+			case "pressure_gauge":
+				return BukovMessages.get(
+						"bukov.raid.item.pressure_gauge");
+			case "relay_module":
+				return BukovMessages.get(
+						"bukov.raid.item.relay_module");
+			case "copper_coil":
+				return BukovMessages.get(
+						"bukov.raid.item.copper_coil");
+			case "machine_oil":
+				return BukovMessages.get(
+						"bukov.raid.item.machine_oil");
+			case "gold_watch":
+				return BukovMessages.get(
+						"bukov.raid.item.gold_watch");
+			case "encrypted_drive":
+				return BukovMessages.get(
+						"bukov.raid.item.encrypted_drive");
+			case "antique_coin":
+				return BukovMessages.get(
+						"bukov.raid.item.antique_coin");
+			case "camera_lens":
+				return BukovMessages.get(
+						"bukov.raid.item.camera_lens");
+			case "military_chip":
+				return BukovMessages.get(
+						"bukov.raid.item.military_chip");
+			case "radio_crystal":
+				return BukovMessages.get(
+						"bukov.raid.item.radio_crystal");
+			case "optical_sensor":
+				return BukovMessages.get(
+						"bukov.raid.item.optical_sensor");
+			case "maintenance_optic":
+				return BukovMessages.get(
+						"bukov.raid.item.maintenance_optic");
+			case "maintenance_servo":
+				return BukovMessages.get(
+						"bukov.raid.item.maintenance_servo");
+			case "maintenance_controller":
+				return BukovMessages.get(
+						"bukov.raid.item.maintenance_controller");
+			case "maintenance_bearing_case":
+				return BukovMessages.get(
+						"bukov.raid.item.maintenance_bearing_case");
+			case "officer_badge":
+				return BukovMessages.get(
+						"bukov.raid.item.officer_badge");
+			case "command_key":
+				return BukovMessages.get(
+						"bukov.raid.item.command_key");
+			case "prototype_core":
+				return BukovMessages.get(
+						"bukov.raid.item.prototype_core");
+			case "classified_docs":
+				return BukovMessages.get(
+						"bukov.raid.item.classified_docs");
+			case "titanium_case":
+				return BukovMessages.get(
+						"bukov.raid.item.titanium_case");
 			default:
 				return null;
 		}

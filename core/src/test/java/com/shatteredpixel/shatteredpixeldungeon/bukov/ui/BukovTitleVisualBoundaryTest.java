@@ -26,10 +26,14 @@ public class BukovTitleVisualBoundaryTest {
 		assertTrue(playerSurface.contains(
 				"TITLE_INDUSTRIAL_PORTRAIT_V2"));
 		assertTrue(playerSurface.contains("BukovUiTokens.loadDefault()"));
-		assertTrue(playerSurface.contains("\"逃离布科夫\""));
-		assertTrue(playerSurface.contains("\"ESCAPE FROM BUKOV\""));
-		assertTrue(playerSurface.contains("\"继续行动  /  CONTINUE\""));
-		assertTrue(playerSurface.contains("\"进入基地  /  HIDEOUT\""));
+		assertTrue(playerSurface.contains(
+				"entryMessage(\"brand.chinese_title\")"));
+		assertTrue(playerSurface.contains(
+				"entryMessage(\"brand.english_title\")"));
+		assertTrue(playerSurface.contains(
+				"entryMessage(\"title.continue\")"));
+		assertTrue(playerSurface.contains(
+				"entryMessage(\"title.enter_hideout\")"));
 		assertTrue(playerSurface.contains("new WndBukovSettings()"));
 		assertFalse(playerSurface.contains("AboutScene.class"));
 		assertFalse(playerSurface.contains("\"关于\""));

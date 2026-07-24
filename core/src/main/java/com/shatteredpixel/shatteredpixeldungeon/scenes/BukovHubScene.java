@@ -18,6 +18,9 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovRaidModeSelecti
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovVendor;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -93,8 +96,8 @@ public final class BukovHubScene extends PixelScene {
 
 		RenderedTextBlock eyebrow = label(
 				wide
-						? "ESCAPE FROM BUKOV  /  OFFLINE OPERATIONS"
-						: "ESCAPE FROM BUKOV  /  OFFLINE",
+						? entryMessage("hub.eyebrow_wide")
+						: entryMessage("hub.eyebrow_compact"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.maxWidth(Math.max(1, (int)usableWidth));
@@ -102,15 +105,17 @@ public final class BukovHubScene extends PixelScene {
 		add(eyebrow);
 
 		RenderedTextBlock title = label(
-				"布科夫藏身处",
+				entryMessage("hub.title"),
 				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		title.setPos(left, eyebrow.bottom() + 2f);
 		add(title);
 
 		String statusText = state.activeRaid
-				? "ACTIVE RAID  ·  行动检查点已锁定"
-				: "READY  ·  " + state.careerSummary;
+				? entryMessage("hub.status_active")
+				: isEnglish()
+						? entryMessage("hub.status_ready")
+						: state.careerSummary;
 		RenderedTextBlock status = label(
 				statusText,
 				BukovVisualContract.FONT_CAPTION,
@@ -198,26 +203,28 @@ public final class BukovHubScene extends PixelScene {
 			float y,
 			float width,
 			float height) {
-		addPanel(x, y, width, height, "仓库状态 / STASH");
+		addPanel(x, y, width, height, entryMessage("hub.panel_stash"));
 		float textLeft = x + 6f;
 		float textTop = y + 18f;
 
 		if (!landscape()) {
 			float column = (width - 12f) / 3f;
 			addMetric(
-					"现金",
+					entryMessage("hub.metric_cash"),
 					String.valueOf(state.currency),
 					textLeft,
 					textTop,
 					"accent.valuable");
 			addMetric(
-					"仓库价值",
+					entryMessage("hub.metric_stash_value"),
 					String.valueOf(state.stashValue),
 					textLeft + column,
 					textTop,
 					"text.primary");
 			addMetric(
-					state.activeRaid ? "行动携带" : "本次风险",
+					entryMessage(state.activeRaid
+							? "hub.metric_raid_carry"
+							: "hub.metric_risk"),
 					String.valueOf(state.riskValue),
 					textLeft + column * 2f,
 					textTop,
@@ -227,19 +234,21 @@ public final class BukovHubScene extends PixelScene {
 		}
 
 		addMetric(
-				"现金",
+				entryMessage("hub.metric_cash"),
 				String.valueOf(state.currency),
 				textLeft,
 				textTop,
 				"accent.valuable");
 		addMetric(
-				"仓库价值",
+				entryMessage("hub.metric_stash_value"),
 				String.valueOf(state.stashValue),
 				textLeft,
 				textTop + 15f,
 				"text.primary");
 		addMetric(
-				state.activeRaid ? "行动携带" : "本次风险",
+				entryMessage(state.activeRaid
+						? "hub.metric_raid_carry"
+						: "hub.metric_risk"),
 				String.valueOf(state.riskValue),
 				textLeft,
 				textTop + 30f,
@@ -247,8 +256,12 @@ public final class BukovHubScene extends PixelScene {
 
 		if (height > 70f) {
 			RenderedTextBlock contract = label(
-						"当前合同  " + state.activeContract
-								+ "\n" + state.activeContractObjective,
+					isEnglish()
+							? entryMessage("hub.contract_active_generic")
+							: entryMessage(
+									"hub.contract_active",
+									state.activeContract,
+									state.activeContractObjective),
 						BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.extract"));
 			contract.maxWidth(Math.max(1, (int) width - 12));
@@ -257,10 +270,15 @@ public final class BukovHubScene extends PixelScene {
 
 			RenderedTextBlock loadout = label(
 					state.activeRaid
-							? "配装与交易在行动结束前锁定"
-							: state.deploymentReadinessHeadline()
-										+ "\n负重 " + state.loadoutSummary()
-										+ "\n已选 " + state.selectedCount + " 件物资",
+							? entryMessage("hub.loadout_locked")
+							: isEnglish()
+									? entryMessage(
+											"hub.loadout_ready_generic")
+									: entryMessage(
+											"hub.loadout_ready",
+											state.deploymentReadinessHeadline(),
+											state.loadoutSummary(),
+											state.selectedCount),
 						BukovVisualContract.FONT_CAPTION,
 					tokens.color(state.activeRaid
 							? "text.disabled"
@@ -278,7 +296,9 @@ public final class BukovHubScene extends PixelScene {
 			float y,
 			float width,
 			float height) {
-		addPanel(x, y, width, height, "行动选择 / DEPLOYMENT");
+		addPanel(
+				x, y, width, height,
+				entryMessage("hub.panel_deployment"));
 		boolean wide = landscape();
 		float actionHeight = BukovVisualContract.controlHeight(
 				!DeviceCompat.isDesktop());
@@ -294,8 +314,12 @@ public final class BukovHubScene extends PixelScene {
 		BukovRaidMode selectedMode = controller.selectedRaidMode();
 		boolean training = selectedMode.trainingGround();
 		ModeCard modeCard = new ModeCard(
-				"当前模式  /  " + selectedMode.displayName,
-				selectedMode.summary + " · 点击查看全部5种模式",
+				entryMessage(
+						"hub.current_mode",
+						localizedModeName(selectedMode)),
+				entryMessage(
+						"hub.mode_detail",
+						localizedModeSummary(selectedMode)),
 				true,
 				training) {
 			@Override
@@ -314,8 +338,10 @@ public final class BukovHubScene extends PixelScene {
 		float third = (innerWidth - GAP * 2f) / 3f;
 		addButton(
 				state.canDeploy
-						? (training ? "进入演练场" : "确认出击")
-						: "补齐并出击",
+						? entryMessage(training
+								? "hub.button_enter_training"
+								: "hub.button_confirm")
+						: entryMessage("hub.button_prepare"),
 				innerX,
 				actionsY,
 				third,
@@ -326,7 +352,9 @@ public final class BukovHubScene extends PixelScene {
 				new Callback() {
 					@Override
 					public void call() {
-						if (state.canDeploy) {
+						BukovHubViewModel currentState =
+								controller.viewModel();
+						if (currentState.canDeploy) {
 							deploy();
 							return;
 						}
@@ -334,12 +362,16 @@ public final class BukovHubScene extends PixelScene {
 							controller.prepareAndConfirmDeployment();
 							enterDeploymentScene();
 						} catch (IOException | RuntimeException error) {
-							showError("补齐并出击失败", error);
+							showError(
+									entryMessage("hub.error_prepare"),
+									error);
 						}
 					}
 				});
 		addButton(
-				training ? "固定训练区" : "切换区域",
+				entryMessage(training
+						? "hub.button_training_area"
+						: "hub.button_switch_area"),
 				innerX + third + GAP,
 				actionsY,
 				third,
@@ -354,12 +386,16 @@ public final class BukovHubScene extends PixelScene {
 							controller.cycleSelectedMap();
 							reload();
 						} catch (IOException | RuntimeException error) {
-							showError("区域选择失败", error);
+							showError(
+									entryMessage("hub.error_area"),
+									error);
 						}
 					}
 				});
 		addButton(
-				training ? "训练装备" : "管理配装",
+				entryMessage(training
+						? "hub.button_training_loadout"
+						: "hub.button_manage_loadout"),
 				innerX + (third + GAP) * 2f,
 				actionsY,
 				third,
@@ -376,7 +412,12 @@ public final class BukovHubScene extends PixelScene {
 
 		if (!state.canDeploy && actionsY + 27f < y + height) {
 			RenderedTextBlock blocked = label(
-					"出击检查  /  " + state.deploymentBlockReason,
+					entryMessage(
+							"hub.deployment_check",
+							isEnglish()
+									? entryMessage(
+											"hub.deployment_blocked_generic")
+									: state.deploymentBlockReason),
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.danger"));
 			blocked.maxWidth(Math.max(1, (int) innerWidth));
@@ -390,22 +431,26 @@ public final class BukovHubScene extends PixelScene {
 			float y,
 			float width,
 			float height) {
-		addPanel(x, y, width, height, "行动检查点 / ACTIVE RAID");
+		addPanel(
+				x, y, width, height,
+				entryMessage("hub.panel_active"));
 		float innerX = x + 6f;
 		float innerY = y + 20f;
 		float actionHeight = BukovVisualContract.controlHeight(
 				!DeviceCompat.isDesktop());
 		RenderedTextBlock mode = label(
-				controller.selectedRaidMode().displayName,
+				localizedModeName(controller.selectedRaidMode()),
 				BukovVisualContract.FONT_SECTION,
 				tokens.color("accent.extract"));
 		mode.setPos(innerX, innerY);
 		add(mode);
 
+		int elapsed = Math.max(0, (int)state.activeElapsedSeconds);
 		RenderedTextBlock summary = label(
-				state.activeRaidSummary()
-						+ "\n\n已锁定：行动模式、仓库交易、出战配装"
-						+ "\n可用：继续行动，或确认放弃并结算损失",
+				entryMessage(
+						"hub.active_summary",
+						elapsed / 60,
+						elapsed % 60),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		summary.maxWidth(Math.max(1, (int) width - 12));
@@ -415,7 +460,7 @@ public final class BukovHubScene extends PixelScene {
 		float actionY = y + height - actionHeight - 6f;
 		float half = (width - 12f - GAP) / 2f;
 		addButton(
-				"继续行动",
+				entryMessage("hub.button_continue"),
 				innerX,
 				actionY,
 				half,
@@ -430,7 +475,7 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				"放弃行动",
+				entryMessage("hub.button_abandon"),
 				innerX + half + GAP,
 				actionY,
 				half,
@@ -456,7 +501,7 @@ public final class BukovHubScene extends PixelScene {
 		float buttonWidth = (width - gap * 2f) / 3f;
 		float buttonHeight = (height - gap) / 2f;
 		addButton(
-				"合同",
+				entryMessage("hub.button_contracts"),
 				x,
 				y,
 				buttonWidth,
@@ -472,7 +517,7 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				"保险",
+				entryMessage("hub.button_insurance"),
 				x + buttonWidth + gap,
 				y,
 				buttonWidth,
@@ -488,7 +533,7 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				"改枪",
+				entryMessage("hub.button_firearms"),
 				x + (buttonWidth + gap) * 2f,
 				y,
 				buttonWidth,
@@ -504,7 +549,9 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				state.activeRaid ? "交易锁定" : "补给商店",
+				entryMessage(state.activeRaid
+						? "hub.button_trade_locked"
+						: "hub.button_vendor"),
 				x,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -519,7 +566,7 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				"设置",
+				entryMessage("hub.button_settings"),
 				x + buttonWidth + gap,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -534,7 +581,7 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				"返回标题",
+				entryMessage("hub.button_title"),
 				x + (buttonWidth + gap) * 2f,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -634,13 +681,76 @@ public final class BukovHubScene extends PixelScene {
 		return result;
 	}
 
-	private void openLoadout() {
-		addToFront(new WndBukovHub(controller, new Callback() {
-			@Override
-			public void call() {
-				enterDeploymentScene();
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
+	}
+
+	private static boolean isEnglish() {
+		return Messages.lang() == Languages.ENGLISH;
+	}
+
+	private static String localizedModeName(BukovRaidMode mode) {
+		return entryMessage("hub.mode." + modeKey(mode) + ".name");
+	}
+
+	private static String localizedModeSummary(BukovRaidMode mode) {
+		return entryMessage("hub.mode." + modeKey(mode) + ".summary");
+	}
+
+	private static String modeKey(BukovRaidMode mode) {
+		switch (mode) {
+			case EXPEDITION:
+				return "expedition";
+			case QUICK_SWEEP:
+				return "quick_sweep";
+			case SCAVENGER:
+				return "scavenger";
+			case BOSS_CONTRACT:
+				return "boss_contract";
+			case TRAINING_GROUND:
+				return "training_ground";
+			default:
+				throw new IllegalArgumentException(
+						"Unsupported Bukov raid mode: " + mode);
+		}
+	}
+
+	private static String safeErrorDetail(Throwable error) {
+		String detail = error.getMessage() == null
+				? error.getClass().getSimpleName()
+				: error.getMessage();
+		return isEnglish() && containsCjk(detail)
+				? entryMessage("hub.error_generic")
+				: detail;
+	}
+
+	private static boolean containsCjk(String value) {
+		for (int i = 0; i < value.length(); i++) {
+			char character = value.charAt(i);
+			if (character >= '\u2E80' && character <= '\u9FFF'
+					|| character >= '\uF900'
+							&& character <= '\uFAFF') {
+				return true;
 			}
-		}));
+		}
+		return false;
+	}
+
+	private void openLoadout() {
+		addToFront(new WndBukovHub(
+				controller,
+				new Callback() {
+					@Override
+					public void call() {
+						enterDeploymentScene();
+					}
+				},
+				new Callback() {
+					@Override
+					public void call() {
+						reload();
+					}
+				}));
 	}
 
 	private void openRaidModeSelection() {
@@ -680,7 +790,7 @@ public final class BukovHubScene extends PixelScene {
 			controller.confirmDeployment();
 			enterDeploymentScene();
 		} catch (IOException | RuntimeException error) {
-			showError("出击确认失败", error);
+			showError(entryMessage("hub.error_deploy"), error);
 		}
 	}
 
@@ -695,10 +805,10 @@ public final class BukovHubScene extends PixelScene {
 
 	private void confirmAbandon() {
 		addToFront(new WndOptions(
-				"放弃本次行动？",
-				"当前行动会按未撤离结算，正式行动中携带的物资将按规则损失。此操作不可撤销。",
-				"取消",
-				"确认放弃") {
+				entryMessage("hub.abandon_title"),
+				entryMessage("hub.abandon_body"),
+				entryMessage("hub.cancel"),
+				entryMessage("hub.confirm_abandon")) {
 			@Override
 			protected void onSelect(int index) {
 				if (index != 1) {
@@ -709,7 +819,9 @@ public final class BukovHubScene extends PixelScene {
 					Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
 					reload();
 				} catch (IOException | RuntimeException error) {
-					showError("行动放弃失败", error);
+					showError(
+							entryMessage("hub.error_abandon"),
+							error);
 				}
 			}
 		});
@@ -721,10 +833,10 @@ public final class BukovHubScene extends PixelScene {
 
 	private void showError(String title, Throwable error) {
 		ShatteredPixelDungeon.reportException(error);
-		String detail = error.getMessage() == null
-				? error.getClass().getSimpleName()
-				: error.getMessage();
-		addToFront(new WndMessage(title + "：\n" + detail));
+		addToFront(new WndMessage(entryMessage(
+				"hub.error_format",
+				title,
+				safeErrorDetail(error))));
 	}
 
 	private void buildFailure(Throwable error) {
@@ -734,10 +846,9 @@ public final class BukovHubScene extends PixelScene {
 				Camera.main.height,
 				tokens.colorWithAlpha("ink.failure", 255));
 		add(background);
-		String detail = error.getMessage() == null
-				? error.getClass().getSimpleName()
-				: error.getMessage();
-		addToFront(new WndMessage("藏身处读取失败：\n" + detail) {
+		addToFront(new WndMessage(entryMessage(
+				"hub.error_load",
+				safeErrorDetail(error))) {
 			@Override
 			public void onBackPressed() {
 				super.onBackPressed();
@@ -789,7 +900,9 @@ public final class BukovHubScene extends PixelScene {
 							? "accent.extract" : "text.disabled"));
 			add(selection);
 			title = label(
-					titleText + (selected ? "  ·  已选择" : ""),
+					titleText + (selected
+							? "  ·  " + entryMessage("hub.selected")
+							: ""),
 					BukovVisualContract.FONT_BODY,
 					tokens.color(selected
 							? "accent.extract" : "text.primary"));

@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -29,7 +30,7 @@ public final class BukovPauseButton extends Button {
 		edge = new ColorBlock(1, 1, tokens.color("accent.interact"));
 		add(edge);
 		label = PixelScene.renderTextBlock(
-				"暂停",
+				BukovMessages.get("bukov.raid.pause.button"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_BODY));
 		label.hardlight(tokens.color("text.primary"));

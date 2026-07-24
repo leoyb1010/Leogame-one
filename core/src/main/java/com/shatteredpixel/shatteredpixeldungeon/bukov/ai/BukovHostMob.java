@@ -15,6 +15,8 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovLineRiflemanS
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovScavengerSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovSignalOperatorSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
 import com.watabou.utils.Random;
 
@@ -35,7 +37,7 @@ public final class BukovHostMob extends Mob {
 			"bukov_onboarding_contact";
 
 	private String definitionId = "";
-	private String displayName = "布科夫敌人";
+	private String displayName = "";
 	private String hostClassHint = "Rat";
 	private int minimumDamage = 1;
 	private int maximumDamage = 1;
@@ -81,7 +83,19 @@ public final class BukovHostMob extends Mob {
 
 	@Override
 	public String name() {
-		return displayName;
+		if (definitionId == null || definitionId.isEmpty()) {
+			return BukovMessages.get(
+					"bukov.economy.content.enemy_unknown");
+		}
+		String localized = BukovMessages.get(
+				"bukov.economy.content.enemy_" + definitionId);
+		if (!Messages.NO_TEXT_FOUND.equals(localized)) {
+			return localized;
+		}
+		if (displayName != null && !displayName.trim().isEmpty()) {
+			return displayName;
+		}
+		return definitionId.replace('_', ' ');
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,10 +30,14 @@ public class BukovRaidHudScaleTest {
 				wideNormal,
 				BukovRaidHud.preferredHeight(320f, 2),
 				0f);
-		assertTrue(BukovRaidHud.controlHint(true).contains("TAB"));
-		assertTrue(BukovRaidHud.controlHint(true).contains("暂停"));
-		assertTrue(BukovRaidHud.controlHint(false).contains("背包"));
-		assertTrue(BukovRaidHud.controlHint(false).contains("暂停"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.hud.control_hint_desktop"),
+				BukovRaidHud.controlHint(true));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.hud.control_hint_touch"),
+				BukovRaidHud.controlHint(false));
 	}
 
 	@Test

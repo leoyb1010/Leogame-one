@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmReg
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.LootTransaction;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
 
@@ -44,42 +45,79 @@ public class BukovBackpackViewModelTest {
 		assertEquals(5, model.items.size());
 		assertEquals("4.82/40.00kg", model.weightSummary());
 		assertEquals(
-				"负重 4.82/40.00kg · 价值 4526",
+				BukovMessages.get(
+						"bukov.raid.backpack.totals_format",
+						"4.82/40.00kg",
+						4526),
 				model.totalsSummary());
 		assertEquals(4526L, model.totalValue);
 
 		BukovBackpackViewModel.ItemRow equipped = model.find("gun-a");
 		assertNotNull(equipped);
-		assertEquals("针蜂-9", equipped.name);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.item.firearm_needle_9"),
+				equipped.name);
 		assertEquals(BukovBackpackViewModel.Category.FIREARM, equipped.category);
 		assertEquals(7, equipped.magazineAmmo);
 		assertEquals(12, equipped.magazineCapacity);
 		assertEquals(
-				"手枪 · 9x19 · 半自动 · 伤害21 · 后坐0.8\n"
-						+ "弹匣 7/12 · 耐久 78%",
+				BukovMessages.get(
+						"bukov.raid.backpack.firearm_state_format",
+						BukovMessages.get(
+								"bukov.raid.backpack.weapon_profile_format",
+								BukovMessages.get(
+										"bukov.raid.backpack.firearm_class_pistol"),
+								"9x19",
+								BukovMessages.get(
+										"bukov.raid.backpack.fire_mode_semi"),
+								"21",
+								"0.8"),
+						7,
+						12,
+						78),
 				equipped.stateSummary());
 		assertEquals(
-				"单0.90kg · 总0.90kg · 值850",
+				BukovMessages.get(
+						"bukov.raid.backpack.row_economy_summary_format",
+						"0.90",
+						"0.90",
+						850),
 				equipped.rowEconomySummary());
 		assertTrue(equipped.equipped);
 		assertFalse(equipped.canEquip);
 
 		BukovBackpackViewModel.ItemRow second = model.find("gun-b");
-		assertEquals("梭子-9", second.name);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.item.firearm_shuttle_9"),
+				second.name);
 		assertEquals(24, second.magazineCapacity);
 		assertTrue(second.canEquip);
 
 		BukovBackpackViewModel.ItemRow ammo = model.find("ammo-a");
-		assertEquals("9毫米标准弹", ammo.name);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.item.ammo_9_standard"),
+				ammo.name);
 		assertEquals(BukovBackpackViewModel.Category.AMMUNITION, ammo.category);
-		assertEquals("携带 18 发", ammo.stateSummary());
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.backpack.ammunition_state_format",
+						18),
+				ammo.stateSummary());
 
 		BukovBackpackViewModel.ItemRow medical = model.find("med-a");
-		assertEquals("急救包", medical.name);
+		assertEquals(
+				BukovMessages.get("bukov.raid.item.first_aid"),
+				medical.name);
 		assertTrue(medical.canUse);
 
 		BukovBackpackViewModel.ItemRow mission = model.find("mission-a");
-		assertEquals("维修通道档案", mission.name);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.raid.item.maintenance_access_archive"),
+				mission.name);
 		assertEquals(BukovBackpackViewModel.Category.MISSION, mission.category);
 		assertFalse(mission.canDrop);
 	}
@@ -94,7 +132,10 @@ public class BukovBackpackViewModelTest {
 		assertTrue(model.items.isEmpty());
 		assertEquals("0.00/40.00kg", model.weightSummary());
 		assertEquals(
-				"负重 0.00/40.00kg · 价值 0",
+				BukovMessages.get(
+						"bukov.raid.backpack.totals_format",
+						"0.00/40.00kg",
+						0),
 				model.totalsSummary());
 		assertEquals(0L, model.totalValue);
 	}

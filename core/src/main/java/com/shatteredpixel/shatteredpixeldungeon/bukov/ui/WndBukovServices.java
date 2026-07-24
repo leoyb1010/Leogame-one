@@ -4,6 +4,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmAttachmentSlot;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovInsuranceService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovLongTermContractService;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -125,13 +126,18 @@ public final class WndBukovServices extends Window {
 		add(line);
 
 		RenderedTextBlock eyebrow = text(
-				"LONG-TERM SERVICES / " + tab.name(),
+				BukovMessages.get(
+						"bukov.economy.services.eyebrow_"
+								+ tab.name().toLowerCase(
+										java.util.Locale.ROOT)),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 		RenderedTextBlock cash = text(
-				"现金 " + model.currency,
+				BukovMessages.get(
+						"bukov.economy.services.balance",
+						model.currency),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		cash.setPos(windowWidth - MARGIN - cash.width(), 3);
@@ -193,26 +199,39 @@ public final class WndBukovServices extends Window {
 				MARGIN + (fourth + GAP) * 2f,
 				y, fourth, secondaryEnabled(), "accent.valuable");
 		addAction(
-				"返回",
+				BukovMessages.get("bukov.economy.services.back"),
 				BukovServicesFocusModel.ACTION_BACK,
 				MARGIN + (fourth + GAP) * 3f,
 				y, fourth, true, "panel.border");
 	}
 
 	private String title() {
-		if (tab == Tab.CONTRACTS) return "长期合同";
-		if (tab == Tab.INSURANCE) return "装备保险";
-		return "枪械工作台";
+		if (tab == Tab.CONTRACTS) {
+			return BukovMessages.get("bukov.economy.services.title_contracts");
+		}
+		if (tab == Tab.INSURANCE) {
+			return BukovMessages.get("bukov.economy.services.title_insurance");
+		}
+		return BukovMessages.get("bukov.economy.services.title_firearms");
 	}
 
 	private String subtitle() {
-		if (model.locked) return "行动进行中，基地资产操作已锁定";
-		if (tab == Tab.CONTRACTS) return "推进目标后手动领取一次性奖金";
-		if (tab == Tab.INSURANCE) {
-			return "待返还 " + model.pendingInsuranceReturns
-					+ " · 已到期 " + model.dueInsuranceReturns;
+		if (model.locked) {
+			return BukovMessages.get("bukov.economy.services.state_locked");
 		}
-		return "当前槽位 " + slotName(slot) + " · 参数变化实时生效";
+		if (tab == Tab.CONTRACTS) {
+			return BukovMessages.get(
+					"bukov.economy.services.subtitle_contracts");
+		}
+		if (tab == Tab.INSURANCE) {
+			return BukovMessages.get(
+					"bukov.economy.services.subtitle_insurance",
+					model.pendingInsuranceReturns,
+					model.dueInsuranceReturns);
+		}
+		return BukovMessages.get(
+				"bukov.economy.services.subtitle_firearms",
+				slotName(slot));
 	}
 
 	private String accentToken() {
@@ -222,33 +241,65 @@ public final class WndBukovServices extends Window {
 	}
 
 	private String nextTabLabel() {
-		if (tab == Tab.CONTRACTS) return "保险";
-		if (tab == Tab.INSURANCE) return "改枪";
-		return "合同";
+		if (tab == Tab.CONTRACTS) {
+			return BukovMessages.get("bukov.economy.services.next_insurance");
+		}
+		if (tab == Tab.INSURANCE) {
+			return BukovMessages.get("bukov.economy.services.next_firearms");
+		}
+		return BukovMessages.get("bukov.economy.services.next_contracts");
 	}
 
 	private String primaryLabel() {
 		if (tab == Tab.CONTRACTS) {
-			if (!hasSelection()) return "无合同";
+			if (!hasSelection()) {
+				return BukovMessages.get(
+						"bukov.economy.services.action_no_contract");
+			}
 			BukovServicesViewModel.ContractRow row =
 					model.contracts.get(focus.selectedRow());
-			if (row.claimed) return "已领取";
-			return row.ready ? "领取 " + row.reward : "未完成";
+			if (row.claimed) {
+				return BukovMessages.get(
+						"bukov.economy.services.action_claimed");
+			}
+			return row.ready
+					? BukovMessages.get(
+							"bukov.economy.services.action_claim",
+							row.reward)
+					: BukovMessages.get(
+							"bukov.economy.services.action_incomplete");
 		}
 		if (tab == Tab.INSURANCE) {
-			if (!hasSelection()) return "未选配装";
+			if (!hasSelection()) {
+				return BukovMessages.get(
+						"bukov.economy.services.action_no_loadout");
+			}
 			return model.insuranceItems.get(focus.selectedRow()).insured
-					? "取消投保" : "投保";
+					? BukovMessages.get(
+							"bukov.economy.services.action_uninsure")
+					: BukovMessages.get(
+							"bukov.economy.services.action_insure");
 		}
-		if (!hasSelection()) return "无枪械";
-		return installedInSelectedSlot() ? "卸下" : "安装";
+		if (!hasSelection()) {
+			return BukovMessages.get(
+					"bukov.economy.services.action_no_firearm");
+		}
+		return installedInSelectedSlot()
+				? BukovMessages.get("bukov.economy.services.action_remove")
+				: BukovMessages.get("bukov.economy.services.action_install");
 	}
 
 	private String secondaryLabel() {
-		if (tab == Tab.CONTRACTS) return "目标进度";
+		if (tab == Tab.CONTRACTS) {
+			return BukovMessages.get("bukov.economy.services.target_progress");
+		}
 		if (tab == Tab.INSURANCE) {
 			return model.dueInsuranceReturns > 0
-					? "领取 " + model.dueInsuranceReturns : "暂无返还";
+					? BukovMessages.get(
+							"bukov.economy.services.claim_returns",
+							model.dueInsuranceReturns)
+					: BukovMessages.get(
+							"bukov.economy.services.no_returns");
 		}
 		return slotName(slot);
 	}
@@ -276,27 +327,42 @@ public final class WndBukovServices extends Window {
 	private boolean installedInSelectedSlot() {
 		BukovServicesViewModel.FirearmRow row =
 				model.firearms.get(focus.selectedRow());
-		if (slot == FirearmAttachmentSlot.OPTIC) return !"无".equals(row.optic);
-		if (slot == FirearmAttachmentSlot.MAGAZINE) return !"无".equals(row.magazine);
-		return !"无".equals(row.muzzle);
+		String none = BukovMessages.get("bukov.economy.services.none");
+		if (slot == FirearmAttachmentSlot.OPTIC) return !none.equals(row.optic);
+		if (slot == FirearmAttachmentSlot.MAGAZINE) return !none.equals(row.magazine);
+		return !none.equals(row.muzzle);
 	}
 
 	private String selectionSummary() {
 		if (!hasSelection()) {
-			if (tab == Tab.INSURANCE) return "请先在配装窗口选择带入物资";
-			if (tab == Tab.FIREARMS) return "仓库暂无枪械";
-			return "没有可用合同";
+			if (tab == Tab.INSURANCE) {
+				return BukovMessages.get(
+						"bukov.economy.services.empty_insurance");
+			}
+			if (tab == Tab.FIREARMS) {
+				return BukovMessages.get(
+						"bukov.economy.services.empty_firearms");
+			}
+			return BukovMessages.get(
+					"bukov.economy.services.empty_contracts");
 		}
 		if (tab == Tab.CONTRACTS) {
 			BukovServicesViewModel.ContractRow row =
 					model.contracts.get(focus.selectedRow());
-			return row.objective + " · 奖励 " + row.reward;
+			return BukovMessages.get(
+					"bukov.economy.services.contract_summary",
+					row.objective,
+					row.reward);
 		}
 		if (tab == Tab.INSURANCE) {
 			BukovServicesViewModel.InsuranceRow row =
 					model.insuranceItems.get(focus.selectedRow());
-			return row.label + " · 价值 " + row.value
-					+ (row.insured ? " · 已投保" : " · 未投保");
+			return BukovMessages.get(
+					row.insured
+							? "bukov.economy.services.insurance_summary_insured"
+							: "bukov.economy.services.insurance_summary",
+					row.label,
+					row.value);
 		}
 		return model.firearms.get(focus.selectedRow()).deltaLabel();
 	}
@@ -332,7 +398,9 @@ public final class WndBukovServices extends Window {
 					closeToHub();
 			}
 		} catch (IOException | RuntimeException error) {
-			showError("基地服务操作失败", error);
+			showError(
+					BukovMessages.get("bukov.economy.services.operation_failed"),
+					error);
 		}
 	}
 
@@ -346,23 +414,34 @@ public final class WndBukovServices extends Window {
 			reopen(tab, selected, slot,
 					result.status
 							== BukovLongTermContractService.ClaimStatus.CLAIMED
-							? "已领取 " + result.currencyGranted
-							: result.status.name());
+							? BukovMessages.get(
+									"bukov.economy.services.claim_done",
+									result.currencyGranted)
+							: BukovMessages.get(
+									result.status
+											== BukovLongTermContractService
+													.ClaimStatus.NOT_READY
+											? "bukov.economy.services.claim_not_ready"
+											: "bukov.economy.services.claim_already"));
 		} else if (tab == Tab.INSURANCE) {
 			BukovServicesViewModel.InsuranceRow row =
 					model.insuranceItems.get(selected);
 			boolean insured = controller.toggleInsurance(row.itemUid);
 			reopen(tab, selected, slot,
-					insured ? "投保完成" : "已取消投保");
+					BukovMessages.get(insured
+							? "bukov.economy.services.insure_done"
+							: "bukov.economy.services.uninsure_done"));
 		} else {
 			BukovServicesViewModel.FirearmRow row =
 					model.firearms.get(selected);
 			boolean installed =
 					controller.toggleAttachment(row.itemUid, slot);
 			reopen(tab, selected, slot,
-					installed
-							? slotName(slot) + " 已安装"
-							: slotName(slot) + " 已卸下");
+					BukovMessages.get(
+							installed
+									? "bukov.economy.services.install_done"
+									: "bukov.economy.services.remove_done",
+							slotName(slot)));
 		}
 	}
 
@@ -371,8 +450,10 @@ public final class WndBukovServices extends Window {
 			BukovInsuranceService.ClaimResult result =
 					controller.claimInsuranceReturns();
 			reopen(tab, focus.selectedRow(), slot,
-					"已返还 " + result.returnedItemUids.size()
-							+ " 件 · 价值 " + result.returnedValue);
+					BukovMessages.get(
+							"bukov.economy.services.returns_done",
+							result.returnedItemUids.size(),
+							result.returnedValue));
 		} else if (tab == Tab.FIREARMS) {
 			reopen(
 					tab,
@@ -416,7 +497,10 @@ public final class WndBukovServices extends Window {
 				? error.getClass().getSimpleName()
 				: error.getMessage();
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndMessage(title + "：\n" + detail));
+				new WndMessage(BukovMessages.get(
+						"bukov.economy.common.error_detail",
+						title,
+						detail)));
 	}
 
 	@Override
@@ -572,12 +656,19 @@ public final class WndBukovServices extends Window {
 		if (tab == Tab.CONTRACTS) {
 			BukovServicesViewModel.ContractRow row =
 					model.contracts.get(index);
-			return row.title + "  " + row.progressLabel();
+			return BukovMessages.get(
+					"bukov.economy.services.contract_row",
+					row.title,
+					row.progressLabel());
 		}
 		if (tab == Tab.INSURANCE) {
 			BukovServicesViewModel.InsuranceRow row =
 					model.insuranceItems.get(index);
-			return row.label + (row.insured ? "  ·  已投保" : "");
+			return row.insured
+					? BukovMessages.get(
+							"bukov.economy.services.insured_row",
+							row.label)
+					: row.label;
 		}
 		return model.firearms.get(index).label;
 	}
@@ -586,10 +677,15 @@ public final class WndBukovServices extends Window {
 		if (tab == Tab.CONTRACTS) {
 			BukovServicesViewModel.ContractRow row =
 					model.contracts.get(index);
-			return row.objective + " · 奖励 " + row.reward;
+			return BukovMessages.get(
+					"bukov.economy.services.contract_summary",
+					row.objective,
+					row.reward);
 		}
 		if (tab == Tab.INSURANCE) {
-			return "带入价值 " + model.insuranceItems.get(index).value;
+			return BukovMessages.get(
+					"bukov.economy.services.risk_value",
+					model.insuranceItems.get(index).value);
 		}
 		return model.firearms.get(index).slotsLabel()
 				+ "\n" + model.firearms.get(index).deltaLabel();
@@ -657,8 +753,12 @@ public final class WndBukovServices extends Window {
 	}
 
 	private static String slotName(FirearmAttachmentSlot slot) {
-		if (slot == FirearmAttachmentSlot.OPTIC) return "瞄具";
-		if (slot == FirearmAttachmentSlot.MAGAZINE) return "弹匣";
-		return "枪口";
+		if (slot == FirearmAttachmentSlot.OPTIC) {
+			return BukovMessages.get("bukov.economy.services.slot_optic");
+		}
+		if (slot == FirearmAttachmentSlot.MAGAZINE) {
+			return BukovMessages.get("bukov.economy.services.slot_magazine");
+		}
+		return BukovMessages.get("bukov.economy.services.slot_muzzle");
 	}
 }

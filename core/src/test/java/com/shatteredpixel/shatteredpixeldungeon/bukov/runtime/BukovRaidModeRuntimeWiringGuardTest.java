@@ -22,9 +22,16 @@ public class BukovRaidModeRuntimeWiringGuardTest {
 		assertTrue(world.contains("raidMode.maximumActiveEnemiesAt(elapsed)"));
 		assertTrue(world.contains("raidMode.convergenceStarted(elapsed)"));
 		assertTrue(world.contains("raidMode.overtime(elapsed)"));
-		assertTrue(coordinator.contains("raidMode.configureContainers("));
 		assertTrue(coordinator.contains(
-				"session().raidMode().configureContainers("));
+				"configureContainersForProfile(\n"
+						+ "\t\t\t\t\t\tprofile,\n"
+						+ "\t\t\t\t\t\traidMode,"));
+		assertTrue(coordinator.contains(
+				"configureContainersForProfile(\n"
+						+ "\t\t\t\t\t\tprofile,\n"
+						+ "\t\t\t\t\t\tsession().raidMode(),"));
+		assertTrue(coordinator.contains(
+				"raidMode.configureContainers(source, seed)"));
 		assertTrue(settlement.contains("raidMode.settleExtractedItem(item)"));
 		assertTrue(settlement.contains("\"|mode:\" + raidMode.name()"));
 	}

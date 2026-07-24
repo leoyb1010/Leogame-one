@@ -43,8 +43,9 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(source.contains("RenderedTextBlock label"));
 		assertTrue(source.contains("RenderedTextBlock value"));
 		assertTrue(source.contains("ColorBlock valueSurface"));
-		assertTrue(source.contains("即时生效 · 本地保存"));
-		assertTrue(source.contains("setCopy(\"性能档\""));
+		assertTrue(source.contains("entryMessage(\"settings.saved\")"));
+		assertTrue(source.contains(
+				"setCopy(entryMessage(\"settings.performance\")"));
 	}
 
 	@Test
@@ -53,8 +54,10 @@ public class BukovMenuProductQualityGuardTest {
 		String pause = source("WndBukovPause.java");
 		String backpack = source("WndBukovBackpack.java");
 
-		assertTrue(pause.contains("\"RESUME\""));
-		assertTrue(pause.contains("\"LEAVE RAID\""));
+		assertTrue(pause.contains(
+				"BukovMessages.get(\"bukov.raid.pause.resume_code\")"));
+		assertTrue(pause.contains(
+				"BukovMessages.get(\"bukov.raid.pause.leave_code\")"));
 		assertTrue(pause.contains("\"accent.danger\""));
 		assertTrue(pause.contains("BukovWindowLayout.safeWidth"));
 		assertTrue(backpack.contains("detailSurface"));
@@ -72,7 +75,7 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(hub.contains("divider.size(width - 8, 1)"));
 		assertTrue(vendor.contains("selection.size(width, height)"));
 		assertTrue(vendor.contains("focusEdge.size(width, 2)"));
-		assertTrue(vendor.contains("\"现金余额  \""));
+		assertTrue(vendor.contains("bukov.economy.vendor.balance"));
 	}
 
 	private static String source(String file) throws Exception {

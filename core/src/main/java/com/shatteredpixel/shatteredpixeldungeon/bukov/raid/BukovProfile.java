@@ -359,7 +359,7 @@ public final class BukovProfile implements Bundlable {
 		restored.profileVersion = restoredVersion;
 		restored.currency = restoredCurrency;
 		restored.stash.replaceWith((BukovStash) restoredStash);
-		if (restoredVersion >= 2) {
+		if (restoredVersion >= 2 && bundle.contains(LOADOUT)) {
 			Bundlable restoredLoadout = bundle.get(LOADOUT);
 			if (!(restoredLoadout instanceof BukovLoadout)) {
 				throw new IllegalStateException("Incomplete Bukov profile loadout");
@@ -452,7 +452,10 @@ public final class BukovProfile implements Bundlable {
 			}
 			restored.recordSettlement((SettlementReceipt) stored);
 		}
-		// v1 had no loadout; v1-v2 had no remembered deployment template;
+		// v1 and some pre-release v2+ profiles had no loadout field. Missing
+		// selection state safely migrates to empty and the hideout provisions
+		// a coherent recovery kit; malformed present data remains rejected.
+		// v1-v2 had no remembered deployment template;
 		// v1-v3 default to expedition and have no tutorial ledger.
 		// v1-v4 have no durable vendor transaction receipts; v1-v5 select
 		// the starting region until the player explicitly changes it.

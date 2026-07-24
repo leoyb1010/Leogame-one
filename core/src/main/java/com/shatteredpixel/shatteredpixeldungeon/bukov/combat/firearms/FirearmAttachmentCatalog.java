@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -18,15 +19,24 @@ public final class FirearmAttachmentCatalog {
 
 	static {
 		register(new FirearmAttachmentDefinition(
-				RED_DOT, "紧凑红点", FirearmAttachmentSlot.OPTIC,
+				RED_DOT,
+				BukovMessages.get(
+						"bukov.economy.services.attachment_red_dot"),
+				FirearmAttachmentSlot.OPTIC,
 				1f, 1.15f, 0.78f, 0.88f,
 				1f, 1f, 1f, 1f, 0.18f));
 		register(new FirearmAttachmentDefinition(
-				EXTENDED_MAG, "扩容弹匣", FirearmAttachmentSlot.MAGAZINE,
+				EXTENDED_MAG,
+				BukovMessages.get(
+						"bukov.economy.services.attachment_extended_mag"),
+				FirearmAttachmentSlot.MAGAZINE,
 				1f, 1f, 1f, 1f,
 				1f, 1.14f, 1.40f, 1f, 0.42f));
 		register(new FirearmAttachmentDefinition(
-				SUPPRESSOR, "战术抑制器", FirearmAttachmentSlot.MUZZLE,
+				SUPPRESSOR,
+				BukovMessages.get(
+						"bukov.economy.services.attachment_suppressor"),
+				FirearmAttachmentSlot.MUZZLE,
 				0.96f, 0.94f, 1f, 1f,
 				0.82f, 1f, 1f, 0.42f, 0.36f));
 	}

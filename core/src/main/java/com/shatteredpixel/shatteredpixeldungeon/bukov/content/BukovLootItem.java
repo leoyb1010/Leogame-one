@@ -1,7 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.content;
 
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.watabou.utils.Bundle;
+
+import java.util.Locale;
 
 /** One data-driven host Item class for first-raid loot, medicine and tools. */
 public final class BukovLootItem extends Item implements BukovEconomicItem {
@@ -81,7 +85,25 @@ public final class BukovLootItem extends Item implements BukovEconomicItem {
 
 	@Override
 	public String name() {
-		return displayName == null ? "未配置战利品" : displayName;
+		if (definitionId == null || definitionId.trim().isEmpty()) {
+			return BukovMessages.get(
+					"bukov.economy.content.item_unconfigured");
+		}
+		String normalized = definitionId.toLowerCase(Locale.ROOT)
+				.replace(':', '_');
+		String key = definitionId.startsWith("firearm:")
+				? "bukov.economy.item." + normalized
+				: "bukov.economy.content.item_" + normalized;
+		String localized = BukovMessages.get(key);
+		if (!Messages.NO_TEXT_FOUND.equals(localized)) {
+			return localized;
+		}
+		if (displayName != null && !displayName.trim().isEmpty()) {
+			return displayName;
+		}
+		return definitionId.replace(':', ' ')
+				.replace('_', ' ')
+				.trim();
 	}
 
 	@Override

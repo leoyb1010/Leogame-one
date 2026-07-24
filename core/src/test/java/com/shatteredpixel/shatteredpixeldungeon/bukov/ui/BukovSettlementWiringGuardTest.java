@@ -21,18 +21,22 @@ public class BukovSettlementWiringGuardTest {
 		assertTrue(scene.contains("bukovWorld.killCount()"));
 		assertTrue(scene.contains("RepeatLastLoadout"));
 		assertTrue(scene.contains("hub.repeatLastLoadout()"));
-		assertTrue(scene.contains("确认并返回藏身处")
+		assertTrue(scene.contains(
+				"bukov.economy.settlement.confirm_return")
 				|| read("src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java")
-						.contains("确认并返回藏身处"));
+						.contains(
+								"bukov.economy.settlement.confirm_return"));
 		assertTrue(read(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java")
-				.contains("沿用配装"));
+				.contains("bukov.economy.settlement.repeat_loadout"));
 		String settlement = read(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java");
 		assertTrue(settlement.contains("BukovSettlementRevealModel"));
 		assertTrue(settlement.contains("reveal.advance(Game.elapsed)"));
-		assertTrue(settlement.contains("[ 撤离确认 ]"));
-		assertTrue(settlement.contains("[ 行动损失 ]"));
+		assertTrue(settlement.contains(
+				"bukov.economy.settlement.stamp_success"));
+		assertTrue(settlement.contains(
+				"bukov.economy.settlement.stamp_failed"));
 		assertTrue(settlement.contains("BukovUiAssets.Stamp.EXTRACTED"));
 		assertTrue(settlement.contains("BukovUiAssets.Stamp.LOST"));
 		assertTrue(settlement.contains("if (skipReveal()) return;"));

@@ -34,4 +34,10 @@ public class BukovViewportTest {
 		assertEquals(120f, BukovViewport.resolveScroll(
 				120f, 240f, 240f, 1_024f, 4f), 0.0001f);
 	}
+
+	@Test
+	public void genuinelyTinyMapStillCenters() {
+		assertEquals(-80f, BukovViewport.resolveScroll(
+				0f, 40f, 240f, 80f, 4f), 0.0001f);
+	}
 }

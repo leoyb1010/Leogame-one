@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,36 +30,46 @@ public final class BukovCareerProgression {
 			Arrays.asList(
 					new Step(
 							FirstRaidMission.EVENT_ID,
-							"找回维修档案",
-							"取得维修间档案并成功撤离",
+							BukovMessages.get(
+									"bukov.economy.hub.contract_rust_workshop_title"),
+							BukovMessages.get(
+									"bukov.economy.hub.contract_rust_workshop_objective"),
 							"rust_workshop",
 							1,
 							0L),
 					new Step(
 							SAFE_RETURN,
-							"安全返航",
-							"累计完成 2 次成功撤离",
+							BukovMessages.get(
+									"bukov.economy.hub.contract_flooded_passage_title"),
+							BukovMessages.get(
+									"bukov.economy.hub.contract_flooded_passage_objective"),
 							"flooded_passage",
 							2,
 							0L),
 					new Step(
 							FIELD_SUPPLIER,
-							"前线补给",
-							"累计撤离 3 次，并带回价值 3000 的物资",
+							BukovMessages.get(
+									"bukov.economy.hub.contract_overgrown_yard_title"),
+							BukovMessages.get(
+									"bukov.economy.hub.contract_overgrown_yard_objective"),
 							"overgrown_yard",
 							3,
 							3000L),
 					new Step(
 							WHITE_LINE_HUNT,
-							"白线追猎",
-							"累计撤离 4 次，并带回价值 8000 的物资",
+							BukovMessages.get(
+									"bukov.economy.hub.contract_cold_storage_title"),
+							BukovMessages.get(
+									"bukov.economy.hub.contract_cold_storage_objective"),
 							"cold_storage",
 							4,
 							8000L),
 					new Step(
 							SEALED_LAB_CLEARANCE,
-							"封存层许可",
-							"累计撤离 5 次，并带回价值 15000 的物资",
+							BukovMessages.get(
+									"bukov.economy.hub.contract_sealed_lab_title"),
+							BukovMessages.get(
+									"bukov.economy.hub.contract_sealed_lab_objective"),
 							"sealed_lab",
 							5,
 							15000L)));
@@ -137,8 +148,14 @@ public final class BukovCareerProgression {
 				STEPS.size(),
 				unlocked,
 				ALL_MAPS.size(),
-				next == null ? "全部合同已完成" : next.title,
-				next == null ? "封存层已开放，继续自由搜掠" : next.objective,
+				next == null
+						? BukovMessages.get(
+								"bukov.economy.hub.contract_complete_title")
+						: next.title,
+				next == null
+						? BukovMessages.get(
+								"bukov.economy.hub.contract_complete_objective")
+						: next.objective,
 				next == null ? null : next.mapId);
 	}
 
@@ -147,13 +164,11 @@ public final class BukovCareerProgression {
 	}
 
 	public static String mapDisplayName(String mapId) {
-		if ("fog_depot".equals(mapId)) return "雾港回收区";
-		if ("rust_workshop".equals(mapId)) return "锈蚀工场";
-		if ("flooded_passage".equals(mapId)) return "沉水通道";
-		if ("overgrown_yard".equals(mapId)) return "荒草货场";
-		if ("cold_storage".equals(mapId)) return "冷库环线";
-		if ("sealed_lab".equals(mapId)) return "封存实验层";
-		return "未知区域";
+		if (ALL_MAPS.contains(mapId)) {
+			return BukovMessages.get(
+					"bukov.economy.hub.map_" + mapId);
+		}
+		return BukovMessages.get("bukov.economy.hub.map_unknown");
 	}
 
 	public static List<String> availableMapIds(BukovProfile profile) {
@@ -228,8 +243,12 @@ public final class BukovCareerProgression {
 		}
 
 		public String careerSummary() {
-			return "合同 " + completedContracts + "/" + totalContracts
-					+ " · 区域 " + unlockedMaps + "/" + totalMaps;
+			return BukovMessages.get(
+					"bukov.economy.hub.career_summary",
+					completedContracts,
+					totalContracts,
+					unlockedMaps,
+					totalMaps);
 		}
 	}
 }

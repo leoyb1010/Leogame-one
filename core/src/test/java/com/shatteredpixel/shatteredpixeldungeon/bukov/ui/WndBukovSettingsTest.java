@@ -5,6 +5,8 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.io.Reader;
+import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,25 +15,63 @@ import static org.junit.Assert.assertTrue;
 public class WndBukovSettingsTest {
 
 	@Test
-	public void labelsCoverAccessiblePresentationRanges() {
-		assertEquals("关闭", WndBukovSettings.scaleLabel(0, 4));
-		assertEquals("低", WndBukovSettings.scaleLabel(1, 4));
-		assertEquals("标准", WndBukovSettings.scaleLabel(2, 4));
-		assertEquals("强", WndBukovSettings.scaleLabel(4, 4));
-		assertEquals("柔暗", WndBukovSettings.brightnessLabel(-1));
-		assertEquals("标准", WndBukovSettings.brightnessLabel(0));
-		assertEquals("明亮", WndBukovSettings.brightnessLabel(1));
+	public void labelsCoverAccessiblePresentationRanges() throws Exception {
+		Properties english = entryMessages("");
+		Properties chinese = entryMessages("_zh");
+		assertEquals("OFF",
+				english.getProperty("bukov.entry.settings.off"));
+		assertEquals("关闭",
+				chinese.getProperty("bukov.entry.settings.off"));
+		assertEquals("LOW",
+				english.getProperty("bukov.entry.settings.low"));
+		assertEquals("低",
+				chinese.getProperty("bukov.entry.settings.low"));
+		assertEquals("STANDARD",
+				english.getProperty("bukov.entry.settings.standard"));
+		assertEquals("标准",
+				chinese.getProperty("bukov.entry.settings.standard"));
+		assertEquals("HIGH",
+				english.getProperty("bukov.entry.settings.strong"));
+		assertEquals("强",
+				chinese.getProperty("bukov.entry.settings.strong"));
+		assertEquals("SOFT DARK",
+				english.getProperty("bukov.entry.settings.dim"));
+		assertEquals("柔暗",
+				chinese.getProperty("bukov.entry.settings.dim"));
+		assertEquals("BRIGHT",
+				english.getProperty("bukov.entry.settings.bright"));
+		assertEquals("明亮",
+				chinese.getProperty("bukov.entry.settings.bright"));
+		assertEquals("LARGE HITS",
+				english.getProperty(
+						"bukov.entry.settings.large_damage"));
+		assertEquals("仅大伤害",
+				chinese.getProperty(
+						"bukov.entry.settings.large_damage"));
+		assertEquals("STANDARD %1$d%%",
+				english.getProperty(
+						"bukov.entry.settings.standard_percent"));
+		assertEquals("标准 %1$d%%",
+				chinese.getProperty(
+						"bukov.entry.settings.standard_percent"));
+
 		assertEquals("50%", WndBukovSettings.threeLevel(1));
 		assertEquals("100%", WndBukovSettings.threeLevel(2));
 		assertEquals("125%", WndBukovSettings.percentLevel(1));
-		assertEquals("仅大伤害",
-				WndBukovSettings.damageNumbersLabel(1));
-		assertEquals("标准 30%",
-				WndBukovSettings.aimAssistLabel(2));
 		assertEquals("16% / 96%",
 				WndBukovSettings.deadZoneLabel(16, 96));
 		assertEquals(2, WndBukovSettings.nextDeadZoneProfile(16));
 		assertEquals(2, WndBukovSettings.nextTriggerProfile(65));
+
+		String source = settingsSource();
+		assertTrue(source.contains("settings.off"));
+		assertTrue(source.contains("settings.low"));
+		assertTrue(source.contains("settings.standard"));
+		assertTrue(source.contains("settings.strong"));
+		assertTrue(source.contains("settings.dim"));
+		assertTrue(source.contains("settings.bright"));
+		assertTrue(source.contains("settings.large_damage"));
+		assertTrue(source.contains("settings.standard_percent"));
 	}
 
 	@Test
@@ -50,21 +90,30 @@ public class WndBukovSettingsTest {
 	@Test
 	public void legalEntryUsesPackagedNoticesWithoutLegacyPromotion()
 			throws Exception {
-		String source = new String(
-				Files.readAllBytes(Paths.get(
-						"src/main/java/com/shatteredpixel/shatteredpixeldungeon"
-								+ "/bukov/ui/WndBukovSettings.java")),
-				StandardCharsets.UTF_8);
+		String source = settingsSource();
+		String chineseNotice = entryMessages("_zh").getProperty(
+				"bukov.entry.settings.legal_notice");
+		String englishNotice = entryMessages("").getProperty(
+				"bukov.entry.settings.legal_notice");
 
-		assertTrue(source.contains("\"开源许可 / Legal\""));
-		assertTrue(source.contains("legal/LICENSE.txt"));
-		assertTrue(source.contains("legal/THIRD_PARTY_NOTICES.txt"));
-		assertTrue(source.contains("不附带任何担保"));
 		assertTrue(source.contains(
-				"法律信息保留，不代表当前游戏的产品身份"));
-		assertFalse(source.contains("ShatteredPixel.com"));
-		assertFalse(source.contains("patreon.com"));
-		assertFalse(source.contains("AboutScene"));
+				"entryMessage(\"settings.legal_notice\")"));
+		assertTrue(chineseNotice.contains("legal/LICENSE.txt"));
+		assertTrue(chineseNotice.contains(
+				"legal/THIRD_PARTY_NOTICES.txt"));
+		assertTrue(chineseNotice.contains("不附带任何担保"));
+		assertTrue(chineseNotice.contains("对应源码说明"));
+		assertTrue(chineseNotice.contains("上游署名"));
+		assertTrue(chineseNotice.contains("第三方声明"));
+		assertTrue(englishNotice.contains("without warranty"));
+		assertTrue(englishNotice.contains(
+				"corresponding-source information"));
+		assertTrue(englishNotice.contains("upstream attribution"));
+		assertTrue(englishNotice.contains("third-party notices"));
+		assertFalse(chineseNotice.contains("ShatteredPixel.com"));
+		assertFalse(chineseNotice.contains("patreon.com"));
+		assertFalse(englishNotice.contains("ShatteredPixel.com"));
+		assertFalse(englishNotice.contains("patreon.com"));
 
 		String notices = new String(
 				Files.readAllBytes(Paths.get(
@@ -75,5 +124,25 @@ public class WndBukovSettingsTest {
 		assertTrue(notices.contains(
 				"Required\nupstream attribution remains"));
 		assertFalse(notices.contains("in-game\ncredits"));
+	}
+
+	private static String settingsSource() throws Exception {
+		return new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/java/com/shatteredpixel/shatteredpixeldungeon"
+								+ "/bukov/ui/WndBukovSettings.java")),
+				StandardCharsets.UTF_8);
+	}
+
+	private static Properties entryMessages(String suffix)
+			throws Exception {
+		Properties properties = new Properties();
+		try (Reader reader = Files.newBufferedReader(
+				Paths.get("src/main/assets/messages/bukov_entry/"
+						+ "bukov_entry" + suffix + ".properties"),
+				StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
+		return properties;
 	}
 }

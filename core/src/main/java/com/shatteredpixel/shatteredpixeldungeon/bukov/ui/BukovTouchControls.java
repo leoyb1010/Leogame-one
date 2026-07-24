@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.input.PointerEvent;
@@ -17,6 +18,8 @@ import com.watabou.utils.PointF;
  * optional listener.
  */
 public final class BukovTouchControls extends Component {
+
+	private static final int COMPACT_LABEL_REDUCTION_PX = 2;
 
 	public interface Listener {
 		void onActionPressed(BukovTouchState.Action action);
@@ -46,7 +49,7 @@ public final class BukovTouchControls extends Component {
 		tokens = BukovUiTokens.loadDefault();
 		movement = new TouchStick(
 				BukovTouchState.Stick.MOVEMENT,
-				"移动",
+				BukovMessages.get("bukov.raid.touch.movement"),
 				tokens.colorWithAlpha("panel.surface", 0xBB),
 				tokens.color("accent.interact")
 		);
@@ -54,7 +57,7 @@ public final class BukovTouchControls extends Component {
 
 		aimFire = new TouchStick(
 				BukovTouchState.Stick.AIM_FIRE,
-				"瞄准 · 射击",
+				BukovMessages.get("bukov.raid.touch.aim_fire"),
 				tokens.colorWithAlpha("panel.surface", 0xBB),
 				tokens.color("accent.danger")
 		);
@@ -62,32 +65,32 @@ public final class BukovTouchControls extends Component {
 
 		interact = action(
 				BukovTouchState.Action.INTERACT,
-				"交互",
+				BukovMessages.get("bukov.raid.touch.interact"),
 				tokens.colorWithAlpha("panel.surface", 0xDD),
 				tokens.color("accent.interact"));
 		reload = action(
 				BukovTouchState.Action.RELOAD,
-				"换弹",
+				BukovMessages.get("bukov.raid.touch.reload"),
 				tokens.colorWithAlpha("panel.surface", 0xDD),
 				tokens.color("text.secondary"));
 		medical = action(
 				BukovTouchState.Action.MEDICAL,
-				"医疗",
+				BukovMessages.get("bukov.raid.touch.medical"),
 				tokens.colorWithAlpha("panel.surface", 0xDD),
 				tokens.color("accent.extract"));
 		drop = action(
 				BukovTouchState.Action.DROP,
-				"丢弃",
+				BukovMessages.get("bukov.raid.touch.drop"),
 				tokens.colorWithAlpha("panel.surface", 0xDD),
 				tokens.color("accent.valuable"));
 		backpack = action(
 				BukovTouchState.Action.BACKPACK,
-				"背包",
+				BukovMessages.get("bukov.raid.touch.backpack"),
 				tokens.colorWithAlpha("panel.surface", 0xE0),
 				tokens.color("accent.interact"));
 		pause = action(
 				BukovTouchState.Action.PAUSE,
-				"暂停",
+				BukovMessages.get("bukov.raid.touch.pause"),
 				tokens.colorWithAlpha("panel.surface", 0xE0),
 				tokens.color("text.secondary"));
 	}
@@ -157,6 +160,14 @@ public final class BukovTouchControls extends Component {
 		if (blocked) {
 			resetInput();
 		}
+		movement.setDisabled(blocked);
+		aimFire.setDisabled(blocked);
+		interact.setDisabled(blocked);
+		reload.setDisabled(blocked);
+		medical.setDisabled(blocked);
+		drop.setDisabled(blocked);
+		backpack.setDisabled(blocked);
+		pause.setDisabled(blocked);
 		active = !blocked;
 	}
 
@@ -222,6 +233,50 @@ public final class BukovTouchControls extends Component {
 		return camera().screenToCamera((int)event.current.x, (int)event.current.y);
 	}
 
+	static BukovTouchIcon.Glyph iconFor(BukovTouchState.Stick stick) {
+		if (stick == null) {
+			throw new IllegalArgumentException("stick is required");
+		}
+		return stick == BukovTouchState.Stick.MOVEMENT
+				? BukovTouchIcon.Glyph.MOVEMENT
+				: BukovTouchIcon.Glyph.AIM_FIRE;
+	}
+
+	static BukovTouchIcon.Glyph iconFor(BukovTouchState.Action action) {
+		if (action == null) {
+			throw new IllegalArgumentException("action is required");
+		}
+		switch (action) {
+			case INTERACT:
+				return BukovTouchIcon.Glyph.INTERACT;
+			case RELOAD:
+				return BukovTouchIcon.Glyph.RELOAD;
+			case MEDICAL:
+				return BukovTouchIcon.Glyph.MEDICAL;
+			case DROP:
+				return BukovTouchIcon.Glyph.DROP;
+			case BACKPACK:
+				return BukovTouchIcon.Glyph.BACKPACK;
+			case PAUSE:
+				return BukovTouchIcon.Glyph.PAUSE;
+			default:
+				throw new IllegalArgumentException("unsupported action: " + action);
+		}
+	}
+
+	private static String compactActionLabel(String value) {
+		if (value == null) {
+			return "";
+		}
+		String normalized = value.trim();
+		int count = normalized.codePointCount(0, normalized.length());
+		if (count <= 5) {
+			return normalized;
+		}
+		int end = normalized.offsetByCodePoints(0, 4);
+		return normalized.substring(0, end) + ".";
+	}
+
 	private final class TouchStick extends Component {
 		private final BukovTouchState.Stick stick;
 		private final String text;
@@ -232,9 +287,11 @@ public final class BukovTouchControls extends Component {
 		private ColorBlock horizontalGuide;
 		private ColorBlock verticalGuide;
 		private ColorBlock knob;
+		private BukovTouchIcon icon;
 		private RenderedTextBlock label;
 		private PointerArea pointerArea;
 		private int pointerId = -1;
+		private boolean disabled;
 
 		private TouchStick(
 				BukovTouchState.Stick stick,
@@ -256,7 +313,8 @@ public final class BukovTouchControls extends Component {
 		private void buildChildren() {
 			background = new ColorBlock(1, 1, restingBackground);
 			add(background);
-			topEdge = new ColorBlock(1, 1, accentColor);
+			topEdge = new ColorBlock(
+					1, 1, BukovTouchIcon.withFullAlpha(accentColor));
 			add(topEdge);
 			horizontalGuide = new ColorBlock(
 					1, 1,
@@ -266,13 +324,23 @@ public final class BukovTouchControls extends Component {
 					1, 1,
 					tokens.colorWithAlpha("text.secondary", 0x66));
 			add(verticalGuide);
-			knob = new ColorBlock(1, 1, accentColor);
+			knob = new ColorBlock(
+					1, 1, BukovTouchIcon.withFullAlpha(accentColor));
 			knob.alpha(0.80f);
 			add(knob);
+			icon = new BukovTouchIcon(
+					iconFor(stick),
+					tokens.color("text.secondary"),
+					accentColor,
+					tokens.color("text.disabled"));
+			add(icon);
 			label = PixelScene.renderTextBlock(
 					text,
-					tokens.typographyPx(
-							BukovVisualContract.FONT_CAPTION));
+					Math.max(
+							6,
+							tokens.typographyPx(
+									BukovVisualContract.FONT_CAPTION)
+									- COMPACT_LABEL_REDUCTION_PX));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
@@ -344,7 +412,19 @@ public final class BukovTouchControls extends Component {
 			verticalGuide.x = centerX();
 			verticalGuide.y = y + height * 0.18f;
 			verticalGuide.size(1f, height * 0.64f);
-			label.setRect(x + 2f, y + 3f, width - 4f, 8f);
+			float iconSize = Math.max(
+					9f,
+					Math.min(14f, width * 0.20f));
+			icon.setRect(
+					right() - iconSize - 3f,
+					y + 3f,
+					iconSize,
+					iconSize);
+			label.setRect(
+					x + 3f,
+					y + 3f,
+					Math.max(1f, width - iconSize - 8f),
+					7f);
 			pointerArea.x = x;
 			pointerArea.y = y;
 			pointerArea.width = width;
@@ -378,11 +458,27 @@ public final class BukovTouchControls extends Component {
 		}
 
 		private void setPressed(boolean pressed) {
-			background.alpha(pressed ? 0.95f : 0.72f);
-			knob.alpha(pressed ? 1f : 0.80f);
-			label.hardlight(pressed
-					? accentColor
-					: tokens.color("text.primary"));
+			boolean visiblyPressed = pressed && !disabled;
+			background.alpha(disabled
+					? 0.45f
+					: visiblyPressed ? 0.95f : 0.72f);
+			knob.alpha(disabled
+					? 0.40f
+					: visiblyPressed ? 1f : 0.80f);
+			topEdge.hardlight(disabled
+					? tokens.color("text.disabled")
+					: accentColor);
+			label.hardlight(disabled
+					? tokens.color("text.disabled")
+					: visiblyPressed
+							? accentColor
+							: tokens.color("text.primary"));
+			icon.visualState(visiblyPressed, disabled);
+		}
+
+		private void setDisabled(boolean disabled) {
+			this.disabled = disabled;
+			setPressed(false);
 		}
 
 		private void resetInteraction() {
@@ -405,11 +501,14 @@ public final class BukovTouchControls extends Component {
 		private final String text;
 		private final int restingBackground;
 		private final int accentColor;
+		private ColorBlock shadow;
 		private ColorBlock background;
 		private ColorBlock edge;
+		private BukovTouchIcon icon;
 		private RenderedTextBlock label;
 		private PointerArea pointerArea;
 		private int pointerId = -1;
+		private boolean disabled;
 
 		private TouchAction(
 				BukovTouchState.Action action,
@@ -429,14 +528,28 @@ public final class BukovTouchControls extends Component {
 		}
 
 		private void buildChildren() {
+			shadow = new ColorBlock(
+					1, 1,
+					tokens.colorWithAlpha("ink.shadow", 0xCC));
+			add(shadow);
 			background = new ColorBlock(1, 1, restingBackground);
 			add(background);
-			edge = new ColorBlock(1, 1, accentColor);
+			edge = new ColorBlock(
+					1, 1, BukovTouchIcon.withFullAlpha(accentColor));
 			add(edge);
+			icon = new BukovTouchIcon(
+					iconFor(action),
+					tokens.color("text.primary"),
+					accentColor,
+					tokens.color("text.disabled"));
+			add(icon);
 			label = PixelScene.renderTextBlock(
-					text,
-					tokens.typographyPx(
-							BukovVisualContract.FONT_CAPTION));
+					compactActionLabel(text),
+					Math.max(
+							6,
+							tokens.typographyPx(
+									BukovVisualContract.FONT_CAPTION)
+									- COMPACT_LABEL_REDUCTION_PX));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
@@ -480,13 +593,33 @@ public final class BukovTouchControls extends Component {
 			if (background == null) {
 				return;
 			}
+			float pressedOffset = pointerId != -1 && !disabled ? 1f : 0f;
+			shadow.x = x + 1f;
+			shadow.y = y + 2f;
+			shadow.size(
+					Math.max(1f, width - 2f),
+					Math.max(1f, height - 2f));
 			background.x = x;
-			background.y = y;
-			background.size(width, height);
+			background.y = y + pressedOffset;
+			background.size(width, Math.max(1f, height - 2f));
 			edge.x = x;
-			edge.y = y;
-			edge.size(width, 1.5f);
-			label.setRect(x + 1f, y + (height - 8f) * 0.5f, width - 2f, 8f);
+			edge.y = y + pressedOffset;
+			edge.size(width, pointerId != -1 && !disabled ? 2f : 1.5f);
+			float iconSize = Math.max(
+					8f,
+					Math.min(
+							13f,
+							Math.min(width - 4f, height * 0.50f)));
+			icon.setRect(
+					centerX() - iconSize * 0.5f,
+					y + 2f,
+					iconSize,
+					iconSize);
+			label.setRect(
+					x + 1f,
+					bottom() - 7f,
+					Math.max(1f, width - 2f),
+					6f);
 			pointerArea.x = x;
 			pointerArea.y = y;
 			pointerArea.width = width;
@@ -494,10 +627,28 @@ public final class BukovTouchControls extends Component {
 		}
 
 		private void setPressed(boolean pressed) {
-			background.alpha(pressed ? 1f : 0.82f);
-			label.hardlight(pressed
-					? accentColor
-					: tokens.color("text.primary"));
+			boolean visiblyPressed = pressed && !disabled;
+			background.alpha(disabled
+					? 0.48f
+					: visiblyPressed ? 1f : 0.82f);
+			shadow.alpha(disabled
+					? 0.30f
+					: visiblyPressed ? 0.35f : 0.90f);
+			edge.hardlight(disabled
+					? tokens.color("text.disabled")
+					: accentColor);
+			label.hardlight(disabled
+					? tokens.color("text.disabled")
+					: visiblyPressed
+							? accentColor
+							: tokens.color("text.secondary"));
+			icon.visualState(visiblyPressed, disabled);
+			layout();
+		}
+
+		private void setDisabled(boolean disabled) {
+			this.disabled = disabled;
+			setPressed(false);
 		}
 
 		private void resetInteraction() {
@@ -513,4 +664,5 @@ public final class BukovTouchControls extends Component {
 			}
 		}
 	}
+
 }

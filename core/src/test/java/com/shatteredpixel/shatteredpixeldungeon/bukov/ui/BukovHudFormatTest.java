@@ -16,32 +16,32 @@ public class BukovHudFormatTest {
 	@Test
 	public void formatsLiveVitalsAndAmmo() {
 		assertEquals("HP 72/100 +12", BukovHudFormat.health(72, 100, 12));
-		assertEquals("护甲 2-8", BukovHudFormat.armor(2, 8));
-		assertEquals("护甲 --", BukovHudFormat.armor(null, null));
-		assertEquals("弹药 17 / 90", BukovHudFormat.ammo(17, 90));
-		assertEquals("弹药 -- / --", BukovHudFormat.ammo(null, null));
+		assertEquals("Armor 2-8", BukovHudFormat.armor(2, 8));
+		assertEquals("Armor --", BukovHudFormat.armor(null, null));
+		assertEquals("Ammo 17 / 90", BukovHudFormat.ammo(17, 90));
+		assertEquals("Ammo -- / --", BukovHudFormat.ammo(null, null));
 		assertEquals("17 | 90", BukovHudFormat.tacticalAmmo(
-				"针蜂-9", 17, 24, 90));
+				"Needlebee-9", 17, 24, 90));
 		assertEquals("-- | --", BukovHudFormat.tacticalAmmo(
 				null, 17, 24, 90));
-		assertEquals("针蜂-9 · 单发",
-				BukovHudFormat.weapon("针蜂-9", false));
-		assertEquals("城防-556 · 自动",
-				BukovHudFormat.weapon("城防-556", true));
+		assertEquals("Needlebee-9 · Single",
+				BukovHudFormat.weapon("Needlebee-9", false));
+		assertEquals("Ward-556 · Auto",
+				BukovHudFormat.weapon("Ward-556", true));
 	}
 
 	@Test
 	public void fallsBackToRequiredFirstRaidObjective() {
 		assertEquals(BukovHudFormat.DEFAULT_OBJECTIVE, BukovHudFormat.objective("  "));
-		assertEquals("开启泵站", BukovHudFormat.objective("  开启泵站  "));
+		assertEquals("Start pump", BukovHudFormat.objective("  Start pump  "));
 	}
 
 	@Test
 	public void formatsInjuriesReloadAndInteractionWithoutFrameUnits() {
-		assertEquals("状态稳定",
+		assertEquals("Stable",
 				BukovHudFormat.status(0f, false, 0f, 0f, 0f));
 		assertEquals(
-				"流血 0.4/秒 · 骨折 · 震荡 2.5秒 · 疼痛",
+				"Bleeding 0.4/s · Fracture · Concussion 2.5s · Pain",
 				BukovHudFormat.status(0.4f, true, 0.2f, 2.5f, 0f));
 		assertEquals("∞",
 				BukovHudFormat.injuryRemaining(true, 0f));
@@ -49,51 +49,51 @@ public class BukovHudFormatTest {
 				BukovHudFormat.injuryRemaining(true, 2.5f));
 		assertEquals("",
 				BukovHudFormat.injuryRemaining(false, 9f));
-		assertEquals("换弹 35%", BukovHudFormat.reload(true, 0.35f));
+		assertEquals("Reload 35%", BukovHudFormat.reload(true, 0.35f));
 		assertEquals(
-				"按住互动 · 搜索容器 · 1.2秒",
+				"Hold interact · Search container · 1.2s",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
-						"搜索容器",
+						"Search container",
 						0f,
 						1.2f));
 		assertEquals(
-				"按住 E · 搜索容器 · 1.2秒",
+				"Hold E · Search container · 1.2s",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
-						"搜索容器",
+						"Search container",
 						0f,
 						1.2f,
 						true));
 		assertEquals(
-				"按 E · 拾取物资 · 背包查看负重/价值",
+				"Press E · Pick up supplies · View weight/value in backpack",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.PICKUP,
-						"拾取物资",
+						"Pick up supplies",
 						0f,
 						0f,
 						true));
 		assertEquals(
-				"按 E · 使用维修钥匙解锁",
+				"Press E · Unlock with maintenance key",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.UNLOCK,
-						"使用维修钥匙解锁",
+						"Unlock with maintenance key",
 						0f,
 						0f,
 						true));
 		assertEquals(
-				"不可交互 · 需要维修钥匙",
+				"Unavailable · Maintenance key required",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.LOCKED,
-						"需要维修钥匙",
+						"Maintenance key required",
 						0f,
 						0f,
 						true));
 		assertEquals(
-				"搜索容器 50%",
+				"Search container 50%",
 				BukovHudFormat.interaction(
 						BukovRaidHudState.Interaction.SEARCH,
-						"搜索容器",
+						"Search container",
 						0.5f,
 						1.2f));
 	}
@@ -101,13 +101,13 @@ public class BukovHudFormatTest {
 	@Test
 	public void formatsExtractionAvailabilityAndActiveCountdown() {
 		assertEquals(
-				"撤离点 2 可用",
+				"Extraction points available: 2",
 				BukovHudFormat.extraction(2, null, false, false, 0f, 0f));
 		assertEquals(
-				"撤离 E02 · 未开放",
+				"Extract E02 · Locked",
 				BukovHudFormat.extraction(1, "E02", false, false, 0f, 8f));
 		assertEquals(
-				"撤离 E01 · 3.0秒",
+				"Extract E01 · 3.0s",
 				BukovHudFormat.extraction(1, "E01", true, true, 0.4f, 5f));
 	}
 }

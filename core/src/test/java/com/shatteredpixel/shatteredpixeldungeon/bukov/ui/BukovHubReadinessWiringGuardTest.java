@@ -21,13 +21,24 @@ public class BukovHubReadinessWiringGuardTest {
 		assertTrue(source.contains(
 				"state.canDeploy\n"
 						+ "\t\t\t\t\t\t\t\t\t? \"accent.extract\""));
-		assertTrue(source.contains("\"确认出击\""));
-		assertTrue(source.contains("\"补齐并出击\""));
+		assertTrue(source.contains("\"hub.button_confirm\""));
+		assertTrue(source.contains("\"hub.button_prepare\""));
+		assertTrue(source.contains(
+				"return BukovMessages.get(\"bukov.entry.\" + key, args);"));
 		assertTrue(source.contains(
 				"controller.prepareAndConfirmDeployment();"));
 		assertTrue(source.contains(
 				"controller.prepareAndConfirmDeployment();\n"
-						+ "\t\t\t\t\t\t\tdeploy();"));
+						+ "\t\t\t\t\t\t\tenterDeploymentScene();"));
+		assertTrue(source.contains(
+				"BukovHubViewModel currentState =\n"
+						+ "\t\t\t\t\t\t\t\tcontroller.viewModel();"));
+		assertTrue(source.contains(
+				"new WndBukovHub(\n"
+						+ "\t\t\t\tcontroller,"));
+		assertTrue(source.contains(
+				"public void call() {\n"
+						+ "\t\t\t\t\t\treload();"));
 	}
 
 	@Test
@@ -38,15 +49,21 @@ public class BukovHubReadinessWiringGuardTest {
 		assertTrue(source.contains(
 				"return viewModel.deploymentReadinessHeadline();"));
 		assertTrue(source.contains(
-				"\"配装已就绪 / 可立即出击 · \""));
+				"bukov.economy.hub.status_last_success"));
 		assertTrue(source.contains(
-				"!viewModel.canDeploy ? \"补齐并出击\" : \"确认出击\""));
+				"bukov.economy.hub.repair_deploy"));
+		assertTrue(source.contains(
+				"bukov.economy.hub.confirm_deploy"));
 		assertTrue(source.contains(
 				"controller.prepareAndConfirmDeployment();"));
 		assertTrue(source.contains(
 				"controller.prepareAndConfirmDeployment();\n"
 						+ "\t\t\t\t\t\thide();\n"
 						+ "\t\t\t\t\t\tdeploy.call();"));
+		assertTrue(source.contains("private final Callback closed;"));
+		assertTrue(source.contains(
+				"hide();\n"
+						+ "\t\t\t\t\tclosed.call();"));
 	}
 
 	private static String source(String relative) throws Exception {

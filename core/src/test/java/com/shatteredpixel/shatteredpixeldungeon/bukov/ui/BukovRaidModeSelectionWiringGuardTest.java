@@ -21,7 +21,8 @@ public class BukovRaidModeSelectionWiringGuardTest {
 		assertTrue(hub.contains("focus.focus(inventoryItems.size())"));
 		assertTrue(hub.contains("int restoredFocus = focus.index()"));
 		assertTrue(hub.contains("restoredFocus,"));
-		assertTrue(hub.contains("\"  [选择]\""));
+		assertTrue(hub.contains(
+				"\"bukov.economy.hub.mode_select\""));
 		assertFalse(hub.contains("ModeCycleButton"));
 		assertFalse(hub.contains("controller.cycleRaidMode()"));
 	}
@@ -39,7 +40,8 @@ public class BukovRaidModeSelectionWiringGuardTest {
 		assertTrue(selector.contains("focus.draftMode()"));
 		assertTrue(selector.contains("focus.applyEnabled()"));
 		assertTrue(selector.contains("viewModel.locked"));
-		assertTrue(selector.contains("[当前/锁定]"));
+		assertTrue(selector.contains(
+				"\"bukov.economy.mode.badge_current_locked\""));
 	}
 
 	@Test

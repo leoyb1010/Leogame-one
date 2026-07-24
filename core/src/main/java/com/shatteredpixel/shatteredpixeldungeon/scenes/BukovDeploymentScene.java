@@ -20,6 +20,9 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Languages;
+import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -123,7 +126,7 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(rule);
 
 		RenderedTextBlock eyebrow = renderTextBlock(
-				"ACTION CHECK  /  行动检查",
+				entryMessage("deployment.eyebrow"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
@@ -133,7 +136,7 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(eyebrow);
 
 		RenderedTextBlock title = renderTextBlock(
-				"逃离布科夫",
+				entryMessage("brand.chinese_title"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_TITLE));
 		title.hardlight(tokens.color("accent.valuable"));
@@ -144,7 +147,7 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(title);
 
 		status = renderTextBlock(
-				"行动部署中",
+				entryMessage("deployment.status"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_SECTION));
 		status.hardlight(tokens.color("accent.extract"));
@@ -154,7 +157,7 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(status);
 
 		RenderedTextBlock detail = renderTextBlock(
-				"正在校验：配装 · 行动员 · 地图种子 · 检查点",
+				entryMessage("deployment.detail"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		detail.hardlight(tokens.color("text.secondary"));
@@ -217,11 +220,12 @@ public final class BukovDeploymentScene extends PixelScene {
 				return;
 			case SETTLE_INTERRUPTED_CHECKPOINT:
 				settleInterruptedCheckpoint(
-						new IOException("行动检查点缺少宿主存档"),
+						new IOException(entryMessage(
+								"deployment.checkpoint_missing_host")),
 						checkpoint);
 				throw new IOException(
-						"上次行动地图缺失，已按中断行动完成结算；"
-								+ "请返回藏身处重新配装");
+						entryMessage(
+								"deployment.interrupted_settled"));
 			case ARCHIVE_ORPHAN_HOST:
 				archiveVerifiedOrphanHost();
 				createNewRaid();
@@ -259,13 +263,12 @@ public final class BukovDeploymentScene extends PixelScene {
 		}
 		if (checkpoint.session().seed != Dungeon.seed) {
 			IOException mismatch = new IOException(
-					"行动检查点与宿主存档种子不一致");
+					entryMessage("deployment.seed_mismatch"));
 			ShatteredPixelDungeon.reportException(mismatch);
 			archiveOrphanBukovHost();
 			checkpoint.settleDeath();
 			throw new IOException(
-					"行动地图与检查点不匹配，旧地图已安全归档且"
-							+ "行动已结算；请返回藏身处重新配装");
+					entryMessage("deployment.mismatch_settled"));
 		}
 		Dungeon.switchLevel(level, Dungeon.hero.pos);
 	}
@@ -281,7 +284,7 @@ public final class BukovDeploymentScene extends PixelScene {
 		ShatteredPixelDungeon.reportException(cause);
 		if (interrupted == null) {
 			throw new IOException(
-					"Missing coordinator for interrupted checkpoint",
+					entryMessage("deployment.coordinator_missing"),
 					cause);
 		}
 		interrupted.settleDeath();
@@ -315,7 +318,8 @@ public final class BukovDeploymentScene extends PixelScene {
 		FileHandle source = FileUtils.getFileHandle(
 				GamesInProgress.gameFolder(BukovMode.SAVE_SLOT));
 		if (source == null || !source.exists() || !source.isDirectory()) {
-			throw new IOException("待归档的布科夫宿主存档不存在");
+			throw new IOException(
+					entryMessage("deployment.archive_missing"));
 		}
 		FileHandle archiveRoot =
 				FileUtils.getFileHandle("bukov_orphan_archives");
@@ -339,27 +343,28 @@ public final class BukovDeploymentScene extends PixelScene {
 					|| !archivedGame.exists()
 					|| archivedGame.length() <= 1L) {
 				throw new IOException(
-						"布科夫孤儿宿主存档归档校验失败");
+						entryMessage(
+								"deployment.archive_validation_failed"));
 			}
 			GamesInProgress.delete(BukovMode.SAVE_SLOT);
 			return target.path();
 		} catch (RuntimeException failure) {
 			throw new IOException(
-					"无法安全归档布科夫孤儿宿主存档",
+					entryMessage("deployment.archive_failed"),
 					failure);
 		}
 	}
 
 	private static IOException preservedHostFailure(Throwable cause) {
 		return new IOException(
-				"宿主存档无法确认属于布科夫，已原样保留；未创建新行动",
+				entryMessage("deployment.host_preserved"),
 				cause);
 	}
 
 	private static void requireBukovLevel(Level level) throws IOException {
 		if (!(level instanceof BukovLevel)) {
 			throw new IOException(
-					"行动存档不是布科夫地图，请返回藏身处重新部署");
+					entryMessage("deployment.not_bukov_map"));
 		}
 	}
 
@@ -372,7 +377,8 @@ public final class BukovDeploymentScene extends PixelScene {
 			if (dotTimer >= 0.35f) {
 				dotTimer = 0f;
 				dots = (dots + 1) % 4;
-				StringBuilder label = new StringBuilder("行动部署中");
+				StringBuilder label = new StringBuilder(
+						entryMessage("deployment.status"));
 				for (int i = 0; i < dots; i++) {
 					label.append('.');
 				}
@@ -391,12 +397,10 @@ public final class BukovDeploymentScene extends PixelScene {
 			Game.switchScene(GameScene.class);
 		} else {
 			ShatteredPixelDungeon.reportException(failure);
-			String message = failure.getMessage();
-			if (message == null || message.length() == 0) {
-				message = failure.getClass().getSimpleName();
-			}
-			final String detail = message;
-			addToFront(new WndMessage("行动部署失败：\n" + detail) {
+			final String detail = safeFailureDetail(failure);
+			addToFront(new WndMessage(entryMessage(
+					"deployment.error_heading",
+					detail)) {
 				@Override
 				public void onBackPressed() {
 					super.onBackPressed();
@@ -411,5 +415,31 @@ public final class BukovDeploymentScene extends PixelScene {
 		// animated ellipsis changes width.
 		status.setPos(status.left(), y);
 		align(status);
+	}
+
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
+	}
+
+	private static String safeFailureDetail(Throwable error) {
+		String detail = error.getMessage();
+		if (detail == null || detail.length() == 0) {
+			detail = error.getClass().getSimpleName();
+		}
+		return Messages.lang() == Languages.ENGLISH && containsCjk(detail)
+				? entryMessage("deployment.error_generic")
+				: detail;
+	}
+
+	private static boolean containsCjk(String value) {
+		for (int i = 0; i < value.length(); i++) {
+			char character = value.charAt(i);
+			if (character >= '\u2E80' && character <= '\u9FFF'
+					|| character >= '\uF900'
+							&& character <= '\uFAFF') {
+				return true;
+			}
+		}
+		return false;
 	}
 }

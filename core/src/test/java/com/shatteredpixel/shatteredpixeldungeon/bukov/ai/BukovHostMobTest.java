@@ -27,7 +27,7 @@ public class BukovHostMobTest {
 	public void definitionControlsHostStatsAndBukovSprite() {
 		EnemyArchetypeDefinition definition = new EnemyArchetypeDefinition();
 		definition.id = "test_guard";
-		definition.name = "测试卫兵";
+		definition.name = "Test Guard";
 		definition.tier = EnemyTier.COMMON;
 		definition.role = EnemyRole.ARMORED_SUPPRESSOR;
 		definition.hostClassHint = "Guard";
@@ -49,7 +49,7 @@ public class BukovHostMobTest {
 		BukovHostMob mob = new BukovHostMob().configure(definition);
 
 		assertEquals("test_guard", mob.definitionId());
-		assertEquals("测试卫兵", mob.name());
+		assertEquals("Test Guard", mob.name());
 		assertEquals(46, mob.HT);
 		assertEquals(46, mob.HP);
 		assertSame(BukovArmoredSprite.class, mob.spriteClass);

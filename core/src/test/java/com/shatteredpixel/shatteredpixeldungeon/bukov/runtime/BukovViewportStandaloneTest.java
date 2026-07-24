@@ -35,8 +35,8 @@ public final class BukovViewportStandaloneTest {
 	}
 
 	private static void centersMapsSmallerThanTheViewport() {
-		assertNear(-20f, BukovViewport.resolveScroll(
-				0f, 100f, 240f, 200f, 4f), 0.0001f,
+		assertNear(-80f, BukovViewport.resolveScroll(
+				0f, 40f, 240f, 80f, 4f), 0.0001f,
 				"small map centering");
 	}
 

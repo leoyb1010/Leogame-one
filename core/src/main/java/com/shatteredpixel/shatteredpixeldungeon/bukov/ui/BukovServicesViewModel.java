@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovLongTermContract
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovLongTermContractDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,10 +36,15 @@ public final class BukovServicesViewModel {
 
 		private ContractRow(
 				BukovLongTermContractDefinition definition,
-				BukovContractProgress state) {
+			BukovContractProgress state) {
 			contractId = definition.id;
-			title = definition.title;
-			objective = definition.objective;
+			String keySuffix = definition.id.substring(
+					definition.id.indexOf(':') + 1);
+			title = BukovMessages.get(
+					"bukov.economy.services.contract_" + keySuffix + "_title");
+			objective = BukovMessages.get(
+					"bukov.economy.services.contract_" + keySuffix
+							+ "_objective");
 			progress = state.progress();
 			target = state.target();
 			reward = definition.rewardCurrency;
@@ -47,8 +53,14 @@ public final class BukovServicesViewModel {
 		}
 
 		public String progressLabel() {
-			return progress + "/" + target
-					+ (claimed ? " · 已领取" : ready ? " · 可领奖" : "");
+			return BukovMessages.get(
+					claimed
+							? "bukov.economy.services.progress_claimed"
+							: ready
+							? "bukov.economy.services.progress_ready"
+							: "bukov.economy.services.progress",
+					progress,
+					target);
 		}
 	}
 
@@ -102,17 +114,24 @@ public final class BukovServicesViewModel {
 		}
 
 		public String slotsLabel() {
-			return "镜 " + optic + " · 匣 " + magazine + " · 口 " + muzzle;
+			return BukovMessages.get(
+					"bukov.economy.services.slots",
+					optic,
+					magazine,
+					muzzle);
 		}
 
 		public String deltaLabel() {
-			return "弹 " + baseMagazine + "→" + effectiveMagazine
-					+ " · 散 " + decimal(baseSpread)
-					+ "→" + decimal(effectiveSpread)
-					+ " · 后 " + decimal(baseRecoil)
-					+ "→" + decimal(effectiveRecoil)
-					+ " · 声 " + decimal(baseNoise)
-					+ "→" + decimal(effectiveNoise);
+			return BukovMessages.get(
+					"bukov.economy.services.stat_delta",
+					baseMagazine,
+					effectiveMagazine,
+					decimal(baseSpread),
+					decimal(effectiveSpread),
+					decimal(baseRecoil),
+					decimal(effectiveRecoil),
+					decimal(baseNoise),
+					decimal(effectiveNoise));
 		}
 	}
 
@@ -220,9 +239,19 @@ public final class BukovServicesViewModel {
 
 	private static String attachmentName(
 			FirearmBuild build, FirearmAttachmentSlot slot) {
-		if (build == null || build.attachment(slot) == null) return "无";
-		return FirearmAttachmentCatalog.require(
-				build.attachment(slot)).name;
+		if (build == null || build.attachment(slot) == null) {
+			return BukovMessages.get("bukov.economy.services.none");
+		}
+		String attachmentId = FirearmAttachmentCatalog.require(
+				build.attachment(slot)).id;
+		if (FirearmAttachmentCatalog.RED_DOT.equals(attachmentId)) {
+			return BukovMessages.get("bukov.economy.services.attachment_red_dot");
+		}
+		if (FirearmAttachmentCatalog.EXTENDED_MAG.equals(attachmentId)) {
+			return BukovMessages.get(
+					"bukov.economy.services.attachment_extended_mag");
+		}
+		return BukovMessages.get("bukov.economy.services.attachment_suppressor");
 	}
 
 	private static FirearmRegistry loadFirearms() {

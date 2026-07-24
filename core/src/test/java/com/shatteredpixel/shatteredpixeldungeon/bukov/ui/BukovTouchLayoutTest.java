@@ -108,6 +108,45 @@ public class BukovTouchLayoutTest {
 		assertTrue(layout.aimFire.width >= 36f);
 	}
 
+	@Test
+	public void maximumUiScalePortraitSeparatesEveryTouchTarget() {
+		float safeTop = 6f;
+		float hudTop = safeTop + 4f;
+		BukovRaidHudLayout hud =
+				BukovRaidHudLayout.calculate(127f, 2);
+		float reservedBottom = hudTop + hud.height + 2f;
+		BukovTouchLayout layout = BukovTouchLayout.calculate(
+				135f,
+				225f,
+				4f,
+				safeTop,
+				4f,
+				10f,
+				reservedBottom);
+
+		assertFalse(layout.landscape);
+		assertContained(layout);
+		assertEveryControlPairSeparated(layout);
+		assertTrue(layout.backpack.y >= reservedBottom);
+		assertTrue(layout.pause.y >= reservedBottom);
+	}
+
+	@Test
+	public void iphoneLandscapeSeparatesEveryTouchTarget() {
+		BukovTouchLayout layout = BukovTouchLayout.calculate(
+				240f,
+				135f,
+				6f,
+				3f,
+				6f,
+				5f,
+				55f);
+
+		assertTrue(layout.landscape);
+		assertContained(layout);
+		assertEveryControlPairSeparated(layout);
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void rejectsMissingTouchSurface() {
 		BukovTouchLayout.calculate(0f, 200f, 0f, 0f, 0f, 0f);
@@ -139,5 +178,26 @@ public class BukovTouchLayoutTest {
 		assertFalse(layout.pause.overlaps(layout.aimFire));
 		assertFalse(layout.pause.overlaps(layout.interact));
 		assertFalse(layout.pause.overlaps(layout.drop));
+	}
+
+	private static void assertEveryControlPairSeparated(
+			BukovTouchLayout layout) {
+		BukovTouchLayout.Rect[] controls = {
+				layout.movement,
+				layout.aimFire,
+				layout.interact,
+				layout.reload,
+				layout.medical,
+				layout.drop,
+				layout.backpack,
+				layout.pause
+		};
+		for (int first = 0; first < controls.length; first++) {
+			for (int second = first + 1;
+					second < controls.length;
+					second++) {
+				assertFalse(controls[first].overlaps(controls[second]));
+			}
+		}
 	}
 }

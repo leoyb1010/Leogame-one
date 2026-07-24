@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,23 +17,28 @@ import java.util.List;
 public enum BukovRaidMode {
 
 	EXPEDITION(
-			"远征行动", "12-20分钟 · 完整风险 · 中大型随机区",
+			BukovMessages.get("bukov.economy.mode.name_expedition"),
+			BukovMessages.get("bukov.economy.mode.summary_expedition"),
 			12f, 20f, 12f, 8, 3, true, 360f, 1f,
 			31, 26, 34, 0.55f, 0.30f, 8),
 	QUICK_SWEEP(
-			"快扫行动", "6-10分钟 · 保护最高价值带入物 · 紧凑补给",
+			BukovMessages.get("bukov.economy.mode.name_quick_sweep"),
+			BukovMessages.get("bukov.economy.mode.summary_quick_sweep"),
 			6f, 10f, 16f, 5, 2, false, Float.MAX_VALUE, 0.72f,
 			22, 18, 24, 0.38f, 0.42f, 4),
 	SCAVENGER(
-			"布衣行动", "8-14分钟 · 不带自有装备 · 低收益恢复",
+			BukovMessages.get("bukov.economy.mode.name_scavenger"),
+			BukovMessages.get("bukov.economy.mode.summary_scavenger"),
 			8f, 14f, 15f, 6, 2, false, Float.MAX_VALUE, 0.58f,
 			26, 22, 29, 0.48f, 0.35f, 6),
 	BOSS_CONTRACT(
-			"Boss合同", "8-15分钟 · 完整风险 · 白线高权重",
+			BukovMessages.get("bukov.economy.mode.name_boss_contract"),
+			BukovMessages.get("bukov.economy.mode.summary_boss_contract"),
 			8f, 15f, 9f, 8, 3, true, 30f, 1.25f,
 			34, 28, 37, 0.72f, 0.22f, 10),
 	TRAINING_GROUND(
-			"演练场", "3-5分钟 · 免费制式装备 · 无仓库损失与经济结算",
+			BukovMessages.get("bukov.economy.mode.name_training_ground"),
+			BukovMessages.get("bukov.economy.mode.summary_training_ground"),
 			3f, 5f, 20f, 4, 2, false, Float.MAX_VALUE, 1f,
 			18, 16, 20, 0.22f, 0.55f, 3);
 
@@ -174,7 +181,8 @@ public enum BukovRaidMode {
 
 	/**
 	 * Deterministic container projection shared by new raids and resume.
-	 * Mission containers are never removed or rebalanced.
+	 * Formal raid mission containers are never rebalanced. Training deliberately
+	 * removes the Q01 archive and high-value objective cache.
 	 */
 	public List<BukovContainerDefinition> configureContainers(
 			Collection<BukovContainerDefinition> source,
@@ -189,7 +197,16 @@ public enum BukovRaidMode {
 				throw new IllegalArgumentException(
 						"container definition is required");
 			}
-			if ("mission_archive".equals(definition.lootTableId)) {
+			boolean archiveMission =
+					FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(
+							definition.lootTableId);
+			boolean highValueMission =
+					FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+							definition.lootTableId);
+			if (trainingGround() && (archiveMission || highValueMission)) {
+				continue;
+			}
+			if (archiveMission) {
 				mission.add(definition);
 			} else {
 				regular.add(definition);
@@ -211,12 +228,16 @@ public enum BukovRaidMode {
 				&& regular.size() > 2) {
 			List<BukovContainerDefinition> compact =
 					new ArrayList<>(regular.subList(0, 2));
-			// The authored first-raid route ends in one high-value search.
-			// Compact modes may shorten side-loot, but must never prune that
-			// critical-path cache and leave only the archive plus filler.
-			if (!containsLootTable(compact, "high_value")) {
+			// Quick Sweep still follows the authored first-raid route, so its
+			// compact selection must retain the high-value objective cache.
+			if (this == QUICK_SWEEP
+					&& !containsLootTable(
+							compact,
+							FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID)) {
 				BukovContainerDefinition critical =
-						firstWithLootTable(regular, "high_value");
+						firstWithLootTable(
+								regular,
+								FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID);
 				if (critical != null) {
 					compact.set(compact.size() - 1, critical);
 				}
@@ -245,7 +266,7 @@ public enum BukovRaidMode {
 					clampSearch(search),
 					definition.locked
 							|| !trainingGround()
-									&& "high_value".equals(
+									&& FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
 											definition.lootTableId)));
 		}
 		result.addAll(mission);

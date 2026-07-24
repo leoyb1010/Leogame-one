@@ -18,9 +18,9 @@ public class BukovServicesProductionWiringTest {
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
 						+ "scenes/BukovHubScene.java");
-		assertTrue(scene.contains("\"合同\""));
-		assertTrue(scene.contains("\"保险\""));
-		assertTrue(scene.contains("\"改枪\""));
+		assertTrue(scene.contains("\"hub.button_contracts\""));
+		assertTrue(scene.contains("\"hub.button_insurance\""));
+		assertTrue(scene.contains("\"hub.button_firearms\""));
 		assertTrue(scene.contains("WndBukovServices.Tab.CONTRACTS"));
 		assertTrue(scene.contains("WndBukovServices.Tab.INSURANCE"));
 		assertTrue(scene.contains("WndBukovServices.Tab.FIREARMS"));

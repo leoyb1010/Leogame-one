@@ -1,18 +1,14 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovMissionArchive;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.SettlementItemSnapshot;
-import com.shatteredpixel.shatteredpixeldungeon.items.Item;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /** Immutable renderer-independent data for the dedicated raid result window. */
 public final class BukovSettlementViewModel {
@@ -34,7 +30,7 @@ public final class BukovSettlementViewModel {
 
 		private ItemRow(String legacyUid) {
 			itemUid = legacyUid;
-			name = "历史行动物资";
+			name = BukovMessages.get("bukov.economy.settlement.legacy_item");
 			quantity = 0;
 			value = 0L;
 			legacy = true;
@@ -42,8 +38,13 @@ public final class BukovSettlementViewModel {
 
 		public String summary() {
 			return legacy
-					? name + " · 旧记录未保存明细"
-					: name + " ×" + quantity + "    价值 " + value;
+					? BukovMessages.get(
+							"bukov.economy.settlement.legacy_summary", name)
+					: BukovMessages.get(
+							"bukov.economy.settlement.item_summary",
+							name,
+							quantity,
+							value);
 		}
 	}
 
@@ -125,8 +126,12 @@ public final class BukovSettlementViewModel {
 		}
 		return new BukovSettlementViewModel(
 				result.outcome(),
-				success ? "已撤离" : "未归还",
-				success ? "安全带回" : "行动损失",
+				BukovMessages.get(success
+						? "bukov.economy.settlement.headline_success"
+						: "bukov.economy.settlement.headline_failed"),
+				BukovMessages.get(success
+						? "bukov.economy.settlement.manifest_success"
+						: "bukov.economy.settlement.manifest_failed"),
 				BukovHudFormat.clock(durableElapsed),
 				durableKills,
 				success
@@ -147,91 +152,44 @@ public final class BukovSettlementViewModel {
 			throw new IllegalArgumentException(
 					"displayed value must be inside the settlement total");
 		}
-		return (outcome == RaidOutcome.SUCCESS ? "带回 " : "损失 ")
-				+ quantity + " 件    本局收益 "
-				+ (outcome == RaidOutcome.SUCCESS ? "+" : "-")
-				+ displayedValue;
+		return BukovMessages.get(
+				outcome == RaidOutcome.SUCCESS
+						? "bukov.economy.settlement.totals_success"
+						: "bukov.economy.settlement.totals_failed",
+				quantity,
+				displayedValue);
 	}
 
 	public String stats() {
-		return "行动时长 " + duration + "    击杀 " + kills;
+		return BukovMessages.get(
+				"bukov.economy.settlement.stats", duration, kills);
 	}
 
 	public String mission() {
 		if (!missionCompleted) {
-			return "任务：维修档案未完成";
+			return BukovMessages.get(
+					"bukov.economy.settlement.mission_incomplete");
 		}
-		return outcome == RaidOutcome.SUCCESS
-				? "任务：维修档案已带回"
-				: "任务：维修档案未带回";
+		return BukovMessages.get(outcome == RaidOutcome.SUCCESS
+				? "bukov.economy.settlement.mission_returned"
+				: "bukov.economy.settlement.mission_lost");
 	}
 
 	public String earnings() {
-		return "本局收益 "
-				+ (outcome == RaidOutcome.SUCCESS ? "+" : "-")
-				+ value;
+		return BukovMessages.get(
+				outcome == RaidOutcome.SUCCESS
+						? "bukov.economy.settlement.earnings_success"
+						: "bukov.economy.settlement.earnings_failed",
+				value);
 	}
 
 	public String emptyManifest() {
-		return outcome == RaidOutcome.SUCCESS
-				? "本次撤离未携带物资"
-				: "本次行动没有可损失物资";
+		return BukovMessages.get(outcome == RaidOutcome.SUCCESS
+				? "bukov.economy.settlement.empty_success"
+				: "bukov.economy.settlement.empty_failed");
 	}
 
 	private static String displayName(String definitionId) {
-		String normalized = definitionId == null ? "" : definitionId;
-		Item authored = BukovFirstRaidLootTables
-				.createByEconomicDefinitionId(normalized);
-		if (authored != null && !(normalized.startsWith("ammo:"))) {
-			return authored.name();
-		}
-		String known = KNOWN_NAMES.get(normalized);
-		if (known != null) {
-			return known;
-		}
-		if (normalized.equals(
-				com.shatteredpixel.shatteredpixeldungeon.bukov.mission
-						.FirstRaidMission.ARCHIVE_DEFINITION_ID)) {
-			return new BukovMissionArchive().name();
-		}
-		int separator = normalized.indexOf(':');
-		String readable = separator >= 0
-				? normalized.substring(separator + 1)
-				: normalized;
-		readable = readable.replace('_', ' ').trim();
-		return readable.isEmpty() ? "未知物资" : readable;
-	}
-
-	private static final Map<String, String> KNOWN_NAMES = knownNames();
-
-	private static Map<String, String> knownNames() {
-		Map<String, String> values = new LinkedHashMap<>();
-		values.put("firearm:needle_9", "针蜂-9");
-		values.put("firearm:shuttle_9", "梭子-9");
-		values.put("firearm:ward_556", "城防-556");
-		values.put("firearm:mountain_762", "山路-762");
-		values.put("firearm:bolt_12", "门栓-12");
-		values.put("firearm:longstreet_762", "长街-762");
-		values.put("firearm:sentinel_9", "哨兵-9");
-		values.put("firearm:sparrow_9", "雀翎-9");
-		values.put("firearm:hive_9", "蜂巢-9");
-		values.put("firearm:whisper_9", "低语-9");
-		values.put("firearm:jackal_9", "胡狼-9");
-		values.put("firearm:river_556", "河谷-556");
-		values.put("firearm:foundry_762", "铸炉-762");
-		values.put("firearm:carbine_556", "岗哨-556");
-		values.put("firearm:breaker_12", "破门-12");
-		values.put("firearm:rainstorm_12", "暴雨-12");
-		values.put("firearm:watchtower_556", "瞭望-556");
-		values.put("firearm:frontier_762", "边界-762");
-		values.put("ammo:ammo_9_training", "9毫米训练弹");
-		values.put("ammo:ammo_9_standard", "9毫米标准弹");
-		values.put("ammo:ammo_9_subsonic", "9毫米亚音速弹");
-		values.put("ammo:ammo_556_standard", "5.56毫米标准弹");
-		values.put("ammo:ammo_556_armor_piercing", "5.56毫米硬芯弹");
-		values.put("ammo:ammo_762_standard", "7.62毫米标准弹");
-		values.put("ammo:ammo_762_expanding", "7.62毫米扩张弹");
-		values.put("ammo:ammo_12g_buckshot", "12号鹿弹");
-		return Collections.unmodifiableMap(values);
+		return BukovHubViewModel.displayName(definitionId);
 	}
 }

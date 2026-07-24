@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialEvent;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -194,7 +195,11 @@ public final class BukovRaidCoordinator {
 		checkpoint.rememberDeploymentDefinitions(
 				profile.lastLoadoutDefinitions());
 		for (BukovContainerDefinition definition :
-				raidMode.configureContainers(containerDefinitions, seed)) {
+				configureContainersForProfile(
+						profile,
+						raidMode,
+						containerDefinitions,
+						seed)) {
 			if (definition == null) {
 				throw new IllegalArgumentException("container definition is required");
 			}
@@ -314,6 +319,10 @@ public final class BukovRaidCoordinator {
 
 	public boolean firstRaidMissionActive() {
 		if (session().raidMode().trainingGround()) return false;
+		if (profile.completedContracts().contains(
+				FirstRaidMission.EVENT_ID)) {
+			return false;
+		}
 		return checkpoint.container(FirstRaidMission.ARCHIVE_CONTAINER_ID) != null
 				&& hasContainerLootTable(
 						FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID);
@@ -333,7 +342,8 @@ public final class BukovRaidCoordinator {
 		if (firstRaidStage() == FirstRaidMission.Stage.EXTRACT
 				&& bossContractRequired()
 				&& !bossContractCompleted()) {
-			return "Boss 合同（可选）：击败白线领取合同奖励，或直接撤离";
+			return BukovMessages.get(
+					"bukov.raid.mission.objective_boss_contract");
 		}
 		return FirstRaidMission.objective(firstRaidStage());
 	}
@@ -341,6 +351,19 @@ public final class BukovRaidCoordinator {
 	public boolean firstRaidConditionalExtractionUnlocked() {
 		return !firstRaidMissionActive()
 				|| firstRaidStage() == FirstRaidMission.Stage.EXTRACT;
+	}
+
+	/**
+	 * Mission completion is stricter than survival. E01 remains an emergency
+	 * extraction, but it must not award the archive contract until the player
+	 * has both recovered the archive and searched the unlocked high-value
+	 * cache.
+	 */
+	public boolean firstRaidMissionCompleted() {
+		return firstRaidMissionActive()
+				&& checkpoint.eventCompleted(FirstRaidMission.EVENT_ID)
+				&& checkpoint.eventCompleted(
+						FirstRaidMission.HIGH_VALUE_EVENT_ID);
 	}
 
 	public boolean bossContractRequired() {
@@ -509,8 +532,11 @@ public final class BukovRaidCoordinator {
 			}
 		}
 		for (BukovContainerDefinition definition :
-				session().raidMode().configureContainers(
-						containerDefinitions, session().seed)) {
+				configureContainersForProfile(
+						profile,
+						session().raidMode(),
+						containerDefinitions,
+						session().seed)) {
 			if (definition == null) {
 				throw new IllegalArgumentException("container definition is required");
 			}
@@ -742,7 +768,7 @@ public final class BukovRaidCoordinator {
 	private boolean settlementMissionCompleted() {
 		return bossContractRequired()
 				? bossContractCompleted()
-				: checkpoint.eventCompleted(FirstRaidMission.EVENT_ID);
+				: firstRaidMissionCompleted();
 	}
 
 	private ExtractionState activeExtraction() {
@@ -765,6 +791,42 @@ public final class BukovRaidCoordinator {
 			}
 		}
 		return false;
+	}
+
+	private static List<BukovContainerDefinition>
+			configureContainersForProfile(
+					BukovProfile profile,
+					BukovRaidMode raidMode,
+					Collection<BukovContainerDefinition> source,
+					long seed) {
+		List<BukovContainerDefinition> configured =
+				raidMode.configureContainers(source, seed);
+		if (!profile.completedContracts().contains(
+				FirstRaidMission.EVENT_ID)) {
+			return configured;
+		}
+
+		List<BukovContainerDefinition> result = new ArrayList<>();
+		for (BukovContainerDefinition definition : configured) {
+			if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(
+					definition.lootTableId)) {
+				continue;
+			}
+			if (FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
+					definition.lootTableId)
+					&& definition.locked) {
+				result.add(new BukovContainerDefinition(
+						definition.containerId,
+						definition.cell,
+						definition.lootTableId,
+						definition.rolls,
+						definition.searchSeconds,
+						false));
+			} else {
+				result.add(definition);
+			}
+		}
+		return Collections.unmodifiableList(result);
 	}
 
 	private List<BukovSearchableContainer> unlockHighValueContainers() {

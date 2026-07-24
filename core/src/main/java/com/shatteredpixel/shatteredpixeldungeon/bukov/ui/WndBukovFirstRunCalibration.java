@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
@@ -62,7 +63,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"FIRST RUN / QUICK TUNING",
+				entryMessage("calibration.eyebrow"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
@@ -70,7 +71,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"首次体验校准",
+				entryMessage("calibration.title"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
@@ -78,7 +79,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 		add(title);
 
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
-				"点击切换 · 即时保存 · 设置中可再改",
+				entryMessage("calibration.hint"),
 				tokens.typographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
@@ -226,24 +227,26 @@ public final class WndBukovFirstRunCalibration extends Window {
 			switch (calibration) {
 				case UI_SCALE:
 					setCopy(
-							"UI 缩放",
+							entryMessage("calibration.ui_scale"),
 							WndBukovSettings.percentLevel(
 									SPDSettings.bukovUiScale()));
 					break;
 				case VIBRATION:
 					setCopy(
-							"震动强度",
+							entryMessage("calibration.vibration"),
 							WndBukovSettings.threeLevel(
 									SPDSettings.bukovControllerVibration()));
 					break;
 				case AIM_ASSIST:
 					setCopy(
-							"辅助瞄准",
+							entryMessage("calibration.aim_assist"),
 							WndBukovSettings.aimAssistLabel(
 									SPDSettings.bukovAimAssist()));
 					break;
 				case DONE:
-					setCopy("完成校准，继续", "ENTER");
+					setCopy(
+							entryMessage("calibration.done"),
+							entryMessage("calibration.enter"));
 					break;
 				default:
 					throw new IllegalStateException(
@@ -286,5 +289,9 @@ public final class WndBukovFirstRunCalibration extends Window {
 					width * 0.49f - 4,
 					9);
 		}
+	}
+
+	private static String entryMessage(String key, Object... args) {
+		return BukovMessages.get("bukov.entry." + key, args);
 	}
 }

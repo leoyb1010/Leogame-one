@@ -19,6 +19,10 @@ public class BukovEnglishCjkGuardTest {
 	@Test
 	public void englishBundlesContainNoCjkOutsideExactBilingualAllowlist() throws IOException {
 		Map<String, String> entryAllowlist = new HashMap<>();
+		entryAllowlist.put("bukov.entry.brand.chinese_title",
+				"逃离布科夫");
+		entryAllowlist.put("bukov.entry.brand.bilingual_logo",
+				"ESCAPE FROM BUKOV / 逃离布科夫");
 		entryAllowlist.put("bukov.entry.reserved.bilingual_logo",
 				"ESCAPE FROM BUKOV / 逃离布科夫");
 

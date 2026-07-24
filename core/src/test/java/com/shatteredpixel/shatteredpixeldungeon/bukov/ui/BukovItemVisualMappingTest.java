@@ -49,7 +49,7 @@ public class BukovItemVisualMappingTest {
 				BukovItemSprite.Frame.MEDICAL_TRAUMA_POUCH,
 				BukovItemSprite.frameFor(new BukovLootItem().configure(
 						"med:test",
-						"急救包",
+						"Test Medkit",
 						BukovLootItem.Category.MEDICAL,
 						0.5f,
 						120)));
@@ -57,7 +57,7 @@ public class BukovItemVisualMappingTest {
 				BukovItemSprite.Frame.SALVAGE,
 				BukovItemSprite.frameFor(new BukovLootItem().configure(
 						"loot:test",
-						"工业零件",
+						"Industrial Parts",
 						BukovLootItem.Category.LOOT,
 						1f,
 						80)));

@@ -5,9 +5,26 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 public class BukovLongTermContractServiceTest {
+
+	@Test
+	public void localizedContractPresentationIsResolvedForEveryViewBuild() {
+		BukovLongTermContractDefinition first =
+				BukovLongTermContractCatalog.require(
+						BukovLongTermContractCatalog.SURVIVOR);
+		BukovLongTermContractDefinition refreshed =
+				BukovLongTermContractCatalog.require(
+						BukovLongTermContractCatalog.SURVIVOR);
+
+		assertNotSame(first, refreshed);
+		assertEquals(first.id, refreshed.id);
+		assertEquals(first.metric, refreshed.metric);
+		assertEquals(first.target, refreshed.target);
+		assertEquals(first.rewardCurrency, refreshed.rewardCurrency);
+	}
 
 	@Test
 	public void settlementProgressRewardAndReplayAreIdempotent() {
@@ -103,6 +120,26 @@ public class BukovLongTermContractServiceTest {
 		assertEquals(0L, restored.longTermContracts()
 				.progress(BukovLongTermContractCatalog.VETERAN)
 				.progress());
+	}
+
+	@Test
+	public void supportedLegacyProfileWithoutLoadoutMigratesToEmptySelection() {
+		BukovProfile source = new BukovProfile();
+		source.setCurrency(91L);
+		Bundle legacy = new Bundle();
+		source.storeInBundle(legacy);
+		legacy.put("profile_version", 6);
+		legacy.remove("loadout");
+		legacy.remove("insurance");
+		legacy.remove("long_term_contracts");
+		legacy.remove("firearm_builds");
+
+		BukovProfile restored = new BukovProfile();
+		restored.restoreFromBundle(legacy);
+
+		assertEquals(BukovProfile.CURRENT_VERSION, restored.profileVersion());
+		assertEquals(91L, restored.currency());
+		assertEquals(0, restored.loadout().distinctItemCount());
 	}
 
 	private static LootTransaction loot(

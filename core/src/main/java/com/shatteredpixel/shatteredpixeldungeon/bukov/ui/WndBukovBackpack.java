@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovItemSprite;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
@@ -70,11 +71,26 @@ public final class WndBukovBackpack extends Window {
 	private static final int ROW_HEIGHT = 28;
 	private static final int BUTTON_HEIGHT = 18;
 	private static final int GAP = 2;
-	private static final int HEADER_HEIGHT = 33;
+	private static final int MIN_HEADER_HEIGHT = 33;
 	private static final int FOOTER_HEIGHT = 75;
 	private static final int VIEWPORT_MARGIN = 4;
 	private static final int MIN_LIST_HEIGHT_L = 40;
 	private static final int MIN_LIST_HEIGHT_P = 72;
+	private static final int HEADER_TOP = 3;
+	private static final int HEADER_LABEL_GAP = 1;
+	private static final int HEADER_TOTALS_GAP = 3;
+	private static final int HEADER_BOTTOM = 4;
+	private static final int HEADER_INLINE_GAP = 5;
+	private static final int DETAIL_PADDING_X = 5;
+	private static final int DETAIL_PADDING_Y = 3;
+	private static final int DETAIL_MIN_HEIGHT_L = 32;
+	private static final int DETAIL_MIN_HEIGHT_P = 38;
+	private static final int DETAIL_MAX_HEIGHT_L = 46;
+	private static final int DETAIL_MAX_HEIGHT_P = 58;
+	private static final int ACTION_STACK_HEIGHT =
+			BUTTON_HEIGHT * 2 + GAP;
+	private static final int FOOTER_FIXED_HEIGHT =
+			GAP + GAP + ACTION_STACK_HEIGHT + MARGIN;
 
 	private final Controller controller;
 	private final BukovUiTokens tokens;
@@ -88,9 +104,9 @@ public final class WndBukovBackpack extends Window {
 	private String selectedUid;
 	private boolean openSignal;
 	private ScrollPane itemScroll;
+	private ScrollPane detailScroll;
+	private DetailContent detailContent;
 	private RenderedTextBlock totals;
-	private RenderedTextBlock detail;
-	private RenderedTextBlock feedback;
 	private TacticalButton dropButton;
 	private TacticalButton useButton;
 	private TacticalButton equipButton;
@@ -128,86 +144,118 @@ public final class WndBukovBackpack extends Window {
 	}
 
 	private void build(int windowWidth, int windowHeight) {
+		RenderedTextBlock title = text(
+				BukovMessages.get("bukov.raid.backpack.title"),
+				BukovVisualContract.FONT_BODY,
+				tokens.color("accent.valuable"));
+		RenderedTextBlock code = text(
+				BukovMessages.get("bukov.raid.backpack.paused_hint"),
+				BukovVisualContract.FONT_CAPTION,
+				tokens.color("text.secondary"));
+		totals = text(
+				"", BukovVisualContract.FONT_BODY,
+				tokens.color("accent.valuable"));
+		totals.maxWidth(Math.max(1, windowWidth - MARGIN * 2 - 6));
+		updateTotals();
+
+		int innerWidth = Math.max(1, windowWidth - MARGIN * 2);
+		boolean inlineHeader = headerFitsInline(
+				windowWidth,
+				title.width(),
+				code.width());
+		fitSingleLine(code, code.text(), innerWidth);
+		int titleY = HEADER_TOP;
+		int codeY = inlineHeader
+				? HEADER_TOP + 2
+				: HEADER_TOP + (int)Math.ceil(title.height())
+						+ HEADER_LABEL_GAP;
+		int labelsBottom = (int)Math.ceil(Math.max(
+				titleY + title.height(),
+				codeY + code.height()));
+		int totalsY = labelsBottom + HEADER_TOTALS_GAP;
+		LayoutMetrics layout = layoutFor(
+				windowWidth,
+				windowHeight,
+				PixelScene.landscape(),
+				totalsY,
+				(int)Math.ceil(totals.height()),
+				estimatedDetailContentHeight(windowWidth));
+
 		ColorBlock header = new ColorBlock(
 				windowWidth,
-				HEADER_HEIGHT - 1,
+				layout.headerHeight - 1,
 				tokens.colorWithAlpha("panel.surface", 255));
 		add(header);
 		ColorBlock headerRule = new ColorBlock(
 				windowWidth,
 				1,
 				tokens.color("accent.valuable"));
-		headerRule.y = HEADER_HEIGHT - 2;
+		headerRule.y = layout.headerHeight - 2;
 		add(headerRule);
-		RenderedTextBlock title = text(
-				"行动背包",
-				BukovVisualContract.FONT_BODY,
-				tokens.color("accent.valuable"));
-		title.setPos(MARGIN, 3);
+		title.setPos(MARGIN, titleY);
 		add(title);
-
-		RenderedTextBlock code = text(
-				"行动已暂停 · TAB关闭",
-				BukovVisualContract.FONT_CAPTION,
-				tokens.color("text.secondary"));
-		code.setPos(windowWidth - MARGIN - code.width(), 5);
+		code.setPos(
+				inlineHeader
+						? windowWidth - MARGIN - code.width()
+						: MARGIN,
+				codeY);
 		add(code);
 
 		ColorBlock totalsSurface = new ColorBlock(
 				windowWidth - MARGIN * 2,
-				11,
+				Math.max(1, layout.headerHeight - totalsY - HEADER_BOTTOM + 1),
 				tokens.colorWithAlpha("ink.background", 190));
 		totalsSurface.x = MARGIN;
-		totalsSurface.y = 18;
+		totalsSurface.y = totalsY - 1;
 		add(totalsSurface);
-		totals = text(
-				"", BukovVisualContract.FONT_BODY,
-				tokens.color("accent.valuable"));
-		totals.setRect(MARGIN + 3, 20, windowWidth - MARGIN * 2 - 6, 8);
+		totals.setPos(MARGIN + 3, totalsY);
 		add(totals);
-		updateTotals();
 
-		float listHeight = inventoryViewportHeight(
-				windowHeight,
-				PixelScene.landscape());
-		createList(windowWidth, listHeight);
+		createList(windowWidth, layout.headerHeight, layout.listHeight);
 
-		float footerY = HEADER_HEIGHT + listHeight + GAP;
+		float footerY = layout.headerHeight + layout.listHeight + GAP;
 		ColorBlock detailSurface = new ColorBlock(
 				windowWidth - MARGIN * 2,
-				31,
+				layout.detailHeight,
 				tokens.colorWithAlpha("panel.surface", 210));
 		detailSurface.x = MARGIN;
 		detailSurface.y = footerY;
 		add(detailSurface);
 		ColorBlock detailEdge = new ColorBlock(
 				2,
-				31,
+				layout.detailHeight,
 				tokens.color("accent.interact"));
 		detailEdge.x = MARGIN;
 		detailEdge.y = footerY;
 		add(detailEdge);
-		detail = text(
-				"", BukovVisualContract.FONT_BODY,
-				tokens.color("text.secondary"));
-		detail.setRect(MARGIN + 5, footerY + 3,
-				windowWidth - MARGIN * 2 - 9, 18);
-		add(detail);
+		int detailWidth = Math.max(
+				1,
+				windowWidth - MARGIN * 2 - DETAIL_PADDING_X - 4);
+		detailContent = new DetailContent(detailWidth);
+		detailContent.setMessages(
+				selectedDetail(),
+				"");
+		detailScroll = new ScrollPane(detailContent);
+		add(detailScroll);
+		detailScroll.setRect(
+				MARGIN + DETAIL_PADDING_X,
+				footerY + DETAIL_PADDING_Y,
+				detailWidth,
+				Math.max(1,
+						layout.detailHeight - DETAIL_PADDING_Y * 2));
+		detailContent.setMinimumHeight(detailScroll.height());
 
-		feedback = text(
-				"", BukovVisualContract.FONT_CAPTION,
-				tokens.color("accent.interact"));
-		feedback.setRect(MARGIN + 5, footerY + 21,
-				windowWidth - MARGIN * 2 - 9, 8);
-		add(feedback);
-
-		float actionY = footerY + 32;
+		float actionY = footerY + layout.detailHeight + GAP;
 		float third = (windowWidth - MARGIN * 2 - GAP * 2) / 3f;
-		dropButton = new TacticalButton("丢弃", Action.DROP);
+		dropButton = new TacticalButton(
+				BukovMessages.get("bukov.raid.backpack.drop"),
+				Action.DROP);
 		dropButton.setRect(MARGIN, actionY, third, BUTTON_HEIGHT);
 		add(dropButton);
 		actionButtons[Action.DROP.ordinal()] = dropButton;
-		useButton = new TacticalButton("使用医疗", Action.USE);
+		useButton = new TacticalButton(
+				BukovMessages.get("bukov.raid.backpack.use_medical"),
+				Action.USE);
 		useButton.setRect(
 				MARGIN + third + GAP,
 				actionY,
@@ -215,7 +263,9 @@ public final class WndBukovBackpack extends Window {
 				BUTTON_HEIGHT);
 		add(useButton);
 		actionButtons[Action.USE.ordinal()] = useButton;
-		equipButton = new TacticalButton("装备", Action.EQUIP);
+		equipButton = new TacticalButton(
+				BukovMessages.get("bukov.raid.backpack.equip"),
+				Action.EQUIP);
 		equipButton.setRect(
 				MARGIN + (third + GAP) * 2,
 				actionY,
@@ -224,7 +274,9 @@ public final class WndBukovBackpack extends Window {
 		add(equipButton);
 		actionButtons[Action.EQUIP.ordinal()] = equipButton;
 
-		TacticalButton close = new TacticalButton("关闭背包 · 返回行动", Action.CLOSE);
+		TacticalButton close = new TacticalButton(
+				BukovMessages.get("bukov.raid.backpack.close"),
+				Action.CLOSE);
 		close.setRect(
 				MARGIN,
 				actionY + BUTTON_HEIGHT + GAP,
@@ -236,13 +288,16 @@ public final class WndBukovBackpack extends Window {
 		updateFocus();
 	}
 
-	private void createList(float windowWidth, float listHeight) {
+	private void createList(
+			float windowWidth,
+			float listY,
+			float listHeight) {
 		InventoryList list = new InventoryList(windowWidth - MARGIN * 2);
 		itemScroll = new ScrollPane(list);
 		add(itemScroll);
 		itemScroll.setRect(
 				MARGIN,
-				HEADER_HEIGHT,
+				listY,
 				windowWidth - MARGIN * 2,
 				listHeight);
 	}
@@ -289,6 +344,52 @@ public final class WndBukovBackpack extends Window {
 		totals.text(viewModel.totalsSummary());
 	}
 
+	private String selectedDetail() {
+		BukovBackpackViewModel.ItemRow selected =
+				viewModel.find(selectedUid);
+		return selected == null
+				? BukovMessages.get("bukov.raid.backpack.empty_detail")
+				: selected.stateSummary();
+	}
+
+	private int estimatedDetailContentHeight(int windowWidth) {
+		int contentWidth = Math.max(
+				1,
+				windowWidth - MARGIN * 2 - DETAIL_PADDING_X - 4);
+		RenderedTextBlock measurement = text(
+				selectedDetail(),
+				BukovVisualContract.FONT_BODY,
+				tokens.color("text.secondary"));
+		measurement.maxWidth(contentWidth);
+		int height = Math.max(1, (int)Math.ceil(measurement.height()));
+		measurement.destroy();
+		return height;
+	}
+
+	private void setDetail(String value) {
+		if (detailContent == null) {
+			return;
+		}
+		detailContent.setDetail(value);
+		if (detailScroll != null) {
+			detailScroll.scrollTo(0, 0);
+		}
+	}
+
+	private void setFeedback(String value) {
+		if (detailContent == null) {
+			return;
+		}
+		detailContent.setFeedback(value);
+		if (detailScroll != null) {
+			detailScroll.scrollTo(
+					0,
+					Math.max(0,
+							detailContent.height()
+									- detailScroll.height()));
+		}
+	}
+
 	private void updateSelection() {
 		BukovBackpackViewModel.ItemRow selected =
 				viewModel.find(selectedUid);
@@ -298,13 +399,14 @@ public final class WndBukovBackpack extends Window {
 							&& row.item.itemUid.equals(selected.itemUid));
 		}
 		if (selected == null) {
-			detail.text("背包为空 · 搜索容器与地面物资补给本次行动");
+			setDetail(BukovMessages.get(
+					"bukov.raid.backpack.empty_detail"));
 			dropButton.setEnabled(false);
 			useButton.setEnabled(false);
 			equipButton.setEnabled(false);
 			return;
 		}
-		detail.text(selected.stateSummary());
+		setDetail(selected.stateSummary());
 		dropButton.setEnabled(selected.canDrop);
 		useButton.setEnabled(selected.canUse);
 		equipButton.setEnabled(selected.canEquip);
@@ -318,14 +420,16 @@ public final class WndBukovBackpack extends Window {
 		BukovBackpackViewModel.ItemRow selected =
 				viewModel.find(selectedUid);
 		if (selected == null) {
-			feedback.text("没有选中物品");
+			setFeedback(BukovMessages.get(
+					"bukov.raid.backpack.no_selection"));
 			return;
 		}
 		ActionFeedback result;
 		switch (action) {
 			case DROP:
 				if (!selected.canDrop) {
-					result = ActionFeedback.rejected("任务档案不可丢弃");
+					result = ActionFeedback.rejected(BukovMessages.get(
+							"bukov.raid.backpack.mission_no_drop"));
 				} else {
 					result = controller.drop(selected.itemUid);
 				}
@@ -333,21 +437,25 @@ public final class WndBukovBackpack extends Window {
 			case USE:
 				result = selected.canUse
 						? controller.useMedical(selected.itemUid)
-						: ActionFeedback.rejected("该物品不能直接使用");
+						: ActionFeedback.rejected(BukovMessages.get(
+								"bukov.raid.backpack.cannot_use"));
 				break;
 			default:
 				result = selected.canEquip
 						? controller.equipFirearm(selected.itemUid)
 						: ActionFeedback.rejected(
 								selected.equipped
-										? "该武器已经装备"
-										: "请选择另一把武器");
+										? BukovMessages.get(
+												"bukov.raid.backpack.already_equipped")
+										: BukovMessages.get(
+												"bukov.raid.backpack.select_another_weapon"));
 				break;
 		}
 		if (result == null) {
-			result = ActionFeedback.rejected("操作未完成");
+			result = ActionFeedback.rejected(BukovMessages.get(
+					"bukov.raid.backpack.action_incomplete"));
 		}
-		feedback.text(result.message);
+		setFeedback(result.message);
 		if (result.closeWindow) {
 			hide();
 		} else if (result.changed) {
@@ -362,6 +470,52 @@ public final class WndBukovBackpack extends Window {
 		result.maxWidth(width - MARGIN * 2);
 		result.hardlight(color);
 		return result;
+	}
+
+	/**
+	 * RenderedTextBlock wraps by language-aware tokens but does not clip to the
+	 * component rectangle. Rows and buttons are fixed-height interaction
+	 * targets, so fit their copy to one measured line instead of allowing the
+	 * glyphs to paint over the following control.
+	 */
+	private static void fitSingleLine(
+			RenderedTextBlock block,
+			String value,
+			int maximumWidth) {
+		int width = Math.max(1, maximumWidth);
+		String normalized = value == null ? "" : value.trim();
+		block.maxWidth(width);
+		if (normalized.isEmpty()) {
+			block.text(" ");
+			block.visible = false;
+			return;
+		}
+		block.visible = true;
+		block.text(normalized);
+		if (block.nLines <= 1 && block.width() <= width) {
+			return;
+		}
+		int codePoints = normalized.codePointCount(0, normalized.length());
+		int low = 1;
+		int high = Math.max(1, codePoints - 1);
+		String best = "…";
+		while (low <= high) {
+			int keep = (low + high) >>> 1;
+			int end = normalized.offsetByCodePoints(0, keep);
+			String candidate = normalized.substring(0, end).trim() + "…";
+			block.text(candidate);
+			if (block.nLines <= 1 && block.width() <= width) {
+				best = candidate;
+				low = keep + 1;
+			} else {
+				high = keep - 1;
+			}
+		}
+		block.text(best);
+		if (block.nLines > 1 || block.width() > width) {
+			block.text(" ");
+			block.visible = false;
+		}
 	}
 
 	@Override
@@ -407,7 +561,7 @@ public final class WndBukovBackpack extends Window {
 		int itemCount = viewModel.items.size();
 		if (focus.index() < itemCount) {
 			selectedUid = viewModel.items.get(focus.index()).itemUid;
-			feedback.text("");
+			setFeedback("");
 			updateSelection();
 			updateFocus();
 			return;
@@ -461,13 +615,101 @@ public final class WndBukovBackpack extends Window {
 		super.destroy();
 	}
 
+	static final class LayoutMetrics {
+		final int headerHeight;
+		final int listHeight;
+		final int detailHeight;
+		final int footerHeight;
+
+		private LayoutMetrics(
+				int headerHeight,
+				int listHeight,
+				int detailHeight,
+				int footerHeight) {
+			this.headerHeight = headerHeight;
+			this.listHeight = listHeight;
+			this.detailHeight = detailHeight;
+			this.footerHeight = footerHeight;
+		}
+	}
+
+	static boolean headerFitsInline(
+			int windowWidth,
+			float titleWidth,
+			float codeWidth) {
+		if (windowWidth <= 0 || titleWidth < 0f || codeWidth < 0f) {
+			throw new IllegalArgumentException(
+					"header dimensions must be non-negative");
+		}
+		int innerWidth = Math.max(1, windowWidth - MARGIN * 2);
+		return titleWidth + codeWidth + HEADER_INLINE_GAP <= innerWidth;
+	}
+
+	/**
+	 * Pure layout policy used after the actual localized text has been
+	 * measured. The action stack is reserved first so the close control cannot
+	 * fall below the safe viewport; detail copy gets a bounded scroll card and
+	 * the inventory receives the remaining height.
+	 */
+	static LayoutMetrics layoutFor(
+			int windowWidth,
+			int windowHeight,
+			boolean landscape,
+			int totalsY,
+			int totalsTextHeight,
+			int detailContentHeight) {
+		if (windowWidth <= 0 || windowHeight <= 0
+				|| totalsY < 0 || totalsTextHeight < 0
+				|| detailContentHeight < 0) {
+			throw new IllegalArgumentException(
+					"backpack layout dimensions must be non-negative");
+		}
+		int desiredHeader = Math.max(
+				MIN_HEADER_HEIGHT,
+				totalsY + Math.max(1, totalsTextHeight)
+						+ HEADER_BOTTOM);
+		int absoluteFooter = FOOTER_FIXED_HEIGHT + 1;
+		int headerHeight = Math.min(
+				desiredHeader,
+				Math.max(1, windowHeight - absoluteFooter - 1));
+		int minimumList = landscape
+				? MIN_LIST_HEIGHT_L : MIN_LIST_HEIGHT_P;
+		int availableDetail = windowHeight
+				- headerHeight
+				- minimumList
+				- FOOTER_FIXED_HEIGHT;
+		int minimumDetail = landscape
+				? DETAIL_MIN_HEIGHT_L : DETAIL_MIN_HEIGHT_P;
+		int maximumDetail = landscape
+				? DETAIL_MAX_HEIGHT_L : DETAIL_MAX_HEIGHT_P;
+		int desiredDetail = Math.max(
+				minimumDetail,
+				detailContentHeight + DETAIL_PADDING_Y * 2);
+		int detailHeight = Math.max(
+				1,
+				Math.min(
+						desiredDetail,
+						Math.min(
+								maximumDetail,
+								Math.max(1, availableDetail))));
+		int footerHeight = FOOTER_FIXED_HEIGHT + detailHeight;
+		int listHeight = Math.max(
+				1,
+				windowHeight - headerHeight - footerHeight);
+		return new LayoutMetrics(
+				headerHeight,
+				listHeight,
+				detailHeight,
+				footerHeight);
+	}
+
 	static int inventoryViewportHeight(int windowHeight, boolean landscape) {
-		int available = windowHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+		int available = windowHeight - MIN_HEADER_HEIGHT - FOOTER_HEIGHT;
 		return Math.max(1, available);
 	}
 
 	static boolean fitsWindow(int windowHeight, boolean landscape) {
-		return HEADER_HEIGHT
+		return MIN_HEADER_HEIGHT
 				+ inventoryViewportHeight(windowHeight, landscape)
 				+ FOOTER_HEIGHT <= windowHeight;
 	}
@@ -504,6 +746,82 @@ public final class WndBukovBackpack extends Window {
 		CLOSE
 	}
 
+	private final class DetailContent extends Component {
+
+		private final int contentWidth;
+		private final RenderedTextBlock detail;
+		private final RenderedTextBlock feedback;
+		private float minimumHeight;
+
+		private DetailContent(int contentWidth) {
+			this.contentWidth = Math.max(1, contentWidth);
+			detail = text(
+					" ",
+					BukovVisualContract.FONT_BODY,
+					tokens.color("text.secondary"));
+			detail.maxWidth(this.contentWidth);
+			add(detail);
+			feedback = text(
+					" ",
+					BukovVisualContract.FONT_CAPTION,
+					tokens.color("accent.interact"));
+			feedback.maxWidth(this.contentWidth);
+			feedback.visible = false;
+			add(feedback);
+			reflow();
+		}
+
+		private void setMinimumHeight(float minimumHeight) {
+			this.minimumHeight = Math.max(1f, minimumHeight);
+			reflow();
+		}
+
+		private void setMessages(
+				String detailValue,
+				String feedbackValue) {
+			setDetailText(detailValue);
+			setFeedbackText(feedbackValue);
+			reflow();
+		}
+
+		private void setDetail(String value) {
+			setDetailText(value);
+			reflow();
+		}
+
+		private void setFeedback(String value) {
+			setFeedbackText(value);
+			reflow();
+		}
+
+		private void setDetailText(String value) {
+			String normalized = value == null ? "" : value.trim();
+			detail.visible = !normalized.isEmpty();
+			detail.text(normalized.isEmpty() ? " " : normalized);
+			detail.maxWidth(contentWidth);
+		}
+
+		private void setFeedbackText(String value) {
+			String normalized = value == null ? "" : value.trim();
+			feedback.visible = !normalized.isEmpty();
+			feedback.text(normalized.isEmpty() ? " " : normalized);
+			feedback.maxWidth(contentWidth);
+		}
+
+		private void reflow() {
+			detail.setPos(0, 0);
+			float cursor = detail.visible ? detail.height() : 0f;
+			if (feedback.visible) {
+				if (cursor > 0f) {
+					cursor += GAP;
+				}
+				feedback.setPos(0, cursor);
+				cursor += feedback.height();
+			}
+			setSize(contentWidth, Math.max(minimumHeight, Math.max(1f, cursor)));
+		}
+	}
+
 	private final class InventoryList extends Component {
 
 		private InventoryList(float listWidth) {
@@ -515,10 +833,11 @@ public final class WndBukovBackpack extends Window {
 					tokens.color("panel.surface"));
 			addToBack(surface);
 			if (viewModel.items.isEmpty()) {
-			RenderedTextBlock empty = text(
-					"背包为空 · 靠近物资后交互拾取",
+				RenderedTextBlock empty = text(
+						BukovMessages.get(
+								"bukov.raid.backpack.empty_list"),
 					BukovVisualContract.FONT_BODY,
-						tokens.color("text.disabled"));
+					tokens.color("text.disabled"));
 				empty.setRect(4, 8, listWidth - 8, 12);
 				add(empty);
 				return;
@@ -630,7 +949,7 @@ public final class WndBukovBackpack extends Window {
 		protected void onClick() {
 			focus.focus(itemIndex);
 			selectedUid = item.itemUid;
-			feedback.text("");
+			setFeedback("");
 			updateSelection();
 			updateFocus();
 		}
@@ -653,9 +972,15 @@ public final class WndBukovBackpack extends Window {
 			category.setPos(x + 5, y + 4);
 			icon.x = x + 18;
 			icon.y = y + 2;
-			title.maxWidth(Math.max(1, (int) width - 43));
+			fitSingleLine(
+					title,
+					item.title(),
+					Math.max(1, (int)width - 43));
 			title.setPos(x + 37, y + 3);
-			metrics.maxWidth(Math.max(1, (int) width - 10));
+			fitSingleLine(
+					metrics,
+					item.rowEconomySummary(),
+					Math.max(1, (int)width - 10));
 			metrics.setPos(x + 5, y + 14);
 		}
 	}
@@ -667,10 +992,12 @@ public final class WndBukovBackpack extends Window {
 		private final ColorBlock edge;
 		private final RenderedTextBlock label;
 		private final ColorBlock focusEdge;
+		private final String labelValue;
 		private boolean enabled = true;
 
 		private TacticalButton(String value, Action action) {
 			this.action = action;
+			labelValue = value;
 			surface = new ColorBlock(1, 1,
 					tokens.colorWithAlpha(
 							action == Action.CLOSE
@@ -738,6 +1065,10 @@ public final class WndBukovBackpack extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
+			fitSingleLine(
+					label,
+					labelValue,
+					Math.max(1, (int)width - 6));
 			label.setRect(
 					x + 3,
 					y + (height - 9) / 2f,

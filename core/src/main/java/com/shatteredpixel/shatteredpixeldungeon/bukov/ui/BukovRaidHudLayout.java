@@ -14,9 +14,10 @@ public final class BukovRaidHudLayout {
 	public static final float WIDE_THRESHOLD = 220f;
 	public static final float RELOAD_RING_SIZE = 24f;
 	private static final float WIDE_HEIGHT = 46f;
-	private static final float COMPACT_HEIGHT = 79f;
+	private static final float COMPACT_HEIGHT = 90f;
 	private static final float MOBILE_FEEDBACK_SIDE_MARGIN = 6f;
 	private static final float MOBILE_FEEDBACK_HEIGHT = 13f;
+	private static final float TUTORIAL_HINT_HEIGHT = 28f;
 
 	public static final class Rect {
 		public final float x;
@@ -49,6 +50,10 @@ public final class BukovRaidHudLayout {
 	public final float height;
 	public final Rect vitals;
 	public final Rect firepower;
+	public final Rect vitalPrimary;
+	public final Rect vitalSecondary;
+	public final Rect firepowerPrimary;
+	public final Rect firepowerSecondary;
 	public final Rect condition;
 	public final Rect medicalHint;
 	public final Rect clock;
@@ -60,6 +65,10 @@ public final class BukovRaidHudLayout {
 			float height,
 			Rect vitals,
 			Rect firepower,
+			Rect vitalPrimary,
+			Rect vitalSecondary,
+			Rect firepowerPrimary,
+			Rect firepowerSecondary,
 			Rect condition,
 			Rect medicalHint,
 			Rect clock,
@@ -69,6 +78,10 @@ public final class BukovRaidHudLayout {
 		this.height = height;
 		this.vitals = vitals;
 		this.firepower = firepower;
+		this.vitalPrimary = vitalPrimary;
+		this.vitalSecondary = vitalSecondary;
+		this.firepowerPrimary = firepowerPrimary;
+		this.firepowerSecondary = firepowerSecondary;
 		this.condition = condition;
 		this.medicalHint = medicalHint;
 		this.clock = clock;
@@ -78,12 +91,27 @@ public final class BukovRaidHudLayout {
 
 	public static BukovRaidHudLayout calculate(
 			float availableWidth, int scaleLevel) {
+		return calculate(
+				availableWidth,
+				availableWidth < WIDE_THRESHOLD
+						? availableWidth * 2f : availableWidth,
+				scaleLevel);
+	}
+
+	public static BukovRaidHudLayout calculate(
+			float availableWidth,
+			float viewportHeight,
+			int scaleLevel) {
 		if (availableWidth <= 0f) {
 			throw new IllegalArgumentException(
 					"availableWidth must be positive");
 		}
+		if (viewportHeight <= 0f) {
+			throw new IllegalArgumentException(
+					"viewportHeight must be positive");
+		}
 		float scale = scaleMultiplier(scaleLevel);
-		boolean compact = availableWidth < WIDE_THRESHOLD;
+		boolean compact = isCompact(availableWidth, viewportHeight);
 		// The wide renderer has fixed row geometry. Growing only its background
 		// consumed most of a compact iPhone landscape without enlarging any
 		// content, and pushed the touch controls underneath the HUD.
@@ -99,13 +127,17 @@ public final class BukovRaidHudLayout {
 			return new BukovRaidHudLayout(
 					true,
 					height,
-					rect(padding, 2f * scale, columnWidth, 25f * scale),
-					rect(rightX, 2f * scale, columnWidth, 25f * scale),
-					rect(padding, 28f * scale, columnWidth, 9f * scale),
-					rect(rightX, 28f * scale, columnWidth, 9f * scale),
-					rect(padding, 39f * scale, contentWidth, 9f * scale),
-					rect(padding, 50f * scale, contentWidth, 9f * scale),
-					rect(padding, 61f * scale, contentWidth, 16f * scale)
+					rect(padding, 2f * scale, columnWidth, 26f * scale),
+					rect(rightX, 2f * scale, columnWidth, 26f * scale),
+					rect(padding, 2f * scale, columnWidth, 11f * scale),
+					rect(padding, 18f * scale, columnWidth, 9f * scale),
+					rect(rightX, 2f * scale, columnWidth, 11f * scale),
+					rect(rightX, 17f * scale, columnWidth, 10f * scale),
+					rect(padding, 30f * scale, contentWidth, 9f * scale),
+					rect(padding + contentWidth, 30f * scale, 0f, 9f * scale),
+					rect(padding, 41f * scale, contentWidth, 9f * scale),
+					rect(padding, 52f * scale, contentWidth, 9f * scale),
+					rect(padding, 63f * scale, contentWidth, 24f * scale)
 			);
 		}
 
@@ -122,6 +154,14 @@ public final class BukovRaidHudLayout {
 						Math.max(1f, leftWidth - padding), 33f * scale),
 				rect(availableWidth - rightWidth, 2f * scale,
 						Math.max(1f, rightWidth - padding), 33f * scale),
+				rect(padding, 2f * scale,
+						Math.max(1f, leftWidth - padding), 12f * scale),
+				rect(padding, 19f * scale,
+						Math.max(1f, leftWidth - padding), 9f * scale),
+				rect(availableWidth - rightWidth, 2f * scale,
+						Math.max(1f, rightWidth - padding), 12f * scale),
+				rect(availableWidth - rightWidth, 16f * scale,
+						Math.max(1f, rightWidth - padding), 9f * scale),
 				rect(padding, 27f * scale,
 						Math.max(1f, leftWidth - padding), 8f * scale),
 				rect(padding, 36f * scale,
@@ -138,11 +178,34 @@ public final class BukovRaidHudLayout {
 		return calculate(availableWidth, scaleLevel).height;
 	}
 
+	public static float preferredHeight(
+			float availableWidth,
+			float viewportHeight,
+			int scaleLevel) {
+		return calculate(
+				availableWidth,
+				viewportHeight,
+				scaleLevel).height;
+	}
+
 	/** v2 firepower ring: fixed 24x24 and contained by the compact band. */
 	public static Rect compactReloadRing(
 			float availableWidth, int scaleLevel) {
+		return compactReloadRing(
+				availableWidth,
+				availableWidth * 2f,
+				scaleLevel);
+	}
+
+	public static Rect compactReloadRing(
+			float availableWidth,
+			float viewportHeight,
+			int scaleLevel) {
 		BukovRaidHudLayout layout =
-				calculate(availableWidth, scaleLevel);
+				calculate(
+						availableWidth,
+						viewportHeight,
+						scaleLevel);
 		Rect firepower = layout.firepower;
 		float x = firepower.right() - RELOAD_RING_SIZE;
 		float y = firepower.y
@@ -195,8 +258,42 @@ public final class BukovRaidHudLayout {
 				MOBILE_FEEDBACK_HEIGHT);
 	}
 
+	/**
+	 * The portrait tutorial occupies a dedicated row below backpack/pause and
+	 * the interaction rail. It must never share a baseline with either one.
+	 */
+	public static Rect portraitTutorialHint(
+			float viewportWidth,
+			float viewportHeight,
+			float hudBottom,
+			int scaleLevel) {
+		if (viewportWidth <= 0f || viewportHeight <= 0f) {
+			throw new IllegalArgumentException(
+					"viewport dimensions must be positive");
+		}
+		float width = Math.min(
+				190f * scaleMultiplier(scaleLevel),
+				Math.max(1f, viewportWidth - 16f));
+		float x = Math.max(0f, (viewportWidth - width) * 0.5f);
+		// Backpack/pause can be 24px tall and begin two pixels below the HUD.
+		// Reserve that complete row plus a four-pixel breathing gap.
+		float y = clamp(
+				hudBottom + 30f,
+				hudBottom,
+				Math.max(
+						hudBottom,
+						viewportHeight - TUTORIAL_HINT_HEIGHT - 4f));
+		return rect(x, y, width, TUTORIAL_HINT_HEIGHT);
+	}
+
 	public static float scaleMultiplier(int scaleLevel) {
 		return 1f + clampScaleLevel(scaleLevel) * 0.25f;
+	}
+
+	public static boolean isCompact(
+			float availableWidth, float viewportHeight) {
+		return availableWidth < WIDE_THRESHOLD
+				|| viewportHeight > availableWidth * 1.15f;
 	}
 
 	/**
@@ -223,6 +320,16 @@ public final class BukovRaidHudLayout {
 		return ellipsize(normalized, Math.min(32, limit));
 	}
 
+	/** One-line fitting for the larger HP/ammunition typography. */
+	public static String compactPrimaryLine(
+			String value, float availableWidth, int scaleLevel) {
+		String normalized = normalize(value);
+		float glyphWidth = 5.5f + clampScaleLevel(scaleLevel) * 0.5f;
+		int limit = Math.max(
+				5, (int)Math.floor(Math.max(1f, availableWidth) / glyphWidth));
+		return ellipsize(normalized, Math.min(24, limit));
+	}
+
 	private static String normalize(String value) {
 		if (value == null) return "";
 		return value.trim().replaceAll("\\s+", " ");
@@ -239,6 +346,11 @@ public final class BukovRaidHudLayout {
 	private static Rect rect(
 			float x, float y, float width, float height) {
 		return new Rect(x, y, width, height);
+	}
+
+	private static float clamp(
+			float value, float minimum, float maximum) {
+		return Math.max(minimum, Math.min(maximum, value));
 	}
 
 	private static int clampScaleLevel(int scaleLevel) {

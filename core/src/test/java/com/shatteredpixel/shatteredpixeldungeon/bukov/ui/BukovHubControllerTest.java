@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveService;
+import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -30,7 +31,11 @@ public class BukovHubControllerTest {
 		BukovHubController hub = new BukovHubController(saves);
 
 		assertTrue(saves.loadProfile().unlockedMaps().contains("fog_depot"));
-		assertEquals("合同 0/5 · 区域 1/6", hub.viewModel().careerSummary);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.career_summary",
+						0, 5, 1, 6),
+				hub.viewModel().careerSummary);
 	}
 
 	@Test
@@ -42,7 +47,7 @@ public class BukovHubControllerTest {
 		BukovProfile profile = saves.loadProfile();
 		assertEquals(3, profile.stash().distinctItemCount());
 		assertEquals(3, profile.loadout().distinctItemCount());
-		assertTrue(hub.summary().contains("风险价值"));
+		assertFalse(hub.summary().isEmpty());
 		assertEquals(3, hub.viewModel().stashItems.size());
 		assertEquals(3, hub.viewModel().selectedCount);
 		assertFalse(hub.viewModel().overweight);
@@ -64,7 +69,10 @@ public class BukovHubControllerTest {
 		hub.cycleSelectedMap();
 
 		assertEquals("rust_workshop", saves.loadProfile().selectedMap());
-		assertEquals("锈蚀工场", hub.viewModel().selectedMapName);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.map_rust_workshop"),
+				hub.viewModel().selectedMapName);
 		hub.cycleSelectedMap();
 		assertEquals("fog_depot", saves.loadProfile().selectedMap());
 	}
@@ -77,8 +85,11 @@ public class BukovHubControllerTest {
 		hub.clearLoadout();
 		assertEquals(0, saves.loadProfile().loadout().distinctItemCount());
 		assertFalse(hub.viewModel().canDeploy);
-		assertTrue(hub.viewModel().deploymentBlockReason.contains("主武器"));
-		assertBlocked(hub, "主武器");
+		assertEquals(
+				BukovMessages.get("bukov.economy.hub.block_no_primary"),
+				hub.viewModel().deploymentBlockReason);
+		hub.confirmDeployment();
+		assertTrue(hub.viewModel().canDeploy);
 
 		hub.recommendLoadout();
 		assertEquals(3, saves.loadProfile().loadout().distinctItemCount());
@@ -88,7 +99,9 @@ public class BukovHubControllerTest {
 		assertEquals(2, hub.viewModel().selectedCount);
 		assertFalse(hub.viewModel().stashItems.get(0).selected);
 		assertFalse(hub.viewModel().canDeploy);
-		assertTrue(hub.viewModel().deploymentBlockReason.contains("主武器"));
+		assertEquals(
+				BukovMessages.get("bukov.economy.hub.block_no_primary"),
+				hub.viewModel().deploymentBlockReason);
 	}
 
 	@Test
@@ -210,6 +223,104 @@ public class BukovHubControllerTest {
 	}
 
 	@Test
+	public void selectedOversizedAmmoIsReplacedByOneClickDeployment()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		RaidItem weapon = raidItem(
+				"selected-needle",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				850);
+		RaidItem oversizedAmmo = raidItem(
+				"selected-oversized-nine",
+				"ammo:ammo_9_standard",
+				4_000,
+				0.012f,
+				12);
+		profile.stash().deposit(weapon);
+		profile.stash().deposit(oversizedAmmo);
+		profile.loadout().select(weapon.itemUid(), profile.stash());
+		profile.loadout().select(
+				oversizedAmmo.itemUid(), profile.stash());
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		assertFalse(hub.viewModel().canDeploy);
+
+		hub.confirmDeployment();
+
+		BukovProfile repaired = saves.loadProfile();
+		assertTrue(hub.viewModel().canDeploy);
+		assertFalse(repaired.loadout().contains(
+				oversizedAmmo.itemUid()));
+		assertTrue(hasSelectedDefinition(
+				repaired,
+				"ammo:ammo_9_standard"));
+	}
+
+	@Test
+	public void nearCapacityLegacyGunFallsBackToStandardRecoveryPair()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		RaidItem legacyHeavyGun = raidItem(
+				"legacy-heavy-needle",
+				"firearm:needle_9",
+				1,
+				39.9f,
+				850);
+		profile.stash().deposit(legacyHeavyGun);
+		profile.loadout().select(
+				legacyHeavyGun.itemUid(), profile.stash());
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		hub.confirmDeployment();
+
+		BukovProfile repaired = saves.loadProfile();
+		assertTrue(hub.viewModel().canDeploy);
+		assertFalse(repaired.loadout().contains(
+				legacyHeavyGun.itemUid()));
+		assertTrue(hasSelectedDefinition(
+				repaired,
+				"firearm:needle_9"));
+		assertTrue(hasSelectedDefinition(
+				repaired,
+				"ammo:ammo_9_standard"));
+	}
+
+	@Test
+	public void malformedStackedGearIsSkippedDuringAutomaticRepair()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(raidItem(
+				"stacked-armor",
+				"armor:soft_vest",
+				2,
+				2.4f,
+				1_400));
+		profile.stash().deposit(raidItem(
+				"stacked-pack",
+				"backpack:field_pack",
+				2,
+				2f,
+				3_100));
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		hub.clearLoadout();
+		hub.confirmDeployment();
+
+		BukovProfile repaired = saves.loadProfile();
+		assertTrue(hub.viewModel().canDeploy);
+		assertFalse(repaired.loadout().contains("stacked-armor"));
+		assertFalse(repaired.loadout().contains("stacked-pack"));
+	}
+
+	@Test
 	public void modeCycleReachesRiskFreeTrainingGround() throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
 		BukovHubController hub = new BukovHubController(saves);
@@ -219,8 +330,14 @@ public class BukovHubControllerTest {
 
 		assertEquals(BukovRaidMode.TRAINING_GROUND,
 				saves.loadProfile().selectedRaidMode());
-		assertEquals("演练场", hub.viewModel().raidModeName);
-		assertTrue(hub.viewModel().raidModeSummary.contains("无仓库损失"));
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.mode.name_training_ground"),
+				hub.viewModel().raidModeName);
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.mode.summary_training_ground"),
+				hub.viewModel().raidModeSummary);
 		assertEquals(0, hub.viewModel().selectedCount);
 		assertTrue(hub.viewModel().canDeploy);
 	}
@@ -314,9 +431,15 @@ public class BukovHubControllerTest {
 		hub.clearLoadout();
 		hub.toggleItem(BukovStarterProvisioning.WEAPON_UID);
 		assertFalse(hub.viewModel().canDeploy);
-		assertTrue(hub.viewModel().deploymentBlockReason
-				.contains("兼容弹药"));
-		assertBlocked(hub, "兼容弹药");
+		String noCompatibleAmmo = BukovMessages.get(
+				"bukov.economy.hub.block_no_ammo",
+				BukovMessages.get(
+						"bukov.economy.item.firearm_needle_9"));
+		assertEquals(
+				noCompatibleAmmo,
+				hub.viewModel().deploymentBlockReason);
+		hub.confirmDeployment();
+		assertTrue(hub.viewModel().canDeploy);
 
 		BukovProfile profile = saves.loadProfile();
 		profile.stash().deposit(new RaidItem(
@@ -335,12 +458,10 @@ public class BukovHubControllerTest {
 		hub.toggleItem(BukovStarterProvisioning.AMMO_UID);
 		hub.toggleItem("wrong-ammo");
 		assertFalse(hub.viewModel().canDeploy);
-		assertBlocked(hub, "兼容弹药");
-
-		hub.toggleItem(BukovStarterProvisioning.AMMO_UID);
+		hub.confirmDeployment();
 		assertTrue(hub.viewModel().canDeploy);
 		assertEquals(null, hub.viewModel().deploymentBlockReason);
-		hub.confirmDeployment();
+		assertFalse(saves.loadProfile().loadout().contains("wrong-ammo"));
 	}
 
 	@Test
@@ -440,7 +561,12 @@ public class BukovHubControllerTest {
 		BukovHubViewModel model =
 				new BukovHubController(saves).viewModel();
 
-		assertEquals("53.2/56.0kg", model.loadoutSummary());
+		assertEquals(
+				BukovMessages.get(
+						"bukov.economy.hub.weight_summary",
+						"53.2",
+						"56.0"),
+				model.loadoutSummary());
 		assertFalse(model.overweight);
 		assertTrue(model.canDeploy);
 	}
@@ -620,7 +746,10 @@ public class BukovHubControllerTest {
 		try {
 			action.run();
 		} catch (IllegalStateException expected) {
-			assertTrue(expected.getMessage().contains("行动进行中"));
+			assertEquals(
+					BukovMessages.get(
+							"bukov.economy.feedback.loadout_raid_locked"),
+					expected.getMessage());
 			return;
 		}
 		throw new AssertionError("active raid mutation should be locked");
@@ -667,18 +796,6 @@ public class BukovHubControllerTest {
 			if (definitionId.equals(item.definitionId())) return true;
 		}
 		return false;
-	}
-
-	private static void assertBlocked(
-			BukovHubController hub,
-			String expectedReason) throws IOException {
-		try {
-			hub.confirmDeployment();
-		} catch (IllegalStateException expected) {
-			assertTrue(expected.getMessage().contains(expectedReason));
-			return;
-		}
-		throw new AssertionError("invalid standard deployment should be blocked");
 	}
 
 	private interface IoAction {
