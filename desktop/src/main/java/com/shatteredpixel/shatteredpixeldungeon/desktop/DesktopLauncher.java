@@ -49,6 +49,8 @@ import java.util.Locale;
 
 public class DesktopLauncher {
 
+	private static final String BUKOV_SAVE_VENDOR = "leoyuan";
+
 	public static void main (String[] args) {
 
 		if (!DesktopLaunchValidator.verifyValidJVMState(args)){
@@ -144,7 +146,7 @@ public class DesktopLauncher {
 		if (vendor == null) {
 			vendor = System.getProperty("Implementation-Title");
 		}
-		vendor = vendor.split("\\.")[1];
+		vendor = saveVendor(vendor);
 
 		String basePath = "";
 		Files.FileType baseFileType = null;
@@ -197,5 +199,23 @@ public class DesktopLauncher {
 				return new DesktopImeInput(window);
 			}
 		};
+	}
+
+	/**
+	 * Older builds used a Java package name such as
+	 * {@code com.shatteredpixel.shatteredpixeldungeon} as the manifest title
+	 * and stored the second segment as their desktop save vendor. Bukov's
+	 * public manifest title is now the localized product name, so it no longer
+	 * has a second segment. Keep old package-style builds compatible while
+	 * giving the standalone Bukov product a stable cross-platform vendor.
+	 */
+	static String saveVendor(String implementationTitle) {
+		if (implementationTitle != null) {
+			String[] segments = implementationTitle.trim().split("\\.");
+			if (segments.length > 1 && !segments[1].trim().isEmpty()) {
+				return segments[1].trim();
+			}
+		}
+		return BUKOV_SAVE_VENDOR;
 	}
 }
