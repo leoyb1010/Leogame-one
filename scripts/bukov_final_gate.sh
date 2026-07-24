@@ -23,7 +23,7 @@ source_branch=""
 started_utc=""
 lock_held=false
 evidence_created=false
-planned_step_count=32
+planned_step_count=33
 
 usage() {
   cat <<'USAGE'
@@ -387,46 +387,50 @@ execute_sequence() {
   run_step "20-five-mode-lifecycle" \
     "All five selectable modes share the complete raid lifecycle" \
     /bin/zsh "$script_dir/bukov_five_mode_lifecycle_gate.sh"
-  run_step "21-test-desktop" \
+  run_step "21-mode-theme-boss-matrix" \
+    "24 economic mode-theme hosts plus fixed training close map, Boss, extraction, and settlement contracts" \
+    /bin/zsh "$script_dir/bukov_mode_theme_boss_matrix_gate.sh" \
+      --output "$evidence_dir/mode-theme-boss-matrix"
+  run_step "22-test-desktop" \
     "Complete Desktop test suite" \
     "$gradle" :desktop:test --rerun-tasks --no-daemon
-  run_step "22-test-ios" \
+  run_step "23-test-ios" \
     "Complete iOS test suite" \
     "$gradle" :ios:test --rerun-tasks --no-daemon
-  run_step "23-robovm-api" \
+  run_step "24-robovm-api" \
     "RoboVM AOT API compatibility gate" \
     python3 "$script_dir/bukov_robovm_api_gate.py"
 
-  run_step "24-seed-10000" \
+  run_step "25-seed-10000" \
     "10,000-seed synthetic and real first-raid critical-path sweep" \
     "$script_dir/bukov_seed_sweep.sh" 10000
-  run_step "25-save-100" \
+  run_step "26-save-100" \
     "100-iteration in-memory and real-disk save stress gate" \
     "$script_dir/bukov_save_stress.sh" 100
-  run_step "26-performance-smoke-1800" \
+  run_step "27-performance-smoke-1800" \
     "1,800-second fixed-step performance smoke gate" \
     "$script_dir/bukov_performance_smoke.sh" 1800
-  run_step "27-performance-e2e-1800" \
+  run_step "28-performance-e2e-1800" \
     "1,800-second 30-enemy/200-projectile E2E CPU gate" \
     "$script_dir/bukov_performance_e2e.sh" 1800
 
-  run_step "28-build-macos" \
+  run_step "29-build-macos" \
     "Build the macOS jpackage application image" \
     "$gradle" :desktop:jpackageImage --rerun-tasks --no-daemon
-  run_step "29-build-ios-simulator" \
+  run_step "30-build-ios-simulator" \
     "Build and launch the iOS Simulator application" \
     "$gradle" :ios:launchIPhoneSimulator \
       "-Probovm.device.name=$ios_device" --rerun-tasks --no-daemon
-  run_step "30-packaged-legal" \
+  run_step "31-packaged-legal" \
     "Verify legal payloads in both built application bundles" \
     /bin/sh "$script_dir/bukov_packaged_legal_gate.sh" "$mac_app" "$ios_app"
-  run_step "31-packaged-provenance" \
+  run_step "32-packaged-provenance" \
     "Prove both Apple bundles are clean builds of the sealed source commit" \
     "$script_dir/bukov_package_personal_build.sh" \
       --output "$evidence_dir" \
       --version "gate-${source_commit[1,12]}" \
       --dry-run
-  run_step "32-source-integrity" \
+  run_step "33-source-integrity" \
     "Verify final HEAD and clean worktree still match the sealed source" \
     /bin/zsh -c \
       '[[ "$(git -C "$1" rev-parse HEAD)" == "$2" ]] && [[ -z "$(git -C "$1" status --porcelain --untracked-files=all)" ]]' \

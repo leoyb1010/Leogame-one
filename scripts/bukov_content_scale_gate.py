@@ -18,6 +18,34 @@ VENDOR_SOURCE = (
     / "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
     "bukov/raid/BukovVendorCatalog.java"
 ).read_text(encoding="utf-8")
+MESSAGE_ROOT = ROOT / "core/src/main/assets/messages"
+ECONOMY_MESSAGES = MESSAGE_ROOT / "bukov_economy"
+RAID_MESSAGES = MESSAGE_ROOT / "bukov_raid"
+
+
+def load_properties(directory, name):
+    """Load the repository's deliberately strict key=value message format."""
+    values = {}
+    path = directory / name
+    for line_number, raw_line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
+        line = raw_line.strip()
+        if not line or line.startswith(("#", "!")):
+            continue
+        key, separator, value = line.partition("=")
+        assert separator, (
+            f"invalid strict key=value line in {path}:{line_number}: "
+            f"{raw_line}"
+        )
+        key = key.strip()
+        assert key, f"empty properties key in {path}:{line_number}"
+        assert key not in values, (
+            f"duplicate properties key in {path}:{line_number}: {key}"
+        )
+        values[key] = value.strip()
+    return values
 
 
 def load(name, key):
@@ -29,6 +57,14 @@ def load(name, key):
 firearms = load("firearms.json", "firearms")
 ammunition = load("ammunition.json", "ammunition")
 enemies = load("enemies.json", "enemies")
+economy_en = load_properties(
+    ECONOMY_MESSAGES, "bukov_economy.properties"
+)
+economy_zh = load_properties(
+    ECONOMY_MESSAGES, "bukov_economy_zh.properties"
+)
+raid_en = load_properties(RAID_MESSAGES, "bukov_raid.properties")
+raid_zh = load_properties(RAID_MESSAGES, "bukov_raid_zh.properties")
 
 assert len(firearms) == 18, f"expected 18 firearms, got {len(firearms)}"
 firearm_ids = {item["id"] for item in firearms}
@@ -90,7 +126,23 @@ for firearm in firearms:
     assert default_ammo["caliber"] == firearm["caliber"], (
         f"incompatible ammo: {firearm['id']}"
     )
-    assert firearm["name"] in LOOT_SOURCE, f"missing Chinese loot name: {firearm['id']}"
+    localized_key = f"bukov.economy.item.firearm_{firearm['id']}"
+    raid_key = f"bukov.raid.item.firearm_{firearm['id']}"
+    assert economy_en.get(localized_key), (
+        f"missing English firearm localization: {firearm['id']}"
+    )
+    assert economy_zh.get(localized_key) == firearm["name"], (
+        f"Chinese firearm localization drift: {firearm['id']}"
+    )
+    assert raid_en.get(raid_key) == economy_en[localized_key], (
+        f"raid/economy English firearm name drift: {firearm['id']}"
+    )
+    assert raid_zh.get(raid_key) == firearm["name"], (
+        f"raid Chinese firearm localization drift: {firearm['id']}"
+    )
+    assert raid_zh[raid_key] == economy_zh[localized_key], (
+        f"raid/economy Chinese firearm name drift: {firearm['id']}"
+    )
     assert f'firearm("{firearm["id"]}"' in LOOT_SOURCE, (
         f"not obtainable as raid loot: {firearm['id']}"
     )

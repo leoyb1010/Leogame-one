@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import glob
 import os
+import subprocess
 import struct
 import sys
 import zipfile
@@ -25,8 +26,9 @@ DEFAULT_JAR_GLOB = os.path.expanduser(
     "~/.gradle/caches/modules-2/files-2.1/com.mobidevelop.robovm/"
     "robovm-rt/2.3.24/*/robovm-rt-2.3.24.jar"
 )
-DEFAULT_CLASSES = Path("core/build/classes/java/main")
-DEFAULT_SOURCES = Path("core/src/main/java")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CLASSES = PROJECT_ROOT / "core/build/classes/java/main"
+DEFAULT_SOURCES = PROJECT_ROOT / "core/src/main/java"
 BUKOV_PREFIX = (
     "com/shatteredpixel/shatteredpixeldungeon/bukov/"
 )
@@ -346,6 +348,62 @@ def discover_jar(argument: Optional[str]) -> Path:
     return Path(matches[0]).resolve()
 
 
+def discover_classes(argument: Optional[str]) -> Path:
+    if argument:
+        path = Path(argument).expanduser().resolve()
+        production_classes(path)
+        return path
+
+    candidates: List[Path] = []
+    configured_root = os.environ.get("APPLE_BUILD_ROOT")
+    if configured_root:
+        candidates.append(
+            Path(configured_root).expanduser().resolve()
+            / "core/classes/java/main"
+        )
+    try:
+        darwin_cache = subprocess.check_output(
+            ["getconf", "DARWIN_USER_CACHE_DIR"],
+            text=True,
+        ).strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        darwin_cache = ""
+    if darwin_cache:
+        candidates.append(
+            Path(darwin_cache).resolve()
+            / "escape-from-bukov-gradle/core/classes/java/main"
+        )
+    candidates.append(DEFAULT_CLASSES.resolve())
+
+    unique_candidates: List[Path] = []
+    for candidate in candidates:
+        if candidate not in unique_candidates:
+            unique_candidates.append(candidate)
+
+    rejected: List[str] = []
+    for candidate in unique_candidates:
+        try:
+            production_classes(candidate)
+        except SystemExit as error:
+            rejected.append(f"{candidate}: {error}")
+            continue
+        freshness = stale_or_missing_classes(
+            candidate,
+            DEFAULT_SOURCES,
+        )
+        if not freshness:
+            return candidate
+        rejected.append(
+            f"{candidate}: {len(freshness)} stale or missing classes"
+        )
+    rendered = "\n  ".join(rejected)
+    raise SystemExit(
+        "fresh compiled Bukov classes were not found in any supported build "
+        f"directory:\n  {rendered}\n"
+        "compile core classes before running the gate"
+    )
+
+
 def production_classes(directory: Path) -> List[Path]:
     root = directory / BUKOV_PREFIX
     if not root.is_dir():
@@ -353,7 +411,13 @@ def production_classes(directory: Path) -> List[Path]:
             f"compiled Bukov classes not found under {root}; "
             "compile core classes before running the gate"
         )
-    return sorted(root.rglob("*.class"))
+    class_files = sorted(root.rglob("*.class"))
+    if not class_files:
+        raise SystemExit(
+            f"compiled Bukov class directory is empty: {root}; "
+            "compile core classes before running the gate"
+        )
+    return class_files
 
 
 def stale_or_missing_classes(
@@ -378,7 +442,7 @@ def audit(jar_path: Path, classes_dir: Path) -> int:
     class_files = production_classes(classes_dir)
     freshness = stale_or_missing_classes(
         classes_dir,
-        DEFAULT_SOURCES.resolve(),
+        DEFAULT_SOURCES,
     )
     if freshness:
         print(
@@ -445,10 +509,8 @@ def main(arguments: Sequence[str]) -> int:
             "[robovm-rt.jar] [compiled-classes-dir]"
         )
     jar_path = discover_jar(arguments[0] if arguments else None)
-    classes_dir = (
-        Path(arguments[1]).expanduser().resolve()
-        if len(arguments) == 2
-        else DEFAULT_CLASSES.resolve()
+    classes_dir = discover_classes(
+        arguments[1] if len(arguments) == 2 else None
     )
     return audit(jar_path, classes_dir)
 

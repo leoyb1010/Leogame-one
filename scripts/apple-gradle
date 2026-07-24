@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root=${0:A:h:h}
 jdk_prefix=$(/opt/homebrew/bin/brew --prefix openjdk@17)
-apple_cache_root="$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle"
+apple_cache_root="${APPLE_BUILD_ROOT:-$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle}"
 source_commit="$(git -C "$project_root" rev-parse HEAD)"
 source_worktree="clean"
 if [[ -n "$(git -C "$project_root" status --porcelain --untracked-files=all)" ]]; then
