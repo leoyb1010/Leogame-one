@@ -23,6 +23,12 @@ robovmProps.setProperty('appVersionName', appVersionName)
 robovmProps.setProperty('appShortVersionName', (appVersionName =~ /\d+\.\d+\.\d+/)[0])
 robovmProps.setProperty('appMainclass', appPackageName + ".ios.IOSLauncher")
 robovmProps.setProperty('appExecutable', "IOSLauncher")
+robovmProps.setProperty(
+        'bukovSourceCommit',
+        System.getenv('BUKOV_SOURCE_COMMIT') ?: 'unknown')
+robovmProps.setProperty(
+        'bukovSourceWorktree',
+        System.getenv('BUKOV_SOURCE_WORKTREE') ?: 'unknown')
 file("robovm.properties").withWriter {
     robovmProps.store(it, "Dynamically generated, do not commit to version control!")
 }

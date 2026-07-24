@@ -1312,8 +1312,11 @@ public final class BukovRealtimeWorld
 		pendingHits.clear();
 
 		for (PendingEnemyShot event : pendingEnemyShots) {
-			if (!hero.isAlive()) {
-				break;
+			if (!queuedEnemyShotCanDamage(event.attacker, hero)) {
+				if (!hero.isAlive()) {
+					break;
+				}
+				continue;
 			}
 			int incomingDamage = event.damage;
 			if (equippedGear != null) {
@@ -2056,6 +2059,7 @@ public final class BukovRealtimeWorld
 		next.activate(hero);
 		resetFireControlForWeaponSwap();
 		resolveEquippedFirearm();
+		raid.equipFirearm(itemUid);
 		showHeroStatus(BukovMessages.get(
 				"bukov.raid.runtime.weapon_equipped_format",
 				BukovBackpackViewModel.localizedFirearmName(
@@ -3606,6 +3610,14 @@ public final class BukovRealtimeWorld
 				&& shooter.realtimeBody == shooterBody
 				&& player != null
 				&& player.realtimeBody == playerBody
+				&& player.isAlive();
+	}
+
+	static boolean queuedEnemyShotCanDamage(Char attacker, Char player) {
+		return attacker != null
+				&& attacker != player
+				&& attacker.isAlive()
+				&& player != null
 				&& player.isAlive();
 	}
 

@@ -59,6 +59,8 @@ public class BukovSceneLifecycleGuardTest {
 				"public void destroy()",
 				"public static void endActorThread()");
 		assertTrue(pause.contains("resetBukovInputState();"));
+		assertTrue(pause.contains(
+				"catch (IOException | RuntimeException e)"));
 		assertTrue(destroy.contains("closeBukovBackpack();"));
 		assertTrue(destroy.contains("resetBukovInputState();"));
 

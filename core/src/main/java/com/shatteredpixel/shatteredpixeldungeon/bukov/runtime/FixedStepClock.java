@@ -10,6 +10,11 @@ public final class FixedStepClock {
 		void step(float deltaSeconds);
 	}
 
+	@FunctionalInterface
+	public interface ConditionalStepper {
+		boolean step(float deltaSeconds);
+	}
+
 	private final float stepSeconds;
 	private final float maxFrameSeconds;
 	private final int maxStepsPerFrame;
@@ -34,12 +39,33 @@ public final class FixedStepClock {
 		if (stepper == null) {
 			throw new IllegalArgumentException("stepper is required");
 		}
+		return advanceWhile(frameSeconds, deltaSeconds -> {
+			stepper.step(deltaSeconds);
+			return true;
+		});
+	}
+
+	/**
+	 * Advances until the callback asks the clock to stop. Stopping clears the
+	 * remaining frame backlog so a pause or terminal state cannot be replayed
+	 * as catch-up simulation on the next rendered frame.
+	 */
+	public float advanceWhile(
+			float frameSeconds,
+			ConditionalStepper stepper) {
+		if (stepper == null) {
+			throw new IllegalArgumentException("stepper is required");
+		}
 		accumulator += Math.max(0f, Math.min(frameSeconds, maxFrameSeconds));
 		int steps = 0;
 		while (accumulator >= stepSeconds && steps < maxStepsPerFrame) {
-			stepper.step(stepSeconds);
+			boolean keepAdvancing = stepper.step(stepSeconds);
 			accumulator -= stepSeconds;
 			steps++;
+			if (!keepAdvancing) {
+				accumulator = 0f;
+				break;
+			}
 		}
 		if (steps == maxStepsPerFrame && accumulator >= stepSeconds) {
 			accumulator %= stepSeconds;

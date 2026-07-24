@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
@@ -267,6 +268,20 @@ public final class BukovRaidCoordinator {
 
 	public LootTransaction loot() {
 		return checkpoint.loot();
+	}
+
+	public String equippedFirearmUid() {
+		return checkpoint.equippedFirearmUid();
+	}
+
+	public void equipFirearm(String itemUid) {
+		ensureOpen();
+		if (!(checkpoint.hostItem(itemUid) instanceof Firearm)
+				|| loot().item(itemUid) == null) {
+			throw new IllegalArgumentException(
+					"Unknown carried firearm: " + itemUid);
+		}
+		checkpoint.setEquippedFirearmUid(itemUid);
 	}
 
 	/**

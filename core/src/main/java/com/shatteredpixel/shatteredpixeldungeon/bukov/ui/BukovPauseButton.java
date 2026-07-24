@@ -14,6 +14,7 @@ public final class BukovPauseButton extends Button {
 	private BukovUiTokens tokens;
 	private ColorBlock background;
 	private ColorBlock edge;
+	private BukovTouchIcon icon;
 	private RenderedTextBlock label;
 
 	public BukovPauseButton(Callback callback) {
@@ -29,10 +30,16 @@ public final class BukovPauseButton extends Button {
 		addToBack(background);
 		edge = new ColorBlock(1, 1, tokens.color("accent.interact"));
 		add(edge);
+		icon = new BukovTouchIcon(
+				BukovTouchIcon.Glyph.PAUSE,
+				tokens.color("text.primary"),
+				tokens.color("accent.interact"),
+				tokens.color("text.disabled"));
+		add(icon);
 		label = PixelScene.renderTextBlock(
 				BukovMessages.get("bukov.raid.pause.button"),
 				tokens.typographyPx(
-						BukovVisualContract.FONT_BODY));
+						BukovVisualContract.FONT_CAPTION));
 		label.hardlight(tokens.color("text.primary"));
 		label.align(RenderedTextBlock.CENTER_ALIGN);
 		add(label);
@@ -54,6 +61,16 @@ public final class BukovPauseButton extends Button {
 		edge.x = x;
 		edge.y = y;
 		edge.size(width, 1);
-		label.setRect(x + 2, y + (height - 9) / 2f, width - 4, 9);
+		float iconSize = Math.max(8f, Math.min(12f, height - 4f));
+		icon.setRect(
+				x + 4f,
+				y + (height - iconSize) * 0.5f,
+				iconSize,
+				iconSize);
+		label.setRect(
+				x + iconSize + 7f,
+				y + (height - 7) / 2f,
+				Math.max(1f, width - iconSize - 11f),
+				7);
 	}
 }

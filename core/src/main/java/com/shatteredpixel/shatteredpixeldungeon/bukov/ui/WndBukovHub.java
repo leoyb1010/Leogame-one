@@ -432,6 +432,57 @@ public final class WndBukovHub extends Window {
 				y + (regionHeight - block.height()) / 2f);
 	}
 
+	private BukovTouchIcon hubIcon(BukovTouchIcon.Glyph glyph) {
+		return new BukovTouchIcon(
+				glyph,
+				tokens.color("text.primary"),
+				tokens.color("accent.interact"),
+				tokens.color("text.disabled"));
+	}
+
+	private void layoutIconLabel(
+			BukovTouchIcon icon,
+			RenderedTextBlock label,
+			float left,
+			float top,
+			float regionWidth,
+			float regionHeight) {
+		float iconSize = Math.max(
+				7f,
+				Math.min(12f, regionHeight - 3f));
+		float iconLeft = left + 4f;
+		icon.setRect(
+				iconLeft,
+				top + (regionHeight - iconSize) * 0.5f,
+				iconSize,
+				iconSize);
+		float textLeft = iconLeft + iconSize + 3f;
+		float textWidth = Math.max(
+				1f,
+				left + regionWidth - 4f - textLeft);
+		label.maxWidth(Math.max(1, (int) textWidth));
+		center(label, textLeft, top, textWidth, regionHeight);
+	}
+
+	private BukovTouchIcon.Glyph actionGlyph(int action) {
+		switch (action) {
+			case BukovHubFocusModel.ACTION_VENDOR:
+				return BukovTouchIcon.Glyph.VENDOR;
+			case BukovHubFocusModel.ACTION_REPEAT:
+				return viewModel.activeRaid
+						? BukovTouchIcon.Glyph.DROP
+						: BukovTouchIcon.Glyph.RECOMMEND;
+			case BukovHubFocusModel.ACTION_CLEAR:
+				return BukovTouchIcon.Glyph.DROP;
+			case BukovHubFocusModel.ACTION_DEPLOY:
+				return BukovTouchIcon.Glyph.DEPLOY;
+			case BukovHubFocusModel.ACTION_BACK:
+				return BukovTouchIcon.Glyph.BACK;
+			default:
+				return BukovTouchIcon.Glyph.INTERACT;
+		}
+	}
+
 	private String settlementText() {
 		if (viewModel.activeRaid) {
 			return BukovMessages.get(
@@ -997,6 +1048,7 @@ public final class WndBukovHub extends Window {
 
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private FilterCycleButton() {
@@ -1008,6 +1060,8 @@ public final class WndBukovHub extends Window {
 			edge = new ColorBlock(
 					1, 1, tokens.color("panel.border"));
 			add(edge);
+			icon = hubIcon(BukovTouchIcon.Glyph.FILTER);
+			add(icon);
 			label = text(
 					BukovMessages.get(
 							"bukov.economy.hub.filter",
@@ -1041,8 +1095,7 @@ public final class WndBukovHub extends Window {
 			edge.x = x;
 			edge.y = y + height - 1;
 			edge.size(width, 1);
-			label.maxWidth(Math.max(1, (int) width - 2));
-			center(label, x + 1, y, width - 2, height);
+			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
 
@@ -1050,6 +1103,7 @@ public final class WndBukovHub extends Window {
 
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private SortCycleButton() {
@@ -1061,6 +1115,8 @@ public final class WndBukovHub extends Window {
 			edge = new ColorBlock(
 					1, 1, tokens.color("panel.border"));
 			add(edge);
+			icon = hubIcon(BukovTouchIcon.Glyph.SORT);
+			add(icon);
 			label = text(
 					BukovMessages.get(
 							"bukov.economy.hub.sort",
@@ -1093,8 +1149,7 @@ public final class WndBukovHub extends Window {
 			edge.x = x;
 			edge.y = y + height - 1;
 			edge.size(width, 1);
-			label.maxWidth(Math.max(1, (int)width - 2));
-			center(label, x + 1, y, width - 2, height);
+			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
 
@@ -1102,6 +1157,7 @@ public final class WndBukovHub extends Window {
 
 		private final ColorBlock surface;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private InventorySearchButton() {
@@ -1113,6 +1169,8 @@ public final class WndBukovHub extends Window {
 			edge = new ColorBlock(
 					1, 1, tokens.color("panel.border"));
 			add(edge);
+			icon = hubIcon(BukovTouchIcon.Glyph.SEARCH);
+			add(icon);
 			label = text(
 					inventoryQuery.isEmpty()
 							? BukovMessages.get(
@@ -1155,8 +1213,7 @@ public final class WndBukovHub extends Window {
 			edge.x = x;
 			edge.y = y + height - 1;
 			edge.size(width, 1);
-			label.maxWidth(Math.max(1, (int)width - 2));
-			center(label, x + 1, y, width - 2, height);
+			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
 
@@ -1165,6 +1222,7 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock surface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private ModeSelectButton() {
@@ -1180,13 +1238,15 @@ public final class WndBukovHub extends Window {
 					1, 1, tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			icon = hubIcon(BukovTouchIcon.Glyph.MODE);
+			add(icon);
 			label = text(
 					BukovMessages.get(
 							viewModel.canEditLoadout
 									? "bukov.economy.hub.mode_select"
 									: "bukov.economy.hub.mode_locked",
 							viewModel.raidModeName),
-					BukovVisualContract.FONT_BODY,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			add(label);
 		}
@@ -1215,7 +1275,7 @@ public final class WndBukovHub extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
-			label.setPos(x + 5, y + 4);
+			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
 
@@ -1379,6 +1439,7 @@ public final class WndBukovHub extends Window {
 		private final NinePatch focusSurface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock label;
 
 		private TacticalButton(
@@ -1416,7 +1477,10 @@ public final class WndBukovHub extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			label = text(value, BukovVisualContract.FONT_BODY,
+			icon = hubIcon(actionGlyph(action));
+			icon.visualState(false, !enabled);
+			add(icon);
+			label = text(value, BukovVisualContract.FONT_CAPTION,
 					enabled
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
@@ -1434,6 +1498,7 @@ public final class WndBukovHub extends Window {
 					: focused
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+			icon.visualState(false, !enabled);
 		}
 
 		@Override
@@ -1449,12 +1514,14 @@ public final class WndBukovHub extends Window {
 			surface.visible = false;
 			focusSurface.visible = false;
 			pressed.visible = true;
+			icon.visualState(true, false);
 		}
 
 		@Override
 		protected void onPointerUp() {
 			if (!enabled) return;
 			pressed.visible = false;
+			icon.visualState(false, false);
 			boolean focused = focus.actionIndex() == action;
 			surface.visible = !focused;
 			focusSurface.visible = focused;
@@ -1478,7 +1545,7 @@ public final class WndBukovHub extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 2;
 			focusEdge.size(width, 2);
-			center(label, x + 3, y, width - 6, height);
+			layoutIconLabel(icon, label, x, y, width, height);
 		}
 	}
 
@@ -1572,6 +1639,7 @@ public final class WndBukovHub extends Window {
 			private final boolean accepts;
 			private final ColorBlock surface;
 			private final ColorBlock edge;
+			private final BukovTouchIcon icon;
 			private final RenderedTextBlock label;
 
 			private ConfirmButton(String value, boolean accepts, int accent) {
@@ -1581,8 +1649,12 @@ public final class WndBukovHub extends Window {
 				addToBack(surface);
 				edge = new ColorBlock(1, 1, accent);
 				add(edge);
+				icon = hubIcon(accepts
+						? BukovTouchIcon.Glyph.DEPLOY
+						: BukovTouchIcon.Glyph.BACK);
+				add(icon);
 				label = text(
-						value, BukovVisualContract.FONT_BODY,
+						value, BukovVisualContract.FONT_CAPTION,
 						accepts
 								? tokens.color("text.primary")
 								: tokens.color("text.secondary"));
@@ -1608,7 +1680,7 @@ public final class WndBukovHub extends Window {
 				edge.x = x;
 				edge.y = y;
 				edge.size(2, height);
-				center(label, x + 3, y, width - 6, height);
+				layoutIconLabel(icon, label, x, y, width, height);
 			}
 		}
 	}

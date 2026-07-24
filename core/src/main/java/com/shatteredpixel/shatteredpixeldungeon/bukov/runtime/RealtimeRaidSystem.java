@@ -71,7 +71,13 @@ public final class RealtimeRaidSystem {
 			clock.reset();
 			return;
 		}
-		clock.advance(renderDelta, this::fixedUpdate);
+		clock.advanceWhile(renderDelta, dt -> {
+			if (world.paused()) {
+				return false;
+			}
+			fixedUpdate(dt);
+			return !world.paused();
+		});
 		world.renderInterpolate(clock.alpha());
 	}
 

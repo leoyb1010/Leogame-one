@@ -39,7 +39,8 @@ public final class BukovRuntimeLoadoutAdapter {
 		private final List<AmmoStack> reserveAmmo;
 		private final List<Item> supplies;
 		private final Map<String, Binding> bindings;
-		private final String magazineSourceUid;
+		private final FirearmRegistry firearms;
+		private final BukovRaidCheckpoint checkpoint;
 		private final BukovEquippedGear equippedGear;
 
 		private RuntimeLoadout(
@@ -49,7 +50,8 @@ public final class BukovRuntimeLoadoutAdapter {
 				List<AmmoStack> reserveAmmo,
 				List<Item> supplies,
 				Map<String, Binding> bindings,
-				String magazineSourceUid,
+				FirearmRegistry firearms,
+				BukovRaidCheckpoint checkpoint,
 				BukovEquippedGear equippedGear) {
 			this.raidId = raidId;
 			this.primaryWeapon = primaryWeapon;
@@ -60,7 +62,8 @@ public final class BukovRuntimeLoadoutAdapter {
 			this.supplies = Collections.unmodifiableList(
 					new ArrayList<>(supplies));
 			this.bindings = new LinkedHashMap<>(bindings);
-			this.magazineSourceUid = magazineSourceUid;
+			this.firearms = firearms;
+			this.checkpoint = checkpoint;
 			this.equippedGear = equippedGear;
 		}
 
@@ -133,10 +136,6 @@ public final class BukovRuntimeLoadoutAdapter {
 				if (binding.host instanceof Firearm) {
 					quantity = 1;
 					durability = ((Firearm) binding.host).durability();
-				} else if (binding.host instanceof AmmoStack
-						&& itemUid.equals(magazineSourceUid)
-						&& primaryWeapon != null) {
-					quantity += primaryWeapon.magazineAmmo();
 				}
 
 				if (quantity <= 0) {
@@ -148,10 +147,57 @@ public final class BukovRuntimeLoadoutAdapter {
 									durability));
 				}
 			}
+			refundMagazine(ledger, primaryWeapon);
+			for (Firearm secondary : secondaryWeapons) {
+				refundMagazine(ledger, secondary);
+			}
 			// Host supply Items do not know ballistic durability. Publish the
 			// dedicated armor state last so generic supply writeback cannot
 			// overwrite its condition with the deployment-time value.
 			equippedGear.writeBack(ledger);
+		}
+
+		private void refundMagazine(
+				LootTransaction ledger,
+				Firearm firearm) {
+			if (firearm == null || firearm.magazineAmmo() <= 0) {
+				return;
+			}
+			String loadedDefinitionId = firearm.loadedAmmoDefinitionId(
+					firearm.definition(firearms));
+			for (Map.Entry<String, Binding> entry : bindings.entrySet()) {
+				Binding binding = entry.getValue();
+				if (!(binding.host instanceof AmmoStack)
+						|| !loadedDefinitionId.equals(
+								((AmmoStack)binding.host).definitionId())) {
+					continue;
+				}
+				RaidItem current = ledger.item(entry.getKey());
+				int quantity = (current == null
+						? binding.host.quantity()
+						: current.quantity())
+						+ firearm.magazineAmmo();
+				RaidItem updated = binding.original.withRuntimeState(
+						quantity,
+						binding.original.durability());
+				if (ledger.contains(entry.getKey())) {
+					ledger.replace(updated);
+				} else if (ledger.pickup(updated)
+						!= LootTransaction.PickupResult.ADDED) {
+					throw new IllegalStateException(
+							"Unable to restore loaded ammunition to raid ledger");
+				}
+				if (checkpoint != null
+						&& checkpoint.hostItem(entry.getKey()) == null) {
+					checkpoint.carryHostItem(
+							entry.getKey(),
+							binding.host);
+				}
+				return;
+			}
+			throw new IllegalStateException(
+					"No carried ammunition stack matches loaded variant "
+							+ loadedDefinitionId);
 		}
 
 		private static void addToHostBackpack(Hero hero, Item item) {
@@ -223,6 +269,8 @@ public final class BukovRuntimeLoadoutAdapter {
 		List<AmmoStack> reserve = new ArrayList<>();
 		List<Item> supplies = new ArrayList<>();
 		Map<String, Binding> bindings = new LinkedHashMap<>();
+		String preferredPrimaryUid = checkpoint == null
+				? null : checkpoint.equippedFirearmUid();
 
 		for (RaidItem item : ledger.items()) {
 			if (item.foundInRaid()
@@ -263,7 +311,12 @@ public final class BukovRuntimeLoadoutAdapter {
 					if (build != null) firearm.applyBuild(build);
 				}
 				bind(item, firearm, bindings);
-				if (primary == null) {
+				boolean preferred = item.itemUid().equals(
+						preferredPrimaryUid);
+				if (primary == null || preferred) {
+					if (primary != null) {
+						secondary.add(primary);
+					}
 					primary = firearm;
 					primaryDefinition = firearm.definition(firearms);
 					primaryRestored = restoredFromCheckpoint;
@@ -312,7 +365,6 @@ public final class BukovRuntimeLoadoutAdapter {
 			supplies.add(supply);
 		}
 
-		String magazineSourceUid = null;
 		if (primary != null) {
 			AmmoStack source = selectMagazineSource(
 					reserve,
@@ -325,8 +377,11 @@ public final class BukovRuntimeLoadoutAdapter {
 							loaded,
 							primaryDefinition);
 				}
-				magazineSourceUid = source.bukovItemUid();
 			}
+		}
+		if (checkpoint != null) {
+			checkpoint.setEquippedFirearmUid(
+					primary == null ? null : primary.bukovItemUid());
 		}
 		for (int i = reserve.size() - 1; i >= 0; i--) {
 			if (reserve.get(i).quantity() <= 0) {
@@ -340,7 +395,8 @@ public final class BukovRuntimeLoadoutAdapter {
 				reserve,
 				supplies,
 				bindings,
-				magazineSourceUid,
+				firearms,
+				checkpoint,
 				BukovEquippedGear.from(ledger.items()));
 	}
 

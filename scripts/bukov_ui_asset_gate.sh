@@ -57,6 +57,14 @@ const expected = [
   "TOUCH_DROP",
   "TOUCH_BACKPACK",
   "TOUCH_PAUSE",
+  "HUB_MODE",
+  "HUB_VENDOR",
+  "HUB_FILTER",
+  "HUB_SORT",
+  "HUB_SEARCH",
+  "HUB_RECOMMEND",
+  "HUB_DEPLOY",
+  "HUB_BACK",
   "STATUS_ACTION",
   "STATUS_LOOT",
   "STATUS_EXTRACT",
@@ -71,7 +79,7 @@ const expected = [
 const actual = manifest.entries.map((entry) => entry.apiName);
 if (manifest.schemaVersion !== 2
     || manifest.width !== 256
-    || manifest.height !== 64
+    || manifest.height !== 80
     || manifest.pixelSampling !== "nearest"
     || actual.join(",") !== expected.join(",")) {
   throw new Error("Bukov UI atlas manifest contract drift");
@@ -121,6 +129,10 @@ requireDistinct([
 requireDistinct([
   "TOUCH_MOVEMENT", "TOUCH_AIM_FIRE", "TOUCH_INTERACT", "TOUCH_RELOAD",
   "TOUCH_MEDICAL", "TOUCH_DROP", "TOUCH_BACKPACK", "TOUCH_PAUSE",
+]);
+requireDistinct([
+  "HUB_MODE", "HUB_VENDOR", "HUB_FILTER", "HUB_SORT",
+  "HUB_SEARCH", "HUB_RECOMMEND", "HUB_DEPLOY", "HUB_BACK",
 ]);
 requireDistinct(["STAMP_EXTRACTED", "STAMP_LOST"]);
 NODE

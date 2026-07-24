@@ -21,7 +21,15 @@ public final class BukovTouchIcon extends Component {
 		MEDICAL,
 		DROP,
 		BACKPACK,
-		PAUSE
+		PAUSE,
+		MODE,
+		VENDOR,
+		FILTER,
+		SORT,
+		SEARCH,
+		RECOMMEND,
+		DEPLOY,
+		BACK
 	}
 
 	private final int restingColor;

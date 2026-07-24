@@ -17,7 +17,7 @@ public class BukovUiAssetsBoundaryTest {
 
 	private static final Path ASSETS = Paths.get("src/main/assets");
 	private static final String EXPECTED_SHA256 =
-			"a5d98fd0f27d5717e9bf2e58aecb009b511d3b757260fb320c1f4f72dcf68403";
+			"616845a221b2b234df58d22baa2fdb5b91d873f7619890421673890b6c09b8db";
 
 	@Test
 	public void atlasHasSealedRgbaPixelContract() throws Exception {
@@ -31,7 +31,7 @@ public class BukovUiAssetsBoundaryTest {
 						&& png[2] == 'N'
 						&& png[3] == 'G');
 		assertEquals(256, bigEndianInt(png, 16));
-		assertEquals(64, bigEndianInt(png, 20));
+		assertEquals(80, bigEndianInt(png, 20));
 		assertEquals("atlas must stay RGBA", 6, png[25] & 0xFF);
 		assertEquals(EXPECTED_SHA256, sha256(png));
 		assertTrue(BukovUiAssets.atlasAvailable());
@@ -71,6 +71,14 @@ public class BukovUiAssetsBoundaryTest {
 		assertTrue(manifest.contains("\"apiName\": \"TOUCH_DROP\""));
 		assertTrue(manifest.contains("\"apiName\": \"TOUCH_BACKPACK\""));
 		assertTrue(manifest.contains("\"apiName\": \"TOUCH_PAUSE\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_MODE\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_VENDOR\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_FILTER\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_SORT\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_SEARCH\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_RECOMMEND\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_DEPLOY\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_BACK\""));
 		assertTrue(manifest.contains(
 				"\"apiName\": \"TOUCH_DISABLED_STRIKE\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_ACTION\""));
@@ -112,6 +120,13 @@ public class BukovUiAssetsBoundaryTest {
 		assertTrue(hub.contains("Surface.BUTTON_FOCUSED"));
 		assertTrue(hub.contains("Surface.BUTTON_DISABLED"));
 		assertTrue(hub.contains("Surface.ROW_FOCUSED"));
+		for (String glyph : new String[] {
+				"MODE", "VENDOR", "FILTER", "SORT",
+				"SEARCH", "RECOMMEND", "DEPLOY", "BACK"
+		}) {
+			assertTrue(glyph, hub.contains(
+					"BukovTouchIcon.Glyph." + glyph));
+		}
 		String hubScene = javaSource("scenes/BukovHubScene.java");
 		assertTrue(hubScene.contains("Surface.BUTTON_FOCUSED"));
 		assertTrue(hubScene.contains("Surface.BUTTON_DISABLED"));

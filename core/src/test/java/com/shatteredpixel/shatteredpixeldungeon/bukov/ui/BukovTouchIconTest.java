@@ -20,10 +20,10 @@ public class BukovTouchIconTest {
 		Set<Integer> atlasColumns = new HashSet<>();
 		for (BukovTouchIcon.Glyph glyph : BukovTouchIcon.Glyph.values()) {
 			int column = BukovTouchIcon.atlasColumn(glyph);
-			assertTrue(column >= 8 && column <= 15);
+			assertTrue(column >= 8 && column <= 23);
 			assertTrue(atlasColumns.add(column));
 		}
-		assertEquals(8, atlasColumns.size());
+		assertEquals(16, atlasColumns.size());
 	}
 
 	@Test

@@ -69,19 +69,29 @@ public final class BukovUiAssets {
 	}
 
 	public enum TouchGlyph {
-		MOVEMENT(8),
-		AIM_FIRE(9),
-		INTERACT(10),
-		RELOAD(11),
-		MEDICAL(12),
-		DROP(13),
-		BACKPACK(14),
-		PAUSE(15);
+		MOVEMENT(8, 2),
+		AIM_FIRE(9, 2),
+		INTERACT(10, 2),
+		RELOAD(11, 2),
+		MEDICAL(12, 2),
+		DROP(13, 2),
+		BACKPACK(14, 2),
+		PAUSE(15, 2),
+		MODE(0, 4),
+		VENDOR(1, 4),
+		FILTER(2, 4),
+		SORT(3, 4),
+		SEARCH(4, 4),
+		RECOMMEND(5, 4),
+		DEPLOY(6, 4),
+		BACK(7, 4);
 
 		private final int column;
+		private final int row;
 
-		TouchGlyph(int column) {
+		TouchGlyph(int column, int row) {
 			this.column = column;
+			this.row = row;
 		}
 	}
 
@@ -194,7 +204,7 @@ public final class BukovUiAssets {
 		}
 		return image(
 				glyph.column * TILE_SIZE,
-				TILE_SIZE * 2,
+				TILE_SIZE * glyph.row,
 				TILE_SIZE,
 				TILE_SIZE,
 				fallbackColor);

@@ -78,6 +78,16 @@ def check_build_metadata() -> None:
             "iOS package identifier must come from the compatible bundle ID")
     require("robovmProps.setProperty('appName', appName)" in ios_build,
             "iOS product name must come from the Bukov app name")
+    require("'bukovSourceCommit'" in ios_build and "'bukovSourceWorktree'" in ios_build,
+            "iOS build must embed the source commit and worktree state")
+    require("<key>BukovSourceCommit</key>" in ios_info
+            and "<string>${bukovSourceCommit}</string>" in ios_info,
+            "iOS Info.plist must expose the embedded source commit")
+    require("<key>BukovSourceWorktree</key>" in ios_info
+            and "<string>${bukovSourceWorktree}</string>" in ios_info,
+            "iOS Info.plist must expose the embedded source worktree state")
+    require("bukov-build-identity.properties" in desktop_build,
+            "macOS package must embed the source build identity")
 
     mac_info = (ROOT / "desktop/src/main/jpackage/Info.plist").read_text(encoding="utf-8")
     require("<string>DEPLOY_BUNDLE_IDENTIFIER</string>" in mac_info,

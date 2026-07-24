@@ -25,23 +25,27 @@ Usage:
     [--cache /absolute/apple-gradle/cache] \
     [--dry-run | --apply]
 
-Copies the current macOS and iOS Simulator .app bundles from apple-gradle's
-cache into one immutable direct child of --output:
+Seals the current macOS and iOS Simulator .app bundles from apple-gradle's
+cache into one immutable, archive-only direct child of --output:
 
   OUTPUT/逃离布科夫-VERSION/
 
 The default is --dry-run. --apply performs these steps without a developer
 certificate:
 
-  1. Strictly verifies both cached source bundles.
-  2. Copies both bundles into a private, non-FileProvider staging directory.
-  3. Recursively removes extended attributes, including FinderInfo and
+  1. Requires a clean Git worktree and proves both cached bundles embed the
+     exact current source commit and clean build state.
+  2. Strictly verifies both cached source bundles.
+  3. Copies both bundles into a private, non-FileProvider staging directory.
+  4. Recursively removes extended attributes, including FinderInfo and
      resource forks.
-  4. Ad-hoc signs and strictly verifies both copied bundles.
-  5. Normalizes bundle timestamps, creates deterministic ZIP archives,
+  5. Ad-hoc signs and strictly verifies both copied bundles.
+  6. Normalizes bundle timestamps, creates deterministic ZIP archives,
      extracts them, and strictly verifies the extracted signed bundles.
-  6. Writes executable/archive SHA-256 values and atomically publishes the
-     completed version directory.
+  7. Writes executable/archive SHA-256 values and atomically publishes only
+     the ZIP archives and text manifests. Loose .app bundles are deliberately
+     omitted because Finder/FileProvider can reattach metadata that invalidates
+     an otherwise correct signature.
 
 An existing version directory is never overwritten. VERSION is a safe slug,
 not a path; use letters, digits, dot, underscore, and hyphen only.
@@ -69,6 +73,21 @@ valid_version() {
   local candidate="$1"
   [[ "$candidate" =~ '^[A-Za-z0-9][A-Za-z0-9._-]*$' ]] \
     && [[ "$candidate" != *..* ]]
+}
+
+valid_build_identity() {
+  local current_commit="$1"
+  local current_state="$2"
+  local mac_commit="$3"
+  local mac_state="$4"
+  local ios_commit="$5"
+  local ios_state="$6"
+  [[ "$current_commit" =~ '^[0-9a-f]{40}$' ]] \
+    && [[ "$current_state" == clean ]] \
+    && [[ "$mac_commit" == "$current_commit" ]] \
+    && [[ "$mac_state" == clean ]] \
+    && [[ "$ios_commit" == "$current_commit" ]] \
+    && [[ "$ios_state" == clean ]]
 }
 
 safe_output_root() {
@@ -156,6 +175,18 @@ run_self_test() {
   ! target_available "$safe_target" \
     || fail "existing target was reported as available"
 
+  local fake_commit="0123456789abcdef0123456789abcdef01234567"
+  valid_build_identity \
+      "$fake_commit" clean "$fake_commit" clean "$fake_commit" clean \
+    || fail "matching clean build identities were rejected"
+  ! valid_build_identity \
+      "$fake_commit" dirty "$fake_commit" clean "$fake_commit" clean \
+    || fail "dirty source worktree identity was accepted"
+  ! valid_build_identity \
+      "$fake_commit" clean "$fake_commit" clean \
+      "1123456789abcdef0123456789abcdef01234567" clean \
+    || fail "mismatched iOS source commit was accepted"
+
   [[ "${self_root:A:h}" == "${${TMPDIR:-/tmp}:A}" ]] \
     || fail "self-test temporary directory escaped TMPDIR"
   rm -rf -- "$self_root"
@@ -241,6 +272,7 @@ target_available "$target_dir" \
   || fail "version already exists; refusing to overwrite: $target_dir"
 
 for command_path in \
+    /usr/bin/awk \
     /bin/date \
     /usr/bin/codesign \
     /usr/bin/ditto \
@@ -278,6 +310,48 @@ ios_platform="$(
 [[ -f "${ios_source}/${ios_executable}" ]] \
   || fail "iOS executable is missing from cached app"
 
+git_commit="$(
+  git -C "$project_root" rev-parse HEAD 2>/dev/null
+)" || fail "could not resolve the source Git commit"
+git_state=clean
+if [[ -n "$(git -C "$project_root" status --porcelain --untracked-files=all)" ]]; then
+  git_state=dirty
+fi
+
+typeset -a mac_identity_jars
+mac_identity_jars=()
+while IFS= read -r identity_jar; do
+  mac_identity_jars+=("$identity_jar")
+done < <(
+  /usr/bin/find "${mac_source}/Contents/app" -maxdepth 1 -type f \
+    -name 'desktop-*.jar' -print
+)
+(( ${#mac_identity_jars} == 1 )) \
+  || fail "expected exactly one macOS desktop jar, found ${#mac_identity_jars}"
+mac_identity="$(
+  /usr/bin/unzip -p "${mac_identity_jars[1]}" bukov-build-identity.properties
+)" || fail "macOS bundle has no embedded build identity"
+mac_build_commit="$(
+  print -r -- "$mac_identity" \
+    | /usr/bin/awk -F= '$1 == "source_commit" { print substr($0, index($0, "=") + 1); exit }'
+)"
+mac_build_state="$(
+  print -r -- "$mac_identity" \
+    | /usr/bin/awk -F= '$1 == "source_worktree" { print substr($0, index($0, "=") + 1); exit }'
+)"
+ios_build_commit="$(
+  /usr/libexec/PlistBuddy -c 'Print :BukovSourceCommit' "$ios_plist"
+)" || fail "iOS bundle has no embedded source commit"
+ios_build_state="$(
+  /usr/libexec/PlistBuddy -c 'Print :BukovSourceWorktree' "$ios_plist"
+)" || fail "iOS bundle has no embedded source worktree state"
+
+valid_build_identity \
+    "$git_commit" "$git_state" \
+    "$mac_build_commit" "$mac_build_state" \
+    "$ios_build_commit" "$ios_build_state" \
+  || fail "cached bundles are not clean builds of current HEAD: current=${git_commit}/${git_state}, macOS=${mac_build_commit}/${mac_build_state}, iOS=${ios_build_commit}/${ios_build_state}"
+
 print "Mode:       $([[ "$apply" == true ]] && print apply || print dry-run)"
 print "Cache:      $cache_root"
 print "macOS:      $mac_source"
@@ -285,6 +359,7 @@ print "iOS Sim:    $ios_source"
 print "Output:     $output_dir"
 print "Version:    $version"
 print "Destination:$target_dir"
+print "Source:     $git_commit ($git_state, embedded in both bundles)"
 
 print "Checking cached source signatures..."
 /usr/bin/codesign --verify --deep --strict --verbose=2 "$mac_source"
@@ -396,23 +471,22 @@ rm -rf -- "$archive_verify_dir"
 
 mac_copy_executable="${mac_copy}/Contents/MacOS/${mac_executable}"
 ios_copy_executable="${ios_copy}/${ios_executable}"
+mac_executable_hash="$(
+  /usr/bin/shasum -a 256 "$mac_copy_executable"
+)"
+mac_executable_hash="${mac_executable_hash%% *}"
+ios_executable_hash="$(
+  /usr/bin/shasum -a 256 "$ios_copy_executable"
+)"
+ios_executable_hash="${ios_executable_hash%% *}"
 hashes_file="${staging_dir}/SHA256SUMS.txt"
 (
   cd "$staging_dir"
   /usr/bin/shasum -a 256 \
-    "${mac_copy_executable#$staging_dir/}" \
-    "${ios_copy_executable#$staging_dir/}" \
     "${mac_archive:t}" \
     "${ios_archive:t}"
 ) > "$hashes_file"
 
-git_commit="$(
-  git -C "$project_root" rev-parse HEAD 2>/dev/null || print unknown
-)"
-git_state=clean
-if [[ -n "$(git -C "$project_root" status --porcelain 2>/dev/null)" ]]; then
-  git_state=dirty
-fi
 package_info="${staging_dir}/PACKAGE_INFO.txt"
 {
   print "product=逃离布科夫 / Escape from Bukov"
@@ -424,10 +498,21 @@ package_info="${staging_dir}/PACKAGE_INFO.txt"
   print "ios_simulator_source=$ios_source"
   print "signing=ad-hoc"
   print "source_date_epoch=$archive_epoch"
-  print "macos_bundle=逃离布科夫.app"
-  print "ios_simulator_bundle=逃离布科夫-iOS-Simulator.app"
+  print "distribution=verified-archives-only"
+  print "macos_archive=${mac_archive:t}"
+  print "ios_simulator_archive=${ios_archive:t}"
+  print "macos_executable_sha256=$mac_executable_hash"
+  print "ios_simulator_executable_sha256=$ios_executable_hash"
   print "hashes=SHA256SUMS.txt"
 } > "$package_info"
+
+# Do not publish loose bundles into a FileProvider-backed output directory.
+# Their verified ZIPs are the immutable distribution artifacts.
+for copied_app in "$mac_copy" "$ios_copy"; do
+  [[ "${copied_app:A:h}" == "$staging_dir" ]] \
+    || fail "refusing to remove staged bundle outside staging: $copied_app"
+  rm -rf -- "$copied_app"
+done
 
 target_available "$target_dir" \
   || fail "version appeared while packaging; refusing to overwrite: $target_dir"

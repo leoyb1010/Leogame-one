@@ -83,6 +83,18 @@ public class BukovShotOwnershipTest {
 				player));
 	}
 
+	@Test
+	public void queuedHostileRoundIsDiscardedWhenShooterDiesFirst() {
+		Hero player = hero();
+		TestMob shooter = new TestMob();
+
+		assertTrue(BukovRealtimeWorld.queuedEnemyShotCanDamage(
+				shooter, player));
+		shooter.HP = 0;
+		assertFalse(BukovRealtimeWorld.queuedEnemyShotCanDamage(
+				shooter, player));
+	}
+
 	private static HitscanResolver.Hit hit(RealtimeBody body) {
 		HitscanResolver.Hit hit = new HitscanResolver.Hit();
 		hit.body = body;

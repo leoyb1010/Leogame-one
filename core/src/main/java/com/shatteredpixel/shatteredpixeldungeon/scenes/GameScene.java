@@ -1500,7 +1500,9 @@ public class GameScene extends PixelScene {
 			bukovDeathVeil = new ColorBlock(
 					uiCamera.width,
 					uiCamera.height,
-					0xFF263238);
+					BukovUiTokens.loadDefault().colorWithAlpha(
+							"ink.background",
+							255));
 			bukovDeathVeil.camera = uiCamera;
 			bukovDeathVeil.alpha(bukovDeathTransition.veilAlpha(
 					SPDSettings.bukovReduceMotion(),
@@ -1643,7 +1645,7 @@ public class GameScene extends PixelScene {
 			}
 			Badges.saveGlobal();
 			Journal.saveGlobal();
-		} catch (IOException e) {
+		} catch (IOException | RuntimeException e) {
 			ShatteredPixelDungeon.reportException(e);
 		}
 	}

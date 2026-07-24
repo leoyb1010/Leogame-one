@@ -15,6 +15,7 @@ Keeps exactly the named Escape from Bukov version directory and finds older
 direct children of DIR matching:
   逃离布科夫-alpha*
   逃离布科夫-v*
+  逃离布科夫-[numeric version]*
 
 The default is a dry run. With --apply, old version directories are moved to a
 new timestamped folder under ~/.Trash after their .app bundles are unregistered
@@ -76,7 +77,7 @@ fi
 
 keep_name="${keep_dir:t}"
 case "$keep_name" in
-  逃离布科夫-alpha*|逃离布科夫-v*)
+  逃离布科夫-alpha*|逃离布科夫-v*|逃离布科夫-[0-9]*)
     ;;
   *)
     fail "--keep does not match an Escape from Bukov version directory: $keep_name"
@@ -93,7 +94,8 @@ while IFS= read -r -d '' candidate; do
   candidates+=("$candidate")
 done < <(
   find "$output_dir" -mindepth 1 -maxdepth 1 -type d \
-    \( -name '逃离布科夫-alpha*' -o -name '逃离布科夫-v*' \) \
+    \( -name '逃离布科夫-alpha*' -o -name '逃离布科夫-v*' \
+       -o -name '逃离布科夫-[0-9]*' \) \
     -print0
 )
 

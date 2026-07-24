@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.watabou.utils.Bundlable;
@@ -24,7 +25,7 @@ import java.util.Set;
  */
 public final class BukovRaidCheckpoint implements Bundlable {
 
-	public static final int CURRENT_VERSION = 7;
+	public static final int CURRENT_VERSION = 8;
 
 	private static final String VERSION = "checkpoint_version";
 	private static final String SESSION = "session";
@@ -32,6 +33,8 @@ public final class BukovRaidCheckpoint implements Bundlable {
 	private static final String EXTRACTIONS = "extractions";
 	private static final String ACTIVE_EXTRACTION = "active_extraction";
 	private static final String HOST_ITEMS = "host_items";
+	private static final String EQUIPPED_FIREARM_UID =
+			"equipped_firearm_uid";
 	private static final String NEXT_ITEM_SEQUENCE = "next_item_sequence";
 	private static final String CONTAINERS = "containers";
 	private static final String COMPLETED_EVENTS = "completed_events";
@@ -159,6 +162,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 	private final Map<Integer, EnemyRuntimeState> enemyRuntimeByStableId =
 			new LinkedHashMap<>();
 	private String activeExtractionId;
+	private String equippedFirearmUid;
 	private long nextItemSequence;
 	private RealtimeStatusState playerStatus;
 	private RealtimeMedicalSystem.Snapshot medicalRuntime;
@@ -266,7 +270,32 @@ public final class BukovRaidCheckpoint implements Bundlable {
 	}
 
 	Item releaseHostItem(String itemUid) {
-		return hostItemsByUid.remove(itemUid);
+		Item released = hostItemsByUid.remove(itemUid);
+		if (itemUid != null && itemUid.equals(equippedFirearmUid)) {
+			equippedFirearmUid = null;
+		}
+		return released;
+	}
+
+	String equippedFirearmUid() {
+		return equippedFirearmUid;
+	}
+
+	void setEquippedFirearmUid(String itemUid) {
+		if (itemUid == null) {
+			equippedFirearmUid = null;
+			return;
+		}
+		if (itemUid.trim().isEmpty()) {
+			throw new IllegalArgumentException(
+					"equipped firearm UID is required");
+		}
+		Item item = hostItemsByUid.get(itemUid);
+		if (!(item instanceof Firearm)) {
+			throw new IllegalArgumentException(
+					"Equipped UID is not a carried firearm: " + itemUid);
+		}
+		equippedFirearmUid = itemUid;
 	}
 
 	void addContainer(BukovSearchableContainer container) {
@@ -401,6 +430,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		bundle.put(EXTRACTIONS, extractions.values());
 		bundle.put(ACTIVE_EXTRACTION, activeExtractionId);
 		bundle.put(HOST_ITEMS, hostItemsByUid.values());
+		bundle.put(EQUIPPED_FIREARM_UID, equippedFirearmUid);
 		bundle.put(NEXT_ITEM_SEQUENCE, nextItemSequence);
 		bundle.put(CONTAINERS, containersById.values());
 		bundle.put(COMPLETED_EVENTS,
@@ -450,6 +480,12 @@ public final class BukovRaidCheckpoint implements Bundlable {
 				throw new IllegalStateException("Carried host item lacks Bukov UID");
 			}
 			restored.carryHostItem(item.bukovItemUid(), item);
+		}
+		if (restoredVersion >= 8) {
+			String equippedUid = bundle.getString(EQUIPPED_FIREARM_UID);
+			if (!equippedUid.isEmpty()) {
+				restored.setEquippedFirearmUid(equippedUid);
+			}
 		}
 		restored.nextItemSequence = bundle.getLong(NEXT_ITEM_SEQUENCE);
 		if (restored.nextItemSequence < 0L) {
@@ -525,7 +561,8 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		}
 		// v2 had no container collection; v3 had no mission events; v4 had
 		// no durable deployment template; v5 had no fixed-step player or
-		// ordinary-enemy runtime snapshot; v6 had no sound-event buffer.
+		// ordinary-enemy runtime snapshot; v6 had no sound-event buffer; v7
+		// had no durable equipped-firearm identity.
 		restored.version = CURRENT_VERSION;
 
 		version = restored.version;
@@ -536,6 +573,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		hostItemsByUid.clear();
 		hostItemsByUid.putAll(restored.hostItemsByUid);
 		activeExtractionId = restored.activeExtractionId;
+		equippedFirearmUid = restored.equippedFirearmUid;
 		nextItemSequence = restored.nextItemSequence;
 		containersById.clear();
 		containersById.putAll(restored.containersById);

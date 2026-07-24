@@ -22,7 +22,7 @@ import { spawnSync } from "node:child_process";
 
 const TILE = 16;
 const COLUMNS = 16;
-const ROWS = 4;
+const ROWS = 5;
 const WIDTH = TILE * COLUMNS;
 const HEIGHT = TILE * ROWS;
 const output = process.argv[2]
@@ -175,6 +175,23 @@ const entries = [
     kind: "icon",
     x: TILE * column,
     y: TILE * 2,
+    width: TILE,
+    height: TILE,
+  })),
+  ...[
+    ["HUB_MODE", 0],
+    ["HUB_VENDOR", 1],
+    ["HUB_FILTER", 2],
+    ["HUB_SORT", 3],
+    ["HUB_SEARCH", 4],
+    ["HUB_RECOMMEND", 5],
+    ["HUB_DEPLOY", 6],
+    ["HUB_BACK", 7],
+  ].map(([apiName, column]) => ({
+    apiName,
+    kind: "icon",
+    x: TILE * column,
+    y: TILE * 4,
     width: TILE,
     height: TILE,
   })),
@@ -335,6 +352,7 @@ rarityFrame(3, colors.legendary);
 
 const HUD_ROW = 2;
 const STATUS_ROW = 3;
+const HUB_ROW = 4;
 
 // Health: split field dressing / ECG silhouette.
 localRect(0, HUD_ROW, 3, 6, 10, 5, colors.extract);
@@ -435,6 +453,44 @@ for (let glyph = 0; glyph < touchBlueprints.length; glyph += 1) {
   const column = 8 + glyph;
   for (const [x, y, width, height] of touchBlueprints[glyph]) {
     localRect(column, HUD_ROW, x, y, width, height, colors.text);
+  }
+}
+
+const hubBlueprints = [
+  // Raid mode: five selectable nodes around one active centre.
+  [[7, 2, 2, 12], [2, 7, 12, 2], [6, 6, 4, 4],
+    [3, 3, 2, 2], [11, 3, 2, 2], [3, 11, 2, 2],
+    [11, 11, 2, 2]],
+  // Vendor: compact field shop with canopy and currency chip.
+  [[3, 3, 10, 2], [2, 5, 12, 2], [3, 7, 2, 7],
+    [11, 7, 2, 7], [5, 9, 6, 1], [5, 12, 6, 2],
+    [7, 6, 2, 3]],
+  // Filter: unmistakable funnel narrowing into a stem.
+  [[2, 3, 12, 2], [3, 5, 10, 2], [5, 7, 6, 2],
+    [6, 9, 4, 2], [7, 11, 2, 3]],
+  // Sort: opposing vertical arrows and two ranked bars.
+  [[4, 2, 2, 10], [2, 4, 2, 2], [6, 4, 2, 2],
+    [10, 4, 2, 10], [8, 10, 2, 2], [12, 10, 2, 2],
+    [7, 2, 6, 1], [7, 14, 6, 1]],
+  // Search: magnifier with a squared tactical handle.
+  [[4, 3, 6, 1], [3, 4, 1, 6], [10, 4, 1, 6],
+    [4, 10, 6, 1], [9, 9, 2, 2], [10, 10, 2, 2],
+    [11, 11, 2, 2], [12, 12, 2, 2]],
+  // Recommendation: four-point equipment sparkle.
+  [[7, 1, 2, 14], [1, 7, 14, 2], [4, 4, 2, 2],
+    [10, 4, 2, 2], [4, 10, 2, 2], [10, 10, 2, 2]],
+  // Deploy: route arrow passing through an open threshold.
+  [[2, 3, 2, 10], [12, 3, 2, 10], [4, 7, 7, 2],
+    [8, 4, 2, 2], [10, 5, 2, 2], [10, 9, 2, 2],
+    [8, 10, 2, 2]],
+  // Back: return arrow with a strong horizontal baseline.
+  [[3, 7, 11, 2], [3, 5, 2, 6], [5, 3, 2, 3],
+    [5, 10, 2, 3], [7, 2, 2, 2], [7, 12, 2, 2]],
+];
+
+for (let glyph = 0; glyph < hubBlueprints.length; glyph += 1) {
+  for (const [x, y, width, height] of hubBlueprints[glyph]) {
+    localRect(glyph, HUB_ROW, x, y, width, height, colors.text);
   }
 }
 

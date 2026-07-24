@@ -42,6 +42,24 @@ public class RealtimeRaidSystemTest {
 	}
 
 	@Test
+	public void terminalStateStopsRemainingFixedStepsInCurrentFrame() {
+		RecordingWorld world = new RecordingWorld();
+		world.pauseAfterDamage = true;
+		RaidSession session = RaidSession.create(10L, "terminal-raid");
+		RealtimeRaidSystem system = new RealtimeRaidSystem(world, session);
+
+		system.update(1f / 60f);
+
+		assertEquals(
+				"begin,input,player,actions,sound,perception,brains,mobs,"
+						+ "projectiles,damage,status,loot,hud,end,render",
+				world.calls.toString());
+		assertEquals(1f / 120f, session.elapsedSeconds, 0.000001f);
+		system.update(0f);
+		assertEquals(1f / 120f, session.elapsedSeconds, 0.000001f);
+	}
+
+	@Test
 	public void coordinatorOwnsSessionTimeAndExtractionProgress() throws IOException {
 		RecordingWorld world = new RecordingWorld();
 		world.extractionInteraction = ExtractionState.Interaction.ACTIVE;
@@ -96,6 +114,7 @@ public class RealtimeRaidSystemTest {
 		private final StringBuilder calls = new StringBuilder();
 		private final CombatFxEventPool fx = new CombatFxEventPool(4);
 		private boolean paused;
+		private boolean pauseAfterDamage;
 		private ExtractionState.Interaction extractionInteraction =
 				ExtractionState.Interaction.NONE;
 
@@ -114,7 +133,10 @@ public class RealtimeRaidSystemTest {
 		@Override public void updateBrains(float dt) { add("brains"); }
 		@Override public void updateMobs(float dt) { add("mobs"); }
 		@Override public void updateProjectiles(float dt) { add("projectiles"); }
-		@Override public void resolveDamageAndDeaths(float dt) { add("damage"); }
+		@Override public void resolveDamageAndDeaths(float dt) {
+			add("damage");
+			if (pauseAfterDamage) paused = true;
+		}
 		@Override public void updateStatuses(float dt) { add("status"); }
 		@Override public void updateLootAndExtraction(float dt) { add("loot"); }
 		@Override public ExtractionState.Interaction extractionInteraction() {

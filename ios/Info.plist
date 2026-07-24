@@ -27,6 +27,10 @@
 		<string>${appVersionName}</string>
 		<key>CFBundleVersion</key>
 		<string>${appVersionCode}</string>
+		<key>BukovSourceCommit</key>
+		<string>${bukovSourceCommit}</string>
+		<key>BukovSourceWorktree</key>
+		<string>${bukovSourceWorktree}</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>UIStatusBarHidden</key>

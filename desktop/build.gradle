@@ -12,9 +12,25 @@ java.sourceCompatibility = java.targetCompatibility = appJavaCompatibility
 
 ext.appMainClass = "com.shatteredpixel.shatteredpixeldungeon.desktop.DesktopLauncher"
 application.mainClass = appMainClass
+def bukovBuildIdentityDir = layout.buildDirectory.dir('generated/bukov-build-identity')
+def generateBukovBuildIdentity = tasks.register('generateBukovBuildIdentity') {
+    def identityFile = bukovBuildIdentityDir.map { it.file('bukov-build-identity.properties') }
+    outputs.file(identityFile)
+    doLast {
+        def output = identityFile.get().asFile
+        output.parentFile.mkdirs()
+        output.text = [
+                "source_commit=${System.getenv('BUKOV_SOURCE_COMMIT') ?: 'unknown'}",
+                "source_worktree=${System.getenv('BUKOV_SOURCE_WORKTREE') ?: 'unknown'}",
+                ""
+        ].join(System.lineSeparator())
+    }
+}
 processResources {
+    dependsOn generateBukovBuildIdentity
     from new File(project(':core').projectDir, "/src/main/assets")
     from new File(project(':desktop').projectDir,"/src/main/assets")
+    from bukovBuildIdentityDir
 }
 
 def osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)

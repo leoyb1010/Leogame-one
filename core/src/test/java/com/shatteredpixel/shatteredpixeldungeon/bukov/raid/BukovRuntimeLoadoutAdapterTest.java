@@ -284,6 +284,86 @@ public class BukovRuntimeLoadoutAdapterTest {
 	}
 
 	@Test
+	public void alternativeReloadKeepsEachAmmoVariantAcrossResumeAndSettlement()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovRaidCoordinator raid = raidWith(
+				saves,
+				raidItem(
+						"variant-gun",
+						"firearm:needle_9",
+						1,
+						0.90f,
+						850),
+				raidItem(
+						"standard-stack",
+						"ammo:ammo_9_standard",
+						36,
+						0.012f,
+						12),
+				raidItem(
+						"subsonic-stack",
+						"ammo:ammo_9_subsonic",
+						12,
+						0.012f,
+						18));
+		BukovRuntimeLoadoutAdapter adapter = adapter();
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime =
+				adapter.materialize(raid);
+		Firearm firearm = runtime.primaryWeapon();
+		FirearmDefinition definition = firearms().require("needle_9");
+		AmmoStack subsonic = ammo(runtime, "ammo_9_subsonic");
+
+		while (firearm.magazineAmmo() > 0) {
+			assertTrue(firearm.consumeRound());
+		}
+		int loaded = subsonic.takeUpTo(definition.magazineSize);
+		firearm.loadRounds(
+				subsonic.definitionId(),
+				loaded,
+				definition);
+		// The production heap synchronizer removes an exhausted reserve stack
+		// immediately before loadout writeback. The rounds in the magazine
+		// must restore both its ledger entry and checkpoint host identity.
+		assertEquals(0, subsonic.quantity());
+		assertNotNull(raid.loot().drop("subsonic-stack"));
+		assertSame(
+				subsonic,
+				raid.checkpoint().releaseHostItem("subsonic-stack"));
+		runtime.writeBack(raid.loot());
+		String firstWrite = raid.loot().fingerprint();
+		runtime.writeBack(raid.loot());
+		assertEquals(firstWrite, raid.loot().fingerprint());
+		assertSame(
+				subsonic,
+				raid.checkpoint().hostItem("subsonic-stack"));
+		raid.saveCheckpoint();
+
+		assertEquals(24, raid.loot().item("standard-stack").quantity());
+		assertEquals(12, raid.loot().item("subsonic-stack").quantity());
+
+		BukovRaidCoordinator resumed = BukovRaidCoordinator.resume(saves);
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout restored =
+				adapter.materialize(resumed);
+		assertEquals(
+				"ammo_9_subsonic",
+				restored.primaryWeapon().loadedAmmoDefinitionId(definition));
+		assertEquals(12, restored.primaryWeapon().magazineAmmo());
+		assertEquals(24, ammo(restored, "ammo_9_standard").quantity());
+		assertEquals(0, ammoQuantity(restored, "ammo_9_subsonic"));
+
+		restored.writeBack(resumed.loot());
+		BukovProfile extracted = new BukovProfile();
+		new RaidSettlement().settle(
+				extracted,
+				resumed.loot(),
+				RaidOutcome.SUCCESS);
+
+		assertEquals(24, extracted.stash().item("standard-stack").quantity());
+		assertEquals(12, extracted.stash().item("subsonic-stack").quantity());
+	}
+
+	@Test
 	public void multipleDeployedFirearmsInstallPrimaryAndBackpackSecondaries()
 			throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
@@ -362,6 +442,54 @@ public class BukovRuntimeLoadoutAdapterTest {
 				new BukovHeapLootAdapter(resumed)
 						.carriedHostItem("persistent-gun"));
 		assertEquals(24, restored.reserveAmmo().get(0).quantity());
+	}
+
+	@Test
+	public void selectedSecondFirearmRemainsPrimaryAfterCheckpointResume()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovRaidCoordinator raid = raidWith(
+				saves,
+				raidItem(
+						"first-gun",
+						"firearm:needle_9",
+						1,
+						0.90f,
+						850),
+				raidItem(
+						"selected-gun",
+						"firearm:shuttle_9",
+						1,
+						2.20f,
+						2100),
+				raidItem(
+						"shared-ammo",
+						"ammo:ammo_9_standard",
+						48,
+						0.012f,
+						12));
+		BukovRuntimeLoadoutAdapter adapter = adapter();
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout initial =
+				adapter.materialize(raid);
+		assertEquals("first-gun", initial.primaryWeapon().bukovItemUid());
+
+		raid.equipFirearm("selected-gun");
+		raid.saveCheckpoint();
+
+		BukovRaidCoordinator resumed = BukovRaidCoordinator.resume(saves);
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout restored =
+				adapter.materialize(resumed);
+		Hero hero = new Hero();
+		Dungeon.hero = hero;
+		restored.installOn(hero);
+
+		assertEquals("selected-gun",
+				restored.primaryWeapon().bukovItemUid());
+		assertEquals(1, restored.secondaryWeapons().size());
+		assertEquals("first-gun",
+				restored.secondaryWeapons().get(0).bukovItemUid());
+		assertSame(restored.primaryWeapon(), hero.belongings.weapon);
+		assertEquals("selected-gun", resumed.equippedFirearmUid());
 	}
 
 	private static void consumeRuntimeResources(
@@ -445,6 +573,28 @@ public class BukovRuntimeLoadoutAdapterTest {
 				false,
 				false,
 				1f);
+	}
+
+	private static AmmoStack ammo(
+			BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime,
+			String definitionId) {
+		for (AmmoStack stack : runtime.reserveAmmo()) {
+			if (definitionId.equals(stack.definitionId())) {
+				return stack;
+			}
+		}
+		throw new AssertionError("Missing runtime ammunition: " + definitionId);
+	}
+
+	private static int ammoQuantity(
+			BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime,
+			String definitionId) {
+		for (AmmoStack stack : runtime.reserveAmmo()) {
+			if (definitionId.equals(stack.definitionId())) {
+				return stack.quantity();
+			}
+		}
+		return 0;
 	}
 
 	private static BukovRuntimeLoadoutAdapter adapter() throws IOException {
