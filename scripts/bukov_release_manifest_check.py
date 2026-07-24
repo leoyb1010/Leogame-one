@@ -141,12 +141,20 @@ def check_license_and_evidence(manifest: dict) -> None:
         == "personal_build_validated_mac_and_ios_simulator"
     )
     expected_qa_status = "passed" if final_release else "partial_pass"
-    require(mac["packageEvidence"]["status"] == "passed", "macOS package not passed")
+    expected_package_status = "passed" if final_release else "superseded"
+    expected_suite_status = "passed" if final_release else "pending_final_gate"
+    require(
+        mac["packageEvidence"]["status"] == expected_package_status,
+        "macOS package status does not match release scope",
+    )
     require(
         mac["interactiveQa"]["status"] == expected_qa_status,
         "macOS QA status does not match release scope",
     )
-    require(ios["aotEvidence"]["status"] == "passed", "iOS AOT not passed")
+    require(
+        ios["aotEvidence"]["status"] == expected_package_status,
+        "iOS AOT status does not match release scope",
+    )
     require(
         ios["simulatorQa"]["status"] == expected_qa_status,
         "iOS simulator QA status does not match release scope",
@@ -156,8 +164,9 @@ def check_license_and_evidence(manifest: dict) -> None:
         "physical iOS evidence must be explicit when not run",
     )
     require(
-        manifest["validation"]["gradleSuite"]["status"] == "passed",
-        "Gradle suite not passed",
+        manifest["validation"]["gradleSuite"]["status"]
+        == expected_suite_status,
+        "Gradle suite status does not match release scope",
     )
     require(
         manifest["validation"]["gradleSuite"]["sourceCommit"] == release_commit,
@@ -168,22 +177,23 @@ def check_license_and_evidence(manifest: dict) -> None:
         == (
             "passed_mac_and_ios_simulator"
             if final_release
-            else "platform_smoke_passed_full_e2e_pending"
+            else "final_gate_pending"
         ),
         "platform claim must match the declared release scope",
     )
 
-    for label, evidence in (
-        ("macOS", mac["packageEvidence"]),
-        ("iOS", ios["aotEvidence"]),
-    ):
-        binary = Path(evidence["binary"])
-        require(binary.is_file(), f"{label} evidence binary is missing")
-        digest = hashlib.sha256(binary.read_bytes()).hexdigest()
-        require(
-            digest == evidence["binarySha256"],
-            f"{label} evidence binary SHA-256 mismatch",
-        )
+    if final_release:
+        for label, evidence in (
+            ("macOS", mac["packageEvidence"]),
+            ("iOS", ios["aotEvidence"]),
+        ):
+            binary = Path(evidence["binary"])
+            require(binary.is_file(), f"{label} evidence binary is missing")
+            digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+            require(
+                digest == evidence["binarySha256"],
+                f"{label} evidence binary SHA-256 mismatch",
+            )
 
     qa_template = ROOT / manifest["evidencePolicy"]["qaTemplate"]
     require(qa_template.is_file(), "final QA template is missing")
@@ -212,10 +222,16 @@ def main() -> None:
     check_content(manifest)
     check_assets(manifest)
     check_license_and_evidence(manifest)
+    evidence_scope = (
+        "macOS + iOS simulator evidence verified"
+        if manifest["product"]["releaseState"]
+        == "personal_build_validated_mac_and_ios_simulator"
+        else "final platform evidence pending"
+    )
     print(
         "Bukov release manifest: PASS "
         "(6 themes, 18 firearms, 13 enemies, 5 modes, "
-        "72 icon frames, 73 SFX; macOS + iOS simulator evidence verified)"
+        f"72 icon frames, 79 SFX; {evidence_scope})"
     )
 
 

@@ -28,8 +28,14 @@ public class BukovWelcomeBrandBoundaryTest {
 		assertTrue(welcome.contains("BukovVisualContract"));
 		assertTrue(welcome.contains("Assets.Sounds.Bukov.UI_CONFIRM"));
 		assertTrue(welcome.contains("Music.INSTANCE.end()"));
-		assertTrue(welcome.contains("\"逃离布科夫\""));
-		assertTrue(welcome.contains("\"ESCAPE FROM BUKOV\""));
+		assertTrue(welcome.contains(
+				"Messages.get(this, \"bukov_title\")"));
+		assertTrue(welcome.contains(
+				"Messages.get(this, \"bukov_english_title\")"));
+		assertTrue(text("src/main/assets/messages/scenes/scenes_zh.properties")
+				.contains("scenes.welcomescene.bukov_title=逃离布科夫"));
+		assertTrue(text("src/main/assets/messages/scenes/scenes.properties")
+				.contains("scenes.welcomescene.bukov_english_title=ESCAPE FROM BUKOV"));
 
 		for (String inherited : new String[] {
 				"TitleBackground",

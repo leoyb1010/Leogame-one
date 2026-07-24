@@ -6,7 +6,7 @@
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
     "releaseState": "automation_and_platform_smoke_passed_not_final",
-    "releaseSourceCommit": "ae7505d0776c85eec353dc7bda5c55462ba0e379"
+    "releaseSourceCommit": "478d34b9ccae351026a3881f9f31bab158fc6d30"
   },
   "content": {
     "themes": {
@@ -49,7 +49,7 @@
       "manifest": "core/src/main/assets/sprites/bukov/items_interactions_manifest.json"
     },
     "soundEffects": {
-      "expected": 73,
+      "expected": 79,
       "directory": "core/src/main/assets/sounds/bukov",
       "format": "mono 48 kHz PCM16 WAV"
     },
@@ -66,7 +66,7 @@
     "macOS": {
       "implementation": "present",
       "packageEvidence": {
-        "status": "passed",
+        "status": "superseded",
         "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app",
         "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app/Contents/MacOS/逃离布科夫",
         "binarySha256": "38012f08b63bfc281ca8941b66dd3b53c585d343125f2850cdd8038906a7962b",
@@ -82,7 +82,7 @@
     "iOS": {
       "implementation": "present",
       "aotEvidence": {
-        "status": "passed",
+        "status": "superseded",
         "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app",
         "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app/IOSLauncher",
         "binarySha256": "d0ef05a421565d2aa024a4a8cf3b85f9fb095fc211ab9aff2c64944013192346",
@@ -151,12 +151,12 @@
     ],
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
-      "status": "passed",
-      "sourceCommit": "ae7505d0776c85eec353dc7bda5c55462ba0e379",
+      "status": "pending_final_gate",
+      "sourceCommit": "478d34b9ccae351026a3881f9f31bab158fc6d30",
       "tests": {
-        "core": 703,
-        "desktop": 7,
-        "ios": 6,
+        "core": 0,
+        "desktop": 0,
+        "ios": 0,
         "failures": 0
       },
       "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
@@ -165,7 +165,7 @@
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
-    "currentPlatformClaim": "platform_smoke_passed_full_e2e_pending",
+    "currentPlatformClaim": "final_gate_pending",
     "rule": "Passed claims are bound to releaseSourceCommit and the local evidence directory.",
     "knownLimitations": [
       "Physical iOS device QA was not run.",

@@ -109,19 +109,19 @@ public class WelcomeScene extends PixelScene {
 		float contentWidth = panelWidth - 14f;
 
 		RenderedTextBlock eyebrow = label(
-				"OFFLINE EXTRACTION / 单机搜打撤",
+				Messages.get(this, "bukov_eyebrow"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		RenderedTextBlock title = label(
-				"逃离布科夫",
+				Messages.get(this, "bukov_title"),
 				wide ? 16 : BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		RenderedTextBlock englishTitle = label(
-				"ESCAPE FROM BUKOV",
+				Messages.get(this, "bukov_english_title"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		RenderedTextBlock briefing = label(
-				"FIRST DEPLOYMENT  /  首次行动简报",
+				Messages.get(this, "bukov_briefing"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("accent.extract"));
 		RenderedTextBlock message = renderTextBlock(
@@ -191,7 +191,7 @@ public class WelcomeScene extends PixelScene {
 		cursor = message.bottom() + 8f;
 
 		WelcomeActionButton enter = new WelcomeActionButton(
-				"进入行动系统  /  ENTER OPERATIONS",
+				Messages.get(this, "bukov_enter"),
 				previousVersion == 0);
 		enter.setRect(
 				contentLeft,
