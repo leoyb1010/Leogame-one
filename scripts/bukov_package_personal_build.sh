@@ -12,6 +12,7 @@ apply=false
 self_test=false
 mode_seen=""
 staging_dir=""
+staging_parent=""
 lock_dir=""
 output_dir=""
 
@@ -33,7 +34,7 @@ The default is --dry-run. --apply performs these steps without a developer
 certificate:
 
   1. Strictly verifies both cached source bundles.
-  2. Copies both bundles into a private staging directory.
+  2. Copies both bundles into a private, non-FileProvider staging directory.
   3. Recursively removes extended attributes, including FinderInfo and
      resource forks.
   4. Ad-hoc signs and strictly verifies both copied bundles.
@@ -92,16 +93,16 @@ target_available() {
 safe_remove_staging() {
   local candidate="$1"
   [[ -n "$candidate" ]] || return 0
-  [[ -n "$output_dir" ]] || return 1
+  [[ -n "$staging_parent" ]] || return 1
   candidate="${candidate:A}"
-  direct_child "$output_dir" "$candidate" || return 1
-  [[ "${candidate:t}" == ".bukov-package-${version}.staging."* ]] || return 1
+  direct_child "$staging_parent" "$candidate" || return 1
+  [[ "${candidate:t}" == "bukov-package-${version}.staging."* ]] || return 1
   [[ -d "$candidate" ]] || return 0
   rm -rf -- "$candidate"
 }
 
 cleanup() {
-  local status=$?
+  local exit_code=$?
   if [[ -n "$staging_dir" && -e "$staging_dir" ]]; then
     safe_remove_staging "$staging_dir" \
       || print -u2 "WARNING: refusing unsafe staging cleanup: $staging_dir"
@@ -116,7 +117,7 @@ cleanup() {
       print -u2 "WARNING: refusing unsafe lock cleanup: $lock_dir"
     fi
   fi
-  return $status
+  return $exit_code
 }
 
 run_self_test() {
@@ -305,13 +306,17 @@ trap 'exit 130' HUP INT TERM
 
 target_available "$target_dir" \
   || fail "version appeared during validation; refusing to overwrite: $target_dir"
+staging_parent="${TMPDIR:-/tmp}"
+[[ -d "$staging_parent" ]] \
+  || fail "temporary directory is unavailable: $staging_parent"
+staging_parent="${staging_parent:A}"
 staging_dir="$(
-  mktemp -d "${output_dir}/.bukov-package-${version}.staging.XXXXXX"
+  mktemp -d "${staging_parent}/bukov-package-${version}.staging.XXXXXX"
 )"
 staging_dir="${staging_dir:A}"
-direct_child "$output_dir" "$staging_dir" \
-  || fail "staging directory escaped --output"
-[[ "${staging_dir:t}" == ".bukov-package-${version}.staging."* ]] \
+direct_child "$staging_parent" "$staging_dir" \
+  || fail "staging directory escaped the temporary root"
+[[ "${staging_dir:t}" == "bukov-package-${version}.staging."* ]] \
   || fail "unexpected staging directory name"
 
 mac_copy="${staging_dir}/逃离布科夫.app"
@@ -322,6 +327,11 @@ ios_copy="${staging_dir}/逃离布科夫-iOS-Simulator.app"
 /usr/bin/xattr -cr "$mac_copy"
 /usr/bin/xattr -cr "$ios_copy"
 for copied_app in "$mac_copy" "$ios_copy"; do
+  # Finder may immediately recreate an empty FinderInfo attribute on the
+  # bundle root after a recursive clear. Delete both code-signing-forbidden
+  # attributes explicitly once more before signing.
+  /usr/bin/xattr -dr com.apple.FinderInfo "$copied_app" 2>/dev/null || true
+  /usr/bin/xattr -dr com.apple.ResourceFork "$copied_app" 2>/dev/null || true
   if /usr/bin/xattr -lr "$copied_app" 2>/dev/null \
       | /usr/bin/grep -Eq 'com\.apple\.(FinderInfo|ResourceFork)'; then
     fail "resource fork or FinderInfo remains after cleanup: $copied_app"
