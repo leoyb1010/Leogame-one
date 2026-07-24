@@ -29,6 +29,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioResolver
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationSource;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCue;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
@@ -73,6 +74,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContractRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovBackpackViewModel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovCombatHudTimeline;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudSource;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
@@ -83,6 +85,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialHint
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
+import com.shatteredpixel.shatteredpixeldungeon.levels.rooms.Room;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
@@ -126,13 +129,17 @@ public final class BukovRealtimeWorld
 	private static final float CAMERA_HALF_DEAD_ZONE_Y = 8f;
 	private static final float CAMERA_RESPONSIVENESS = 8f;
 	private static final float KEY_SOUND_LIFETIME_SECONDS = 0.9f;
-	private static final float HIT_DIRECTION_LIFETIME_SECONDS = 0.85f;
 	private static final PointF ZERO_CAMERA_SHIFT = new PointF();
 
 	private enum SpawnVisibility {
 		OFFSCREEN_ONLY,
 		VISIBLE_REQUIRED,
 		ANY_SAFE
+	}
+
+	interface ExtractionLookup {
+		int cell(String extractionId);
+		boolean available(ExtractionState extraction, float elapsed);
 	}
 
 	private final Hero hero;
@@ -147,6 +154,19 @@ public final class BukovRealtimeWorld
 	private final RealtimeBody heroBody;
 	private final CollisionMap collisionMap;
 	private final GridCollision collision;
+	private final ExtractionLookup extractionLookup =
+			new ExtractionLookup() {
+				@Override
+				public int cell(String extractionId) {
+					return resolveExtractionCell(extractionId);
+				}
+
+				@Override
+				public boolean available(
+						ExtractionState extraction, float elapsed) {
+					return extractionAvailable(extraction, elapsed);
+				}
+			};
 	private final int extractionCell;
 	private final int pumpCell;
 	private final int missionGateCell;
@@ -175,6 +195,10 @@ public final class BukovRealtimeWorld
 	private final GunshotAudioPlan gunshotAudio = new GunshotAudioPlan();
 	private final KeySoundVisualEvent keySoundVisual =
 			new KeySoundVisualEvent();
+	private final PlayerSoundEventBuffer playerSounds =
+			new PlayerSoundEventBuffer();
+	private final BukovCombatHudTimeline combatHudTimeline =
+			new BukovCombatHudTimeline();
 	private final HitscanResolver.Hit shotHit = new HitscanResolver.Hit();
 	private final HitscanResolver.Hit enemyShotHit = new HitscanResolver.Hit();
 	private final PointF assistedAim = new PointF();
@@ -223,22 +247,15 @@ public final class BukovRealtimeWorld
 	private String activeContainerId;
 	private float nextEnemySpawnSeconds;
 	private int playerFxSequence;
-	private int playerSoundSequence;
 	private int audioSequence;
 	private int keySoundSequence;
 	private int transientKillCount;
-	private float playerSoundX;
-	private float playerSoundY;
-	private float playerSoundRadius;
-	private float playerSoundRemaining;
 	private float environmentStepNoiseRemaining;
 	private ExtractionState.Interaction extractionInteraction =
 			ExtractionState.Interaction.NONE;
 	private BukovTutorialEvent tutorialEvent;
 	private float tutorialRemaining;
-	private BukovRaidHudState.Direction hitIndicatorDirection;
-	private float hitIndicatorStrength;
-	private float hitIndicatorRemaining;
+	private Room lastHudRoom;
 	private boolean modeConvergenceAnnounced;
 	private boolean modeOvertimeAnnounced;
 
@@ -271,6 +288,8 @@ public final class BukovRealtimeWorld
 		}
 		this.hero = hero;
 		this.raid = raid;
+		playerSounds.restore(
+				raid == null ? null : raid.playerSoundEvents());
 		raidMode = raid == null
 				? BukovRaidMode.EXPEDITION : raid.session().raidMode();
 		raidTheme = resolveRaidTheme();
@@ -315,9 +334,7 @@ public final class BukovRealtimeWorld
 				Dungeon.level,
 				cell -> {
 					GameScene.updateMap(cell);
-					Dungeon.level.updateFieldOfView(
-							hero, Dungeon.level.heroFOV);
-					GameScene.updateFog();
+					refreshHeroVisibility();
 				});
 		collision = new GridCollision(collisionMap);
 		extractionCell = resolveExtractionCell(BASELINE_EXTRACTION_ID);
@@ -334,9 +351,9 @@ public final class BukovRealtimeWorld
 				&& raid.eventCompleted(FirstRaidMission.EVENT_ID);
 		applyMissionGateTerrain();
 		if (recoverHeroCheckpoint(hero, heroBody, collisionMap)) {
-			Dungeon.level.updateFieldOfView(hero, Dungeon.level.heroFOV);
-			GameScene.updateFog();
+			refreshHeroVisibility();
 		}
+		lastHudRoom = currentHudRoom();
 		firearmRegistry.loadDefault();
 		ammoRegistry.loadDefault();
 		firearmRegistry.validateAmmunition(ammoRegistry);
@@ -492,10 +509,7 @@ public final class BukovRealtimeWorld
 		if (SPDSettings.bukovSoundVisualization()) {
 			target.sound(keySoundVisual);
 		}
-		target.hit(
-				hitIndicatorDirection,
-				hitIndicatorStrength,
-				hitIndicatorRemaining);
+		combatHudTimeline.copyTo(target);
 		readBossHudState(target);
 		if (inputFrame != null) {
 			target.aim(
@@ -542,16 +556,27 @@ public final class BukovRealtimeWorld
 			}
 		}
 
-		ExtractionState extractionHere = extractionAtCell(hero.pos);
+		ExtractionState nearbyExtraction = nearestExtraction(
+				hero.pos,
+				elapsed,
+				1,
+				false);
+		int nearbyExtractionCell = nearbyExtraction == null
+				? -1
+				: resolveExtractionCell(
+						nearbyExtraction.extractionId());
+		boolean insideExtraction = nearbyExtractionCell == hero.pos;
 		target.extraction(
 				availableExtractions,
-				extractionHere == null ? null : extractionHere.extractionId(),
-				extractionHere != null
-						&& extractionAvailable(extractionHere, elapsed),
+				nearbyExtraction == null
+						? null : nearbyExtraction.extractionId(),
+				nearbyExtraction != null
+						&& extractionAvailable(
+								nearbyExtraction, elapsed),
 				false,
 				0f,
-				extractionHere == null
-						? 0f : extractionHere.interactionSeconds());
+				nearbyExtraction == null
+						? 0f : nearbyExtraction.interactionSeconds());
 
 		if (medicalSystem != null && medicalSystem.isUsing()) {
 			target.interaction(
@@ -575,21 +600,25 @@ public final class BukovRealtimeWorld
 			}
 		}
 
-		if (extractionHere != null) {
+		if (nearbyExtraction != null && insideExtraction) {
 			pointHudNavigation(
 					target,
 					BukovRaidHudState.Cue.EXTRACTION,
-					resolveExtractionCell(extractionHere.extractionId()),
-					"撤离 " + extractionHere.extractionId(),
-					extractionAvailable(extractionHere, elapsed));
+					nearbyExtractionCell,
+					"撤离 " + nearbyExtraction.extractionId(),
+					extractionAvailable(nearbyExtraction, elapsed));
 			target.interaction(
-					extractionAvailable(extractionHere, elapsed)
+					extractionAvailable(nearbyExtraction, elapsed)
 							? BukovRaidHudState.Interaction.EXTRACT
 							: BukovRaidHudState.Interaction.LOCKED,
-					extractionAvailable(extractionHere, elapsed)
-							? "开始撤离" : "撤离点未开放",
+					extractionAvailable(nearbyExtraction, elapsed)
+							? "开始撤离 "
+									+ nearbyExtraction.extractionId()
+							: "撤离 "
+									+ nearbyExtraction.extractionId()
+									+ " 未开放",
 					0f,
-					extractionHere.interactionSeconds());
+					nearbyExtraction.interactionSeconds());
 			return;
 		}
 
@@ -664,6 +693,25 @@ public final class BukovRealtimeWorld
 							? "拾取维修通道档案"
 							: "可拾取物资",
 					true);
+			return;
+		}
+
+		if (nearbyExtraction != null) {
+			boolean available =
+					extractionAvailable(nearbyExtraction, elapsed);
+			pointHudNavigation(
+					target,
+					BukovRaidHudState.Cue.EXTRACTION,
+					nearbyExtractionCell,
+					"撤离 " + nearbyExtraction.extractionId(),
+					available);
+			target.interaction(
+					BukovRaidHudState.Interaction.LOCKED,
+					extractionApproachLabel(
+							nearbyExtraction.extractionId(),
+							available),
+					0f,
+					0f);
 			return;
 		}
 
@@ -798,8 +846,14 @@ public final class BukovRealtimeWorld
 			}
 		}
 		if (hero.pos != previousCell) {
-			Dungeon.level.updateFieldOfView(hero, Dungeon.level.heroFOV);
-			GameScene.updateFog();
+			Room room = currentHudRoom();
+			if (room != null && room != lastHudRoom) {
+				if (lastHudRoom != null) {
+					combatHudTimeline.activity();
+				}
+				lastHudRoom = room;
+			}
+			refreshHeroVisibility();
 		}
 	}
 
@@ -896,51 +950,74 @@ public final class BukovRealtimeWorld
 	@Override
 	public void updateSoundField(float dt) {
 		keySoundVisual.advance(dt);
-		hitIndicatorRemaining = Math.max(
-				0f, hitIndicatorRemaining - dt);
-		playerSoundRemaining = Math.max(0f, playerSoundRemaining - dt);
-		if (playerSoundRemaining <= 0f || playerSoundRadius <= 0f) {
+		combatHudTimeline.advance(dt);
+		playerSounds.advance(dt);
+		if (playerSounds.activeCount() == 0) {
 			return;
 		}
-		float themedSoundRadius = playerSoundRadius
-				* (raidTheme == null
-						? 1f
-						: raidTheme.environmentRules
-								.enemyHearingMultiplier(
-										terrainAt(
-												playerSoundX,
-												playerSoundY)));
+		int newestSequence = playerSounds.latestSequence();
 		for (EnemyRuntime enemy : enemies) {
-			if (!enemy.mob.isAlive()
-					|| enemy.heardSoundSequence == playerSoundSequence) {
-				continue;
-			}
-			float dx = playerSoundX - enemy.body.x;
-			float dy = playerSoundY - enemy.body.y;
-			float distanceSquared = dx * dx + dy * dy;
-			if (distanceSquared
-					> themedSoundRadius * themedSoundRadius) {
-				continue;
-			}
-			float wallOcclusion = blockedCellsOnLine(
-					enemy.body.x,
-					enemy.body.y,
-					playerSoundX,
-					playerSoundY);
-			SpatialAudioModel.resolve(
-					audioContract,
-					1f,
-					(float)Math.sqrt(distanceSquared),
-					wallOcclusion,
-					false,
-					aiSoundSpatial);
-			if (aiSoundSpatial.perceivable()) {
-				enemy.heardSoundSequence = playerSoundSequence;
-				enemy.brain.recordSound(playerSoundX, playerSoundY);
-				if (hasAbility(enemy, "INVESTIGATE_SOUND")
-						|| hasAbility(enemy, "CALL_INVESTIGATORS")) {
-					showEnemyStatus(enemy, CharSprite.WARNING, "听到枪声");
+			if (!enemy.mob.isAlive()) continue;
+			PlayerSoundEventBuffer.Event best = null;
+			float bestThreat = -1f;
+			float bestDistance = Float.MAX_VALUE;
+			for (int slot = 0; slot < playerSounds.capacity(); slot++) {
+				PlayerSoundEventBuffer.Event event =
+						playerSounds.eventAt(slot);
+				if (!event.active()
+						|| event.sequence()
+								<= enemy.heardSoundSequence) {
+					continue;
 				}
+				float themedSoundRadius = event.radius()
+						* (raidTheme == null
+								? 1f
+								: raidTheme.environmentRules
+										.enemyHearingMultiplier(
+												terrainAt(
+														event.x(),
+														event.y())));
+				float dx = event.x() - enemy.body.x;
+				float dy = event.y() - enemy.body.y;
+				float distanceSquared = dx * dx + dy * dy;
+				if (distanceSquared
+						> themedSoundRadius * themedSoundRadius) {
+					continue;
+				}
+				float distance = (float)Math.sqrt(distanceSquared);
+				float wallOcclusion = blockedCellsOnLine(
+						enemy.body.x,
+						enemy.body.y,
+						event.x(),
+						event.y());
+				SpatialAudioModel.resolve(
+						audioContract,
+						1f,
+						distance,
+						wallOcclusion,
+						false,
+						aiSoundSpatial);
+				if (!aiSoundSpatial.perceivable()) continue;
+				float threat = themedSoundRadius
+						* aiSoundSpatial.perceptionGain();
+				if (best == null
+						|| threat > bestThreat
+						|| threat == bestThreat
+								&& distance < bestDistance) {
+					best = event;
+					bestThreat = threat;
+					bestDistance = distance;
+				}
+			}
+			if (best == null) continue;
+			// One decision consumes the current batch for this enemy. Every
+			// enemy owns its cursor, so simultaneous sounds can resolve to
+			// different best sources without either source being overwritten.
+			enemy.heardSoundSequence = newestSequence;
+			enemy.brain.recordSound(best.x(), best.y());
+			if (hasAbility(enemy, "INVESTIGATE_SOUND")
+					|| hasAbility(enemy, "CALL_INVESTIGATORS")) {
+				showEnemyStatus(enemy, CharSprite.WARNING, "听到动静");
 			}
 		}
 	}
@@ -1088,8 +1165,14 @@ public final class BukovRealtimeWorld
 				EnemyRuntime enemy = enemiesByMob.get((Mob)target);
 				if (enemy != null && enemy.bossState != null) {
 					boolean wasAlive = target.isAlive();
-					resolveWhiteLineDamage(enemy, damage);
-					emitEnemyHitOutcome(target, wasAlive, damage);
+					WhiteLineBossStateMachine.Result bossResult =
+							resolveWhiteLineDamage(enemy, damage);
+					emitEnemyHitOutcome(
+							target,
+							wasAlive,
+							damage,
+							bossHitFeedback(bossResult),
+							bossDeathFeedback(bossResult));
 					continue;
 				}
 				if (enemy != null) {
@@ -1354,6 +1437,15 @@ public final class BukovRealtimeWorld
 			}
 		}
 
+		ExtractionState nearbyExtraction = nearestExtraction(
+				hero.pos,
+				raid.session().elapsedSeconds,
+				1,
+				false);
+		if (nearbyExtraction != null) {
+			showTutorial(BukovTutorialEvent.EXTRACTION_NEAR);
+		}
+
 		if (!interactPressed) {
 			return;
 		}
@@ -1388,9 +1480,10 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		ExtractionState extraction = extractionAtCell(hero.pos);
-		if (extraction != null) {
-			showTutorial(BukovTutorialEvent.EXTRACTION_NEAR);
+		ExtractionState extraction = nearbyExtraction;
+		if (extraction != null
+				&& hero.pos == resolveExtractionCell(
+						extraction.extractionId())) {
 			boolean wantsToStart = ExtractionIntentResolver.wantsToStart(
 					true,
 					inputFrame.interactHeld,
@@ -1705,12 +1798,14 @@ public final class BukovRealtimeWorld
 					enemy.definition == null ? "" : enemy.definition.id,
 					enemy.brain.snapshot(),
 					enemy.rangedCombat == null
-							? null : enemy.rangedCombat.snapshot()));
+							? null : enemy.rangedCombat.snapshot(),
+					enemy.heardSoundSequence));
 		}
 		raid.updateRealtimeState(
 				medicalStatus,
 				medicalSystem.snapshot(),
-				snapshots);
+				snapshots,
+				playerSounds.snapshot());
 	}
 
 	public void finishMedicalRuntime() {
@@ -1889,9 +1984,7 @@ public final class BukovRealtimeWorld
 				missionGateUnlocked,
 				cell -> GameScene.updateMap(cell));
 		if (!changed) return;
-		Dungeon.level.updateFieldOfView(
-				hero, Dungeon.level.heroFOV);
-		GameScene.updateFog();
+		refreshHeroVisibility();
 	}
 
 	private boolean movementWasBlocked(float requestedX, float requestedY) {
@@ -2171,6 +2264,7 @@ public final class BukovRealtimeWorld
 		pendingEnemyShots.clear();
 		combatFx.clear();
 		combatPresentation.clear();
+		playerSounds.clear();
 		enemies.clear();
 		enemiesByMob.clear();
 		pendingEnemyAttacks.clear();
@@ -2184,6 +2278,7 @@ public final class BukovRealtimeWorld
 	@Override
 	public void fire(Firearm firearm, FirearmDefinition definition) {
 		firedShotThisStep = true;
+		combatHudTimeline.activity();
 		Item.updateQuickslot();
 		AmmoDefinition ammunition = ammoRegistry.require(
 				firearm.loadedAmmoDefinitionId(definition)
@@ -3341,6 +3436,20 @@ public final class BukovRealtimeWorld
 		return terrainAt(heroBody.x, heroBody.y);
 	}
 
+	private Room currentHudRoom() {
+		return Dungeon.level instanceof BukovLevel
+				? ((BukovLevel)Dungeon.level).room(hero.pos)
+				: null;
+	}
+
+	private void refreshHeroVisibility() {
+		Dungeon.level.updateFieldOfView(hero, Dungeon.level.heroFOV);
+		GameScene.updateFog();
+		// Bukov does not run the legacy Actor loop, so Dungeon.observe() is not
+		// available to keep mob sprites in sync with the freshly computed FOV.
+		GameScene.afterObserve();
+	}
+
 	private int terrainAt(float x, float y) {
 		int cellX = Math.max(
 				0,
@@ -3353,14 +3462,11 @@ public final class BukovRealtimeWorld
 	}
 
 	private void emitPlayerSound(float radius) {
-		playerSoundSequence++;
-		if (playerSoundSequence == 0) {
-			playerSoundSequence = 1;
-		}
-		playerSoundX = heroBody.x;
-		playerSoundY = heroBody.y;
-		playerSoundRadius = radius;
-		playerSoundRemaining = 0.35f;
+		playerSounds.emit(
+				heroBody.x,
+				heroBody.y,
+				radius,
+				0.35f);
 	}
 
 	@Override
@@ -3725,7 +3831,7 @@ public final class BukovRealtimeWorld
 				hero.id(),
 				boss.mob.pos,
 				hero.pos,
-				null,
+				bossPulseFeedback(phase),
 				phase
 						== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
 						? 0.7f : 1f);
@@ -3909,13 +4015,84 @@ public final class BukovRealtimeWorld
 		GameScene.effect(marker);
 	}
 
-	private ExtractionState extractionAtCell(int cell) {
-		for (ExtractionState extraction : raid.extractions()) {
-			if (cell == resolveExtractionCell(extraction.extractionId())) {
-				return extraction;
+	private ExtractionState nearestExtraction(
+			int originCell,
+			float elapsed,
+			int maximumCellDistance,
+			boolean requireAvailable) {
+		if (raid == null || Dungeon.level == null) return null;
+		return nearestExtraction(
+				originCell,
+				Dungeon.level.width(),
+				Dungeon.level.length(),
+				elapsed,
+				maximumCellDistance,
+				requireAvailable,
+				raid.extractions(),
+				extractionLookup);
+	}
+
+	static ExtractionState nearestExtraction(
+			int originCell,
+			int width,
+			int length,
+			float elapsed,
+			int maximumCellDistance,
+			boolean requireAvailable,
+			Iterable<ExtractionState> extractions,
+			ExtractionLookup lookup) {
+		if (extractions == null || lookup == null) return null;
+		ExtractionState nearest = null;
+		int nearestDistanceSquared = Integer.MAX_VALUE;
+		for (ExtractionState extraction : extractions) {
+			if (extraction == null || extraction.completed()
+					|| requireAvailable
+							&& !lookup.available(extraction, elapsed)) {
+				continue;
+			}
+			int cell = lookup.cell(extraction.extractionId());
+			int cellDistance = extractionCellDistance(
+					originCell, cell, width, length);
+			if (cellDistance == Integer.MAX_VALUE
+					|| maximumCellDistance >= 0
+							&& cellDistance > maximumCellDistance) {
+				continue;
+			}
+			int deltaX = originCell % width - cell % width;
+			int deltaY = originCell / width - cell / width;
+			int distanceSquared = deltaX * deltaX + deltaY * deltaY;
+			if (nearest == null
+					|| distanceSquared < nearestDistanceSquared
+					|| distanceSquared == nearestDistanceSquared
+							&& extraction.extractionId().compareTo(
+									nearest.extractionId()) < 0) {
+				nearest = extraction;
+				nearestDistanceSquared = distanceSquared;
 			}
 		}
-		return null;
+		return nearest;
+	}
+
+	static int extractionCellDistance(
+			int firstCell, int secondCell, int width, int length) {
+		if (width <= 0 || length <= 0
+				|| firstCell < 0 || firstCell >= length
+				|| secondCell < 0 || secondCell >= length) {
+			return Integer.MAX_VALUE;
+		}
+		return Math.max(
+				Math.abs(firstCell % width - secondCell % width),
+				Math.abs(firstCell / width - secondCell / width));
+	}
+
+	static String extractionApproachLabel(
+			String extractionId, boolean available) {
+		String target = extractionId == null
+				|| extractionId.trim().isEmpty()
+				? "--" : extractionId.trim();
+		return available
+				? "撤离 " + target + " 就在脚下 · 请站入标记"
+				: "撤离 " + target + " 未开放 · 请站入标记查看";
 	}
 
 	private BukovRaidCoordinator.ContainerSnapshot containerWithinRange(
@@ -4001,20 +4178,11 @@ public final class BukovRealtimeWorld
 			}
 		}
 
-		ExtractionState nearest = null;
-		float nearestDistanceSquared = Float.MAX_VALUE;
-		for (ExtractionState extraction : raid.extractions()) {
-			if (extraction.completed()
-					|| !extractionAvailable(extraction, elapsed)) {
-				continue;
-			}
-			int cell = resolveExtractionCell(extraction.extractionId());
-			float distanceSquared = distanceSquaredToCell(cell);
-			if (distanceSquared < nearestDistanceSquared) {
-				nearest = extraction;
-				nearestDistanceSquared = distanceSquared;
-			}
-		}
+		ExtractionState nearest = nearestExtraction(
+				hero.pos,
+				elapsed,
+				-1,
+				true);
 		if (nearest != null) {
 			pointHudNavigation(
 					target,
@@ -4230,7 +4398,8 @@ public final class BukovRealtimeWorld
 		return -1;
 	}
 
-	private void resolveWhiteLineDamage(EnemyRuntime enemy, int damage) {
+	private WhiteLineBossStateMachine.Result resolveWhiteLineDamage(
+			EnemyRuntime enemy, int damage) {
 		if (enemy.bossState.phase()
 				== WhiteLineBossStateMachine.Phase.DORMANT) {
 			enemy.bossState.engage();
@@ -4240,7 +4409,7 @@ public final class BukovRealtimeWorld
 				enemy.bossState.applyDamage(damage);
 		if (result == WhiteLineBossStateMachine.Result.DAMAGE_BLOCKED) {
 			showEnemyStatus(enemy, CharSprite.WARNING, "机制保护");
-			return;
+			return result;
 		}
 		enemy.mob.HP = Math.max(1, enemy.bossState.health());
 		if (result == WhiteLineBossStateMachine.Result.PHASE_CHANGED) {
@@ -4253,6 +4422,32 @@ public final class BukovRealtimeWorld
 			recordEnemyKill();
 			releaseWhiteLineLoot(cell);
 		}
+		return result;
+	}
+
+	static CombatFeedbackType bossHitFeedback(
+			WhiteLineBossStateMachine.Result result) {
+		return result == WhiteLineBossStateMachine.Result.PHASE_CHANGED
+				? CombatFeedbackType.BOSS_PHASE_BREAK
+				: null;
+	}
+
+	static CombatFeedbackType bossDeathFeedback(
+			WhiteLineBossStateMachine.Result result) {
+		return result == WhiteLineBossStateMachine.Result.DEFEATED
+				? CombatFeedbackType.WEAKPOINT_KILL
+				: CombatFeedbackType.KILL;
+	}
+
+	static CombatFeedbackType bossPulseFeedback(
+			WhiteLineBossStateMachine.Phase phase) {
+		if (phase == WhiteLineBossStateMachine.Phase.DECOY_SEARCH) {
+			return CombatFeedbackType.BOSS_SLAM;
+		}
+		if (phase == WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD) {
+			return CombatFeedbackType.EXPLOSION;
+		}
+		return null;
 	}
 
 	private void showBossObjective(EnemyRuntime enemy) {
@@ -4590,6 +4785,20 @@ public final class BukovRealtimeWorld
 
 	private void emitEnemyHitOutcome(
 			Char target, boolean wasAlive, int damage) {
+		emitEnemyHitOutcome(
+				target,
+				wasAlive,
+				damage,
+				null,
+				CombatFeedbackType.KILL);
+	}
+
+	private void emitEnemyHitOutcome(
+			Char target,
+			boolean wasAlive,
+			int damage,
+			CombatFeedbackType hitFeedback,
+			CombatFeedbackType deathFeedback) {
 		if (target == null) return;
 		if (target.sprite != null && shouldShowDamageNumber(
 				SPDSettings.bukovDamageNumbers(), damage, target.HT)) {
@@ -4604,7 +4813,7 @@ public final class BukovRealtimeWorld
 				target.id(),
 				hero.pos,
 				target.pos,
-				null,
+				hitFeedback,
 				intensity);
 		if (wasAlive && !target.isAlive()) {
 			combatPresentation.emit(
@@ -4613,14 +4822,14 @@ public final class BukovRealtimeWorld
 					target.id(),
 					hero.pos,
 					target.pos,
-					CombatFeedbackType.KILL,
+					deathFeedback,
 					intensity);
 		}
 	}
 
 	private void emitPlayerHitOutcome(
 			Char attacker, boolean wasAlive, int damage) {
-		recordHitDirection(attacker, damage);
+		recordDirectHitDirection(attacker, damage);
 		showHeroStatus(shouldShowDamageNumber(
 				SPDSettings.bukovDamageNumbers(), damage, hero.HT)
 				? "受击 -" + damage : "受击");
@@ -4659,16 +4868,28 @@ public final class BukovRealtimeWorld
 				8, Math.round(Math.max(1, maximumHealth) * 0.15f));
 	}
 
-	private void recordHitDirection(Char attacker, int damage) {
-		if (attacker == null || Dungeon.level == null) return;
+	private void recordDirectHitDirection(Char attacker, int damage) {
+		combatHudTimeline.activity();
+		if (attacker == null
+				|| attacker == hero
+				|| Dungeon.level == null) {
+			return;
+		}
 		int width = Dungeon.level.width();
 		float deltaX = attacker.pos % width - hero.pos % width;
 		float deltaY = attacker.pos / width - hero.pos / width;
-		hitIndicatorDirection = direction(deltaX, deltaY);
-		hitIndicatorStrength = Math.max(
-				0.2f,
-				Math.min(1f, damage / Math.max(1f, hero.HT * 0.35f)));
-		hitIndicatorRemaining = HIT_DIRECTION_LIFETIME_SECONDS;
+		combatHudTimeline.damage(
+				attacker.id(),
+				direction(deltaX, deltaY),
+				Math.max(
+						0.2f,
+						Math.min(
+								1f,
+								damage
+										/ Math.max(
+												1f,
+												hero.HT * 0.35f))),
+				false);
 	}
 
 	static BukovRaidHudState.Direction direction(float deltaX, float deltaY) {
@@ -4830,6 +5051,8 @@ public final class BukovRealtimeWorld
 					&& definitionId.equals(restoredState.definitionId());
 			if (matchingSnapshot) {
 				brain.restoreSnapshot(restoredState.brain());
+				heardSoundSequence =
+						restoredState.heardSoundSequence();
 			}
 			if (definition != null
 					&& definition.weaponDefinitionId != null) {

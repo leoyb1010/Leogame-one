@@ -27,12 +27,14 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(world.contains("medicalStatus.bleedingPerSecond()"));
 		assertTrue(world.contains("active.progressFraction()"));
 		assertTrue(world.contains(
-				"extractionAvailable(extractionHere, elapsed)"));
+				"extractionAvailable(nearbyExtraction, elapsed)"));
 		assertTrue(world.contains(
 				"raid.firstRaidConditionalExtractionUnlocked()"));
 		assertTrue(world.contains("selectVisibleLootHeap("));
 		assertTrue(world.contains("target.sound(keySoundVisual)"));
-		assertTrue(world.contains("target.hit("));
+		assertTrue(world.contains("combatHudTimeline.copyTo(target)"));
+		assertTrue(world.contains("combatHudTimeline.activity()"));
+		assertTrue(world.contains("combatHudTimeline.damage("));
 		assertTrue(world.contains("target.aim("));
 		assertTrue(world.contains("readNavigationHudState(target, elapsed)"));
 		assertTrue(world.contains("readThreatHudState(target)"));
@@ -55,6 +57,9 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovCombatHudFormat.bossTitle(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.navigation(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.threat(live)"));
+		assertTrue(hud.contains("live.combatAwarenessAlpha()"));
+		assertTrue(hud.contains("BukovHitDirectionArc"));
+		assertTrue(hud.contains("live.hitCount()"));
 		assertTrue(hud.contains("positionReticle(crosshairX, crosshairY)"));
 		assertTrue(hud.contains("PointerEvent.currentHoverPos()"));
 		assertTrue(hud.contains("camera.screenToCamera("));
@@ -96,12 +101,18 @@ public class BukovRaidHudWiringGuardTest {
 			throws Exception {
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
-		assertTrue(scene.contains("event.fromX() * tileSize,"));
-		assertTrue(scene.contains("event.fromY() * tileSize)"));
-		assertTrue(scene.contains("event.toX() * tileSize,"));
-		assertTrue(scene.contains("event.toY() * tileSize)"));
+		String pool = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/BukovCombatFxViewPool.java");
+		assertTrue(scene.contains(
+				"bukovCombatFxViews.present(event, DungeonTilemap.SIZE)"));
+		assertTrue(pool.contains("event.fromX() * tileSize"));
+		assertTrue(pool.contains("event.fromY() * tileSize"));
+		assertTrue(pool.contains("event.toX() * tileSize"));
+		assertTrue(pool.contains("event.toY() * tileSize"));
 		assertFalse(scene.contains("event.fromX() * tileSize + center"));
 		assertFalse(scene.contains("event.toX() * tileSize + center"));
+		assertFalse(pool.contains("event.fromX() * tileSize + center"));
+		assertFalse(pool.contains("event.toX() * tileSize + center"));
 	}
 
 	@Test

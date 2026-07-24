@@ -51,7 +51,7 @@ public final class WndBukovHub extends Window {
 	private final List<LoadoutRow> itemRows = new ArrayList<>();
 	private final List<TacticalButton> actionButtons = new ArrayList<>();
 	private ScrollPane itemScroll;
-	private ModeCycleButton modeButton;
+	private ModeSelectButton modeButton;
 	private FilterCycleButton filterButton;
 	private final BukovFocusRepeater focusRepeater =
 			new BukovFocusRepeater();
@@ -159,7 +159,7 @@ public final class WndBukovHub extends Window {
 
 		float utilityWidth =
 				(windowWidth - MARGIN * 2 - GAP) / 2f;
-		modeButton = new ModeCycleButton();
+		modeButton = new ModeSelectButton();
 		modeButton.setRect(MARGIN, y, utilityWidth, BUTTON_HEIGHT);
 		add(modeButton);
 		addAction(
@@ -349,10 +349,11 @@ public final class WndBukovHub extends Window {
 			return "无法出击  /  " + viewModel.deploymentBlockReason;
 		}
 		if (viewModel.latestSettlement == null) {
-			return "行动记录  /  尚未出击";
+			return viewModel.deploymentReadinessHeadline();
 		}
 		boolean success = viewModel.latestSettlement.outcome == RaidOutcome.SUCCESS;
-		return (success ? "上次行动 / 已撤离 +" : "上次行动 / 未归还 -")
+		return "配装已就绪 / 可立即出击 · "
+				+ (success ? "上次已撤离 +" : "上次未归还 -")
 				+ viewModel.latestSettlement.value
 				+ " · "
 				+ viewModel.latestSettlement.kills
@@ -407,16 +408,21 @@ public final class WndBukovHub extends Window {
 		}
 	}
 
-	private void cycleRaidMode() {
-		if (!viewModel.canEditLoadout) {
-			return;
-		}
-		try {
-			controller.cycleRaidMode();
-			reopen();
-		} catch (IOException | RuntimeException error) {
-			showError("模式保存失败", error);
-		}
+	private void openModeSelection() {
+		// Pointer and controller entry share the same deterministic return
+		// target instead of restoring whichever row happened to be focused.
+		focus.focus(inventoryItems.size());
+		int restoredFocus = focus.index();
+		hide();
+		ShatteredPixelDungeon.scene().addToFront(
+				new WndBukovRaidModeSelection(
+						controller,
+						() -> ShatteredPixelDungeon.scene().addToFront(
+								new WndBukovHub(
+										controller,
+										deploy,
+										restoredFocus,
+										inventoryFilter))));
 	}
 
 	private void cycleInventoryFilter() {
@@ -576,7 +582,7 @@ public final class WndBukovHub extends Window {
 				toggle(item.itemUid);
 			}
 		} else if (focus.modeFocused()) {
-			cycleRaidMode();
+			openModeSelection();
 		} else if (focus.filterFocused()) {
 			cycleInventoryFilter();
 		} else {
@@ -824,14 +830,14 @@ public final class WndBukovHub extends Window {
 		}
 	}
 
-	private final class ModeCycleButton extends Button {
+	private final class ModeSelectButton extends Button {
 
 		private final ColorBlock surface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
 		private final RenderedTextBlock label;
 
-		private ModeCycleButton() {
+		private ModeSelectButton() {
 			surface = new ColorBlock(
 					1,
 					1,
@@ -846,7 +852,9 @@ public final class WndBukovHub extends Window {
 			add(focusEdge);
 			label = text(
 					"模式  " + viewModel.raidModeName
-							+ (viewModel.canEditLoadout ? "  [切换]" : ""),
+							+ (viewModel.canEditLoadout
+									? "  [选择]"
+									: "  [查看/锁定]"),
 					7,
 					tokens.color("text.primary"));
 			add(label);
@@ -854,7 +862,7 @@ public final class WndBukovHub extends Window {
 
 		@Override
 		protected void onClick() {
-			cycleRaidMode();
+			openModeSelection();
 		}
 
 		private void setFocused(boolean focused) {
@@ -1082,7 +1090,9 @@ public final class WndBukovHub extends Window {
 
 		private DeploymentConfirmWindow() {
 			super(0, 0, new NinePatch(
-					TextureCache.createSolid(0xFF101C20), 0));
+					TextureCache.createSolid(
+							BukovUiTokens.loadDefault().colorWithAlpha(
+									"panel.deep", 255)), 0));
 			int confirmWidth = 138;
 			int confirmHeight = 84;
 			resize(confirmWidth, confirmHeight);

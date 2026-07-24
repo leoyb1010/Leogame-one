@@ -78,6 +78,9 @@ public class BukovEnemyVisibilityGuardTest {
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
 						+ "scenes/GameScene.java");
+		String world = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/runtime/BukovRealtimeWorld.java");
 		String hud = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
 						+ "bukov/ui/BukovRaidHud.java");
@@ -104,6 +107,37 @@ public class BukovEnemyVisibilityGuardTest {
 				"sprite.visible = Dungeon.level.heroFOV[mob.pos]"));
 		assertTrue(scene.contains(
 				"mob.sprite.visible = Dungeon.level.heroFOV[mob.pos]"));
+		assertEquals(
+				"every realtime FOV refresh must use the shared visibility path",
+				4,
+				occurrences(world, "refreshHeroVisibility();"));
+		assertTrue(between(
+				world,
+				"collisionMap = new LevelCollisionMap(",
+				"collision = new GridCollision(")
+				.contains("refreshHeroVisibility();"));
+		assertTrue(between(
+				world,
+				"if (recoverHeroCheckpoint(",
+				"lastHudRoom = currentHudRoom();")
+				.contains("refreshHeroVisibility();"));
+		assertTrue(between(
+				world,
+				"if (hero.pos != previousCell) {",
+				"public void emitPlayerActions(")
+				.contains("refreshHeroVisibility();"));
+		assertTrue(between(
+				world,
+				"private void applyMissionGateTerrain() {",
+				"private boolean movementWasBlocked(")
+				.contains("refreshHeroVisibility();"));
+		String refresh = between(
+				world,
+				"private void refreshHeroVisibility() {",
+				"private int terrainAt(");
+		assertTrue(refresh.contains("Dungeon.level.updateFieldOfView("));
+		assertTrue(refresh.contains("GameScene.updateFog();"));
+		assertTrue(refresh.contains("GameScene.afterObserve();"));
 
 		// Awareness text belongs at the HUD edge. A radial threat slab can
 		// otherwise sit directly over the enemy whose direction it describes.
@@ -119,5 +153,24 @@ public class BukovEnemyVisibilityGuardTest {
 		return new String(
 				Files.readAllBytes(Paths.get(relativePath)),
 				StandardCharsets.UTF_8);
+	}
+
+	private static int occurrences(String source, String token) {
+		int count = 0;
+		int offset = 0;
+		while ((offset = source.indexOf(token, offset)) >= 0) {
+			count++;
+			offset += token.length();
+		}
+		return count;
+	}
+
+	private static String between(
+			String source, String startToken, String endToken) {
+		int start = source.indexOf(startToken);
+		int end = source.indexOf(endToken, start + startToken.length());
+		assertTrue("missing start token " + startToken, start >= 0);
+		assertTrue("missing end token " + endToken, end > start);
+		return source.substring(start, end);
 	}
 }

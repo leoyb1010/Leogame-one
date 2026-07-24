@@ -56,18 +56,17 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegist
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovImpactFx;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovMuzzleFx;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovShellFx;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovTracerFx;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatPresentation;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatFxViewPool;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ExtractionDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovContainerDefinition;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHostRecoveryPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovGearRules;
@@ -279,6 +278,7 @@ public class GameScene extends PixelScene {
 	private WndBukovBackpack bukovBackpack;
 	private Signal.Listener<KeyEvent> bukovBackpackKeyListener;
 	private BukovCombatPresentation bukovCombatPresentation;
+	private BukovCombatFxViewPool bukovCombatFxViews;
 	private BukovExperienceSettings bukovAudioDefaults;
 	private BukovAudioBusMix bukovAudioMix;
 	private BukovUiSoundPlayer bukovUiSounds;
@@ -936,6 +936,8 @@ public class GameScene extends PixelScene {
 						bukovRuntimeLoadout.equippedGear());
 				initializeBukovAudio();
 				bukovCombatPresentation = new BukovCombatPresentation();
+				bukovCombatFxViews = new BukovCombatFxViewPool();
+				overFogEffects.add(bukovCombatFxViews);
 				bukovRealtime = new RealtimeRaidSystem(
 						bukovWorld,
 						bukovRaid
@@ -1105,9 +1107,21 @@ public class GameScene extends PixelScene {
 						bukovExtractionDefinitions();
 				List<BukovContainerDefinition> containerDefinitions =
 						bukovContainerDefinitions();
+				boolean checkpointPresent =
+						bukovSaves.loadRaidCheckpoint() != null;
+				BukovHostRecoveryPolicy.Action hostRecovery =
+						BukovHostRecoveryPolicy.decide(
+								checkpointPresent,
+								true);
 				BukovRaidCoordinator resumed =
 						BukovRaidCoordinator.resume(bukovSaves);
 				if (resumed != null) {
+					if (hostRecovery
+							!= BukovHostRecoveryPolicy.Action
+									.RESUME_MATCHED_HOST) {
+						throw new IOException(
+								"Refusing checkpoint resume without its host map");
+					}
 					bukovRaid = resumed;
 					bukovEmergencyLoadoutRecovered =
 							resumed.emergencyLoadoutRecovered();
@@ -1126,6 +1140,15 @@ public class GameScene extends PixelScene {
 					if (profile.isSettled(raidId)) {
 						finishBukovHostSave();
 						return false;
+					}
+					if (hostRecovery
+							!= BukovHostRecoveryPolicy.Action
+									.ARCHIVE_ORPHAN_HOST
+							|| !BukovDeploymentHandoff.consumeFreshHost(
+									Dungeon.seed)) {
+						throw new IOException(
+								"Refusing to deploy a new loadout into an "
+										+ "unverified host map");
 					}
 					float raidWeightCapacity =
 							BukovGearRules.resolve(
@@ -1232,7 +1255,9 @@ public class GameScene extends PixelScene {
 			}
 
 			private void consumeBukovCombatFx(CombatFxEvent event) {
-				if (event == null || Dungeon.level == null) {
+				if (event == null
+						|| Dungeon.level == null
+						|| bukovCombatFxViews == null) {
 					return;
 				}
 				if (!BukovPerformancePolicy.renderCombatFx(
@@ -1241,51 +1266,10 @@ public class GameScene extends PixelScene {
 						event.sequence())) {
 					return;
 				}
-				float tileSize = DungeonTilemap.SIZE;
 				// RealtimeBody and HitscanResolver already report tile-center
-				// coordinates (for example 10.5f). Adding another half tile
-				// displaced every muzzle, tracer and impact away from the shot.
-				PointF from = new PointF(
-						event.fromX() * tileSize,
-						event.fromY() * tileSize);
-				PointF to = new PointF(
-						event.toX() * tileSize,
-						event.toY() * tileSize);
-				switch (event.type()) {
-					case MUZZLE_FLASH:
-						overFogEffects.add(new BukovMuzzleFx(
-								from,
-								new PointF(
-										event.toX() - event.fromX(),
-										event.toY() - event.fromY()),
-								event.hostile(),
-								event.intensity()));
-						break;
-					case SHELL:
-						overFogEffects.add(new BukovShellFx(
-								from,
-								new PointF(
-										event.toX() - event.fromX(),
-										event.toY() - event.fromY()),
-								event.hostile(),
-								event.intensity()));
-						break;
-					case TRACER:
-						overFogEffects.add(new BukovTracerFx(
-								from,
-								to,
-								event.hostile(),
-								event.intensity()));
-						break;
-					case IMPACT:
-						overFogEffects.add(new BukovImpactFx(
-								to,
-								event.hostile(),
-								event.intensity()));
-						break;
-					default:
-						break;
-				}
+				// coordinates (for example 10.5f). The view pool converts
+				// exactly once and never creates a scene node per event.
+				bukovCombatFxViews.present(event, DungeonTilemap.SIZE);
 			}
 
 			private void updateBukovLifecycle() {
@@ -1410,6 +1394,7 @@ public class GameScene extends PixelScene {
 			}
 			bukovWorld = null;
 			disposeBukovCombatPresentation();
+			bukovCombatFxViews = null;
 			bukovRuntimeLoadout = null;
 			show(new WndBukovSettlement(
 					result,

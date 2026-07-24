@@ -512,6 +512,24 @@ public final class BukovHubViewModel {
 				+ "kg";
 	}
 
+	/**
+	 * One short, action-oriented status shared by both hideout surfaces.
+	 * Validation remains authoritative; this only makes its current result
+	 * unmistakable to the player.
+	 */
+	public String deploymentReadinessHeadline() {
+		if (activeRaid) {
+			return "行动检查点已就绪 · 可立即继续";
+		}
+		if (!canDeploy) {
+			return "配装待完善 · " + deploymentBlockReason;
+		}
+		if (!raidMode.usesPlayerLoadout()) {
+			return "演练装备已就绪 · 可立即测试";
+		}
+		return "配装已就绪 · 可立即确认出击";
+	}
+
 	public String activeRaidSummary() {
 		if (!activeRaid) {
 			return "";

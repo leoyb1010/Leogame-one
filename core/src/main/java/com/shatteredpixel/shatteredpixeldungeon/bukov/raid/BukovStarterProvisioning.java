@@ -1,10 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 /**
- * Grants a coherent first kit and prevents a permanent no-weapon soft lock.
+ * Grants a coherent first kit and prevents permanent combat-loadout soft locks.
  *
- * A recovery kit is issued only when the durable stash has no firearm. It uses
- * a settlement-indexed UID, so the physical item never aliases an earlier lost
+ * A recovery kit is issued when the durable stash has no supported firearm, or
+ * when a retained firearm has no compatible ammunition. It uses a
+ * settlement-indexed UID, so the physical item never aliases an earlier lost
  * kit and repeated hub opens cannot duplicate it.
  */
 public final class BukovStarterProvisioning {
@@ -34,8 +35,44 @@ public final class BukovStarterProvisioning {
 		if (activeRaid) {
 			return false;
 		}
-		if (hasFirearm(profile)) {
-			return false;
+		RaidItem retainedFirearm = preferredSupportedFirearm(profile);
+		if (retainedFirearm != null) {
+			String ammunitionOfferId =
+					recoveryAmmunitionOffer(
+							retainedFirearm.definitionId());
+			BukovVendorCatalog.Offer ammunition =
+					BukovVendorCatalog.require(ammunitionOfferId);
+			RaidItem compatibleAmmunition =
+					findDefinition(
+							profile,
+							ammunition.definitionId);
+			boolean changed = false;
+			if (compatibleAmmunition == null) {
+				String ammunitionUid = "provision:recovery:"
+						+ profile.settlements().size()
+						+ ":"
+						+ ammunition.offerId;
+				profile.stash().deposit(
+						ammunition.createItem(ammunitionUid));
+				compatibleAmmunition =
+						profile.stash().item(ammunitionUid);
+				changed = true;
+			}
+			if (!profile.loadout().contains(
+					retainedFirearm.itemUid())) {
+				profile.loadout().select(
+						retainedFirearm.itemUid(),
+						profile.stash());
+				changed = true;
+			}
+			if (!profile.loadout().contains(
+					compatibleAmmunition.itemUid())) {
+				profile.loadout().select(
+						compatibleAmmunition.itemUid(),
+						profile.stash());
+				changed = true;
+			}
+			return changed;
 		}
 		boolean firstKit = profile.stash().distinctItemCount() == 0
 				&& profile.settlements().isEmpty()
@@ -83,12 +120,58 @@ public final class BukovStarterProvisioning {
 		return true;
 	}
 
-	private static boolean hasFirearm(BukovProfile profile) {
+	private static RaidItem preferredSupportedFirearm(
+			BukovProfile profile) {
+		for (String itemUid : profile.loadout().selectedUids()) {
+			RaidItem item = profile.stash().item(itemUid);
+			if (supportedFirearm(item)) return item;
+		}
 		for (RaidItem item : profile.stash().items()) {
-			if (item.definitionId().startsWith("firearm:")) {
-				return true;
+			if (supportedFirearm(item)) return item;
+		}
+		return null;
+	}
+
+	private static boolean supportedFirearm(RaidItem item) {
+		return item != null
+				&& recoveryAmmunitionOffer(
+						item.definitionId()) != null;
+	}
+
+	private static RaidItem findDefinition(
+			BukovProfile profile, String definitionId) {
+		for (RaidItem item : profile.stash().items()) {
+			if (definitionId.equals(item.definitionId())) {
+				return item;
 			}
 		}
-		return false;
+		return null;
+	}
+
+	private static String recoveryAmmunitionOffer(
+			String firearmDefinitionId) {
+		if (firearmDefinitionId == null
+				|| !firearmDefinitionId.startsWith("firearm:")) {
+			return null;
+		}
+		int separator = firearmDefinitionId.lastIndexOf('_');
+		if (separator < 0
+				|| separator == firearmDefinitionId.length() - 1) {
+			return null;
+		}
+		String caliber = firearmDefinitionId.substring(separator + 1);
+		if ("9".equals(caliber)) {
+			return "ammo_9_standard_24";
+		}
+		if ("556".equals(caliber)) {
+			return "ammo_556_standard_24";
+		}
+		if ("762".equals(caliber)) {
+			return "ammo_762_standard_20";
+		}
+		if ("12".equals(caliber) || "12g".equals(caliber)) {
+			return "ammo_12g_buckshot_12";
+		}
+		return null;
 	}
 }

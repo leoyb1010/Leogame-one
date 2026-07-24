@@ -97,13 +97,19 @@ public class BukovRaidModePolicyParameterizedTest {
 				2,
 				true,
 				mode);
-		long expected = adjustedUnitValue * 2L + 50L;
-		assertEquals(3L, result.transferredQuantity());
+		long expected = adjustedUnitValue * 2L
+				+ (mode == BukovRaidMode.SCAVENGER ? 0L : 50L);
+		assertEquals(
+				mode == BukovRaidMode.SCAVENGER ? 2L : 3L,
+				result.transferredQuantity());
 		assertEquals(expected, result.transferredValue());
 		assertEquals(expected, profile.stash().totalValue());
 		assertEquals(expected, profile.statistics().extractedValue());
 		assertEquals(adjustedUnitValue,
 				profile.stash().item("found").unitValue());
+		assertEquals(
+				mode != BukovRaidMode.SCAVENGER,
+				profile.stash().contains("owned"));
 
 		RaidResult replay = new RaidSettlement().settle(
 				profile,

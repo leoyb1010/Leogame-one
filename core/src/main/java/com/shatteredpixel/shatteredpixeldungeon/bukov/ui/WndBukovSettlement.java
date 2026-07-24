@@ -94,7 +94,9 @@ public final class WndBukovSettlement extends Window {
 			ReturnToHideout returnToHideout,
 			RepeatLastLoadout repeatLastLoadout) {
 		super(0, 0, new NinePatch(
-				TextureCache.createSolid(0xFF101514), 0));
+				TextureCache.createSolid(
+						BukovUiTokens.loadDefault().colorWithAlpha(
+								"panel.result", 255)), 0));
 		if (viewModel == null) {
 			throw new IllegalArgumentException("viewModel is required");
 		}

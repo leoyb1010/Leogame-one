@@ -10,6 +10,7 @@ import com.watabou.utils.Callback;
 public final class BukovPauseButton extends Button {
 
 	private final Callback callback;
+	private BukovUiTokens tokens;
 	private ColorBlock background;
 	private ColorBlock edge;
 	private RenderedTextBlock label;
@@ -21,12 +22,14 @@ public final class BukovPauseButton extends Button {
 	@Override
 	protected void createChildren() {
 		super.createChildren();
-		background = new ColorBlock(1, 1, 0xE01B2421);
+		tokens = BukovUiTokens.loadDefault();
+		background = new ColorBlock(
+				1, 1, tokens.colorWithAlpha("panel.surface", 224));
 		addToBack(background);
-		edge = new ColorBlock(1, 1, 0xFF47C99A);
+		edge = new ColorBlock(1, 1, tokens.color("accent.interact"));
 		add(edge);
 		label = PixelScene.renderTextBlock("暂停", 7);
-		label.hardlight(0xFFE4EEE9);
+		label.hardlight(tokens.color("text.primary"));
 		label.align(RenderedTextBlock.CENTER_ALIGN);
 		add(label);
 	}

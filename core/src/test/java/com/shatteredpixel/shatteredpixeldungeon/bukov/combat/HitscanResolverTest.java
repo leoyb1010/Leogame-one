@@ -108,6 +108,70 @@ public class HitscanResolverTest {
 		);
 	}
 
+	@Test
+	public void diagonalCornerUsesSupercoverInAllFourDirections() {
+		float[][] directions = {
+				{1f, 1f},
+				{-1f, 1f},
+				{1f, -1f},
+				{-1f, -1f}
+		};
+		float cornerDistance = (float)Math.sqrt(0.5f);
+
+		for (float[] direction : directions) {
+			int stepX = direction[0] < 0f ? -1 : 1;
+			int stepY = direction[1] < 0f ? -1 : 1;
+			int[][] horizontalSide = {{3 + stepX, 3}};
+			int[][] verticalSide = {{3, 3 + stepY}};
+			int[][] bothSides = {
+					{3 + stepX, 3},
+					{3, 3 + stepY}
+			};
+
+			assertCornerOpen(direction);
+			assertCornerBlocked(direction, horizontalSide, cornerDistance);
+			assertCornerBlocked(direction, verticalSide, cornerDistance);
+			assertCornerBlocked(direction, bothSides, cornerDistance);
+		}
+	}
+
+	private static void assertCornerOpen(float[] direction) {
+		HitscanResolver.Hit hit = new HitscanResolver.Hit();
+		HitscanResolver.cast(
+				3.5f,
+				3.5f,
+				direction[0],
+				direction[1],
+				1.5f,
+				mapWithWalls(new int[0][0]),
+				query(Collections.emptyList()),
+				null,
+				hit);
+
+		assertNull(hit.body);
+		assertEquals(1.5f, hit.distance, 0.0001f);
+	}
+
+	private static void assertCornerBlocked(
+			float[] direction,
+			int[][] walls,
+			float expectedDistance) {
+		HitscanResolver.Hit hit = new HitscanResolver.Hit();
+		HitscanResolver.cast(
+				3.5f,
+				3.5f,
+				direction[0],
+				direction[1],
+				1.5f,
+				mapWithWalls(walls),
+				query(Collections.emptyList()),
+				null,
+				hit);
+
+		assertNull(hit.body);
+		assertEquals(expectedDistance, hit.distance, 0.0001f);
+	}
+
 	private static RealtimeBody body(float x, float y, float radius) {
 		RealtimeBody body = new RealtimeBody();
 		body.x = x;
@@ -137,6 +201,33 @@ public class HitscanResolverTest {
 			@Override
 			public boolean blocked(int x, int y) {
 				return x <= 0 || y <= 0 || x >= 11 || y >= 7 || x == wallX;
+			}
+		};
+	}
+
+	private static CollisionMap mapWithWalls(int[][] walls) {
+		return new CollisionMap() {
+			@Override
+			public int width() {
+				return 8;
+			}
+
+			@Override
+			public int height() {
+				return 8;
+			}
+
+			@Override
+			public boolean blocked(int x, int y) {
+				if (x <= 0 || y <= 0 || x >= 7 || y >= 7) {
+					return true;
+				}
+				for (int[] wall : walls) {
+					if (wall[0] == x && wall[1] == y) {
+						return true;
+					}
+				}
+				return false;
 			}
 		};
 	}

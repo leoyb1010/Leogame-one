@@ -28,8 +28,9 @@ public final class BukovTracerFx extends Group {
 	public static final int HOSTILE_COLOR = 0xFFFF725C;
 	static final int HEAD_OUTLINE_COLOR = 0xFF151B20;
 
-	private final float duration;
-	private final TraceGeometry geometry;
+	private final float duration = DURATION_SECONDS;
+	private final TraceGeometry geometry = new TraceGeometry();
+	private final TailSegment workingTail = new TailSegment();
 	private final LightLine glowLine;
 	private final LightLine coreLine;
 	private final BulletHead bulletHeadOutline;
@@ -37,53 +38,74 @@ public final class BukovTracerFx extends Group {
 	private float age;
 	private boolean hasPresentedTravelFrame;
 
-	public BukovTracerFx(PointF from, PointF to, boolean hostile, float intensity) {
-		geometry = plan(from, to, intensity);
-		duration = DURATION_SECONDS;
-		if (!geometry.visible()) {
-			glowLine = null;
-			coreLine = null;
-			bulletHeadOutline = null;
-			bulletHead = null;
-			visible = false;
-			kill();
-			return;
-		}
+	/**
+	 * Creates one dormant view slot. {@link BukovCombatFxViewPool} owns these
+	 * slots and reconfigures them without allocating scene nodes per shot.
+	 */
+	public BukovTracerFx() {
+		glowLine = new LightLine(0.12f);
+		add(glowLine);
+		coreLine = new LightLine(0.8f);
+		add(coreLine);
+		bulletHeadOutline = new BulletHead(false);
+		add(bulletHeadOutline);
+		bulletHead = new BulletHead(true);
+		add(bulletHead);
+		retire();
+	}
 
+	public BukovTracerFx(PointF from, PointF to, boolean hostile, float intensity) {
+		this();
+		reset(
+				from == null ? Float.NaN : from.x,
+				from == null ? Float.NaN : from.y,
+				to == null ? Float.NaN : to.x,
+				to == null ? Float.NaN : to.y,
+				hostile,
+				intensity);
+	}
+
+	boolean reset(
+			float fromX,
+			float fromY,
+			float toX,
+			float toY,
+			boolean hostile,
+			float intensity) {
+		if (!geometry.configure(fromX, fromY, toX, toY, intensity)) {
+			retire();
+			return false;
+		}
+		age = 0f;
+		hasPresentedTravelFrame = false;
 		int color = hostile ? HOSTILE_COLOR : FRIENDLY_COLOR;
-		glowLine = new LightLine(
+		glowLine.configure(
 				geometry.glowThickness(),
 				geometry.angleDegrees(),
-				color,
-				0.12f);
-		add(glowLine);
-		coreLine = new LightLine(
+				color);
+		coreLine.configure(
 				geometry.coreThickness(),
 				geometry.angleDegrees(),
-				color,
-				0.8f);
-		add(coreLine);
-		TailSegment initialTail = tailSegmentAt(geometry, 0f);
-		glowLine.place(initialTail, 0f);
-		coreLine.place(initialTail, 0f);
-		bulletHeadOutline = new BulletHead(
+				color);
+		tailSegmentAt(geometry, 0f, workingTail);
+		glowLine.place(workingTail, 0f);
+		coreLine.place(workingTail, 0f);
+		bulletHeadOutline.configure(
 				geometry.fromX(),
 				geometry.fromY(),
 				geometry.angleDegrees(),
 				HEAD_OUTLINE_COLOR,
 				outlineWidthFor(geometry.coreThickness()),
-				outlineHeightFor(geometry.coreThickness()),
-				false);
-		add(bulletHeadOutline);
-		bulletHead = new BulletHead(
+				outlineHeightFor(geometry.coreThickness()));
+		bulletHead.configure(
 				geometry.fromX(),
 				geometry.fromY(),
 				geometry.angleDegrees(),
 				color,
 				headWidthFor(geometry.coreThickness()),
-				headHeightFor(geometry.coreThickness()),
-				true);
-		add(bulletHead);
+				headHeightFor(geometry.coreThickness()));
+		activate();
+		return true;
 	}
 
 	@Override
@@ -95,9 +117,9 @@ public final class BukovTracerFx extends Group {
 		if (age >= duration && !hadPresentedTravelFrame) {
 			trailAlpha = Math.max(0.45f, trailAlpha);
 		}
-		TailSegment tail = tailSegmentAt(geometry, age);
-		glowLine.place(tail, trailAlpha);
-		coreLine.place(tail, trailAlpha);
+		tailSegmentAt(geometry, age, workingTail);
+		glowLine.place(workingTail, trailAlpha);
+		coreLine.place(workingTail, trailAlpha);
 		if (bulletHead != null) {
 			float progress = travelProgressAt(age, TRAVEL_SECONDS);
 			float headX = geometry.fromX()
@@ -115,33 +137,16 @@ public final class BukovTracerFx extends Group {
 			hasPresentedTravelFrame |= progress > 0f;
 		}
 		if (shouldExpireAfterUpdate(age, duration, hadPresentedTravelFrame)) {
-			killAndErase();
+			retire();
 		}
 	}
 
 	public static TraceGeometry plan(PointF from, PointF to, float intensity) {
-		if (from == null || to == null
-				|| !finite(from.x) || !finite(from.y)
-				|| !finite(to.x) || !finite(to.y)) {
-			return TraceGeometry.hidden();
+		TraceGeometry result = new TraceGeometry();
+		if (from != null && to != null) {
+			result.configure(from.x, from.y, to.x, to.y, intensity);
 		}
-		float dx = to.x - from.x;
-		float dy = to.y - from.y;
-		float length = (float) Math.sqrt(dx * dx + dy * dy);
-		if (length <= 0.01f) {
-			return TraceGeometry.hidden();
-		}
-		float strength = clamp(intensity, 0.35f, 1.6f);
-		return new TraceGeometry(
-				true,
-				from.x,
-				from.y,
-				to.x,
-				to.y,
-				length,
-				(float) Math.toDegrees(Math.atan2(dy, dx)),
-				0.55f + strength * 0.20f,
-				1.10f + strength * 0.50f);
+		return result;
 	}
 
 	public static float alphaAt(float age, float duration) {
@@ -198,8 +203,16 @@ public final class BukovTracerFx extends Group {
 	}
 
 	static TailSegment tailSegmentAt(TraceGeometry geometry, float age) {
+		TailSegment result = new TailSegment();
+		tailSegmentAt(geometry, age, result);
+		return result;
+	}
+
+	private static void tailSegmentAt(
+			TraceGeometry geometry, float age, TailSegment out) {
 		if (geometry == null || !geometry.visible() || !finite(age) || age < 0f) {
-			return TailSegment.hidden();
+			out.set(false, 0f, 0f, 0f, 0f, 0f, 0f);
+			return;
 		}
 		float endProgress = travelProgressAt(age, TRAVEL_SECONDS);
 		float tailFraction = tailLengthFor(geometry.length()) / geometry.length();
@@ -213,7 +226,7 @@ public final class BukovTracerFx extends Group {
 		float endY = geometry.fromY()
 				+ (geometry.toY() - geometry.fromY()) * endProgress;
 		float segmentLength = geometry.length() * (endProgress - startProgress);
-		return new TailSegment(
+		out.set(
 				segmentLength > 0.01f,
 				startX,
 				startY,
@@ -221,6 +234,19 @@ public final class BukovTracerFx extends Group {
 				endY,
 				segmentLength,
 				geometry.angleDegrees());
+	}
+
+	private void activate() {
+		revive();
+		active = true;
+		visible = true;
+	}
+
+	private void retire() {
+		alive = false;
+		exists = false;
+		active = false;
+		visible = false;
 	}
 
 	static float headWidthFor(float coreThickness) {
@@ -268,18 +294,21 @@ public final class BukovTracerFx extends Group {
 
 	private static final class LightLine extends ColorBlock {
 
-		private final float thickness;
+		private float thickness;
 		private final float alphaWeight;
 
-		private LightLine(float thickness,
-						  float angle,
-						  int color,
-						  float alpha) {
-			super(1f, thickness, color);
+		private LightLine(float alpha) {
+			super(1f, 1f, 0xFFFFFFFF);
 			origin.set(0f, 0.5f);
-			this.angle = angle;
-			this.thickness = thickness;
 			alphaWeight = alpha;
+			visible = false;
+		}
+
+		private void configure(float thickness, float angle, int color) {
+			this.thickness = thickness;
+			this.angle = angle;
+			color(color & 0xFFFFFF);
+			alpha(0f);
 			visible = false;
 		}
 
@@ -306,25 +335,30 @@ public final class BukovTracerFx extends Group {
 
 	private static final class BulletHead extends ColorBlock {
 
-		private BulletHead(
+		private BulletHead(boolean additive) {
+			super(1f, 1f, 0xFFFFFFFF);
+			// ColorBlock's source texture is one pixel; the scale holds the
+			// authored size, so 0.5/0.5 is its actual transform origin.
+			origin.set(0.5f, 0.5f);
+			this.additive = additive;
+		}
+
+		private final boolean additive;
+
+		private void configure(
 				float x,
 				float y,
 				float angle,
 				int color,
 				float width,
-				float height,
-				boolean additive) {
-			super(width, height, color);
-			// ColorBlock's source texture is one pixel; the scale holds the
-			// authored size, so 0.5/0.5 is its actual transform origin.
-			origin.set(0.5f, 0.5f);
-			this.x = x - origin.x;
-			this.y = y - origin.y;
+				float height) {
+			size(width, height);
+			color(color & 0xFFFFFF);
 			this.angle = angle;
-			this.additive = additive;
+			moveTo(x, y);
+			fade(1f);
+			visible = true;
 		}
-
-		private final boolean additive;
 
 		private void moveTo(float centerX, float centerY) {
 			x = centerX - origin.x;
@@ -349,15 +383,18 @@ public final class BukovTracerFx extends Group {
 
 	static final class TailSegment {
 
-		private final boolean visible;
-		private final float startX;
-		private final float startY;
-		private final float endX;
-		private final float endY;
-		private final float length;
-		private final float angleDegrees;
+		private boolean visible;
+		private float startX;
+		private float startY;
+		private float endX;
+		private float endY;
+		private float length;
+		private float angleDegrees;
 
-		private TailSegment(
+		private TailSegment() {
+		}
+
+		private void set(
 				boolean visible,
 				float startX,
 				float startY,
@@ -375,7 +412,7 @@ public final class BukovTracerFx extends Group {
 		}
 
 		private static TailSegment hidden() {
-			return new TailSegment(false, 0f, 0f, 0f, 0f, 0f, 0f);
+			return new TailSegment();
 		}
 
 		boolean visible() {
@@ -409,38 +446,47 @@ public final class BukovTracerFx extends Group {
 
 	public static final class TraceGeometry {
 
-		private final boolean visible;
-		private final float fromX;
-		private final float fromY;
-		private final float toX;
-		private final float toY;
-		private final float length;
-		private final float angleDegrees;
-		private final float coreThickness;
-		private final float glowThickness;
+		private boolean visible;
+		private float fromX;
+		private float fromY;
+		private float toX;
+		private float toY;
+		private float length;
+		private float angleDegrees;
+		private float coreThickness;
+		private float glowThickness;
 
-		private TraceGeometry(boolean visible,
-							  float fromX,
-							  float fromY,
-							  float toX,
-							  float toY,
-							  float length,
-							  float angleDegrees,
-							  float coreThickness,
-							  float glowThickness) {
-			this.visible = visible;
+		private TraceGeometry() {
+		}
+
+		private boolean configure(
+				float fromX,
+				float fromY,
+				float toX,
+				float toY,
+				float intensity) {
+			visible = false;
+			if (!finite(fromX) || !finite(fromY)
+					|| !finite(toX) || !finite(toY)) {
+				return false;
+			}
+			float dx = toX - fromX;
+			float dy = toY - fromY;
+			float length = (float)Math.sqrt(dx * dx + dy * dy);
+			if (length <= 0.01f) {
+				return false;
+			}
+			float strength = clamp(intensity, 0.35f, 1.6f);
+			visible = true;
 			this.fromX = fromX;
 			this.fromY = fromY;
 			this.toX = toX;
 			this.toY = toY;
 			this.length = length;
-			this.angleDegrees = angleDegrees;
-			this.coreThickness = coreThickness;
-			this.glowThickness = glowThickness;
-		}
-
-		private static TraceGeometry hidden() {
-			return new TraceGeometry(false, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f);
+			angleDegrees = (float)Math.toDegrees(Math.atan2(dy, dx));
+			coreThickness = 0.55f + strength * 0.20f;
+			glowThickness = 1.10f + strength * 0.50f;
+			return true;
 		}
 
 		public boolean visible() {

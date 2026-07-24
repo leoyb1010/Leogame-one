@@ -59,4 +59,14 @@ public class ExtractionIntentResolverTest {
 				)
 		);
 	}
+
+	@Test
+	public void adjacentDiscoveryNeverStartsOrContinuesRemoteExtraction() {
+		assertFalse(ExtractionIntentResolver.wantsToStart(
+				false, true, true, false, 0));
+		assertEquals(
+				ExtractionState.Interaction.MOVED,
+				ExtractionIntentResolver.resolve(
+						true, false, true, true, false, 0));
+	}
 }

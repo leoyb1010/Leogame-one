@@ -30,6 +30,7 @@ import com.shatteredpixel.shatteredpixeldungeon.LeoIdentityConfig;
 import com.shatteredpixel.shatteredpixeldungeon.Rankings;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
 import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
@@ -67,7 +68,7 @@ public class WelcomeScene extends PixelScene {
 		if (!triedCleaningTemp && FileUtils.cleanTempFiles()){
 			add(new WndHardNotification(Icons.get(Icons.WARNING),
 					Messages.get(WndError.class, "title"),
-					Messages.get(this, "save_warning"),
+					Messages.get(this, "bukov_save_warning"),
 					Messages.get(this, "continue"),
 					5){
 				@Override
@@ -99,8 +100,12 @@ public class WelcomeScene extends PixelScene {
 		TitleBackground BG = new TitleBackground(w, h);
 		add( BG );
 
-		//darkens the arches
-		add(new ColorBlock(w, h, 0x44000000));
+		// Keeps first-run copy legible on the shared Bukov tactical palette.
+		BukovUiTokens tokens = BukovUiTokens.loadDefault();
+		add(new ColorBlock(
+				w,
+				h,
+				tokens.colorWithAlpha("ink.shadow", 68)));
 
 		w -= insets.left + insets.right;
 		h -= insets.top + insets.bottom;
@@ -128,6 +133,8 @@ public class WelcomeScene extends PixelScene {
 
 					if (previousVersion > 0){
 						updateVersion(previousVersion);
+					} else {
+						SPDSettings.scheduleBukovFirstRunCalibration();
 					}
 
 					SPDSettings.version(ShatteredPixelDungeon.versionCode);
@@ -145,47 +152,21 @@ public class WelcomeScene extends PixelScene {
 
 		float buttonAreaWidth = landscape() ? PixelScene.MIN_WIDTH_L-6 : PixelScene.MIN_WIDTH_P-2;
 		float btnAreaLeft = insets.left + (w - buttonAreaWidth) / 2f;
-		if (previousVersion != 0 && !SPDSettings.intro()){
-			StyledButton changes = new StyledButton(Chrome.Type.GREY_BUTTON_TR, Messages.get(TitleScene.class, "changes")){
-				@Override
-				protected void onClick() {
-					super.onClick();
-					updateVersion(previousVersion);
-					ShatteredPixelDungeon.switchScene(ChangesScene.class);
-				}
-			};
-			okay.setRect(btnAreaLeft, buttonY, (buttonAreaWidth/2)-1, 20);
-			add(okay);
-
-			changes.setRect(okay.right()+1, buttonY, okay.width(), 20);
-			changes.icon(Icons.get(Icons.CHANGES));
-			add(changes);
-		} else {
-			okay.text(Messages.get(TitleScene.class, "enter"));
-			okay.setRect(btnAreaLeft, buttonY, buttonAreaWidth, 20);
-			okay.icon(Icons.get(Icons.ENTER));
-			add(okay);
-		}
+		// Bukov never routes players into the inherited dungeon changelog.
+		// License attribution remains available in About/third-party notices.
+		okay.text(Messages.get(TitleScene.class, "enter"));
+		okay.setRect(btnAreaLeft, buttonY, buttonAreaWidth, 20);
+		okay.icon(Icons.get(Icons.ENTER));
+		add(okay);
 
 		RenderedTextBlock text = PixelScene.renderTextBlock(6);
 		String message;
 		if (previousVersion == 0 || SPDSettings.intro()) {
 			message = Messages.get(this, "bukov_intro");
 		} else if (previousVersion <= ShatteredPixelDungeon.versionCode) {
-			if (previousVersion < LATEST_UPDATE){
-				message = Messages.get(this, "update_intro");
-				message += "\n\n" + Messages.get(this, "update_msg");
-			} else {
-				//TODO: change the messages here in accordance with the type of patch.
-				message = Messages.get(this, "patch_intro");
-				message += "\n";
-				//message += "\n" + Messages.get(this, "patch_balance");
-				message += "\n" + Messages.get(this, "patch_bugfixes");
-				message += "\n" + Messages.get(this, "patch_translations");
-
-			}
+			message = Messages.get(this, "bukov_update");
 		} else {
-			message = Messages.get(this, "what_msg");
+			message = Messages.get(this, "bukov_future_save");
 		}
 
 		text.text(message, Math.min(w-20, 300));

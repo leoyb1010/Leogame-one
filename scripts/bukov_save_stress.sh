@@ -12,6 +12,7 @@ fi
 exec "$script_dir/apple-gradle" \
   core:test \
   --tests '*BukovSaveStressTest' \
+  --tests '*BukovDiskSaveStressTest' \
   -Dbukov.save.iterations="$iterations" \
   --rerun-tasks \
   --no-daemon

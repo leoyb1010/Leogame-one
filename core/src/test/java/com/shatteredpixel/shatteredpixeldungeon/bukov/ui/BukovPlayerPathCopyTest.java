@@ -103,6 +103,21 @@ public class BukovPlayerPathCopyTest {
 	}
 
 	@Test
+	public void welcomeNeverRoutesIntoInheritedPlayerFacingUpdates()
+			throws Exception {
+		String welcome = read(new File(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/WelcomeScene.java"));
+
+		assertFalse(welcome.contains("ChangesScene.class"));
+		assertTrue(welcome.contains("\"bukov_update\""));
+		assertTrue(welcome.contains("\"bukov_future_save\""));
+		assertTrue(welcome.contains("\"bukov_save_warning\""));
+		assertFalse(welcome.contains("Messages.get(this, \"update_intro\")"));
+		assertFalse(welcome.contains("Messages.get(this, \"what_msg\")"));
+		assertFalse(welcome.contains("Messages.get(this, \"save_warning\")"));
+	}
+
+	@Test
 	public void mobileHudKeepsRealtimeControlHint() throws Exception {
 		String hud = read(new File(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovHudFormat.java"));

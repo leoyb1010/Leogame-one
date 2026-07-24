@@ -64,6 +64,9 @@ public class BukovHubViewModelPresentationTest {
 				BukovHubViewModel.LoadoutSlot.PRIMARY).contains("针蜂-9"));
 		assertTrue(model.canDeploy);
 		assertEquals(null, model.deploymentBlockReason);
+		assertEquals(
+				"配装已就绪 · 可立即确认出击",
+				model.deploymentReadinessHeadline());
 	}
 
 	@Test
@@ -81,6 +84,10 @@ public class BukovHubViewModelPresentationTest {
 		assertFalse(missing.canDeploy);
 		assertEquals("针蜂-9缺少兼容弹药",
 				missing.deploymentBlockReason);
+		assertTrue(missing.deploymentReadinessHeadline()
+				.contains("配装待完善"));
+		assertTrue(missing.deploymentReadinessHeadline()
+				.contains("兼容弹药"));
 
 		depositAndSelect(profile, item(
 				"wrong-ammo",
@@ -113,6 +120,21 @@ public class BukovHubViewModelPresentationTest {
 		assertTrue(model.deploymentBlockReason.contains("正式行动"));
 		assertTrue(model.deploymentBlockReason.contains("配装"));
 		assertTrue(model.deploymentBlockReason.contains("演练场"));
+	}
+
+	@Test
+	public void freeTrainingAdvertisesImmediateSafeTesting() {
+		BukovProfile profile = new BukovProfile();
+		profile.selectRaidMode(
+				com.shatteredpixel.shatteredpixeldungeon.bukov.raid
+						.BukovRaidMode.TRAINING_GROUND);
+
+		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
+
+		assertTrue(model.canDeploy);
+		assertEquals(
+				"演练装备已就绪 · 可立即测试",
+				model.deploymentReadinessHeadline());
 	}
 
 	@Test

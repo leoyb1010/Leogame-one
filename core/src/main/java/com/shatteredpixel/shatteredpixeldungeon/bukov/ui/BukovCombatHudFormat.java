@@ -17,10 +17,16 @@ public final class BukovCombatHudFormat {
 
 	public static String hit(BukovRaidHudState state) {
 		if (state == null || !state.hitVisible()) return "";
-		return (state.colorblindAssist() ? "▲ " : "")
-				+ "受击 "
-				+ directionShape(state.hitDirection()) + " "
-				+ directionText(state.hitDirection());
+		StringBuilder result = new StringBuilder();
+		if (state.colorblindAssist()) result.append("▲ ");
+		result.append("受击 ");
+		for (int index = 0; index < state.hitCount(); index++) {
+			if (index > 0) result.append(" · ");
+			result.append(directionShape(state.hitDirection(index)))
+					.append(' ')
+					.append(directionText(state.hitDirection(index)));
+		}
+		return result.toString();
 	}
 
 	public static String bossTitle(BukovRaidHudState state) {

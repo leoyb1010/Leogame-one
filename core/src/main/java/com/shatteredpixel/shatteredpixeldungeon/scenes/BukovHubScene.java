@@ -251,11 +251,15 @@ public final class BukovHubScene extends PixelScene {
 			RenderedTextBlock loadout = label(
 					state.activeRaid
 							? "配装与交易在行动结束前锁定"
-							: "配装  " + state.loadoutSummary()
+							: state.deploymentReadinessHeadline()
+									+ "\n负重 " + state.loadoutSummary()
 									+ "\n已选 " + state.selectedCount + " 件物资",
 					6,
 					tokens.color(state.activeRaid
-							? "text.disabled" : "text.secondary"));
+							? "text.disabled"
+							: state.canDeploy
+									? "accent.extract"
+									: "accent.danger"));
 			loadout.maxWidth(Math.max(1, (int) width - 12));
 			loadout.setPos(textLeft, y + height - loadout.height() - 7f);
 			add(loadout);
@@ -729,10 +733,11 @@ public final class BukovHubScene extends PixelScene {
 	}
 
 	private void buildFailure(Throwable error) {
+		BukovUiTokens tokens = BukovUiTokens.loadDefault();
 		ColorBlock background = new ColorBlock(
 				Camera.main.width,
 				Camera.main.height,
-				0xFF050B0D);
+				tokens.colorWithAlpha("ink.failure", 255));
 		add(background);
 		String detail = error.getMessage() == null
 				? error.getClass().getSimpleName()

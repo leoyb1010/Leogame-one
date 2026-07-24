@@ -16,11 +16,13 @@ package com.shatteredpixel.shatteredpixeldungeon.scenes;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovFirstRunCalibration;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
@@ -83,7 +85,7 @@ public class TitleScene extends PixelScene {
 		ColorBlock atmosphere = new ColorBlock(
 				screenWidth,
 				screenHeight,
-				0xFF02090C);
+				tokens.colorWithAlpha("ink.shadow", 255));
 		atmosphere.alpha(wide ? 0.18f : 0.28f);
 		add(atmosphere);
 
@@ -237,7 +239,9 @@ public class TitleScene extends PixelScene {
 		}
 
 		fadeIn();
-		if (BukovMode.consumeLaunchHubRequest()
+		if (SPDSettings.consumeBukovFirstRunCalibration()) {
+			addToFront(new WndBukovFirstRunCalibration());
+		} else if (BukovMode.consumeLaunchHubRequest()
 				|| BukovMode.consumeHubRequest()) {
 			openBukovMode();
 		}

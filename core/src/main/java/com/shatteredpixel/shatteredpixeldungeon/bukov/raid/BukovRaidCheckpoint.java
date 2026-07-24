@@ -2,6 +2,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.watabou.utils.Bundlable;
@@ -23,7 +24,7 @@ import java.util.Set;
  */
 public final class BukovRaidCheckpoint implements Bundlable {
 
-	public static final int CURRENT_VERSION = 6;
+	public static final int CURRENT_VERSION = 7;
 
 	private static final String VERSION = "checkpoint_version";
 	private static final String SESSION = "session";
@@ -39,6 +40,14 @@ public final class BukovRaidCheckpoint implements Bundlable {
 	private static final String PLAYER_STATUS = "player_realtime_status";
 	private static final String MEDICAL_RUNTIME = "medical_runtime";
 	private static final String ENEMY_RUNTIME = "enemy_runtime";
+	private static final String PLAYER_SOUNDS = "player_sound_events";
+	private static final String LEGACY_SOUND_SEQUENCE =
+			"player_sound_sequence";
+	private static final String LEGACY_SOUND_X = "player_sound_x";
+	private static final String LEGACY_SOUND_Y = "player_sound_y";
+	private static final String LEGACY_SOUND_RADIUS = "player_sound_radius";
+	private static final String LEGACY_SOUND_REMAINING =
+			"player_sound_remaining";
 
 	public static final class EnemyRuntimeState implements Bundlable {
 
@@ -46,6 +55,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		private String definitionId = "";
 		private RealtimeEnemyBrain.Snapshot brain;
 		private EnemyRangedCombatController.Snapshot rangedCombat;
+		private int heardSoundSequence = Integer.MIN_VALUE;
 
 		public EnemyRuntimeState() {
 			// Required by Bundle reflection.
@@ -56,6 +66,20 @@ public final class BukovRaidCheckpoint implements Bundlable {
 				String definitionId,
 				RealtimeEnemyBrain.Snapshot brain,
 				EnemyRangedCombatController.Snapshot rangedCombat) {
+			this(
+					stableId,
+					definitionId,
+					brain,
+					rangedCombat,
+					Integer.MIN_VALUE);
+		}
+
+		public EnemyRuntimeState(
+				int stableId,
+				String definitionId,
+				RealtimeEnemyBrain.Snapshot brain,
+				EnemyRangedCombatController.Snapshot rangedCombat,
+				int heardSoundSequence) {
 			if (stableId < 0 || brain == null) {
 				throw new IllegalArgumentException(
 						"stableId and brain snapshot are required");
@@ -64,6 +88,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 			this.definitionId = definitionId == null ? "" : definitionId;
 			this.brain = brain;
 			this.rangedCombat = rangedCombat;
+			this.heardSoundSequence = heardSoundSequence;
 		}
 
 		public int stableId() {
@@ -82,6 +107,10 @@ public final class BukovRaidCheckpoint implements Bundlable {
 			return rangedCombat;
 		}
 
+		public int heardSoundSequence() {
+			return heardSoundSequence;
+		}
+
 		@Override
 		public void storeInBundle(Bundle bundle) {
 			bundle.put("stable_id", stableId);
@@ -90,6 +119,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 			if (rangedCombat != null) {
 				bundle.put("ranged_combat", rangedCombat);
 			}
+			bundle.put("heard_sound_sequence", heardSoundSequence);
 		}
 
 		@Override
@@ -111,6 +141,9 @@ public final class BukovRaidCheckpoint implements Bundlable {
 					instanceof EnemyRangedCombatController.Snapshot
 					? (EnemyRangedCombatController.Snapshot)restoredRanged
 					: null;
+			heardSoundSequence = bundle.contains("heard_sound_sequence")
+					? bundle.getInt("heard_sound_sequence")
+					: Integer.MIN_VALUE;
 		}
 	}
 
@@ -129,6 +162,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 	private long nextItemSequence;
 	private RealtimeStatusState playerStatus;
 	private RealtimeMedicalSystem.Snapshot medicalRuntime;
+	private PlayerSoundEventBuffer.Snapshot playerSoundEvents;
 
 	public BukovRaidCheckpoint() {
 		// Required by Bundle reflection.
@@ -309,6 +343,10 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		return medicalRuntime;
 	}
 
+	PlayerSoundEventBuffer.Snapshot playerSoundEvents() {
+		return playerSoundEvents;
+	}
+
 	EnemyRuntimeState enemyRuntime(int stableId) {
 		return enemyRuntimeByStableId.get(stableId);
 	}
@@ -322,6 +360,18 @@ public final class BukovRaidCheckpoint implements Bundlable {
 			RealtimeStatusState playerStatus,
 			RealtimeMedicalSystem.Snapshot medicalRuntime,
 			Collection<EnemyRuntimeState> enemyRuntimeStates) {
+		replaceRuntimeState(
+				playerStatus,
+				medicalRuntime,
+				enemyRuntimeStates,
+				playerSoundEvents);
+	}
+
+	void replaceRuntimeState(
+			RealtimeStatusState playerStatus,
+			RealtimeMedicalSystem.Snapshot medicalRuntime,
+			Collection<EnemyRuntimeState> enemyRuntimeStates,
+			PlayerSoundEventBuffer.Snapshot playerSoundEvents) {
 		if (playerStatus == null
 				|| medicalRuntime == null
 				|| enemyRuntimeStates == null) {
@@ -338,6 +388,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		}
 		this.playerStatus = playerStatus;
 		this.medicalRuntime = medicalRuntime;
+		this.playerSoundEvents = playerSoundEvents;
 		enemyRuntimeByStableId.clear();
 		enemyRuntimeByStableId.putAll(validated);
 	}
@@ -362,6 +413,9 @@ public final class BukovRaidCheckpoint implements Bundlable {
 			bundle.put(MEDICAL_RUNTIME, medicalRuntime);
 		}
 		bundle.put(ENEMY_RUNTIME, enemyRuntimeByStableId.values());
+		if (playerSoundEvents != null) {
+			bundle.put(PLAYER_SOUNDS, playerSoundEvents);
+		}
 	}
 
 	@Override
@@ -450,9 +504,28 @@ public final class BukovRaidCheckpoint implements Bundlable {
 				}
 			}
 		}
+		if (restoredVersion >= 7) {
+			Bundlable sounds = bundle.get(PLAYER_SOUNDS);
+			if (sounds != null
+					&& !(sounds
+							instanceof PlayerSoundEventBuffer.Snapshot)) {
+				throw new IllegalStateException(
+						"Unexpected player sound event checkpoint");
+			}
+			restored.playerSoundEvents =
+					(PlayerSoundEventBuffer.Snapshot)sounds;
+		} else if (bundle.contains(LEGACY_SOUND_SEQUENCE)) {
+			restored.playerSoundEvents =
+					PlayerSoundEventBuffer.Snapshot.legacySingleSlot(
+							bundle.getInt(LEGACY_SOUND_SEQUENCE),
+							bundle.getFloat(LEGACY_SOUND_X),
+							bundle.getFloat(LEGACY_SOUND_Y),
+							bundle.getFloat(LEGACY_SOUND_RADIUS),
+							bundle.getFloat(LEGACY_SOUND_REMAINING));
+		}
 		// v2 had no container collection; v3 had no mission events; v4 had
 		// no durable deployment template; v5 had no fixed-step player or
-		// ordinary-enemy runtime snapshot.
+		// ordinary-enemy runtime snapshot; v6 had no sound-event buffer.
 		restored.version = CURRENT_VERSION;
 
 		version = restored.version;
@@ -472,6 +545,7 @@ public final class BukovRaidCheckpoint implements Bundlable {
 		deploymentDefinitions.addAll(restored.deploymentDefinitions);
 		playerStatus = restored.playerStatus;
 		medicalRuntime = restored.medicalRuntime;
+		playerSoundEvents = restored.playerSoundEvents;
 		enemyRuntimeByStableId.clear();
 		enemyRuntimeByStableId.putAll(
 				restored.enemyRuntimeByStableId);

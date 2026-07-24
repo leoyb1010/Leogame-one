@@ -70,6 +70,82 @@ public class BukovDeploymentFlowTest {
 	}
 
 	@Test
+	public void retainedFirearmReceivesItsOwnCaliberWithoutDuplication() {
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(new RaidItem(
+				"retained-ward",
+				"firearm:ward_556",
+				1,
+				3f,
+				4_200,
+				false,
+				false,
+				1f));
+
+		assertTrue(BukovStarterProvisioning.ensure(profile));
+		assertEquals(2, profile.stash().distinctItemCount());
+		assertEquals(2, profile.loadout().distinctItemCount());
+		assertEquals(
+				24,
+				findQuantity(
+						profile,
+						"ammo:ammo_556_standard"));
+		assertEquals(
+				0,
+				findQuantity(
+						profile,
+						"ammo:ammo_9_standard"));
+		assertFalse(BukovStarterProvisioning.ensure(profile));
+		assertEquals(2, profile.stash().distinctItemCount());
+
+		assertFalse(BukovStarterProvisioning.ensure(
+				new BukovProfile(),
+				true));
+	}
+
+	@Test
+	public void existingCompatibleAmmoIsSelectedWithoutMintingAnotherStack() {
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(new RaidItem(
+				"stashed-ward",
+				"firearm:ward_556",
+				1,
+				3f,
+				4_200,
+				false,
+				false,
+				1f));
+		profile.stash().deposit(new RaidItem(
+				"stashed-556",
+				"ammo:ammo_556_standard",
+				7,
+				0.012f,
+				24,
+				false,
+				false,
+				1f));
+
+		assertTrue(BukovStarterProvisioning.ensure(profile));
+		assertEquals(2, profile.stash().distinctItemCount());
+		assertEquals(2, profile.loadout().distinctItemCount());
+		assertTrue(profile.loadout().contains("stashed-ward"));
+		assertTrue(profile.loadout().contains("stashed-556"));
+		assertEquals(
+				7,
+				findQuantity(
+						profile,
+						"ammo:ammo_556_standard"));
+
+		assertFalse(BukovStarterProvisioning.ensure(profile));
+		assertEquals(2, profile.stash().distinctItemCount());
+		assertEquals(
+				7,
+				findQuantity(
+						profile,
+						"ammo:ammo_556_standard"));
+	}
+
+	@Test
 	public void interruptedProfileWriteIsReconciledFromDurableRaid()
 			throws IOException {
 		BukovSaveService prepared = preparedProfile();
@@ -206,6 +282,16 @@ public class BukovDeploymentFlowTest {
 			}
 		}
 		throw new AssertionError("Missing raid item: " + definitionId);
+	}
+
+	private static int findQuantity(
+			BukovProfile profile, String definitionId) {
+		for (RaidItem item : profile.stash().items()) {
+			if (definitionId.equals(item.definitionId())) {
+				return item.quantity();
+			}
+		}
+		return 0;
 	}
 
 	private static final class FailingProfileSaveService

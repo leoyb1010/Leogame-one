@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
@@ -157,7 +158,11 @@ public final class BukovRaidCoordinator {
 				raidId,
 				raidMode,
 				raidOrdinal);
-		LootTransaction carried = new LootTransaction(raidId, maxWeight);
+		float raidWeightCapacity = raidMode == BukovRaidMode.SCAVENGER
+				? BukovScavengerKit.weightCapacityKg()
+				: maxWeight;
+		LootTransaction carried =
+				new LootTransaction(raidId, raidWeightCapacity);
 		profile.rememberCurrentLoadout();
 		if (raidMode.usesPlayerLoadout()) {
 			for (String itemUid : profile.loadout().selectedUids()) {
@@ -172,6 +177,8 @@ public final class BukovRaidCoordinator {
 							"Loadout exceeds raid capacity: " + itemUid);
 				}
 			}
+		} else if (raidMode == BukovRaidMode.SCAVENGER) {
+			BukovScavengerKit.grant(carried, raidId);
 		} else if (raidMode.trainingGround()) {
 			grantTrainingLoadout(carried, raidId);
 		}
@@ -336,6 +343,10 @@ public final class BukovRaidCoordinator {
 		return checkpoint.medicalRuntime();
 	}
 
+	public PlayerSoundEventBuffer.Snapshot playerSoundEvents() {
+		return checkpoint.playerSoundEvents();
+	}
+
 	public BukovRaidCheckpoint.EnemyRuntimeState enemyRuntime(
 			int stableId) {
 		return checkpoint.enemyRuntime(stableId);
@@ -356,7 +367,22 @@ public final class BukovRaidCoordinator {
 			Collection<BukovRaidCheckpoint.EnemyRuntimeState> enemies) {
 		ensureOpen();
 		checkpoint.replaceRuntimeState(
-				playerStatus, medicalRuntime, enemies);
+				playerStatus,
+				medicalRuntime,
+				enemies);
+	}
+
+	public void updateRealtimeState(
+			RealtimeStatusState playerStatus,
+			RealtimeMedicalSystem.Snapshot medicalRuntime,
+			Collection<BukovRaidCheckpoint.EnemyRuntimeState> enemies,
+			PlayerSoundEventBuffer.Snapshot playerSoundEvents) {
+		ensureOpen();
+		checkpoint.replaceRuntimeState(
+				playerStatus,
+				medicalRuntime,
+				enemies,
+				playerSoundEvents);
 	}
 
 	/**

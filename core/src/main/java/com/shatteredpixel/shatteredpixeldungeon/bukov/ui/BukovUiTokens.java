@@ -60,7 +60,9 @@ public final class BukovUiTokens {
 		validateTypography(root.get("typographyPx"));
 		validateHaptics(root.get("haptics"));
 		requireKeys(colors,
-				"ink.background", "panel.surface", "panel.border",
+				"ink.background", "ink.shadow", "ink.loading",
+				"ink.failure", "panel.surface", "panel.deep",
+				"panel.result", "panel.border",
 				"accent.interact", "accent.valuable", "accent.danger",
 				"accent.extract", "text.primary", "text.secondary",
 				"text.disabled");

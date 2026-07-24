@@ -22,6 +22,8 @@ public class BukovUiTokensTest {
 		BukovUiTokens tokens = BukovUiTokens.parse(json);
 
 		assertEquals(0x10242D, tokens.color("ink.background"));
+		assertEquals(0x02090C, tokens.color("ink.shadow"));
+		assertEquals(0x101C20, tokens.color("panel.deep"));
 		assertEquals(0xE05A3A, tokens.color("accent.danger"));
 		assertEquals(120, tokens.motionMs("fast"));
 		assertEquals(64, tokens.vfxPoolCapacity("tracer"));
@@ -58,7 +60,12 @@ public class BukovUiTokensTest {
 
 	private static String requiredColors() {
 		return "\"ink.background\":\"#10242D\","
+				+ "\"ink.shadow\":\"#02090C\","
+				+ "\"ink.loading\":\"#07100E\","
+				+ "\"ink.failure\":\"#050B0D\","
 				+ "\"panel.surface\":\"#1A3644\","
+				+ "\"panel.deep\":\"#101C20\","
+				+ "\"panel.result\":\"#101514\","
 				+ "\"panel.border\":\"#3A5A66\","
 				+ "\"accent.interact\":\"#4FA7A0\","
 				+ "\"accent.valuable\":\"#E3B94E\","

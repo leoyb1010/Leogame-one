@@ -177,6 +177,9 @@ public class BukovHubControllerTest {
 				1f));
 		saves.saveProfile(profile);
 		hub = new BukovHubController(saves);
+		assertTrue("hub reopen should restore the compatible reserve",
+				hub.viewModel().canDeploy);
+		hub.toggleItem(BukovStarterProvisioning.AMMO_UID);
 		hub.toggleItem("wrong-ammo");
 		assertFalse(hub.viewModel().canDeploy);
 		assertBlocked(hub, "兼容弹药");
@@ -339,6 +342,63 @@ public class BukovHubControllerTest {
 	}
 
 	@Test
+	public void quickSweepDeathRetainsGunAndRepairsMissingAmmunition()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		new BukovHubController(saves);
+		BukovProfile prepared = saves.loadProfile();
+		prepared.selectRaidMode(BukovRaidMode.QUICK_SWEEP);
+		saves.saveProfile(prepared);
+
+		BukovRaidCoordinator raid = BukovRaidCoordinator.start(
+				saves,
+				13L,
+				"quick-sweep-retained-gun",
+				40f,
+				Collections.singletonList(ExtractionState.basic()));
+		raid.settleDeath();
+
+		BukovProfile afterDeath = saves.loadProfile();
+		assertEquals(1, afterDeath.stash().distinctItemCount());
+		assertTrue(afterDeath.stash().contains(
+				BukovStarterProvisioning.WEAPON_UID));
+		assertEquals(0, afterDeath.loadout().distinctItemCount());
+
+		BukovHubController recoveredHub =
+				new BukovHubController(saves);
+		BukovProfile recovered = saves.loadProfile();
+		assertEquals(2, recovered.stash().distinctItemCount());
+		assertEquals(2, recovered.loadout().distinctItemCount());
+		assertTrue(recovered.loadout().contains(
+				BukovStarterProvisioning.WEAPON_UID));
+		assertTrue(hasSelectedDefinition(
+				recovered,
+				"ammo:ammo_9_standard"));
+		assertTrue(recoveredHub.viewModel().canDeploy);
+
+		// Reopening the hideout must not mint a second recovery stack.
+		new BukovHubController(saves);
+		BukovProfile reopened = saves.loadProfile();
+		assertEquals(2, reopened.stash().distinctItemCount());
+		assertEquals(24, quantity(
+				reopened,
+				"ammo:ammo_9_standard"));
+
+		BukovRaidCoordinator nextRaid = BukovRaidCoordinator.start(
+				saves,
+				14L,
+				"quick-sweep-recovery-redeploy",
+				40f,
+				Collections.singletonList(ExtractionState.basic()));
+		assertTrue(hasDefinition(
+				nextRaid,
+				"firearm:needle_9"));
+		assertTrue(hasDefinition(
+				nextRaid,
+				"ammo:ammo_9_standard"));
+	}
+
+	@Test
 	public void tenHubRoundTripsKeepActiveCheckpointAuthoritative()
 			throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
@@ -428,6 +488,32 @@ public class BukovHubControllerTest {
 				false,
 				false,
 				1f);
+	}
+
+	private static boolean hasSelectedDefinition(
+			BukovProfile profile, String definitionId) {
+		for (RaidItem item : profile.loadout().items(profile.stash())) {
+			if (definitionId.equals(item.definitionId())) return true;
+		}
+		return false;
+	}
+
+	private static int quantity(
+			BukovProfile profile, String definitionId) {
+		for (RaidItem item : profile.stash().items()) {
+			if (definitionId.equals(item.definitionId())) {
+				return item.quantity();
+			}
+		}
+		return 0;
+	}
+
+	private static boolean hasDefinition(
+			BukovRaidCoordinator raid, String definitionId) {
+		for (RaidItem item : raid.loot().items()) {
+			if (definitionId.equals(item.definitionId())) return true;
+		}
+		return false;
 	}
 
 	private static void assertBlocked(

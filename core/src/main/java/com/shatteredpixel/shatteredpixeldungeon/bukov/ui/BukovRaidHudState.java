@@ -70,10 +70,14 @@ public final class BukovRaidHudState {
 	private Distance soundDistance;
 	private float soundStrength;
 	private float soundRemainingSeconds;
-	private boolean hitVisible;
-	private Direction hitDirection;
-	private float hitStrength;
-	private float hitRemainingSeconds;
+	private float combatAwarenessAlpha = 1f;
+	private int hitCount;
+	private final Direction[] hitDirections =
+			new Direction[BukovCombatHudTimeline.MAX_HIT_DIRECTIONS];
+	private final float[] hitStrengths =
+			new float[BukovCombatHudTimeline.MAX_HIT_DIRECTIONS];
+	private final float[] hitRemainingSeconds =
+			new float[BukovCombatHudTimeline.MAX_HIT_DIRECTIONS];
 	private boolean bossActive;
 	private String bossName;
 	private int bossPhase;
@@ -132,10 +136,13 @@ public final class BukovRaidHudState {
 		soundDistance = null;
 		soundStrength = 0f;
 		soundRemainingSeconds = 0f;
-		hitVisible = false;
-		hitDirection = null;
-		hitStrength = 0f;
-		hitRemainingSeconds = 0f;
+		combatAwarenessAlpha = 1f;
+		hitCount = 0;
+		for (int index = 0; index < hitDirections.length; index++) {
+			hitDirections[index] = null;
+			hitStrengths[index] = 0f;
+			hitRemainingSeconds[index] = 0f;
+		}
 		bossActive = false;
 		bossName = null;
 		bossPhase = 0;
@@ -250,11 +257,21 @@ public final class BukovRaidHudState {
 			Direction direction,
 			float strength,
 			float remainingSeconds) {
-		hitVisible = direction != null && remainingSeconds > 0f;
-		hitDirection = hitVisible ? direction : null;
-		hitStrength = hitVisible ? fraction(strength, 1f) : 0f;
-		hitRemainingSeconds = hitVisible
-				? nonNegative(remainingSeconds) : 0f;
+		if (direction == null
+				|| remainingSeconds <= 0f
+				|| hitCount >= hitDirections.length) {
+			return;
+		}
+		hitDirections[hitCount] = direction;
+		hitStrengths[hitCount] = fraction(strength, 1f);
+		hitRemainingSeconds[hitCount] = nonNegative(remainingSeconds);
+		hitCount++;
+	}
+
+	public void combatAwareness(float alpha) {
+		combatAwarenessAlpha = Math.max(
+				BukovCombatHudTimeline.IDLE_ALPHA,
+				fraction(alpha, 1f));
 	}
 
 	public void boss(
@@ -468,19 +485,40 @@ public final class BukovRaidHudState {
 	}
 
 	public boolean hitVisible() {
-		return hitVisible;
+		return hitCount > 0;
 	}
 
 	public Direction hitDirection() {
-		return hitDirection;
+		return hitDirection(0);
 	}
 
 	public float hitStrength() {
-		return hitStrength;
+		return hitStrength(0);
 	}
 
 	public float hitRemainingSeconds() {
-		return hitRemainingSeconds;
+		return hitRemainingSeconds(0);
+	}
+
+	public int hitCount() {
+		return hitCount;
+	}
+
+	public Direction hitDirection(int index) {
+		return validHitIndex(index) ? hitDirections[index] : null;
+	}
+
+	public float hitStrength(int index) {
+		return validHitIndex(index) ? hitStrengths[index] : 0f;
+	}
+
+	public float hitRemainingSeconds(int index) {
+		return validHitIndex(index)
+				? hitRemainingSeconds[index] : 0f;
+	}
+
+	public float combatAwarenessAlpha() {
+		return combatAwarenessAlpha;
 	}
 
 	public boolean bossActive() {
@@ -618,6 +656,10 @@ public final class BukovRaidHudState {
 		if (safe <= 2.25f) return Distance.NEAR;
 		if (safe <= 8f) return Distance.MID;
 		return Distance.FAR;
+	}
+
+	private boolean validHitIndex(int index) {
+		return index >= 0 && index < hitCount;
 	}
 
 	private static boolean validVector(float x, float y) {

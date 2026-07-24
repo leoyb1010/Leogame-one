@@ -159,7 +159,7 @@ public final class RaidSettlement {
 
 		if (outcome == RaidOutcome.SUCCESS) {
 			for (RaidItem item : carriedLoot.items()) {
-				if (BukovActiveRaidRecovery.disposableEmergencyItem(item)) {
+				if (discardAtSettlement(item, raidMode)) {
 					continue;
 				}
 				RaidItem settledItem = raidMode.settleExtractedItem(item);
@@ -180,13 +180,11 @@ public final class RaidSettlement {
 					carriedLoot,
 					raidMode);
 			for (RaidItem item : carriedLoot.items()) {
-				if (BukovActiveRaidRecovery.disposableEmergencyItem(item)) {
+				if (discardAtSettlement(item, raidMode)) {
 					continue;
 				}
 				boolean protectedFromLoss =
-						item.itemUid().equals(protectedUid)
-								|| raidMode == BukovRaidMode.SCAVENGER
-								&& !item.foundInRaid();
+						item.itemUid().equals(protectedUid);
 				if (protectedFromLoss) {
 					working.stash().deposit(
 							item.withFoundInRaid(false));
@@ -259,6 +257,18 @@ public final class RaidSettlement {
 		// this resulting profile through a later BukovSaveService adapter.
 		profile.replaceWith(working);
 		return receipt.result(false);
+	}
+
+	private static boolean discardAtSettlement(
+			RaidItem item,
+			BukovRaidMode raidMode) {
+		return BukovActiveRaidRecovery.disposableEmergencyItem(item)
+				|| BukovScavengerKit.issuedItem(item)
+				// Scavenger actions never deploy owned gear. Rejecting every
+				// non-raid item here also closes malformed/legacy checkpoint
+				// paths that could otherwise mint equipment into the stash.
+				|| raidMode == BukovRaidMode.SCAVENGER
+						&& !item.foundInRaid();
 	}
 
 	/**

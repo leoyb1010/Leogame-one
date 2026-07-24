@@ -339,6 +339,11 @@ public class SPDSettings extends GameSettings {
 			"bukov_ambience_volume";
 	public static final String KEY_BUKOV_PERFORMANCE_PROFILE =
 			"bukov_performance_profile";
+	public static final String KEY_BUKOV_FIRST_RUN_CALIBRATION =
+			"bukov_first_run_calibration";
+
+	private static final int BUKOV_CALIBRATION_PENDING = 1;
+	private static final int BUKOV_CALIBRATION_CONSUMED = 2;
 
 	public static void controllerPointerSensitivity( int value ){
 		put( KEY_CONTROLLER_SENS, value );
@@ -362,6 +367,30 @@ public class SPDSettings extends GameSettings {
 
 	public static int bukovUiScale() {
 		return getInt(KEY_BUKOV_UI_SCALE, 0, 0, 2);
+	}
+
+	/**
+	 * Queues calibration only from the verified new-install welcome path.
+	 * An absent key therefore means an existing profile and never causes a
+	 * surprise migration prompt.
+	 */
+	public static void scheduleBukovFirstRunCalibration() {
+		if (!contains(KEY_BUKOV_FIRST_RUN_CALIBRATION)) {
+			put(KEY_BUKOV_FIRST_RUN_CALIBRATION, BUKOV_CALIBRATION_PENDING);
+		}
+	}
+
+	/**
+	 * Returns true exactly once and persists consumption before the window is
+	 * shown, so closing the app or backing out cannot trap the player in setup.
+	 */
+	public static boolean consumeBukovFirstRunCalibration() {
+		if (getInt(KEY_BUKOV_FIRST_RUN_CALIBRATION, 0)
+				!= BUKOV_CALIBRATION_PENDING) {
+			return false;
+		}
+		put(KEY_BUKOV_FIRST_RUN_CALIBRATION, BUKOV_CALIBRATION_CONSUMED);
+		return true;
 	}
 
 	public static void bukovReduceMotion(boolean value) {

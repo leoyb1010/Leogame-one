@@ -56,7 +56,7 @@ public class BukovModeSettlementPolicyTest {
 	}
 
 	@Test
-	public void scavengerRecoversAnyAccidentalOwnedGearButNotFoundLoot() {
+	public void scavengerDiscardsAccidentalOwnedGearAndLosesFoundLootOnDeath() {
 		BukovProfile profile = new BukovProfile();
 		LootTransaction loot = new LootTransaction("cloth-death", 40f);
 		loot.pickup(item("owned", 300, false));
@@ -71,8 +71,10 @@ public class BukovModeSettlementPolicyTest {
 				false,
 				BukovRaidMode.SCAVENGER);
 
-		assertTrue(profile.stash().contains("owned"));
+		assertFalse(profile.stash().contains("owned"));
 		assertFalse(profile.stash().contains("found"));
+		assertEquals(0, result.transferredUids().size());
+		assertEquals(1, result.lostUids().size());
 		assertEquals(600L, result.lostValue());
 	}
 

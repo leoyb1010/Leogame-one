@@ -74,6 +74,7 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock threatBadge;
 	private ColorBlock interactionBadge;
 	private ColorBlock[] reticle;
+	private BukovHitDirectionArc[] hitDirectionArcs;
 
 	private RenderedTextBlock healthText;
 	private RenderedTextBlock armorText;
@@ -154,6 +155,13 @@ public final class BukovRaidHud extends Component {
 		navigationBadge = block(0xB8101918);
 		threatBadge = block(0xB8211411);
 		interactionBadge = block(0xE8101C20);
+		hitDirectionArcs = new BukovHitDirectionArc[
+				BukovCombatHudTimeline.MAX_HIT_DIRECTIONS];
+		for (int index = 0; index < hitDirectionArcs.length; index++) {
+			hitDirectionArcs[index] =
+					new BukovHitDirectionArc(DANGER);
+			add(hitDirectionArcs[index]);
+		}
 		reticle = new ColorBlock[5];
 		for (int index = 0; index < reticle.length; index++) {
 			reticle[index] = block(0xFF000000 | INTERACT);
@@ -418,8 +426,12 @@ public final class BukovRaidHud extends Component {
 		boolean lowAmmo = lastCapacity > 0
 				&& lastMagazine * 4 <= lastCapacity;
 		boolean blinkOn = ((int)Math.floor(uiSeconds * 2f) & 1) == 0;
+		float awarenessAlpha = live.combatAwarenessAlpha();
 		ammoText.hardlight(lowAmmo ? DANGER : VALUABLE);
-		ammoText.alpha(lowAmmo && !blinkOn ? 0.55f : 1f);
+		ammoText.alpha(
+				awarenessAlpha
+						* (lowAmmo && !blinkOn ? 0.55f : 1f));
+		weaponText.alpha(awarenessAlpha);
 
 		int reloadBucket = Math.round(live.reloadProgress() * 100f);
 		if (reloadBucket != lastReloadBucket) {
@@ -430,6 +442,8 @@ public final class BukovRaidHud extends Component {
 		}
 		reloadTrack.visible = live.reloading();
 		reloadFill.visible = live.reloading();
+		reloadTrack.alpha(awarenessAlpha);
+		reloadFill.alpha(awarenessAlpha);
 		interactionTrack.visible = live.interactionProgress() > 0f;
 		interactionFill.visible = interactionTrack.visible;
 		interactionBadge.visible =
@@ -441,15 +455,34 @@ public final class BukovRaidHud extends Component {
 				live.extractionId() != null && !live.extractionAvailable()
 						? DANGER : EXTRACT);
 		soundText.visible = live.soundVisible();
-		soundText.alpha(Math.max(
+		soundText.alpha(awarenessAlpha * Math.max(
 				0.35f,
 				Math.min(1f,
 						live.soundStrength()
 								* live.soundRemainingSeconds() / 0.9f)));
 		hitText.visible = live.hitVisible();
-		hitText.alpha(Math.max(
-				0.35f,
-				Math.min(1f, live.hitRemainingSeconds() / 0.85f)));
+		float strongestHitAlpha = 0f;
+		for (int index = 0; index < hitDirectionArcs.length; index++) {
+			boolean visible = index < live.hitCount();
+			BukovHitDirectionArc arc = hitDirectionArcs[index];
+			arc.visible = visible;
+			if (!visible) continue;
+			arc.direction(live.hitDirection(index));
+			float lifetimeAlpha = Math.max(
+					0f,
+					Math.min(
+							1f,
+							live.hitRemainingSeconds(index)
+									/ BukovCombatHudTimeline
+											.HIT_LIFETIME_SECONDS));
+			float arcAlpha = lifetimeAlpha
+					* (0.55f + 0.45f * live.hitStrength(index));
+			arc.alpha(arcAlpha);
+			strongestHitAlpha = Math.max(
+					strongestHitAlpha,
+					arcAlpha);
+		}
+		hitText.alpha(strongestHitAlpha);
 		bossText.visible = live.bossActive();
 		bossObjectiveText.visible = live.bossActive();
 		bossTrack.visible = live.bossActive();
@@ -458,10 +491,14 @@ public final class BukovRaidHud extends Component {
 				live.bossVulnerable() ? VALUABLE : DANGER);
 		navigationText.visible = live.navigationVisible();
 		navigationBadge.visible = live.navigationVisible();
+		navigationText.alpha(awarenessAlpha);
+		navigationBadge.alpha(awarenessAlpha);
 		navigationText.hardlight(
 				live.navigationAvailable() ? PRIMARY : DANGER);
 		threatText.visible = live.threatVisible();
 		threatBadge.visible = live.threatVisible();
+		threatText.alpha(awarenessAlpha);
+		threatBadge.alpha(awarenessAlpha);
 		threatText.hardlight(live.threatUrgent() ? DANGER : VALUABLE);
 		int reticleColor = lastCapacity <= 0 || lastMagazine <= 0
 				? DANGER : live.firing() ? VALUABLE : INTERACT;
@@ -613,6 +650,21 @@ public final class BukovRaidHud extends Component {
 					Math.max(y + actualHeight + 3f, viewportHeight - 4f));
 		}
 		positionReticle(crosshairX, crosshairY);
+		float playableTop = y + actualHeight + 3f;
+		float arcCenterY = (playableTop + viewportHeight) * 0.5f;
+		float arcRadiusX = Math.max(
+				12f,
+				viewportWidth * 0.5f - 8f);
+		float arcRadiusY = Math.max(
+				12f,
+				(viewportHeight - playableTop) * 0.5f - 8f);
+		for (BukovHitDirectionArc arc : hitDirectionArcs) {
+			arc.fit(
+					viewportWidth * 0.5f,
+					arcCenterY,
+					arcRadiusX,
+					arcRadiusY);
+		}
 
 		/*
 		 * Direction text already carries an arrow. Keep these badges in a

@@ -18,25 +18,55 @@ public final class BukovShellFx extends Group {
 	static final int FRIENDLY_COLOR = 0xFFD6B85F;
 	static final int HOSTILE_COLOR = 0xFFA87348;
 
-	private final ShellTrajectory trajectory;
+	private final ShellTrajectory trajectory = new ShellTrajectory();
 	private final ColorBlock casing;
 	private float age;
+
+	public BukovShellFx() {
+		casing = new Casing();
+		add(casing);
+		retire();
+	}
 
 	public BukovShellFx(
 			PointF origin,
 			PointF ejectionDirection,
 			boolean hostile,
 			float intensity) {
-		trajectory = plan(origin, ejectionDirection, intensity);
-		if (!trajectory.visible()) {
-			casing = null;
-			visible = false;
-			kill();
-			return;
+		this();
+		reset(
+				origin == null ? Float.NaN : origin.x,
+				origin == null ? Float.NaN : origin.y,
+				ejectionDirection == null ? Float.NaN : ejectionDirection.x,
+				ejectionDirection == null ? Float.NaN : ejectionDirection.y,
+				hostile,
+				intensity);
+	}
+
+	boolean reset(
+			float originX,
+			float originY,
+			float directionX,
+			float directionY,
+			boolean hostile,
+			float intensity) {
+		if (!trajectory.configure(
+				originX,
+				originY,
+				directionX,
+				directionY,
+				intensity)) {
+			retire();
+			return false;
 		}
-		casing = new Casing(hostile ? HOSTILE_COLOR : FRIENDLY_COLOR);
-		add(casing);
+		casing.color((hostile ? HOSTILE_COLOR : FRIENDLY_COLOR) & 0xFFFFFF);
+		casing.alpha(1f);
+		age = 0f;
 		place(0f);
+		revive();
+		active = true;
+		visible = true;
+		return true;
 	}
 
 	@Override
@@ -49,8 +79,15 @@ public final class BukovShellFx extends Group {
 			casing.alpha(BukovTracerFx.alphaAt(age, DURATION_SECONDS));
 		}
 		if (BukovTracerFx.expiredAt(age, DURATION_SECONDS)) {
-			killAndErase();
+			retire();
 		}
+	}
+
+	private void retire() {
+		alive = false;
+		exists = false;
+		active = false;
+		visible = false;
 	}
 
 	private void place(float progress) {
@@ -64,30 +101,16 @@ public final class BukovShellFx extends Group {
 			PointF origin,
 			PointF ejectionDirection,
 			float intensity) {
-		if (origin == null
-				|| ejectionDirection == null
-				|| !finite(origin.x)
-				|| !finite(origin.y)
-				|| !finite(ejectionDirection.x)
-				|| !finite(ejectionDirection.y)) {
-			return ShellTrajectory.hidden();
+		ShellTrajectory result = new ShellTrajectory();
+		if (origin != null && ejectionDirection != null) {
+			result.configure(
+					origin.x,
+					origin.y,
+					ejectionDirection.x,
+					ejectionDirection.y,
+					intensity);
 		}
-		float length = (float)Math.sqrt(
-				ejectionDirection.x * ejectionDirection.x
-						+ ejectionDirection.y * ejectionDirection.y);
-		if (length <= 0.01f) {
-			return ShellTrajectory.hidden();
-		}
-		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
-		float directionX = ejectionDirection.x / length;
-		float directionY = ejectionDirection.y / length;
-		return new ShellTrajectory(
-				true,
-				origin.x,
-				origin.y,
-				directionX * (3.2f + strength * 1.4f),
-				directionY * (3.2f + strength * 1.4f),
-				2.2f + strength);
+		return result;
 	}
 
 	public static float progressAt(float age) {
@@ -101,8 +124,8 @@ public final class BukovShellFx extends Group {
 
 	private static final class Casing extends ColorBlock {
 
-		private Casing(int color) {
-			super(3f, 2f, color);
+		private Casing() {
+			super(3f, 2f, 0xFFFFFFFF);
 			origin.set(1.5f, 1f);
 		}
 
@@ -116,30 +139,44 @@ public final class BukovShellFx extends Group {
 
 	public static final class ShellTrajectory {
 
-		private final boolean visible;
-		private final float originX;
-		private final float originY;
-		private final float velocityX;
-		private final float velocityY;
-		private final float arcHeight;
+		private boolean visible;
+		private float originX;
+		private float originY;
+		private float velocityX;
+		private float velocityY;
+		private float arcHeight;
 
-		private ShellTrajectory(
-				boolean visible,
-				float originX,
-				float originY,
-				float velocityX,
-				float velocityY,
-				float arcHeight) {
-			this.visible = visible;
-			this.originX = originX;
-			this.originY = originY;
-			this.velocityX = velocityX;
-			this.velocityY = velocityY;
-			this.arcHeight = arcHeight;
+		private ShellTrajectory() {
 		}
 
-		private static ShellTrajectory hidden() {
-			return new ShellTrajectory(false, 0f, 0f, 0f, 0f, 0f);
+		private boolean configure(
+				float originX,
+				float originY,
+				float ejectionX,
+				float ejectionY,
+				float intensity) {
+			visible = false;
+			if (!finite(originX)
+					|| !finite(originY)
+					|| !finite(ejectionX)
+					|| !finite(ejectionY)) {
+				return false;
+			}
+			float length = (float)Math.sqrt(
+					ejectionX * ejectionX + ejectionY * ejectionY);
+			if (length <= 0.01f) {
+				return false;
+			}
+			float strength = Math.max(0.45f, Math.min(1.6f, intensity));
+			visible = true;
+			this.originX = originX;
+			this.originY = originY;
+			velocityX = ejectionX / length
+					* (3.2f + strength * 1.4f);
+			velocityY = ejectionY / length
+					* (3.2f + strength * 1.4f);
+			arcHeight = 2.2f + strength;
+			return true;
 		}
 
 		public boolean visible() {

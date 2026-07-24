@@ -132,7 +132,22 @@ public final class HitscanResolver {
 			if (map.blocked(cellX, cellY)) {
 				return Math.max(0f, distance);
 			}
-			if (maxX < maxY) {
+			if (Math.abs(maxX - maxY) <= 0.00001f) {
+				// At a grid corner a supercover ray touches both side-adjacent
+				// cells before entering the diagonal cell. Treat either solid
+				// side as blocking so rounds cannot slip through the visual
+				// seam between two tiles. The epsilon preserves that topology
+				// after normalized direction arithmetic rounds the two times.
+				distance = Math.min(maxX, maxY);
+				if (map.blocked(cellX + stepX, cellY)
+						|| map.blocked(cellX, cellY + stepY)) {
+					return Math.max(0f, distance);
+				}
+				cellX += stepX;
+				cellY += stepY;
+				maxX += deltaX;
+				maxY += deltaY;
+			} else if (maxX < maxY) {
 				cellX += stepX;
 				distance = maxX;
 				maxX += deltaX;

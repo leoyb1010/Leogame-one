@@ -9,3 +9,25 @@ dependencies {
     implementation project(':services')
     testImplementation 'junit:junit:4.13.2'
 }
+
+// Gradle does not automatically forward command-line -D values into forked
+// test JVMs. Keep the long-running Bukov gates honest by explicitly forwarding
+// only their documented tuning properties.
+def bukovTestProperties = [
+        'bukov.seed.count',
+        'bukov.firstRaidSeedCount',
+        'bukov.save.iterations',
+        'bukov.performance.seconds',
+        'bukov.performance.e2e.seconds',
+        'bukov.performance.e2e.maxP95Ms',
+        'bukov.performance.e2e.maxAllocatedBytesPerFrame'
+]
+
+tasks.withType(Test).configureEach {
+    bukovTestProperties.each { propertyName ->
+        def propertyValue = System.getProperty(propertyName)
+        if (propertyValue != null) {
+            systemProperty propertyName, propertyValue
+        }
+    }
+}

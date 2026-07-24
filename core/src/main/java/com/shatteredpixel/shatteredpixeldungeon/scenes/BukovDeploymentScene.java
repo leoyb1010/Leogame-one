@@ -9,6 +9,8 @@ import com.shatteredpixel.shatteredpixeldungeon.actors.mobs.Mob;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovOperator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHostRecoveryPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
@@ -21,11 +23,13 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
+import com.badlogic.gdx.files.FileHandle;
 import com.watabou.gltextures.SmartTexture;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
+import com.watabou.utils.FileUtils;
 import com.watabou.utils.RectF;
 
 import java.io.IOException;
@@ -56,7 +60,10 @@ public final class BukovDeploymentScene extends PixelScene {
 		BukovUiTokens tokens = BukovUiTokens.loadDefault();
 
 		ColorBlock background =
-				new ColorBlock(Camera.main.width, Camera.main.height, 0xFF07100E);
+				new ColorBlock(
+						Camera.main.width,
+						Camera.main.height,
+						tokens.colorWithAlpha("ink.loading", 255));
 		add(background);
 
 		Image artwork = new Image(Assets.Splashes.Bukov.FIRST_RAID);
@@ -72,7 +79,10 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(artwork);
 
 		ColorBlock readability =
-				new ColorBlock(Camera.main.width, Camera.main.height, 0xFF03100D);
+				new ColorBlock(
+						Camera.main.width,
+						Camera.main.height,
+						tokens.colorWithAlpha("ink.shadow", 255));
 		readability.alpha(0.28f);
 		add(readability);
 
@@ -168,6 +178,7 @@ public final class BukovDeploymentScene extends PixelScene {
 
 	private void loadOrCreateRaid() throws IOException {
 		BukovMode.enter();
+		BukovDeploymentHandoff.clear();
 		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
 		GamesInProgress.selectedClass = BukovOperator.HOST_CLASS;
 		GamesInProgress.randomizedClass = false;
@@ -188,33 +199,31 @@ public final class BukovDeploymentScene extends PixelScene {
 				? deploymentProfile.selectedRaidMode()
 				: checkpoint.session().raidMode();
 		BukovMode.prepareRaidMode(deploymentMode);
-		if (GamesInProgress.gameExists(BukovMode.SAVE_SLOT)) {
-			try {
-				Dungeon.loadGame(BukovMode.SAVE_SLOT);
-				if (checkpoint != null
-						&& checkpoint.session().seed != Dungeon.seed) {
-					throw new IOException(
-							"行动检查点与宿主存档种子不一致");
-				}
-				Dungeon.daily = Dungeon.dailyReplay = false;
-				BukovOperator.normalize(Dungeon.hero);
-				Level level = Dungeon.loadLevel(BukovMode.SAVE_SLOT);
-				requireBukovLevel(level);
-				Dungeon.switchLevel(level, Dungeon.hero.pos);
+		boolean hostExists =
+				GamesInProgress.gameExists(BukovMode.SAVE_SLOT);
+		BukovHostRecoveryPolicy.Action recovery =
+				BukovHostRecoveryPolicy.decide(
+						checkpoint != null,
+						hostExists);
+		switch (recovery) {
+			case RESUME_MATCHED_HOST:
+				resumeMatchedHost(checkpoint);
 				return;
-			} catch (IOException | RuntimeException incompatible) {
-				recoverIncompatibleRaid(incompatible, saves, checkpoint);
-			}
-		} else if (checkpoint != null) {
-			// A checkpoint cannot recreate the exact host heaps/actors by
-			// itself. Settle it once as an interrupted raid before creating a
-			// replacement host slot, instead of entering a seed-mismatch loop.
-			recoverIncompatibleRaid(
-					new IOException("行动检查点缺少宿主存档"),
-					saves,
-					checkpoint);
+			case SETTLE_INTERRUPTED_CHECKPOINT:
+				settleInterruptedCheckpoint(
+						new IOException("行动检查点缺少宿主存档"),
+						checkpoint);
+				throw new IOException(
+						"上次行动地图缺失，已按中断行动完成结算；"
+								+ "请返回藏身处重新配装");
+			case ARCHIVE_ORPHAN_HOST:
+				archiveVerifiedOrphanHost();
+				createNewRaid();
+				return;
+			case CREATE_NEW_HOST:
+			default:
+				createNewRaid();
 		}
-		createNewRaid();
 	}
 
 	private static void createNewRaid() throws IOException {
@@ -225,25 +234,120 @@ public final class BukovDeploymentScene extends PixelScene {
 		Level level = Dungeon.newLevel();
 		requireBukovLevel(level);
 		Dungeon.switchLevel(level, -1);
+		BukovDeploymentHandoff.authorizeFreshHost(Dungeon.seed);
 	}
 
 	/**
-	 * Ends only the incompatible active raid and host slot. The long-lived
-	 * profile/stash is preserved; a valid checkpoint is settled as a failed
-	 * action so deployed-item loss and statistics remain transactional.
+	 * Resumes only after both documents exist and the loaded host is confirmed
+	 * to be a Bukov map. A non-Bukov or unreadable slot is preserved so this
+	 * recovery path can never delete an unrelated user save.
 	 */
-	private static void recoverIncompatibleRaid(
-			Throwable cause,
-			BukovSaveService saves,
-			BukovRaidCoordinator interrupted)
-			throws IOException {
-		ShatteredPixelDungeon.reportException(cause);
-		if (interrupted != null) {
-			interrupted.settleDeath();
-		} else {
-			saves.deleteRaid();
+	private static void resumeMatchedHost(
+			BukovRaidCoordinator checkpoint) throws IOException {
+		Level level;
+		try {
+			level = loadVerifiedBukovHost();
+		} catch (IOException | RuntimeException incompatible) {
+			settleInterruptedCheckpoint(incompatible, checkpoint);
+			throw preservedHostFailure(incompatible);
 		}
-		Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
+		if (checkpoint.session().seed != Dungeon.seed) {
+			IOException mismatch = new IOException(
+					"行动检查点与宿主存档种子不一致");
+			ShatteredPixelDungeon.reportException(mismatch);
+			archiveOrphanBukovHost();
+			checkpoint.settleDeath();
+			throw new IOException(
+					"行动地图与检查点不匹配，旧地图已安全归档且"
+							+ "行动已结算；请返回藏身处重新配装");
+		}
+		Dungeon.switchLevel(level, Dungeon.hero.pos);
+	}
+
+	/**
+	 * A checkpoint alone cannot reconstruct exact host actors and heaps.
+	 * Settlement creates the durable raid receipt before control returns to the
+	 * hideout, so retrying this recovery can never return the loadout twice.
+	 */
+	private static void settleInterruptedCheckpoint(
+			Throwable cause,
+			BukovRaidCoordinator interrupted) throws IOException {
+		ShatteredPixelDungeon.reportException(cause);
+		if (interrupted == null) {
+			throw new IOException(
+					"Missing coordinator for interrupted checkpoint",
+					cause);
+		}
+		interrupted.settleDeath();
+	}
+
+	private static Level loadVerifiedBukovHost() throws IOException {
+		Dungeon.loadGame(BukovMode.SAVE_SLOT);
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		BukovOperator.normalize(Dungeon.hero);
+		Level level = Dungeon.loadLevel(BukovMode.SAVE_SLOT);
+		requireBukovLevel(level);
+		return level;
+	}
+
+	private static void archiveVerifiedOrphanHost() throws IOException {
+		try {
+			loadVerifiedBukovHost();
+		} catch (IOException | RuntimeException incompatible) {
+			ShatteredPixelDungeon.reportException(incompatible);
+			throw preservedHostFailure(incompatible);
+		}
+		archiveOrphanBukovHost();
+	}
+
+	/**
+	 * Moves a confirmed Bukov host directory into a recoverable archive. It
+	 * never calls Dungeon.deleteGame(), and it runs only after BukovLevel was
+	 * successfully decoded from the reserved product slot.
+	 */
+	private static String archiveOrphanBukovHost() throws IOException {
+		FileHandle source = FileUtils.getFileHandle(
+				GamesInProgress.gameFolder(BukovMode.SAVE_SLOT));
+		if (source == null || !source.exists() || !source.isDirectory()) {
+			throw new IOException("待归档的布科夫宿主存档不存在");
+		}
+		FileHandle archiveRoot =
+				FileUtils.getFileHandle("bukov_orphan_archives");
+		try {
+			archiveRoot.mkdirs();
+			String baseName = "game"
+					+ BukovMode.SAVE_SLOT
+					+ "-seed"
+					+ Dungeon.seed
+					+ "-"
+					+ System.currentTimeMillis();
+			FileHandle target = archiveRoot.child(baseName);
+			int collision = 0;
+			while (target.exists()) {
+				target = archiveRoot.child(
+						baseName + "-" + (++collision));
+			}
+			source.moveTo(target);
+			FileHandle archivedGame = target.child("game.dat");
+			if (source.exists()
+					|| !archivedGame.exists()
+					|| archivedGame.length() <= 1L) {
+				throw new IOException(
+						"布科夫孤儿宿主存档归档校验失败");
+			}
+			GamesInProgress.delete(BukovMode.SAVE_SLOT);
+			return target.path();
+		} catch (RuntimeException failure) {
+			throw new IOException(
+					"无法安全归档布科夫孤儿宿主存档",
+					failure);
+		}
+	}
+
+	private static IOException preservedHostFailure(Throwable cause) {
+		return new IOException(
+				"宿主存档无法确认属于布科夫，已原样保留；未创建新行动",
+				cause);
 	}
 
 	private static void requireBukovLevel(Level level) throws IOException {

@@ -139,6 +139,33 @@ public class BukovRaidHudStateTest {
 	}
 
 	@Test
+	public void combatAwarenessCarriesThreeIndependentHitDirections() {
+		BukovRaidHudState state = new BukovRaidHudState();
+		state.beginFrame("突围", 30f);
+		state.combatAwareness(0.1f);
+		state.hit(BukovRaidHudState.Direction.N, 0.3f, 0.5f);
+		state.hit(BukovRaidHudState.Direction.E, 0.6f, 0.4f);
+		state.hit(BukovRaidHudState.Direction.S, 0.9f, 0.3f);
+		state.hit(BukovRaidHudState.Direction.W, 1f, 0.2f);
+
+		assertEquals(
+				BukovCombatHudTimeline.IDLE_ALPHA,
+				state.combatAwarenessAlpha(),
+				0f);
+		assertEquals(3, state.hitCount());
+		assertEquals(
+				BukovRaidHudState.Direction.N,
+				state.hitDirection(0));
+		assertEquals(
+				BukovRaidHudState.Direction.S,
+				state.hitDirection(2));
+		assertTrue(BukovCombatHudFormat.hit(state).contains("↑ 北"));
+		assertTrue(BukovCombatHudFormat.hit(state).contains("→ 东"));
+		assertTrue(BukovCombatHudFormat.hit(state).contains("↓ 南"));
+		assertFalse(BukovCombatHudFormat.hit(state).contains("← 西"));
+	}
+
+	@Test
 	public void aimNavigationAndThreatCarryReadableDirection() {
 		BukovRaidHudState state = new BukovRaidHudState();
 		state.beginFrame("找到维修档案", 5f);

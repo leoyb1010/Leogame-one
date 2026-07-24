@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatIntent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuffer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
@@ -61,6 +62,9 @@ public class BukovRealtimeCombatStatePersistenceTest {
 		EnemyRangedCombatController ranged = ranged(5, 10, 77);
 		EnemyRangedCombatIntent intent = new EnemyRangedCombatIntent();
 		ranged.step(0.3f, true, 2f, 0f, intent);
+		PlayerSoundEventBuffer sounds = new PlayerSoundEventBuffer();
+		sounds.emit(3f, 4f, 8f, 0.35f);
+		int latestSound = sounds.emit(9f, 4f, 16f, 0.25f);
 
 		raid.updateRealtimeState(
 				status,
@@ -70,7 +74,9 @@ public class BukovRealtimeCombatStatePersistenceTest {
 								77,
 								"scavenger_gunner",
 								brain.snapshot(),
-								ranged.snapshot())));
+								ranged.snapshot(),
+								latestSound)),
+				sounds.snapshot());
 		raid.saveCheckpoint();
 
 		BukovRaidCoordinator restored =
@@ -107,6 +113,13 @@ public class BukovRealtimeCombatStatePersistenceTest {
 				ranged.openingWarningRemaining(),
 				enemy.rangedCombat().openingWarningRemaining(),
 				0f);
+		assertEquals(latestSound, enemy.heardSoundSequence());
+		PlayerSoundEventBuffer restoredSounds =
+				new PlayerSoundEventBuffer();
+		restoredSounds.restore(restored.playerSoundEvents());
+		assertEquals(2, restoredSounds.activeCount());
+		assertEquals(3f, restoredSounds.eventAt(0).x(), 0f);
+		assertEquals(16f, restoredSounds.eventAt(1).radius(), 0f);
 
 		RealtimeMedicalSystem resumedMedical =
 				RealtimeMedicalSystem.fromLedger(
@@ -139,7 +152,44 @@ public class BukovRealtimeCombatStatePersistenceTest {
 				restored.version());
 		assertNull(restored.playerStatus());
 		assertNull(restored.medicalRuntime());
+		assertNull(restored.playerSoundEvents());
 		assertTrue(restored.enemyRuntimeStates().isEmpty());
+	}
+
+	@Test
+	public void versionSixMigratesLegacySingleSoundSlot() {
+		Bundle legacy = new Bundle();
+		legacy.put("checkpoint_version", 6);
+		legacy.put("session", RaidSession.create(6L, "legacy-v6-sound"));
+		legacy.put("loot",
+				new LootTransaction("legacy-v6-sound", 10f));
+		legacy.put("extractions",
+				Collections.singletonList(ExtractionState.basic()));
+		legacy.put("active_extraction", "");
+		legacy.put("host_items", Collections.<Bundlable>emptyList());
+		legacy.put("next_item_sequence", 0L);
+		legacy.put("containers", Collections.<Bundlable>emptyList());
+		legacy.put("completed_events", new String[0]);
+		legacy.put("deployment_definitions", new String[0]);
+		legacy.put("enemy_runtime", Collections.<Bundlable>emptyList());
+		legacy.put("player_sound_sequence", 29);
+		legacy.put("player_sound_x", 7f);
+		legacy.put("player_sound_y", 8f);
+		legacy.put("player_sound_radius", 15f);
+		legacy.put("player_sound_remaining", 0.2f);
+
+		BukovRaidCheckpoint restored = new BukovRaidCheckpoint();
+		restored.restoreFromBundle(legacy);
+		PlayerSoundEventBuffer sounds = new PlayerSoundEventBuffer();
+		sounds.restore(restored.playerSoundEvents());
+
+		assertEquals(1, sounds.activeCount());
+		assertEquals(29, sounds.eventAt(0).sequence());
+		assertEquals(7f, sounds.eventAt(0).x(), 0f);
+		assertEquals(15f, sounds.eventAt(0).radius(), 0f);
+		assertEquals(
+				30,
+				sounds.emit(9f, 8f, 15f, 0.2f));
 	}
 
 	private static EnemyRangedCombatController ranged(
