@@ -152,6 +152,56 @@ public class BukovHubViewModelPresentationTest {
 	}
 
 	@Test
+	public void inventoryFiltersExposeRarityAndCategoryValueComparison() {
+		BukovProfile profile = new BukovProfile();
+		profile.stash().deposit(item(
+				"cheap-weapon",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				100));
+		profile.stash().deposit(item(
+				"rare-weapon",
+				"firearm:mountain_762",
+				1,
+				4.1f,
+				1_900));
+		profile.stash().deposit(item(
+				"medical",
+				"bandage",
+				1,
+				0.12f,
+				180));
+
+		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
+
+		assertEquals(
+				2,
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.WEAPONS).size());
+		assertEquals(
+				1,
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.MEDICAL).size());
+		assertEquals(
+				0,
+				model.inventoryItems(
+						BukovHubViewModel.InventoryFilter.AMMUNITION).size());
+		assertEquals(
+				BukovHubViewModel.ItemRarity.COMMON,
+				model.stashItems.get(0).rarity);
+		assertEquals(
+				BukovHubViewModel.ItemRarity.RARE,
+				model.stashItems.get(1).rarity);
+		assertTrue(model.stashItems.get(0).valueComparisonPercent < 0);
+		assertTrue(model.stashItems.get(1).valueComparisonPercent > 0);
+		assertEquals(
+				"武器 2/3",
+				model.inventoryFilterSummary(
+						BukovHubViewModel.InventoryFilter.WEAPONS));
+	}
+
+	@Test
 	public void portraitAndLandscapeKeepScrollableInventoryAboveFooter() {
 		assertEquals(67, WndBukovHub.inventoryViewportHeight(226, false));
 		assertEquals(48, WndBukovHub.inventoryViewportHeight(180, true));

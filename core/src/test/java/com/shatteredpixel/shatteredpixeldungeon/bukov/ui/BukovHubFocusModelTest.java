@@ -18,6 +18,9 @@ public class BukovHubFocusModelTest {
 		assertTrue(focus.modeFocused());
 		assertEquals(-1, focus.actionIndex());
 		focus.move(1);
+		assertTrue(focus.filterFocused());
+		assertEquals(-1, focus.actionIndex());
+		focus.move(1);
 		assertFalse(focus.itemFocused());
 		assertEquals(BukovHubFocusModel.ACTION_VENDOR, focus.actionIndex());
 		focus.move(BukovHubFocusModel.ACTION_COUNT);
@@ -39,7 +42,7 @@ public class BukovHubFocusModelTest {
 	@Test
 	public void nestedVendorReturnRestoresExactHubActionFocus() {
 		BukovHubFocusModel beforeVendor = new BukovHubFocusModel(3);
-		beforeVendor.focus(3 + 1 + BukovHubFocusModel.ACTION_VENDOR);
+		beforeVendor.focus(3 + 2 + BukovHubFocusModel.ACTION_VENDOR);
 		int savedFocus = beforeVendor.index();
 
 		BukovHubFocusModel restored = new BukovHubFocusModel(3);

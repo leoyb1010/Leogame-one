@@ -70,7 +70,9 @@ public class BukovLooseLootPlannerTest {
 							level.height(),
 							level.passable,
 							level.raidLayout(),
-							level.entrance());
+							level.entrance(),
+							BukovRaidMode.EXPEDITION,
+							level.semanticCell("scrap_compactor"));
 
 			assertEquals("seed=" + seed,
 					BukovLooseLootPlanner.REQUIRED_PLACEMENT_COUNT,
@@ -167,7 +169,8 @@ public class BukovLooseLootPlannerTest {
 						level.passable,
 						level.raidLayout(),
 						level.entrance(),
-						BukovRaidMode.TRAINING_GROUND);
+						BukovRaidMode.TRAINING_GROUND,
+						level.semanticCell("scrap_compactor"));
 
 		assertEquals(18, level.raidMode().standardRoomBudget);
 		assertEquals("cold_storage", level.raidLayout().themeId);

@@ -29,7 +29,7 @@ public final class BukovHubFocusModel {
 	}
 
 	public void focus(int target) {
-		int count = itemCount + 1 + ACTION_COUNT;
+		int count = itemCount + 2 + ACTION_COUNT;
 		index = Math.max(0, Math.min(target, count - 1));
 	}
 
@@ -41,17 +41,21 @@ public final class BukovHubFocusModel {
 		return index == itemCount;
 	}
 
+	public boolean filterFocused() {
+		return index == itemCount + 1;
+	}
+
 	public int itemIndex() {
 		return itemFocused() ? index : -1;
 	}
 
 	public int actionIndex() {
-		return itemFocused() || modeFocused()
-				? -1 : index - itemCount - 1;
+		return itemFocused() || modeFocused() || filterFocused()
+				? -1 : index - itemCount - 2;
 	}
 
 	public void move(int delta) {
-		int count = itemCount + 1 + ACTION_COUNT;
+		int count = itemCount + 2 + ACTION_COUNT;
 		index = (index + delta) % count;
 		if (index < 0) {
 			index += count;

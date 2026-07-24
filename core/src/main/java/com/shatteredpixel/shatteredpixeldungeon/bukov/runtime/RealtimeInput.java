@@ -23,6 +23,9 @@ import com.watabou.utils.Signal;
  */
 public final class RealtimeInput {
 
+	static final float POINTER_CAMERA_LOOK_AHEAD_TILES = 3.5f;
+	static final float DIRECT_CAMERA_LOOK_AHEAD_TILES = 2.5f;
+
 	private final InputFrame frame = new InputFrame();
 	private final RealtimeTouchState touch = new RealtimeTouchState();
 	private final PointF tunedLeftStick = new PointF();
@@ -164,6 +167,7 @@ public final class RealtimeInput {
 		frame.movement.set(0f, 0f);
 		frame.fireHeld = false;
 		frame.interactHeld = false;
+		frame.cameraLookAheadTiles = 0f;
 		frame.clearEdges();
 		cancelTouches();
 		if (touchControls != null) {
@@ -197,6 +201,7 @@ public final class RealtimeInput {
 				SPDSettings.bukovTriggerRelease() / 100f);
 		frame.aimAssistScale = BukovInputTuning.aimAssistScale(
 				SPDSettings.bukovAimAssist());
+		frame.cameraLookAheadTiles = 0f;
 		float moveX = 0f;
 		float moveY = 0f;
 		if (Gdx.input.isKeyPressed(Input.Keys.A)) moveX -= 1f;
@@ -238,11 +243,14 @@ public final class RealtimeInput {
 				tunedRightStick);
 		if (lengthSquared(tunedRightStick.x, tunedRightStick.y) > 0f) {
 			normalizeInto(tunedRightStick.x, tunedRightStick.y, frame.aim);
+			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
 		} else if (mobile != null && mobile.aimHeld()) {
 			frame.aim.set(mobile.aimX(), mobile.aimY());
+			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
 		} else if (touchEnabled && touch.fireHeld()) {
 			touch.sample(touchRadius(), frame.movement, frame.aim);
-		} else {
+			frame.cameraLookAheadTiles = DIRECT_CAMERA_LOOK_AHEAD_TILES;
+		} else if (!touchEnabled && !ControllerHandler.controllerActive) {
 			PointF pointer = PointerEvent.currentHoverPos();
 			PointF world = Camera.main.screenToCamera((int)pointer.x, (int)pointer.y);
 			normalizeInto(
@@ -250,17 +258,23 @@ public final class RealtimeInput {
 					world.y / DungeonTilemap.SIZE - heroBody.y,
 					frame.aim
 			);
+			frame.cameraLookAheadTiles = POINTER_CAMERA_LOOK_AHEAD_TILES;
 		}
 
 		boolean mouseFirePressed = !touchEnabled
 				&& Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
-		boolean fireHeld = (!touchEnabled
-				&& Gdx.input.isButtonPressed(Input.Buttons.LEFT))
-				|| controllerFireHeld
-				|| mobile != null && mobile.fireHeld()
-				|| touchEnabled && touch.fireHeld();
+		boolean fireHeld = resolveFireHeld(
+				!touchEnabled
+						&& Gdx.input.isButtonPressed(Input.Buttons.LEFT),
+				controllerFireHeld,
+				mobile != null && mobile.fireHeld(),
+				touchEnabled && touch.fireHeld());
 		frame.fireHeld = fireHeld;
-		frame.firePressed = mouseFirePressed || controllerFirePressed || (fireHeld && !previousFireHeld);
+		frame.firePressed = resolveFirePressed(
+				mouseFirePressed,
+				controllerFirePressed,
+				fireHeld,
+				previousFireHeld);
 		previousFireHeld = fireHeld;
 		frame.reloadPressed = Gdx.input.isKeyJustPressed(Input.Keys.R)
 				|| controllerReloadPressed
@@ -303,6 +317,32 @@ public final class RealtimeInput {
 		controllerMedicalPressed = false;
 		backpackPressed = false;
 		return frame;
+	}
+
+	/**
+	 * Single production merge point for mouse, controller and both touch
+	 * surfaces. Keeping the edge rule here lets integration tests prove that
+	 * every supported input reaches the exact FireControl booleans used live.
+	 */
+	static boolean resolveFireHeld(
+			boolean mouseHeld,
+			boolean controllerHeld,
+			boolean touchControlsHeld,
+			boolean legacyTouchHeld) {
+		return mouseHeld
+				|| controllerHeld
+				|| touchControlsHeld
+				|| legacyTouchHeld;
+	}
+
+	static boolean resolveFirePressed(
+			boolean mousePressed,
+			boolean controllerPressed,
+			boolean fireHeld,
+			boolean previousFireHeld) {
+		return mousePressed
+				|| controllerPressed
+				|| fireHeld && !previousFireHeld;
 	}
 
 	static void normalizeInto(float x, float y, PointF output) {

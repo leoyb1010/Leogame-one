@@ -139,10 +139,18 @@ public final class BukovSettlementViewModel {
 	}
 
 	public String totals() {
+		return totals(value);
+	}
+
+	public String totals(long displayedValue) {
+		if (displayedValue < 0L || displayedValue > value) {
+			throw new IllegalArgumentException(
+					"displayed value must be inside the settlement total");
+		}
 		return (outcome == RaidOutcome.SUCCESS ? "带回 " : "损失 ")
 				+ quantity + " 件    本局收益 "
 				+ (outcome == RaidOutcome.SUCCESS ? "+" : "-")
-				+ value;
+				+ displayedValue;
 	}
 
 	public String stats() {

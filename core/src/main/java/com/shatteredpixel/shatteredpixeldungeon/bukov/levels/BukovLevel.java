@@ -262,7 +262,7 @@ public class BukovLevel extends RegularLevel {
 
 	@Override
 	protected void createItems() {
-		// Three deterministic loose items teach the ground-pickup language.
+		// Five deterministic loose items teach the ground-pickup language.
 		// Valuable/randomized rewards still come from searchable containers,
 		// and no legacy fantasy generator is allowed into this raid.
 		BukovLooseLootPlanner.place(this);

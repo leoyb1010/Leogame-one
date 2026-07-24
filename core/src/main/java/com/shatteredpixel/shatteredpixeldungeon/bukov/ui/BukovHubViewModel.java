@@ -18,6 +18,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +26,53 @@ import java.util.Map;
 
 /** Immutable, renderer-independent data for the Bukov hideout. */
 public final class BukovHubViewModel {
+
+	public enum InventoryFilter {
+		ALL("全部"),
+		WEAPONS("武器"),
+		AMMUNITION("弹药"),
+		MEDICAL("医疗"),
+		EQUIPMENT("装备"),
+		GEAR("物资");
+
+		public final String label;
+
+		InventoryFilter(String label) {
+			this.label = label;
+		}
+
+		public InventoryFilter next() {
+			InventoryFilter[] values = values();
+			return values[(ordinal() + 1) % values.length];
+		}
+
+		boolean matches(ItemRow row) {
+			if (this == ALL) return true;
+			if (this == WEAPONS) return row.slot == LoadoutSlot.PRIMARY;
+			if (this == AMMUNITION) return row.slot == LoadoutSlot.AMMUNITION;
+			if (this == MEDICAL) return row.slot == LoadoutSlot.MEDICAL;
+			if (this == EQUIPMENT) {
+				return row.slot == LoadoutSlot.ARMOR
+						|| row.slot == LoadoutSlot.BACKPACK;
+			}
+			return row.slot == LoadoutSlot.GEAR;
+		}
+	}
+
+	public enum ItemRarity {
+		COMMON("普通", "rarity.common"),
+		UNCOMMON("精良", "rarity.uncommon"),
+		RARE("稀有", "rarity.rare"),
+		LEGENDARY("珍品", "rarity.legendary");
+
+		public final String label;
+		public final String colorToken;
+
+		ItemRarity(String label, String colorToken) {
+			this.label = label;
+			this.colorToken = colorToken;
+		}
+	}
 
 	public enum LoadoutSlot {
 		PRIMARY("主武器", "WEAPON"),
@@ -51,10 +99,16 @@ public final class BukovHubViewModel {
 		public final int quantity;
 		public final float weight;
 		public final long value;
+		public final int unitValue;
+		public final int valueComparisonPercent;
+		public final ItemRarity rarity;
 		public final boolean selected;
 		public final boolean deployable;
 
-		private ItemRow(RaidItem item, boolean selected) {
+		private ItemRow(
+				RaidItem item,
+				boolean selected,
+				long categoryAverageUnitValue) {
 			itemUid = item.itemUid();
 			definitionId = item.definitionId();
 			label = displayName(item.definitionId());
@@ -62,6 +116,10 @@ public final class BukovHubViewModel {
 			quantity = item.quantity();
 			weight = item.totalWeight();
 			value = item.totalValue();
+			unitValue = item.unitValue();
+			valueComparisonPercent = comparisonPercent(
+					unitValue, categoryAverageUnitValue);
+			rarity = rarityFor(unitValue);
 			this.selected = selected;
 			deployable = BukovLoadout.deployable(item);
 		}
@@ -69,6 +127,12 @@ public final class BukovHubViewModel {
 		public String summary() {
 			return label + " ×" + quantity + "  "
 					+ formatWeight(weight) + "kg · 价值" + value;
+		}
+
+		public String comparisonLabel() {
+			if (valueComparisonPercent == 0) return "同类基准";
+			return "同类" + (valueComparisonPercent > 0 ? "+" : "")
+					+ valueComparisonPercent + "%";
 		}
 	}
 
@@ -201,18 +265,32 @@ public final class BukovHubViewModel {
 			float weightLimit,
 			FirearmRegistry firearms,
 			AmmoRegistry ammunition) {
+		List<RaidItem> sourceItems = activeCheckpoint != null
+				? activeCheckpoint.loot().items()
+				: profile.stash().items();
+		Map<LoadoutSlot, Long> totals =
+				new EnumMap<>(LoadoutSlot.class);
+		Map<LoadoutSlot, Integer> counts =
+				new EnumMap<>(LoadoutSlot.class);
+		for (RaidItem item : sourceItems) {
+			LoadoutSlot slot = slotFor(item.definitionId());
+			Long total = totals.get(slot);
+			Integer count = counts.get(slot);
+			totals.put(
+					slot,
+					(total == null ? 0L : total) + item.unitValue());
+			counts.put(slot, (count == null ? 0 : count) + 1);
+		}
 		List<ItemRow> rows = new ArrayList<>();
 		boolean activeRaid = activeCheckpoint != null;
-		if (activeRaid) {
-			for (RaidItem item : activeCheckpoint.loot().items()) {
-				rows.add(new ItemRow(item, true));
-			}
-		} else {
-			for (RaidItem item : profile.stash().items()) {
-				rows.add(new ItemRow(
-						item,
-						profile.loadout().contains(item.itemUid())));
-			}
+		for (RaidItem item : sourceItems) {
+			LoadoutSlot slot = slotFor(item.definitionId());
+			long average = totals.get(slot) / counts.get(slot);
+			rows.add(new ItemRow(
+					item,
+					activeRaid
+							|| profile.loadout().contains(item.itemUid()),
+					average));
 		}
 		List<SettlementReceipt> receipts = profile.settlements();
 		Settlement latest = receipts.isEmpty()
@@ -468,6 +546,37 @@ public final class BukovHubViewModel {
 			return first + (quantity > 1 ? " ×" + quantity : "");
 		}
 		return first + " +" + (stacks - 1);
+	}
+
+	public List<ItemRow> inventoryItems(InventoryFilter filter) {
+		if (filter == null) {
+			throw new IllegalArgumentException("filter is required");
+		}
+		List<ItemRow> result = new ArrayList<>();
+		for (ItemRow row : stashItems) {
+			if (filter.matches(row)) result.add(row);
+		}
+		return Collections.unmodifiableList(result);
+	}
+
+	public String inventoryFilterSummary(InventoryFilter filter) {
+		return filter.label + " " + inventoryItems(filter).size()
+				+ "/" + stashItems.size();
+	}
+
+	private static int comparisonPercent(
+			int unitValue, long categoryAverageUnitValue) {
+		if (categoryAverageUnitValue <= 0L) return 0;
+		double raw = (unitValue - categoryAverageUnitValue)
+				* 100d / categoryAverageUnitValue;
+		return (int) Math.max(-999d, Math.min(999d, Math.round(raw)));
+	}
+
+	private static ItemRarity rarityFor(int unitValue) {
+		if (unitValue >= 5_000) return ItemRarity.LEGENDARY;
+		if (unitValue >= 1_800) return ItemRarity.RARE;
+		if (unitValue >= 500) return ItemRarity.UNCOMMON;
+		return ItemRarity.COMMON;
 	}
 
 	private static String compact(String value, int maxCharacters) {

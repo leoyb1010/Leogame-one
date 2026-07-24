@@ -27,6 +27,13 @@ public class BukovSettlementWiringGuardTest {
 		assertTrue(read(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java")
 				.contains("沿用配装"));
+		String settlement = read(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java");
+		assertTrue(settlement.contains("BukovSettlementRevealModel"));
+		assertTrue(settlement.contains("reveal.advance(Game.elapsed)"));
+		assertTrue(settlement.contains("[ 撤离确认 ]"));
+		assertTrue(settlement.contains("[ 行动损失 ]"));
+		assertTrue(settlement.contains("if (skipReveal()) return;"));
 	}
 
 	private static String read(String path) throws Exception {

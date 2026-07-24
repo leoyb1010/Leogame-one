@@ -16,6 +16,9 @@ import com.watabou.noosa.Game;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.ui.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Dedicated search-extract settlement. No ranking, dungeon victory or
  * GAME OVER surfaces are reachable from this window.
@@ -45,6 +48,10 @@ public final class WndBukovSettlement extends Window {
 	private final ActionButton[] actionButtons;
 	private final BukovFocusRepeater focusRepeater =
 			new BukovFocusRepeater();
+	private final BukovSettlementRevealModel reveal;
+	private RenderedTextBlock animatedTotals;
+	private RenderedTextBlock outcomeStamp;
+	private Manifest manifest;
 	private boolean returning;
 
 	public WndBukovSettlement(
@@ -101,6 +108,9 @@ public final class WndBukovSettlement extends Window {
 		focus = new BukovFocusModel(actionCount, 0);
 		actionButtons = new ActionButton[actionCount];
 		tokens = BukovUiTokens.loadDefault();
+		reveal = new BukovSettlementRevealModel(
+				viewModel.items.size(),
+				viewModel.value);
 
 		int width = BukovWindowLayout.safeWidth(
 				PixelScene.landscape() ? WIDTH_L : WIDTH_P);
@@ -117,7 +127,7 @@ public final class WndBukovSettlement extends Window {
 		float y = 3;
 
 		RenderedTextBlock eyebrow = text(
-				"行动结算 · ESCAPE FROM BUKOV",
+				"行动结算 · 确认可跳过",
 				7,
 				tokens.color("text.secondary"));
 		eyebrow.setRect(5, y, width - 10, 9);
@@ -129,6 +139,13 @@ public final class WndBukovSettlement extends Window {
 		headline.setRect(5, y, width - 10, 18);
 		headline.align(RenderedTextBlock.CENTER_ALIGN);
 		add(headline);
+		outcomeStamp = text(
+				success ? "[ 撤离确认 ]" : "[ 行动损失 ]",
+				7,
+				accent);
+		outcomeStamp.setRect(5, y + 11, width - 10, 8);
+		outcomeStamp.align(RenderedTextBlock.RIGHT_ALIGN);
+		add(outcomeStamp);
 		y += 20;
 
 		ColorBlock divider = new ColorBlock(width - 10, 1, accent);
@@ -137,13 +154,13 @@ public final class WndBukovSettlement extends Window {
 		add(divider);
 		y += 4;
 
-		RenderedTextBlock totals = text(
-				viewModel.totals(),
+		animatedTotals = text(
+				viewModel.totals(0L),
 				8,
 				tokens.color("text.primary"));
-		totals.setRect(5, y, width - 10, 10);
-		totals.align(RenderedTextBlock.CENTER_ALIGN);
-		add(totals);
+		animatedTotals.setRect(5, y, width - 10, 10);
+		animatedTotals.align(RenderedTextBlock.CENTER_ALIGN);
+		add(animatedTotals);
 		y += 11;
 
 		RenderedTextBlock stats = text(
@@ -175,7 +192,7 @@ public final class WndBukovSettlement extends Window {
 		y += 11;
 
 		float listHeight = height - y - BUTTON_HEIGHT - 8;
-		Manifest manifest = new Manifest(width - 10);
+		manifest = new Manifest(width - 10);
 		ScrollPane scroll = new ScrollPane(manifest);
 		add(scroll);
 		scroll.setRect(5, y, width - 10, listHeight);
@@ -207,6 +224,7 @@ public final class WndBukovSettlement extends Window {
 			actionButtons[1] = button;
 		}
 		updateFocus();
+		updateReveal();
 	}
 
 	private RenderedTextBlock text(String value, int size, int color) {
@@ -218,12 +236,20 @@ public final class WndBukovSettlement extends Window {
 
 	@Override
 	public void onBackPressed() {
+		if (skipReveal()) return;
 		returnToHideout();
 	}
 
 	@Override
 	public boolean onSignal(KeyEvent event) {
 		if (!event.pressed) {
+			return true;
+		}
+		if (!reveal.complete()) {
+			if (BukovNavigation.back(event)
+					|| BukovNavigation.confirm(event)) {
+				skipReveal();
+			}
 			return true;
 		}
 		if (BukovNavigation.back(event)) {
@@ -243,6 +269,11 @@ public final class WndBukovSettlement extends Window {
 	@Override
 	public void update() {
 		super.update();
+		if (!reveal.complete()) {
+			reveal.advance(Game.elapsed);
+			updateReveal();
+			if (!reveal.complete()) return;
+		}
 		int delta = focusRepeater.update(
 				ControllerHandler.leftStickPosition.x,
 				ControllerHandler.leftStickPosition.y,
@@ -250,6 +281,26 @@ public final class WndBukovSettlement extends Window {
 		if (delta != 0) {
 			focus.move(delta);
 			updateFocus();
+		}
+	}
+
+	private boolean skipReveal() {
+		if (reveal.complete()) return false;
+		reveal.skip();
+		updateReveal();
+		return true;
+	}
+
+	private void updateReveal() {
+		if (animatedTotals != null) {
+			animatedTotals.text(
+					viewModel.totals(reveal.displayedValue()));
+		}
+		if (outcomeStamp != null) {
+			outcomeStamp.visible = reveal.stampVisible();
+		}
+		if (manifest != null) {
+			manifest.reveal(reveal.visibleRows());
 		}
 	}
 
@@ -292,6 +343,9 @@ public final class WndBukovSettlement extends Window {
 
 	private final class Manifest extends Component {
 
+		private final List<RenderedTextBlock> itemRows =
+				new ArrayList<>();
+
 		private Manifest(float listWidth) {
 			int rows = Math.max(1, viewModel.items.size());
 			setSize(listWidth, rows * ROW_HEIGHT);
@@ -322,6 +376,15 @@ public final class WndBukovSettlement extends Window {
 			row.setRect(3, index * ROW_HEIGHT + 3,
 					width() - 6, ROW_HEIGHT - 3);
 			add(row);
+			if (!viewModel.items.isEmpty()) {
+				itemRows.add(row);
+			}
+		}
+
+		private void reveal(int visibleRows) {
+			for (int index = 0; index < itemRows.size(); index++) {
+				itemRows.get(index).visible = index < visibleRows;
+			}
 		}
 	}
 
@@ -355,6 +418,7 @@ public final class WndBukovSettlement extends Window {
 
 		@Override
 		protected void onClick() {
+			if (skipReveal()) return;
 			focus.focus(repeat ? 0 : actionButtons.length - 1);
 			updateFocus();
 			if (repeat) {

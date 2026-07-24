@@ -101,6 +101,29 @@ public final class BukovLooseLootPlanner {
 			BukovRaidLayout layout,
 			int entranceCell,
 			BukovRaidMode raidMode) {
+		return plan(
+				width,
+				height,
+				passable,
+				layout,
+				entranceCell,
+				raidMode,
+				-1);
+	}
+
+	/**
+	 * Reserves a stable optional-container cell before authoring loose loot.
+	 * The value is derived from immutable layout data, so host heap pickup/drop
+	 * state can never move the maintenance cache on resume.
+	 */
+	public static List<Placement> plan(
+			int width,
+			int height,
+			boolean[] passable,
+			BukovRaidLayout layout,
+			int entranceCell,
+			BukovRaidMode raidMode,
+			int optionalReservedCell) {
 		if (width <= 0 || height <= 0
 				|| passable == null || passable.length != width * height
 				|| layout == null
@@ -115,6 +138,14 @@ public final class BukovLooseLootPlanner {
 		int introductionRadius = raidMode.trainingGround()
 				? TRAINING_INTRODUCTION_RADIUS : INTRODUCTION_RADIUS;
 		Set<Integer> occupied = reservedCells(layout, entranceCell);
+		if (optionalReservedCell >= 0) {
+			if (optionalReservedCell >= passable.length
+					|| !passable[optionalReservedCell]) {
+				throw new IllegalArgumentException(
+						"optional reserved cell must be passable");
+			}
+			occupied.add(optionalReservedCell);
+		}
 		List<Candidate> introductionCandidates = new ArrayList<>();
 		List<Candidate> candidates = new ArrayList<>();
 		for (int cell = 0; cell < passable.length; cell++) {
@@ -273,7 +304,8 @@ public final class BukovLooseLootPlanner {
 				level.passable,
 				level.raidLayout(),
 				level.entrance(),
-				level.raidMode());
+				level.raidMode(),
+				level.semanticCell("scrap_compactor"));
 		for (Placement placement : placements) {
 			Heap heap = level.drop(item(placement.kind), placement.cell);
 			heap.type = Heap.Type.HEAP;

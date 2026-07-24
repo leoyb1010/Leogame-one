@@ -33,6 +33,9 @@ public class BukovHubVisualBoundaryGuardTest {
 		assertTrue(source.contains("清空配装"));
 		assertTrue(source.contains("确认出击"));
 		assertTrue(source.contains("DeploymentConfirmWindow"));
+		assertTrue(source.contains("FilterCycleButton"));
+		assertTrue(source.contains("item.rarity.colorToken"));
+		assertTrue(source.contains("item.comparisonLabel()"));
 		assertTrue(viewModel.contains("主武器"));
 		assertTrue(viewModel.contains("弹药"));
 		assertTrue(viewModel.contains("医疗"));

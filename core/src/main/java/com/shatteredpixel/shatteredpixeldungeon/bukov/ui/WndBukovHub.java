@@ -44,23 +44,31 @@ public final class WndBukovHub extends Window {
 	private final BukovHubController controller;
 	private final Callback deploy;
 	private final BukovHubViewModel viewModel;
+	private final BukovHubViewModel.InventoryFilter inventoryFilter;
+	private final List<BukovHubViewModel.ItemRow> inventoryItems;
 	private final BukovHubFocusModel focus;
 	private final BukovUiTokens tokens;
 	private final List<LoadoutRow> itemRows = new ArrayList<>();
 	private final List<TacticalButton> actionButtons = new ArrayList<>();
 	private ScrollPane itemScroll;
 	private ModeCycleButton modeButton;
+	private FilterCycleButton filterButton;
 	private final BukovFocusRepeater focusRepeater =
 			new BukovFocusRepeater();
 
 	public WndBukovHub(BukovHubController controller, Callback deploy) {
-		this(controller, deploy, 0);
+		this(
+				controller,
+				deploy,
+				0,
+				BukovHubViewModel.InventoryFilter.ALL);
 	}
 
 	private WndBukovHub(
 			BukovHubController controller,
 			Callback deploy,
-			int restoredFocus) {
+			int restoredFocus,
+			BukovHubViewModel.InventoryFilter inventoryFilter) {
 		super(0, 0, new NinePatch(
 				TextureCache.createSolid(
 						BukovUiTokens.loadDefault().colorWithAlpha(
@@ -68,14 +76,16 @@ public final class WndBukovHub extends Window {
 		if (controller == null) {
 			throw new IllegalArgumentException("controller is required");
 		}
-		if (deploy == null) {
-			throw new IllegalArgumentException("deploy callback is required");
+		if (deploy == null || inventoryFilter == null) {
+			throw new IllegalArgumentException(
+					"deploy callback and inventory filter are required");
 		}
 		this.controller = controller;
 		this.deploy = deploy;
+		this.inventoryFilter = inventoryFilter;
 		viewModel = controller.viewModel();
-		focus = new BukovHubFocusModel(
-				viewModel.canEditLoadout ? viewModel.stashItems.size() : 0);
+		inventoryItems = viewModel.inventoryItems(inventoryFilter);
+		focus = new BukovHubFocusModel(inventoryItems.size());
 		focus.focus(restoredFocus);
 		tokens = BukovUiTokens.loadDefault();
 
@@ -179,14 +189,26 @@ public final class WndBukovHub extends Window {
 		add(modeSummary);
 		y += 8;
 
+		float filterWidth = PixelScene.landscape() ? 70f : 58f;
 		RenderedTextBlock stashLabel = text(
 				viewModel.activeRaid
-						? "本次行动携带  ·  配装已由检查点锁定"
-						: "仓库物资  ·  点击加入或移出配装",
+						? "本次行动携带"
+						: "仓库物资 · 点击加入配装",
 				7,
 				tokens.color("text.secondary"));
-		stashLabel.setRect(MARGIN, y, windowWidth - MARGIN * 2, 9);
+		stashLabel.setRect(
+				MARGIN,
+				y,
+				windowWidth - MARGIN * 2 - filterWidth - GAP,
+				9);
 		add(stashLabel);
+		filterButton = new FilterCycleButton();
+		filterButton.setRect(
+				windowWidth - MARGIN - filterWidth,
+				y,
+				filterWidth,
+				9);
+		add(filterButton);
 		y += 10;
 
 		float listHeight = inventoryViewportHeight(
@@ -397,6 +419,20 @@ public final class WndBukovHub extends Window {
 		}
 	}
 
+	private void cycleInventoryFilter() {
+		BukovHubViewModel.InventoryFilter next =
+				inventoryFilter.next();
+		int nextFilterFocus =
+				viewModel.inventoryItems(next).size() + 1;
+		hide();
+		ShatteredPixelDungeon.scene().addToFront(
+				new WndBukovHub(
+						controller,
+						deploy,
+						nextFilterFocus,
+						next));
+	}
+
 	private void activateAction(int action) {
 		if (!actionEnabled(action)) {
 			return;
@@ -461,7 +497,8 @@ public final class WndBukovHub extends Window {
 								new WndBukovHub(
 										controller,
 										deploy,
-										restoredFocus))));
+										restoredFocus,
+										inventoryFilter))));
 	}
 
 	private void confirmDeployment() {
@@ -478,7 +515,11 @@ public final class WndBukovHub extends Window {
 		int restoredFocus = focus.index();
 		hide();
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndBukovHub(controller, deploy, restoredFocus));
+				new WndBukovHub(
+						controller,
+						deploy,
+						restoredFocus,
+						inventoryFilter));
 	}
 
 	private void showError(String title, Throwable error) {
@@ -530,12 +571,14 @@ public final class WndBukovHub extends Window {
 	private void activateFocused() {
 		if (focus.itemFocused()) {
 			BukovHubViewModel.ItemRow item =
-					viewModel.stashItems.get(focus.itemIndex());
+					inventoryItems.get(focus.itemIndex());
 			if (item.deployable) {
 				toggle(item.itemUid);
 			}
 		} else if (focus.modeFocused()) {
 			cycleRaidMode();
+		} else if (focus.filterFocused()) {
+			cycleInventoryFilter();
 		} else {
 			activateAction(focus.actionIndex());
 		}
@@ -552,6 +595,9 @@ public final class WndBukovHub extends Window {
 		}
 		if (modeButton != null) {
 			modeButton.setFocused(focus.modeFocused());
+		}
+		if (filterButton != null) {
+			filterButton.setFocused(focus.filterFocused());
 		}
 		if (focus.itemFocused() && itemScroll != null) {
 			float rowY = focus.itemIndex() * ROW_HEIGHT;
@@ -699,29 +745,82 @@ public final class WndBukovHub extends Window {
 	private final class InventoryList extends Component {
 
 		private InventoryList(float listWidth) {
-			int rows = Math.max(1, viewModel.stashItems.size());
+			int rows = Math.max(1, inventoryItems.size());
 			setSize(listWidth, rows * ROW_HEIGHT);
 			ColorBlock surface = new ColorBlock(
 					listWidth,
 					height(),
 					tokens.color("panel.surface"));
 			addToBack(surface);
-			if (viewModel.stashItems.isEmpty()) {
+			if (inventoryItems.isEmpty()) {
 				RenderedTextBlock empty = text(
-						"仓库为空 · 完成撤离可带回物资",
+						viewModel.stashItems.isEmpty()
+								? "仓库为空 · 完成撤离可带回物资"
+								: inventoryFilter.label + "分类暂无物资",
 						7,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 4, listWidth - 8, ROW_HEIGHT - 4);
 				add(empty);
 			} else {
-				for (int i = 0; i < viewModel.stashItems.size(); i++) {
+				for (int i = 0; i < inventoryItems.size(); i++) {
 					LoadoutRow row = new LoadoutRow(
-							viewModel.stashItems.get(i));
+							inventoryItems.get(i));
 					row.setRect(0, i * ROW_HEIGHT, listWidth, ROW_HEIGHT - 1);
 					itemRows.add(row);
 					add(row);
 				}
 			}
+		}
+	}
+
+	private final class FilterCycleButton extends Button {
+
+		private final ColorBlock surface;
+		private final ColorBlock edge;
+		private final RenderedTextBlock label;
+
+		private FilterCycleButton() {
+			surface = new ColorBlock(
+					1,
+					1,
+					tokens.colorWithAlpha("accent.interact", 28));
+			addToBack(surface);
+			edge = new ColorBlock(
+					1, 1, tokens.color("panel.border"));
+			add(edge);
+			label = text(
+					"筛选 " + viewModel.inventoryFilterSummary(
+							inventoryFilter),
+					6,
+					tokens.color("text.secondary"));
+			label.align(RenderedTextBlock.CENTER_ALIGN);
+			add(label);
+		}
+
+		@Override
+		protected void onClick() {
+			cycleInventoryFilter();
+		}
+
+		private void setFocused(boolean focused) {
+			edge.hardlight(tokens.color(
+					focused ? "accent.interact" : "panel.border"));
+			surface.alpha(focused ? 0.34f : 0.15f);
+			label.hardlight(tokens.color(
+					focused ? "accent.interact" : "text.secondary"));
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+			surface.x = x;
+			surface.y = y;
+			surface.size(width, height);
+			edge.x = x;
+			edge.y = y + height - 1;
+			edge.size(width, 1);
+			label.maxWidth(Math.max(1, (int) width - 2));
+			center(label, x + 1, y, width - 2, height);
 		}
 	}
 
@@ -788,6 +887,7 @@ public final class WndBukovHub extends Window {
 		private final ColorBlock selectedSurface;
 		private final ColorBlock selected;
 		private final ColorBlock focusEdge;
+		private final ColorBlock rarityEdge;
 		private final ColorBlock divider;
 		private final RenderedTextBlock category;
 		private final RenderedTextBlock name;
@@ -815,13 +915,20 @@ public final class WndBukovHub extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
+			rarityEdge = new ColorBlock(
+					1,
+					1,
+					tokens.color(item.rarity.colorToken));
+			add(rarityEdge);
 			divider = new ColorBlock(
 					1,
 					1,
 					tokens.colorWithAlpha("panel.border", 135));
 			add(divider);
-			category = text(item.slot.code, 6,
-					tokens.color("text.secondary"));
+			category = text(
+					item.slot.label + "/" + item.rarity.label,
+					6,
+					tokens.color(item.rarity.colorToken));
 			add(category);
 			name = text(
 					compact(item.label, 15) + " ×" + item.quantity,
@@ -833,8 +940,9 @@ public final class WndBukovHub extends Window {
 							: tokens.color("text.secondary"));
 			add(name);
 			metrics = text(
-					BukovHubViewModel.formatWeight(item.weight)
-							+ "kg  ·  " + item.value,
+					compact(
+							item.value + " · " + item.comparisonLabel(),
+							PixelScene.landscape() ? 20 : 13),
 					6,
 					!item.deployable
 							? tokens.color("text.disabled")
@@ -882,6 +990,9 @@ public final class WndBukovHub extends Window {
 			focusEdge.x = x;
 			focusEdge.y = y + height - 1;
 			focusEdge.size(width, 2);
+			rarityEdge.x = x;
+			rarityEdge.y = y;
+			rarityEdge.size(width, 1);
 			divider.x = x + 4;
 			divider.y = y + height - 1;
 			divider.size(width - 8, 1);
@@ -889,8 +1000,8 @@ public final class WndBukovHub extends Window {
 			float metricsX = x + width - metrics.width() - 3;
 			name.maxWidth(Math.max(
 					1,
-					(int) (metricsX - (x + 31) - 2)));
-			name.setPos(x + 31, y + 3);
+					(int) (metricsX - (x + 43) - 2)));
+			name.setPos(x + 43, y + 3);
 			metrics.setPos(metricsX, y + 4);
 		}
 	}

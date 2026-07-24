@@ -14,6 +14,14 @@ public final class InputFrame {
 	public boolean dropPressed;
 	public boolean backpackPressed;
 	public float aimAssistScale;
+	/**
+	 * Presentation-only distance requested by the active aiming device.
+	 *
+	 * The realtime simulation consumes {@link #aim}, while the camera may read
+	 * this value to frame the space in front of the operator. Keeping the value
+	 * in tiles makes the input contract independent from render resolution.
+	 */
+	public float cameraLookAheadTiles;
 
 	public void clearEdges() {
 		firePressed = false;

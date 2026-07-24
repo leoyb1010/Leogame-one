@@ -10,6 +10,7 @@ public final class RealtimeCameraFollowStandaloneTest {
 		staysStillInsideDeadZone();
 		tracksAcrossManyScreens();
 		convergesNearlyEquallyAtDifferentFrameRates();
+		reachesDeviceSpecificAimLookAheadAndReturnsToCenter();
 		System.out.println("PASS: Bukov realtime camera follow");
 	}
 
@@ -52,6 +53,36 @@ public final class RealtimeCameraFollowStandaloneTest {
 			follow.update(500f, 0f, 1f / fps);
 		}
 		return follow.centerX();
+	}
+
+	private static void reachesDeviceSpecificAimLookAheadAndReturnsToCenter() {
+		RealtimeCameraFollow follow = new RealtimeCameraFollow(12f, 8f, 8f);
+		follow.reset(100f, 100f);
+
+		for (int frame = 0; frame < 120; frame++) {
+			follow.update(100f, 100f, 3.5f * 16f, 0f, 1f / 60f);
+		}
+		assertNear(156f, follow.centerX(), 0.01f,
+				"mouse look-ahead must reach 3.5 tiles");
+		assertNear(100f, follow.centerY(), 0.01f,
+				"horizontal aim must not move the camera vertically");
+
+		float beforeReturn = follow.centerX();
+		follow.update(100f, 100f, 0f, 0f, 1f / 60f);
+		if (!(follow.centerX() < beforeReturn && follow.centerX() > 100f)) {
+			throw new AssertionError("released aim must begin a smooth return");
+		}
+		for (int frame = 0; frame < 120; frame++) {
+			follow.update(100f, 100f, 0f, 0f, 1f / 60f);
+		}
+		assertNear(100f, follow.centerX(), 0.01f,
+				"released aim must return exactly to tracked center");
+
+		for (int frame = 0; frame < 120; frame++) {
+			follow.update(100f, 100f, 0f, -2.5f * 16f, 1f / 60f);
+		}
+		assertNear(60f, follow.centerY(), 0.01f,
+				"controller and touch look-ahead must reach 2.5 tiles");
 	}
 
 	private static void assertNear(
