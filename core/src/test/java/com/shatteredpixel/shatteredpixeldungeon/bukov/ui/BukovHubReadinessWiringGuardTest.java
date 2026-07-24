@@ -19,8 +19,10 @@ public class BukovHubReadinessWiringGuardTest {
 		assertTrue(source.contains(
 				"state.deploymentReadinessHeadline()"));
 		assertTrue(source.contains(
-				"state.canDeploy\n"
-						+ "\t\t\t\t\t\t\t\t\t? \"accent.extract\""));
+				"tokens.color(state.canDeploy\n"
+						+ "\t\t\t\t\t\t? \"accent.extract\""));
+		assertTrue(source.contains(
+				"readiness.setPos(innerX, modeCard.bottom() + uiGap);"));
 		assertTrue(source.contains("\"hub.button_confirm\""));
 		assertTrue(source.contains("\"hub.button_prepare\""));
 		assertTrue(source.contains(

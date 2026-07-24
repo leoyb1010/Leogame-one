@@ -148,8 +148,8 @@ public final class BukovHubScene extends PixelScene {
 		float footerHeight = footerButtonHeight * 2f + 3f;
 		float availableContentHeight = Math.max(
 				58f,
-				top + usableHeight - contentTop - footerHeight);
-		float contentHeight = wide
+				top + usableHeight - contentTop - footerHeight - uiGap);
+		float contentHeight = wide && DeviceCompat.isDesktop()
 				? Math.min(145f, availableContentHeight)
 				: availableContentHeight;
 		float leftWidth = wide
@@ -272,6 +272,9 @@ public final class BukovHubScene extends PixelScene {
 				state.activeRaid ? "accent.extract" : "text.secondary");
 
 		if (height > 70f) {
+			if (state.activeRaid) {
+				return;
+			}
 			RenderedTextBlock contract = label(
 					isEnglish()
 							? entryMessage("hub.contract_active_generic")
@@ -283,28 +286,9 @@ public final class BukovHubScene extends PixelScene {
 					tokens.color("accent.extract"));
 			contract.maxWidth(Math.max(1, (int) width - 12));
 			contract.setPos(textLeft, textTop + 47f);
-			add(contract);
-
-			RenderedTextBlock loadout = label(
-					state.activeRaid
-							? entryMessage("hub.loadout_locked")
-							: isEnglish()
-									? entryMessage(
-											"hub.loadout_ready_generic")
-									: entryMessage(
-											"hub.loadout_ready",
-											state.deploymentReadinessHeadline(),
-											state.loadoutSummary(),
-											state.selectedCount),
-						BukovVisualContract.FONT_CAPTION,
-					tokens.color(state.activeRaid
-							? "text.disabled"
-							: state.canDeploy
-									? "accent.extract"
-									: "accent.danger"));
-			loadout.maxWidth(Math.max(1, (int) width - 12));
-			loadout.setPos(textLeft, y + height - loadout.height() - 7f);
-			add(loadout);
+			if (contract.bottom() <= y + height - 6f) {
+				add(contract);
+			}
 		}
 	}
 
@@ -318,7 +302,8 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage("hub.panel_deployment"));
 		boolean wide = landscape();
 		float actionHeight = BukovVisualContract.controlHeight(
-				!DeviceCompat.isDesktop());
+				!DeviceCompat.isDesktop(),
+				uiScaleLevel);
 		float innerX = x + 5f;
 		float innerY = y + 18f;
 		float innerWidth = width - 10f;
@@ -351,7 +336,17 @@ public final class BukovHubScene extends PixelScene {
 				cardHeight);
 		add(modeCard);
 
-		float actionsY = modeCard.bottom() + 5f;
+		RenderedTextBlock readiness = label(
+				state.deploymentReadinessHeadline(),
+				BukovVisualContract.FONT_CAPTION,
+				tokens.color(state.canDeploy
+						? "accent.extract"
+						: "accent.danger"));
+		readiness.maxWidth(Math.max(1, (int) innerWidth));
+		readiness.setPos(innerX, modeCard.bottom() + uiGap);
+		add(readiness);
+
+		float actionsY = readiness.bottom() + uiGap;
 		float third = (innerWidth - uiGap * 2f) / 3f;
 		addButton(
 				state.canDeploy
@@ -359,6 +354,7 @@ public final class BukovHubScene extends PixelScene {
 								? "hub.button_enter_training"
 								: "hub.button_confirm")
 						: entryMessage("hub.button_prepare"),
+				ButtonGlyph.DEPLOY,
 				innerX,
 				actionsY,
 				third,
@@ -389,6 +385,7 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage(training
 						? "hub.button_training_area"
 						: "hub.button_switch_area"),
+				ButtonGlyph.AREA,
 				innerX + third + uiGap,
 				actionsY,
 				third,
@@ -413,6 +410,7 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage(training
 						? "hub.button_training_loadout"
 						: "hub.button_manage_loadout"),
+				ButtonGlyph.LOADOUT,
 				innerX + (third + uiGap) * 2f,
 				actionsY,
 				third,
@@ -427,7 +425,8 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 
-		if (!state.canDeploy && actionsY + 27f < y + height) {
+		if (!state.canDeploy
+				&& actionsY + actionHeight + 18f < y + height) {
 			RenderedTextBlock blocked = label(
 					entryMessage(
 							"hub.deployment_check",
@@ -438,7 +437,9 @@ public final class BukovHubScene extends PixelScene {
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.danger"));
 			blocked.maxWidth(Math.max(1, (int) innerWidth));
-			blocked.setPos(innerX, actionsY + 22f);
+			blocked.setPos(
+					innerX,
+					actionsY + actionHeight + uiGap);
 			add(blocked);
 		}
 	}
@@ -454,7 +455,8 @@ public final class BukovHubScene extends PixelScene {
 		float innerX = x + 6f;
 		float innerY = y + 20f;
 		float actionHeight = BukovVisualContract.controlHeight(
-				!DeviceCompat.isDesktop());
+				!DeviceCompat.isDesktop(),
+				uiScaleLevel);
 		RenderedTextBlock mode = label(
 				localizedModeName(controller.selectedRaidMode()),
 				BukovVisualContract.FONT_SECTION,
@@ -465,7 +467,7 @@ public final class BukovHubScene extends PixelScene {
 		int elapsed = Math.max(0, (int)state.activeElapsedSeconds);
 		RenderedTextBlock summary = label(
 				entryMessage(
-						"hub.active_summary",
+						"hub.active_summary_compact",
 						elapsed / 60,
 						elapsed % 60),
 				BukovVisualContract.FONT_CAPTION,
@@ -478,6 +480,7 @@ public final class BukovHubScene extends PixelScene {
 		float half = (width - 12f - uiGap) / 2f;
 		addButton(
 				entryMessage("hub.button_continue"),
+				ButtonGlyph.CONTINUE,
 				innerX,
 				actionY,
 				half,
@@ -493,6 +496,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_abandon"),
+				ButtonGlyph.ABANDON,
 				innerX + half + uiGap,
 				actionY,
 				half,
@@ -519,6 +523,7 @@ public final class BukovHubScene extends PixelScene {
 		float buttonHeight = (height - gap) / 2f;
 		addButton(
 				entryMessage("hub.button_contracts"),
+				ButtonGlyph.CONTRACTS,
 				x,
 				y,
 				buttonWidth,
@@ -535,6 +540,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_insurance"),
+				ButtonGlyph.INSURANCE,
 				x + buttonWidth + gap,
 				y,
 				buttonWidth,
@@ -551,6 +557,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_firearms"),
+				ButtonGlyph.FIREARMS,
 				x + (buttonWidth + gap) * 2f,
 				y,
 				buttonWidth,
@@ -569,6 +576,7 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage(state.activeRaid
 						? "hub.button_trade_locked"
 						: "hub.button_vendor"),
+				ButtonGlyph.VENDOR,
 				x,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -584,6 +592,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_settings"),
+				ButtonGlyph.SETTINGS,
 				x + buttonWidth + gap,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -599,6 +608,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_title"),
+				ButtonGlyph.TITLE,
 				x + (buttonWidth + gap) * 2f,
 				y + buttonHeight + gap,
 				buttonWidth,
@@ -672,6 +682,7 @@ public final class BukovHubScene extends PixelScene {
 
 	private void addButton(
 			String text,
+			ButtonGlyph glyph,
 			float x,
 			float y,
 			float width,
@@ -682,6 +693,7 @@ public final class BukovHubScene extends PixelScene {
 			Callback callback) {
 		TacticalButton button = new TacticalButton(
 				text,
+				glyph,
 				tokens.color(accentToken),
 				enabled,
 				action,
@@ -987,12 +999,14 @@ public final class BukovHubScene extends PixelScene {
 		private final ColorBlock edge;
 		private final ColorBlock lowerRule;
 		private final RenderedTextBlock text;
+		private final Image icon;
 		private final boolean enabled;
 		private final GameAction action;
 		private final Callback callback;
 
 		private TacticalButton(
 				String value,
+				ButtonGlyph glyph,
 				int accent,
 				boolean enabled,
 				GameAction action,
@@ -1025,11 +1039,17 @@ public final class BukovHubScene extends PixelScene {
 			add(lowerRule);
 			text = label(
 					value,
-					BukovVisualContract.FONT_BODY,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color(enabled
 							? "text.primary" : "text.disabled"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
+			icon = glyph.image(
+					enabled ? accent : tokens.color("text.disabled"));
+			icon.hardlight(
+					enabled ? accent : tokens.color("text.disabled"));
+			icon.alpha(enabled ? 1f : 0.48f);
+			add(icon);
 		}
 
 		@Override
@@ -1051,12 +1071,14 @@ public final class BukovHubScene extends PixelScene {
 			}
 			surface.visible = false;
 			pressed.visible = true;
+			layout();
 		}
 
 		@Override
 		protected void onPointerUp() {
 			surface.visible = true;
 			pressed.visible = false;
+			layout();
 		}
 
 		@Override
@@ -1079,10 +1101,82 @@ public final class BukovHubScene extends PixelScene {
 			lowerRule.x = x;
 			lowerRule.y = y + height - 1f;
 			lowerRule.size(width, 1f);
-			text.maxWidth(Math.max(1, (int) width - 8));
+			float iconSide = Math.max(
+					8f, Math.min(14f, height - 8f));
+			float iconScale = iconSide / BukovUiAssets.TILE_SIZE;
+			icon.scale.set(iconScale);
+			float textWidth = Math.max(
+					1f, width - iconSide - 13f);
+			text.maxWidth(Math.max(1, (int) textWidth));
+			float groupWidth = iconSide + 4f + text.width();
+			float groupLeft = x + (width - groupWidth) / 2f;
+			icon.x = PixelScene.align(groupLeft);
+			icon.y = PixelScene.align(
+					y + (height - iconSide) / 2f
+							+ (pressed.visible ? 1f : 0f));
 			text.setPos(
-					x + (width - text.width()) / 2f,
+					icon.x + iconSide + 4f,
 					y + (height - text.height()) / 2f);
+		}
+	}
+
+	private enum ButtonGlyph {
+		DEPLOY,
+		AREA,
+		LOADOUT,
+		CONTINUE,
+		ABANDON,
+		CONTRACTS,
+		INSURANCE,
+		FIREARMS,
+		VENDOR,
+		SETTINGS,
+		TITLE;
+
+		private Image image(int fallbackColor) {
+			switch (this) {
+				case DEPLOY:
+				case CONTINUE:
+					return BukovUiAssets.icon(
+							BukovUiAssets.StatusIcon.ACTION,
+							fallbackColor);
+				case AREA:
+					return BukovUiAssets.hud(
+							BukovUiAssets.HudElement.OBJECTIVE,
+							fallbackColor);
+				case LOADOUT:
+				case VENDOR:
+					return BukovUiAssets.icon(
+							BukovUiAssets.StatusIcon.LOOT,
+							fallbackColor);
+				case ABANDON:
+					return BukovUiAssets.icon(
+							BukovUiAssets.StatusIcon.DANGER,
+							fallbackColor);
+				case CONTRACTS:
+					return BukovUiAssets.hud(
+							BukovUiAssets.HudElement.OBJECTIVE,
+							fallbackColor);
+				case INSURANCE:
+					return BukovUiAssets.hud(
+							BukovUiAssets.HudElement.ARMOR,
+							fallbackColor);
+				case FIREARMS:
+					return BukovUiAssets.touchGlyph(
+							BukovUiAssets.TouchGlyph.AIM_FIRE,
+							fallbackColor);
+				case SETTINGS:
+					return BukovUiAssets.touchGlyph(
+							BukovUiAssets.TouchGlyph.PAUSE,
+							fallbackColor);
+				case TITLE:
+					return BukovUiAssets.icon(
+							BukovUiAssets.StatusIcon.EXTRACT,
+							fallbackColor);
+				default:
+					throw new IllegalStateException(
+							"Unsupported button glyph: " + this);
+			}
 		}
 	}
 }

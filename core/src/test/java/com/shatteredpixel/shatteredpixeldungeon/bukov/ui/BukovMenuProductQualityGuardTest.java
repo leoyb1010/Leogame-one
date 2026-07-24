@@ -49,7 +49,7 @@ public class BukovMenuProductQualityGuardTest {
 	}
 
 	@Test
-	public void pauseAndBackpackExposePrimaryAndDestructiveStates()
+	public void pauseExposesIconActionsAndBackpackKeepsDestructiveState()
 			throws Exception {
 		String pause = source("WndBukovPause.java");
 		String backpack = source("WndBukovBackpack.java");
@@ -58,7 +58,14 @@ public class BukovMenuProductQualityGuardTest {
 				"BukovMessages.get(\"bukov.raid.pause.resume_code\")"));
 		assertTrue(pause.contains(
 				"BukovMessages.get(\"bukov.raid.pause.leave_code\")"));
-		assertTrue(pause.contains("\"accent.danger\""));
+		assertTrue(pause.contains(
+				"extends BukovIconLabelButton"));
+		assertTrue(pause.contains(
+				"BukovTouchIcon.Glyph.MOVEMENT"));
+		assertTrue(pause.contains(
+				"BukovTouchIcon.Glyph.PAUSE"));
+		assertTrue(pause.contains(
+				"BukovTouchIcon.Glyph.BACKPACK"));
 		assertTrue(pause.contains("BukovWindowLayout.safeWidth"));
 		assertTrue(backpack.contains("detailSurface"));
 		assertTrue(backpack.contains("stateSurface"));

@@ -1,9 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
-import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.watabou.input.KeyEvent;
@@ -25,7 +25,6 @@ public final class WndBukovPause extends Window {
 
 	private static final int WIDTH_P = 166;
 	private static final int WIDTH_L = 190;
-	private static final int BUTTON_HEIGHT = 22;
 	private static final int GAP = 3;
 	private static final int MARGIN = 5;
 	private static final int CONTINUE = 0;
@@ -39,6 +38,7 @@ public final class WndBukovPause extends Window {
 	private final ActionButton[] buttons = new ActionButton[3];
 	private final BukovFocusRepeater focusRepeater =
 			new BukovFocusRepeater();
+	private final int buttonHeight;
 	private int y;
 
 	public WndBukovPause(SaveAndReturn saveAndReturn) {
@@ -48,6 +48,9 @@ public final class WndBukovPause extends Window {
 								"ink.background", 255)), 0));
 		this.saveAndReturn = saveAndReturn;
 		tokens = BukovUiTokens.loadDefault();
+		buttonHeight = Math.round(
+				BukovVisualContract.controlHeight(
+						true, SPDSettings.bukovUiScale()));
 		int windowWidth = BukovWindowLayout.safeWidth(
 				PixelScene.landscape() ? WIDTH_L : WIDTH_P);
 
@@ -98,14 +101,17 @@ public final class WndBukovPause extends Window {
 		y += 28;
 
 		addButton(new ActionButton(
+				BukovTouchIcon.Glyph.MOVEMENT,
 				BukovMessages.get("bukov.raid.pause.resume_label"),
 				BukovMessages.get("bukov.raid.pause.resume_code"),
 				CONTINUE), windowWidth);
 		addButton(new ActionButton(
+				BukovTouchIcon.Glyph.PAUSE,
 				BukovMessages.get("bukov.raid.pause.settings_label"),
 				BukovMessages.get("bukov.raid.pause.settings_code"),
 				SETTINGS), windowWidth);
 		addButton(new ActionButton(
+				BukovTouchIcon.Glyph.BACKPACK,
 				BukovMessages.get("bukov.raid.pause.leave_label"),
 				BukovMessages.get("bukov.raid.pause.leave_code"),
 				SAVE_AND_RETURN),
@@ -117,9 +123,9 @@ public final class WndBukovPause extends Window {
 
 	private void addButton(ActionButton button, int windowWidth) {
 		add(button);
-		button.setRect(MARGIN, y, windowWidth - MARGIN * 2, BUTTON_HEIGHT);
+		button.setRect(MARGIN, y, windowWidth - MARGIN * 2, buttonHeight);
 		buttons[button.action] = button;
-		y += BUTTON_HEIGHT + GAP;
+		y += buttonHeight + GAP;
 		updateFocus();
 	}
 
@@ -163,50 +169,24 @@ public final class WndBukovPause extends Window {
 		}
 	}
 
-	private final class ActionButton extends Button {
+	private final class ActionButton extends BukovIconLabelButton {
 
 		private final int action;
-		private final ColorBlock background;
-		private final ColorBlock edge;
-		private final ColorBlock focusEdge;
-		private final RenderedTextBlock text;
 		private final RenderedTextBlock code;
 
-		private ActionButton(String label, String codeLabel, int action) {
+		private ActionButton(
+				BukovTouchIcon.Glyph glyph,
+				String label,
+				String codeLabel,
+				int action) {
+			super(glyph, label, true);
 			this.action = action;
-			background = new ColorBlock(
-					1,
-					1,
-					tokens.colorWithAlpha(
-							action == CONTINUE
-									? "accent.extract"
-									: "panel.surface",
-							action == CONTINUE ? 42 : 255));
-			addToBack(background);
-			edge = new ColorBlock(1, 1,
-					action == SAVE_AND_RETURN
-							? tokens.color("accent.danger")
-							: tokens.color("accent.extract"));
-			add(edge);
-			focusEdge = new ColorBlock(
-					1, 1, tokens.color("accent.interact"));
-			focusEdge.visible = false;
-			add(focusEdge);
-			text = PixelScene.renderTextBlock(
-					label,
-					tokens.scaledTypographyPx(
-							BukovVisualContract.FONT_BODY));
-			text.hardlight(action == SAVE_AND_RETURN
-					? tokens.color("accent.danger")
-					: tokens.color("text.primary"));
-			add(text);
+			contentRightInset(54f);
 			code = PixelScene.renderTextBlock(
 					codeLabel,
 					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_CAPTION));
-			code.hardlight(action == SAVE_AND_RETURN
-					? tokens.color("accent.danger")
-					: tokens.color("text.secondary"));
+			code.hardlight(tokens.color("text.secondary"));
 			code.align(RenderedTextBlock.RIGHT_ALIGN);
 			add(code);
 		}
@@ -237,42 +217,25 @@ public final class WndBukovPause extends Window {
 			}
 		}
 
-		private void setFocused(boolean focused) {
-			focusEdge.visible = focused;
-			text.hardlight(action == SAVE_AND_RETURN
-					? tokens.color("accent.danger")
-					: focused
-					? tokens.color("accent.interact")
-					: tokens.color("text.primary"));
+		@Override
+		public void setFocused(boolean focused) {
+			super.setFocused(focused);
 			code.hardlight(focused
 					? tokens.color("accent.interact")
-					: action == SAVE_AND_RETURN
-					? tokens.color("accent.danger")
 					: tokens.color("text.secondary"));
 		}
 
 		@Override
 		protected void layout() {
 			super.layout();
-			background.x = x;
-			background.y = y;
-			background.size(width, height);
-			edge.x = x;
-			edge.y = y;
-			edge.size(2, height);
-			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, focusedHeight());
-			text.setRect(x + 7, y + (height - 10) / 2f, width - 58, 10);
+			if (code == null) {
+				return;
+			}
 			code.setRect(
 					x + width - 53,
 					y + (height - 7) / 2f,
 					47,
 					7);
-		}
-
-		private float focusedHeight() {
-			return focus.index() == action ? 2 : 1;
 		}
 	}
 }
