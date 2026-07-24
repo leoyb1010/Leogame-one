@@ -318,10 +318,12 @@ public class GameScene extends PixelScene {
 		SPDSettings.lastClass(Dungeon.hero.heroClass.ordinal());
 		
 		super.create();
-		Camera.main.zoom(GameMath.gate(
-				minZoom,
-				defaultZoom + SPDSettings.zoom(),
-				maxZoom));
+		Camera.main.zoom(BukovMode.active()
+				? Math.round(defaultZoom)
+				: GameMath.gate(
+						minZoom,
+						defaultZoom + SPDSettings.zoom(),
+						maxZoom));
 		// The right stick is a realtime aiming input in Bukov. Letting the
 		// legacy controller cursor edge-scroll at the same time fights the
 		// action camera and can leave the raid apparently stuck on one screen.

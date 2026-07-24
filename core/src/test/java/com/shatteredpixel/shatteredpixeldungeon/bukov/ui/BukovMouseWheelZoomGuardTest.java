@@ -23,5 +23,14 @@ public class BukovMouseWheelZoomGuardTest {
 		int guard = text.indexOf("if (BukovMode.active())", scroll);
 		int zoom = text.indexOf("float diff = event.amount", scroll);
 		assertTrue(scroll >= 0 && guard > scroll && zoom > guard);
+
+		Path sceneSource = Paths.get(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
+		String scene = new String(
+				Files.readAllBytes(sceneSource),
+				StandardCharsets.UTF_8);
+		assertTrue(scene.contains(
+				"Camera.main.zoom(BukovMode.active()"
+						+ "\n\t\t\t\t? Math.round(defaultZoom)"));
 	}
 }
