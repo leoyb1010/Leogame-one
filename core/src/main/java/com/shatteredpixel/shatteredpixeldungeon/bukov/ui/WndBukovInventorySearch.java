@@ -50,7 +50,7 @@ public final class WndBukovInventorySearch extends Window {
 		RenderedTextBlock title = PixelScene.renderTextBlock(
 				BukovMessages.get(
 						"bukov.economy.search.title"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_SECTION));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 4);
@@ -59,13 +59,13 @@ public final class WndBukovInventorySearch extends Window {
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
 				BukovMessages.get(
 						"bukov.economy.search.hint"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
 		hint.setPos(MARGIN, 16);
 		add(hint);
 
-		int baseTextSize = tokens.typographyPx(
+		int baseTextSize = tokens.scaledTypographyPx(
 				BukovVisualContract.FONT_BODY);
 		int textSize = Math.max(
 				baseTextSize,
@@ -190,7 +190,7 @@ public final class WndBukovInventorySearch extends Window {
 			add(edge);
 			label = PixelScene.renderTextBlock(
 					value,
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);

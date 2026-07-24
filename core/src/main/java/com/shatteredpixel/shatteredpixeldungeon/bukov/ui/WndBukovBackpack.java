@@ -466,7 +466,7 @@ public final class WndBukovBackpack extends Window {
 	private RenderedTextBlock text(
 			String value, String typography, int color) {
 		RenderedTextBlock result = PixelScene.renderTextBlock(
-				value, tokens.typographyPx(typography));
+				value, tokens.scaledTypographyPx(typography));
 		result.maxWidth(width - MARGIN * 2);
 		result.hardlight(color);
 		return result;

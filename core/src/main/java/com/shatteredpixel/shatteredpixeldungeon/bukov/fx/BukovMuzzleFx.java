@@ -25,6 +25,7 @@ public final class BukovMuzzleFx extends Group {
 	private final FlashRay lower;
 	private final FlashRay upper;
 	private float age;
+	private float flashScale = 1f;
 
 	public BukovMuzzleFx() {
 		this(DEFAULT_TOKENS);
@@ -64,16 +65,37 @@ public final class BukovMuzzleFx extends Group {
 			float directionY,
 			boolean hostile,
 			float intensity) {
+		return reset(
+				muzzleX,
+				muzzleY,
+				directionX,
+				directionY,
+				hostile,
+				intensity,
+				1f);
+	}
+
+	boolean reset(
+			float muzzleX,
+			float muzzleY,
+			float directionX,
+			float directionY,
+			boolean hostile,
+			float intensity,
+			float flashScale) {
 		float directionLength = (float) Math.sqrt(
 				directionX * directionX + directionY * directionY);
 		if (directionLength <= 0.01f
 				|| Float.isNaN(directionLength)
 				|| Float.isInfinite(directionLength)
 				|| Float.isNaN(muzzleX) || Float.isInfinite(muzzleX)
-				|| Float.isNaN(muzzleY) || Float.isInfinite(muzzleY)) {
+				|| Float.isNaN(muzzleY) || Float.isInfinite(muzzleY)
+				|| Float.isNaN(flashScale)
+				|| Float.isInfinite(flashScale)) {
 			retire();
 			return false;
 		}
+		this.flashScale = Math.max(0f, Math.min(1f, flashScale));
 		float angle = (float) Math.toDegrees(Math.atan2(directionY, directionX));
 		float strength = Math.max(0.45f, Math.min(1.6f, intensity));
 		int color = hostile ? hostileColor : friendlyColor;
@@ -91,7 +113,8 @@ public final class BukovMuzzleFx extends Group {
 	public void update() {
 		super.update();
 		age += Game.elapsed;
-		float alpha = BukovTracerFx.alphaAt(age, duration);
+		float alpha = BukovTracerFx.alphaAt(age, duration)
+				* flashScale;
 		for (int index = 0; index < length; index++) {
 			com.watabou.noosa.Gizmo child = members.get(index);
 			if (child instanceof ColorBlock) {

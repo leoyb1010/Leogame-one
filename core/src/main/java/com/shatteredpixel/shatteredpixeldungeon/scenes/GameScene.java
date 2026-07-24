@@ -53,6 +53,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmospherePlaye
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignal;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAudioBusMix;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
@@ -288,7 +289,6 @@ public class GameScene extends PixelScene {
 	private BukovCombatFxViewPool bukovCombatFxViews;
 	private BukovExperienceSettings bukovAudioDefaults;
 	private BukovAudioBusMix bukovAudioMix;
-	private BukovUiSoundPlayer bukovUiSounds;
 	private BukovAtmosphereController bukovAtmosphere;
 	private BukovAtmosphereSignal bukovAtmosphereSignal;
 	private BukovAtmospherePlayer bukovAtmospherePlayer;
@@ -1050,7 +1050,6 @@ public class GameScene extends PixelScene {
 			bukovAudioDefaults = BukovExperienceSettings.defaults(
 					new ExperienceContractRegistry().loadDefault());
 			bukovAudioMix = new BukovAudioBusMix();
-			bukovUiSounds = new BukovUiSoundPlayer();
 			bukovAtmosphere = new BukovAtmosphereController();
 			bukovAtmosphereSignal = new BukovAtmosphereSignal();
 			bukovAtmospherePlayer = new BukovAtmospherePlayer();
@@ -1101,9 +1100,7 @@ public class GameScene extends PixelScene {
 					bukovAudioMix.gain(
 							AudioChannel.AMBIENCE,
 							bukovAtmosphere.combatBlend()));
-			if (bukovUiSounds != null) {
-				bukovUiSounds.update(deltaSeconds);
-			}
+			BukovUiSoundRouter.update(deltaSeconds);
 		}
 
 		private void refreshBukovAudioMix() {
@@ -1130,7 +1127,6 @@ public class GameScene extends PixelScene {
 			bukovAtmospherePlayer = null;
 			bukovAtmosphereSignal = null;
 			bukovAtmosphere = null;
-			bukovUiSounds = null;
 			bukovAudioMix = null;
 			bukovAudioDefaults = null;
 		}
@@ -1138,13 +1134,12 @@ public class GameScene extends PixelScene {
 		public static boolean playBukovUiCue(BukovUiSoundPlayer.Cue cue) {
 			if (scene == null
 					|| !BukovMode.active()
-					|| scene.bukovUiSounds == null
 					|| scene.bukovAudioMix == null
 					|| scene.bukovAtmosphere == null) {
 				return false;
 			}
 			scene.refreshBukovAudioMix();
-			return scene.bukovUiSounds.play(
+			return BukovUiSoundRouter.play(
 					cue,
 					scene.bukovAudioMix.gain(
 							AudioChannel.SFX,

@@ -64,7 +64,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
 				entryMessage("calibration.eyebrow"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN + 1, 3);
@@ -72,7 +72,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
 				entryMessage("calibration.title"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN + 1, 12);
@@ -80,7 +80,7 @@ public final class WndBukovFirstRunCalibration extends Window {
 
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
 				entryMessage("calibration.hint"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
 		hint.setPos(MARGIN + 1, 33);
@@ -182,12 +182,12 @@ public final class WndBukovFirstRunCalibration extends Window {
 			focusRule.visible = false;
 			add(focusRule);
 			label = PixelScene.renderTextBlock(
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
 			value = PixelScene.renderTextBlock(
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			value.align(RenderedTextBlock.RIGHT_ALIGN);
 			value.hardlight(tokens.color(

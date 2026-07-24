@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.Game;
 import com.watabou.utils.PlatformSupport;
@@ -19,7 +20,7 @@ final class BukovWindowLayout {
 				PixelScene.uiCamera.width,
 				insets.left,
 				insets.right,
-				desired);
+				scaledDesired(desired));
 	}
 
 	static int safeHeight(int desired) {
@@ -28,7 +29,13 @@ final class BukovWindowLayout {
 				PixelScene.uiCamera.height,
 				insets.top,
 				insets.bottom,
-				desired);
+				scaledDesired(desired));
+	}
+
+	static int scaledDesired(int desired) {
+		return BukovUiScale.pixels(
+				desired,
+				SPDSettings.bukovUiScale());
 	}
 
 	static int fit(

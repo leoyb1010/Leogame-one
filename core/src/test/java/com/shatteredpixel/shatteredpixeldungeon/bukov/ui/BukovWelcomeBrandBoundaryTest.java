@@ -26,7 +26,9 @@ public class BukovWelcomeBrandBoundaryTest {
 				"TITLE_INDUSTRIAL_PORTRAIT_V2"));
 		assertTrue(welcome.contains("BukovUiTokens.loadDefault()"));
 		assertTrue(welcome.contains("BukovVisualContract"));
-		assertTrue(welcome.contains("Assets.Sounds.Bukov.UI_CONFIRM"));
+		assertTrue(welcome.contains(
+				"BukovUiSoundPlayer.Cue.CONFIRM"));
+		assertTrue(welcome.contains("BukovUiSoundRouter.play("));
 		assertTrue(welcome.contains("Music.INSTANCE.end()"));
 		assertTrue(welcome.contains(
 				"entryMessage(\"welcome.title\")"));
@@ -74,7 +76,9 @@ public class BukovWelcomeBrandBoundaryTest {
 		assertTrue(title.contains(
 				"TITLE_INDUSTRIAL_PORTRAIT_V2"));
 		assertTrue(title.contains("Music.INSTANCE.end()"));
-		assertTrue(title.contains("Assets.Sounds.Bukov.UI_CONFIRM"));
+		assertTrue(title.contains(
+				"BukovUiSoundPlayer.Cue.CONFIRM"));
+		assertTrue(title.contains("BukovUiSoundRouter.play("));
 		assertFalse(title.contains("Assets.Sounds.CLICK"));
 		assertFalse(title.contains("Assets.Music.THEME_"));
 		assertFalse(title.contains("TitleBackground"));

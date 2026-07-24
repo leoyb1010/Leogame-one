@@ -120,7 +120,9 @@ public final class WndBukovSettlement extends Window {
 				viewModel.items.size(),
 				viewModel.value,
 				tokens.motionMs("ritual"),
-				tokens.motionMs("instant"),
+				tokens.motionMs("slow"),
+				tokens.motionMs("slow"),
+				tokens.motionMs("base"),
 				SPDSettings.bukovReduceMotion());
 
 		int width = BukovWindowLayout.safeWidth(
@@ -160,6 +162,7 @@ public final class WndBukovSettlement extends Window {
 				accent);
 		outcomeStampArt.x = width - 54;
 		outcomeStampArt.y = y + 3;
+		outcomeStampArt.originToCenter();
 		outcomeStampArt.alpha(0.48f);
 		add(outcomeStampArt);
 		outcomeStamp = text(
@@ -258,7 +261,7 @@ public final class WndBukovSettlement extends Window {
 	private RenderedTextBlock text(
 			String value, String typography, int color) {
 		RenderedTextBlock result = PixelScene.renderTextBlock(
-				value, tokens.typographyPx(typography));
+				value, tokens.scaledTypographyPx(typography));
 		result.hardlight(color);
 		result.maxWidth(width - 10);
 		return result;
@@ -299,11 +302,11 @@ public final class WndBukovSettlement extends Window {
 	@Override
 	public void update() {
 		super.update();
-		if (!reveal.complete()) {
+		if (!reveal.stampAnimationComplete()) {
 			reveal.advance(Game.elapsed);
 			updateReveal();
-			if (!reveal.complete()) return;
 		}
+		if (!reveal.complete()) return;
 		int delta = focusRepeater.update(
 				ControllerHandler.leftStickPosition.x,
 				ControllerHandler.leftStickPosition.y,
@@ -328,9 +331,12 @@ public final class WndBukovSettlement extends Window {
 		}
 		if (outcomeStamp != null) {
 			outcomeStamp.visible = reveal.stampVisible();
+			outcomeStamp.alpha(reveal.stampAlpha());
 		}
 		if (outcomeStampArt != null) {
 			outcomeStampArt.visible = reveal.stampVisible();
+			outcomeStampArt.alpha(0.48f * reveal.stampAlpha());
+			outcomeStampArt.scale.set(reveal.stampScale());
 		}
 		if (manifest != null) {
 			manifest.reveal(reveal.visibleRows());

@@ -147,7 +147,7 @@ public final class WndBukovRaidModeSelection extends Window {
 	private RenderedTextBlock text(
 			String value, String typography, int color) {
 		RenderedTextBlock result = PixelScene.renderTextBlock(
-				value, tokens.typographyPx(typography));
+				value, tokens.scaledTypographyPx(typography));
 		result.maxWidth(Math.max(1, (int) width - MARGIN * 2));
 		result.hardlight(color);
 		return result;

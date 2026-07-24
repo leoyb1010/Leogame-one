@@ -25,6 +25,7 @@ public final class BukovExplosionFx extends Group {
 	private float centerY;
 	private float strength;
 	private float age;
+	private float flashScale = 1f;
 
 	public BukovExplosionFx() {
 		this(BukovUiTokens.loadDefault());
@@ -56,14 +57,30 @@ public final class BukovExplosionFx extends Group {
 			float explosionY,
 			boolean hostile,
 			float intensity) {
+		return reset(
+				explosionX,
+				explosionY,
+				hostile,
+				intensity,
+				1f);
+	}
+
+	boolean reset(
+			float explosionX,
+			float explosionY,
+			boolean hostile,
+			float intensity,
+			float flashScale) {
 		if (!finite(explosionX) || !finite(explosionY)
-				|| !finite(intensity)) {
+				|| !finite(intensity)
+				|| !finite(flashScale)) {
 			retire();
 			return false;
 		}
 		centerX = explosionX;
 		centerY = explosionY;
 		strength = clamp(intensity, 0.45f, 1.6f);
+		this.flashScale = clamp(flashScale, 0f, 1f);
 		age = 0f;
 		place(0f);
 		revive();
@@ -84,7 +101,7 @@ public final class BukovExplosionFx extends Group {
 	}
 
 	private void place(float progress) {
-		float flash = flashAlphaAt(progress);
+		float flash = flashAlphaAt(progress) * flashScale;
 		float coreSize = (3f + strength * 5f)
 				* (0.55f + progress * 0.9f);
 		core.configure(centerX, centerY, coreSize, flash);

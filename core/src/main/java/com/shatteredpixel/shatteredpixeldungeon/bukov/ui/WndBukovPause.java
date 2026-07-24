@@ -65,7 +65,7 @@ public final class WndBukovPause extends Window {
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
 				BukovMessages.get("bukov.raid.pause.eyebrow"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 4);
@@ -73,7 +73,7 @@ public final class WndBukovPause extends Window {
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
 				BukovMessages.get("bukov.raid.pause.title"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 13);
@@ -90,7 +90,7 @@ public final class WndBukovPause extends Window {
 		RenderedTextBlock status = PixelScene.renderTextBlock(
 				BukovMessages.get(
 						"bukov.raid.pause.checkpoint_status"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		status.hardlight(tokens.color("text.secondary"));
 		status.setRect(MARGIN + 5, y + 4, windowWidth - MARGIN * 2 - 10, 16);
@@ -194,7 +194,7 @@ public final class WndBukovPause extends Window {
 			add(focusEdge);
 			text = PixelScene.renderTextBlock(
 					label,
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			text.hardlight(action == SAVE_AND_RETURN
 					? tokens.color("accent.danger")
@@ -202,7 +202,7 @@ public final class WndBukovPause extends Window {
 			add(text);
 			code = PixelScene.renderTextBlock(
 					codeLabel,
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_CAPTION));
 			code.hardlight(action == SAVE_AND_RETURN
 					? tokens.color("accent.danger")

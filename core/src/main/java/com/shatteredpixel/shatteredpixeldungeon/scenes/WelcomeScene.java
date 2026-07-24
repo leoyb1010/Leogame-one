@@ -25,6 +25,8 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
@@ -41,7 +43,6 @@ import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Music;
-import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.FileUtils;
 import com.watabou.utils.RectF;
 
@@ -299,7 +300,8 @@ public class WelcomeScene extends PixelScene {
 
 		@Override
 		protected void onClick() {
-			Sample.INSTANCE.play(Assets.Sounds.Bukov.UI_CONFIRM);
+			BukovUiSoundRouter.play(
+					BukovUiSoundPlayer.Cue.CONFIRM);
 			enterBukov(brandNewProfile);
 		}
 

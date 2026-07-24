@@ -4,14 +4,18 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
 import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiScale;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovHub;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovRaidModeSelection;
@@ -30,10 +34,10 @@ import com.watabou.gltextures.SmartTexture;
 import com.watabou.input.GameAction;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
+import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Music;
-import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
 import com.watabou.utils.DeviceCompat;
 import com.watabou.utils.RectF;
@@ -55,6 +59,9 @@ public final class BukovHubScene extends PixelScene {
 	private BukovUiTokens tokens;
 	private BukovHubController controller;
 	private BukovHubViewModel state;
+	private int uiScaleLevel;
+	private float uiMargin;
+	private float uiGap;
 
 	@Override
 	public void create() {
@@ -64,6 +71,9 @@ public final class BukovHubScene extends PixelScene {
 		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
 		uiCamera.visible = false;
 		tokens = BukovUiTokens.loadDefault();
+		uiScaleLevel = SPDSettings.bukovUiScale();
+		uiMargin = BukovUiScale.value(MARGIN, uiScaleLevel);
+		uiGap = BukovUiScale.value(GAP, uiScaleLevel);
 
 		try {
 			controller = new BukovHubController(
@@ -77,6 +87,12 @@ public final class BukovHubScene extends PixelScene {
 		fadeIn();
 	}
 
+	@Override
+	public void update() {
+		super.update();
+		BukovUiSoundRouter.update(Game.elapsed);
+	}
+
 	private void build() {
 		final int screenWidth = Camera.main.width;
 		final int screenHeight = Camera.main.height;
@@ -85,12 +101,12 @@ public final class BukovHubScene extends PixelScene {
 		final float safeWidth =
 				screenWidth - insets.left - insets.right;
 		final float usableWidth = BukovVisualContract.contentWidth(
-				safeWidth, wide);
+				safeWidth, wide, uiScaleLevel);
 		final float left = BukovVisualContract.centeredLeft(
 				insets.left, safeWidth, usableWidth);
-		final float top = insets.top + MARGIN;
+		final float top = insets.top + uiMargin;
 		final float usableHeight =
-				screenHeight - insets.top - insets.bottom - MARGIN * 2;
+				screenHeight - insets.top - insets.bottom - uiMargin * 2;
 
 		addBackdrop(screenWidth, screenHeight, wide);
 
@@ -127,7 +143,8 @@ public final class BukovHubScene extends PixelScene {
 
 		float contentTop = status.bottom() + 5f;
 		float footerButtonHeight = BukovVisualContract.controlHeight(
-				!DeviceCompat.isDesktop());
+				!DeviceCompat.isDesktop(),
+				uiScaleLevel);
 		float footerHeight = footerButtonHeight * 2f + 3f;
 		float availableContentHeight = Math.max(
 				58f,
@@ -138,19 +155,19 @@ public final class BukovHubScene extends PixelScene {
 		float leftWidth = wide
 				? Math.max(74f, usableWidth * 0.32f)
 				: usableWidth;
-		float rightLeft = wide ? left + leftWidth + GAP : left;
+		float rightLeft = wide ? left + leftWidth + uiGap : left;
 		float rightWidth = wide
-				? usableWidth - leftWidth - GAP
+				? usableWidth - leftWidth - uiGap
 				: usableWidth;
 		float leftHeight = wide
 				? contentHeight
 				: Math.min(38f, contentHeight * 0.30f);
 		float rightTop = wide
 				? contentTop
-				: contentTop + leftHeight + GAP;
+				: contentTop + leftHeight + uiGap;
 		float rightHeight = wide
 				? contentHeight
-				: contentHeight - leftHeight - GAP;
+				: contentHeight - leftHeight - uiGap;
 
 		buildStatusPanel(left, contentTop, leftWidth, leftHeight);
 		if (state.activeRaid) {
@@ -163,7 +180,7 @@ public final class BukovHubScene extends PixelScene {
 		buildFooter(
 				left,
 				wide
-						? contentTop + contentHeight + GAP
+						? contentTop + contentHeight + uiGap
 						: top + usableHeight - footerHeight,
 				usableWidth,
 				footerHeight,
@@ -335,7 +352,7 @@ public final class BukovHubScene extends PixelScene {
 		add(modeCard);
 
 		float actionsY = modeCard.bottom() + 5f;
-		float third = (innerWidth - GAP * 2f) / 3f;
+		float third = (innerWidth - uiGap * 2f) / 3f;
 		addButton(
 				state.canDeploy
 						? entryMessage(training
@@ -372,7 +389,7 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage(training
 						? "hub.button_training_area"
 						: "hub.button_switch_area"),
-				innerX + third + GAP,
+				innerX + third + uiGap,
 				actionsY,
 				third,
 				actionHeight,
@@ -396,7 +413,7 @@ public final class BukovHubScene extends PixelScene {
 				entryMessage(training
 						? "hub.button_training_loadout"
 						: "hub.button_manage_loadout"),
-				innerX + (third + GAP) * 2f,
+				innerX + (third + uiGap) * 2f,
 				actionsY,
 				third,
 				actionHeight,
@@ -458,7 +475,7 @@ public final class BukovHubScene extends PixelScene {
 		add(summary);
 
 		float actionY = y + height - actionHeight - 6f;
-		float half = (width - 12f - GAP) / 2f;
+		float half = (width - 12f - uiGap) / 2f;
 		addButton(
 				entryMessage("hub.button_continue"),
 				innerX,
@@ -476,7 +493,7 @@ public final class BukovHubScene extends PixelScene {
 				});
 		addButton(
 				entryMessage("hub.button_abandon"),
-				innerX + half + GAP,
+				innerX + half + uiGap,
 				actionY,
 				half,
 				actionHeight,
@@ -676,7 +693,7 @@ public final class BukovHubScene extends PixelScene {
 	private RenderedTextBlock label(
 			String value, String typography, int color) {
 		RenderedTextBlock result = renderTextBlock(
-				value, tokens.typographyPx(typography));
+				value, tokens.scaledTypographyPx(typography));
 		result.hardlight(color);
 		return result;
 	}
@@ -812,8 +829,12 @@ public final class BukovHubScene extends PixelScene {
 			@Override
 			protected void onSelect(int index) {
 				if (index != 1) {
+					BukovUiSoundRouter.play(
+							BukovUiSoundPlayer.Cue.CANCEL);
 					return;
 				}
+				BukovUiSoundRouter.play(
+						BukovUiSoundPlayer.Cue.CONFIRM);
 				try {
 					controller.abandonActiveRaid();
 					Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
@@ -833,6 +854,7 @@ public final class BukovHubScene extends PixelScene {
 
 	private void showError(String title, Throwable error) {
 		ShatteredPixelDungeon.reportException(error);
+		BukovUiSoundRouter.play(BukovUiSoundPlayer.Cue.ERROR);
 		addToFront(new WndMessage(entryMessage(
 				"hub.error_format",
 				title,
@@ -840,6 +862,7 @@ public final class BukovHubScene extends PixelScene {
 	}
 
 	private void buildFailure(Throwable error) {
+		BukovUiSoundRouter.play(BukovUiSoundPlayer.Cue.ERROR);
 		BukovUiTokens tokens = BukovUiTokens.loadDefault();
 		ColorBlock background = new ColorBlock(
 				Camera.main.width,
@@ -918,6 +941,8 @@ public final class BukovHubScene extends PixelScene {
 
 		@Override
 		protected void onClick() {
+			BukovUiSoundRouter.play(
+					BukovUiSoundPlayer.Cue.CONFIRM);
 			activate();
 		}
 
@@ -925,7 +950,6 @@ public final class BukovHubScene extends PixelScene {
 		protected void onPointerDown() {
 			surface.visible = false;
 			pressed.visible = true;
-			Sample.INSTANCE.play(Assets.Sounds.CLICK);
 		}
 
 		@Override
@@ -1011,7 +1035,12 @@ public final class BukovHubScene extends PixelScene {
 		@Override
 		protected void onClick() {
 			if (enabled && callback != null) {
+				BukovUiSoundRouter.play(
+						BukovUiSoundPlayer.Cue.CONFIRM);
 				callback.call();
+			} else {
+				BukovUiSoundRouter.play(
+						BukovUiSoundPlayer.Cue.ERROR);
 			}
 		}
 
@@ -1022,7 +1051,6 @@ public final class BukovHubScene extends PixelScene {
 			}
 			surface.visible = false;
 			pressed.visible = true;
-			Sample.INSTANCE.play(Assets.Sounds.CLICK);
 		}
 
 		@Override

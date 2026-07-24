@@ -17,6 +17,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovAccessibilityPresentation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidSession;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.RaidObjectiveSource;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialHintSource;
@@ -648,7 +649,9 @@ public final class BukovRaidHud extends Component {
 		healthFill.visible = !lowHealth;
 		dangerFill.visible = lowHealth;
 		healthFlash.visible = healthFlashRemaining > 0f;
-		healthFlash.alpha(Math.min(1f, healthFlashRemaining / 0.07f));
+		healthFlash.alpha(BukovAccessibilityPresentation.flashAlpha(
+				Math.min(1f, healthFlashRemaining / 0.07f),
+				SPDSettings.bukovReduceFlashes()));
 		if (lowHealth) {
 			dangerFill.alpha(reduceMotion
 					? 1f

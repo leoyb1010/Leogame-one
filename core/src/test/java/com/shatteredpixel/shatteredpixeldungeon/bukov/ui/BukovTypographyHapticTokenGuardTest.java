@@ -74,11 +74,13 @@ public class BukovTypographyHapticTokenGuardTest {
 				textAndSize.matcher(source).find());
 		if (source.contains("private RenderedTextBlock text(")
 				|| source.contains("private RenderedTextBlock label(")) {
-			assertTrue(
-					path.getFileName()
-							+ " helper bypasses typography tokens",
-					source.contains("tokens.typographyPx(typography)"));
-		}
+				assertTrue(
+						path.getFileName()
+								+ " helper bypasses typography tokens",
+						source.contains("tokens.typographyPx(typography)")
+								|| source.contains(
+										"tokens.scaledTypographyPx(typography)"));
+			}
 	}
 
 	private static String source(Path path) throws Exception {

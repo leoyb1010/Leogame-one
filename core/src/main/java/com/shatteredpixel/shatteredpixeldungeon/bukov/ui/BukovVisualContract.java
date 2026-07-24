@@ -21,6 +21,13 @@ public final class BukovVisualContract {
 		return touch ? 22f : 18f;
 	}
 
+	public static float controlHeight(boolean touch, int scaleLevel) {
+		return BukovUiScale.controlHeight(
+				controlHeight(touch),
+				touch,
+				scaleLevel);
+	}
+
 	public static float compactControlHeight(boolean touch) {
 		return touch ? 22f : 16f;
 	}
@@ -28,6 +35,18 @@ public final class BukovVisualContract {
 	public static float contentWidth(float usableWidth, boolean wide) {
 		float bounded = Math.max(0f, usableWidth - OUTER_MARGIN * 2f);
 		return wide ? Math.min(MAX_CONTENT_WIDTH, bounded) : bounded;
+	}
+
+	public static float contentWidth(
+			float usableWidth,
+			boolean wide,
+			int scaleLevel) {
+		float margin = BukovUiScale.value(OUTER_MARGIN, scaleLevel);
+		float bounded = Math.max(0f, usableWidth - margin * 2f);
+		float maximum = BukovUiScale.value(
+				MAX_CONTENT_WIDTH,
+				scaleLevel);
+		return wide ? Math.min(maximum, bounded) : bounded;
 	}
 
 	public static float centeredLeft(

@@ -45,6 +45,11 @@ public final class WndBukovSettings extends Window {
 
 	private final Runnable closeListener;
 	private final BukovUiTokens tokens;
+	private final int margin;
+	private final int headerHeight;
+	private final int footerHeight;
+	private final int rowHeight;
+	private final int gap;
 	private final SettingButton[] buttons =
 			new SettingButton[Setting.values().length];
 	private final BukovFocusModel focus =
@@ -65,6 +70,12 @@ public final class WndBukovSettings extends Window {
 								"ink.background", 255)), 0));
 		this.closeListener = closeListener;
 		tokens = BukovUiTokens.loadDefault();
+		int scaleLevel = SPDSettings.bukovUiScale();
+		margin = BukovUiScale.pixels(MARGIN, scaleLevel);
+		headerHeight = BukovUiScale.pixels(HEADER_HEIGHT, scaleLevel);
+		footerHeight = BukovUiScale.pixels(FOOTER_HEIGHT, scaleLevel);
+		rowHeight = BukovUiScale.pixels(ROW_HEIGHT, scaleLevel);
+		gap = BukovUiScale.pixels(GAP, scaleLevel);
 		int windowWidth = BukovWindowLayout.safeWidth(
 				PixelScene.landscape()
 						? LANDSCAPE_WIDTH : PORTRAIT_WIDTH);
@@ -79,55 +90,60 @@ public final class WndBukovSettings extends Window {
 	private void build(int windowWidth, int windowHeight) {
 		ColorBlock header = new ColorBlock(
 				windowWidth,
-				HEADER_HEIGHT - 2,
+				headerHeight - 2,
 				tokens.colorWithAlpha("panel.surface", 255));
 		add(header);
 		ColorBlock headerRule = new ColorBlock(
 				windowWidth,
 				1,
 				tokens.color("accent.valuable"));
-		headerRule.y = HEADER_HEIGHT - 3;
+		headerRule.y = headerHeight - 3;
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
 				entryMessage("settings.eyebrow"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
-		eyebrow.setPos(MARGIN + 2, 4);
+		eyebrow.setPos(margin + 2, BukovUiScale.value(
+				4f, SPDSettings.bukovUiScale()));
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
 				entryMessage("settings.title"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
-		title.setPos(MARGIN + 2, 14);
+		title.setPos(margin + 2, BukovUiScale.value(
+				14f, SPDSettings.bukovUiScale()));
 		add(title);
 		RenderedTextBlock saved = PixelScene.renderTextBlock(
 				entryMessage("settings.saved"),
-				tokens.typographyPx(
+				tokens.scaledTypographyPx(
 						BukovVisualContract.FONT_CAPTION));
 		saved.hardlight(tokens.color("accent.extract"));
-		saved.setPos(windowWidth - MARGIN - saved.width() - 2, 17);
+		saved.setPos(
+				windowWidth - margin - saved.width() - 2,
+				BukovUiScale.value(
+						17f, SPDSettings.bukovUiScale()));
 		add(saved);
 
-		SettingsList list = new SettingsList(windowWidth - MARGIN * 2);
+		SettingsList list = new SettingsList(windowWidth - margin * 2);
 		scroll = new ScrollPane(list);
 		add(scroll);
 		scroll.setRect(
-				MARGIN,
-				HEADER_HEIGHT,
-				windowWidth - MARGIN * 2,
-				windowHeight - HEADER_HEIGHT - FOOTER_HEIGHT);
+				margin,
+				headerHeight,
+				windowWidth - margin * 2,
+				windowHeight - headerHeight - footerHeight);
 
 		SettingButton close = new SettingButton(Setting.CLOSE);
 		buttons[Setting.CLOSE.ordinal()] = close;
 		close.setRect(
-				MARGIN,
-				windowHeight - FOOTER_HEIGHT + 3,
-				windowWidth - MARGIN * 2,
-				ROW_HEIGHT + 1);
+				margin,
+				windowHeight - footerHeight + 3,
+				windowWidth - margin * 2,
+				rowHeight + 1);
 		add(close);
 	}
 
@@ -196,8 +212,8 @@ public final class WndBukovSettings extends Window {
 			}
 		}
 		if (focus.index() < Setting.CLOSE.ordinal() && scroll != null) {
-			float rowY = focus.index() * (ROW_HEIGHT + GAP);
-			scroll.scrollTo(0, Math.max(0, rowY - ROW_HEIGHT));
+			float rowY = focus.index() * (rowHeight + gap);
+			scroll.scrollTo(0, Math.max(0, rowY - rowHeight));
 		}
 	}
 
@@ -230,15 +246,15 @@ public final class WndBukovSettings extends Window {
 
 		private SettingsList(float listWidth) {
 			int count = Setting.CLOSE.ordinal();
-			setSize(listWidth, count * (ROW_HEIGHT + GAP) - GAP);
+			setSize(listWidth, count * (rowHeight + gap) - gap);
 			for (int i = 0; i < count; i++) {
 				Setting setting = Setting.values()[i];
 				SettingButton button = new SettingButton(setting);
 				button.setRect(
 						0,
-						i * (ROW_HEIGHT + GAP),
+						i * (rowHeight + gap),
 						listWidth,
-						ROW_HEIGHT);
+						rowHeight);
 				buttons[i] = button;
 				add(button);
 			}
@@ -283,12 +299,12 @@ public final class WndBukovSettings extends Window {
 							setting == Setting.CLOSE ? 44 : 190));
 			add(valueSurface);
 			label = PixelScene.renderTextBlock(
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
 			value = PixelScene.renderTextBlock(
-					tokens.typographyPx(
+					tokens.scaledTypographyPx(
 							BukovVisualContract.FONT_BODY));
 			value.hardlight(tokens.color(
 					setting == Setting.CLOSE
@@ -572,31 +588,39 @@ public final class WndBukovSettings extends Window {
 		@Override
 		protected void layout() {
 			super.layout();
+			float scale = BukovUiScale.multiplier(
+					SPDSettings.bukovUiScale());
 			background.x = x;
 			background.y = y;
 			background.size(width, height);
 			edge.x = x;
 			edge.y = y;
-			edge.size(2f, height);
+			edge.size(2f * scale, height);
 			focusEdge.x = x;
-			focusEdge.y = y + height - 2;
-			focusEdge.size(width, 2);
+			focusEdge.y = y + height - 2f * scale;
+			focusEdge.size(width, 2f * scale);
 			float valueWidth = setting == Setting.CLOSE
-					? 48f
-					: Math.min(78f, width * 0.46f);
-			valueSurface.x = x + width - valueWidth - 3f;
-			valueSurface.y = y + 3f;
-			valueSurface.size(valueWidth, height - 6f);
+					? 48f * scale
+					: Math.min(78f * scale, width * 0.46f);
+			float innerPadding = 3f * scale;
+			valueSurface.x = x + width - valueWidth - innerPadding;
+			valueSurface.y = y + innerPadding;
+			valueSurface.size(
+					valueWidth,
+					Math.max(1f, height - innerPadding * 2f));
+			float textHeight = Math.max(label.height(), value.height());
+			float textY = y + Math.max(0f, (height - textHeight) * 0.5f);
 			label.setRect(
-					x + 6f,
-					y + (height - 9f) / 2f,
-					width - valueWidth - 12f,
-					9f);
+					x + 6f * scale,
+					textY,
+					Math.max(1f,
+							width - valueWidth - 12f * scale),
+					textHeight);
 			value.setRect(
 					x + width - valueWidth,
-					y + (height - 9f) / 2f,
-					valueWidth - 7f,
-					9f);
+					textY,
+					Math.max(1f, valueWidth - 7f * scale),
+					textHeight);
 		}
 	}
 

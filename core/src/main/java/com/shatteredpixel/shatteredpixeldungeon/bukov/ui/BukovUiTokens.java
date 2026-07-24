@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -154,6 +155,13 @@ public final class BukovUiTokens {
 
 	public int typographyPx(String token) {
 		return require(typographyPx, token, "typography");
+	}
+
+	/** Returns the authored font role at the current global Bukov UI scale. */
+	public int scaledTypographyPx(String token) {
+		return BukovUiScale.fontPixels(
+				typographyPx(token),
+				SPDSettings.bukovUiScale());
 	}
 
 	public float maximumShakePx() {

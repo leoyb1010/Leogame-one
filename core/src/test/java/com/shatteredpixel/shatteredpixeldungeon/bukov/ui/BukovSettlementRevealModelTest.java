@@ -30,6 +30,19 @@ public class BukovSettlementRevealModelTest {
 		assertEquals(3, reveal.visibleRows());
 		assertEquals(900L, reveal.displayedValue());
 		assertTrue(reveal.stampVisible());
+		assertFalse(reveal.stampAnimationComplete());
+		assertEquals(0f, reveal.stampAlpha(), 0.0001f);
+		assertEquals(1.3f, reveal.stampScale(), 0.0001f);
+
+		reveal.advance(0.16f);
+		assertTrue(reveal.stampAlpha() > 0f);
+		assertTrue(reveal.stampScale() > 1f);
+		assertFalse(reveal.stampAnimationComplete());
+
+		reveal.advance(0.16f);
+		assertTrue(reveal.stampAnimationComplete());
+		assertEquals(1f, reveal.stampAlpha(), 0.0001f);
+		assertEquals(1f, reveal.stampScale(), 0.0001f);
 	}
 
 	@Test
@@ -46,15 +59,18 @@ public class BukovSettlementRevealModelTest {
 		assertEquals(7, reveal.visibleRows());
 		assertEquals(12_345L, reveal.displayedValue());
 		assertTrue(reveal.stampVisible());
+		assertTrue(reveal.stampAnimationComplete());
+		assertEquals(1f, reveal.stampAlpha(), 0.0001f);
+		assertEquals(1f, reveal.stampScale(), 0.0001f);
 	}
 
 	@Test
 	public void reducedMotionInstantClockPublishesAllInformationQuickly() {
 		BukovSettlementRevealModel reveal =
 				new BukovSettlementRevealModel(
-						12, 98_765L, 900, 70, true);
+						12, 98_765L, 900, 320, true);
 
-		reveal.advance(0.069f);
+		reveal.advance(0.319f);
 		assertFalse(reveal.complete());
 		assertTrue(reveal.visibleRows() < 12);
 		assertTrue(reveal.displayedValue() < 98_765L);
@@ -65,6 +81,12 @@ public class BukovSettlementRevealModelTest {
 		assertEquals(12, reveal.visibleRows());
 		assertEquals(98_765L, reveal.displayedValue());
 		assertTrue(reveal.stampVisible());
+		assertEquals(1f, reveal.stampScale(), 0.0001f);
+		assertFalse(reveal.stampAnimationComplete());
+
+		reveal.advance(0.18f);
+		assertTrue(reveal.stampAnimationComplete());
+		assertEquals(1f, reveal.stampAlpha(), 0.0001f);
 	}
 
 	@Test

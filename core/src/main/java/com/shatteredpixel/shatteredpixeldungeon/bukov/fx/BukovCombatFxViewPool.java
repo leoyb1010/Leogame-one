@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Group;
@@ -102,6 +103,9 @@ public final class BukovCombatFxViewPool extends Group {
 		float toY = event.toY() * tileSize;
 		float directionX = event.toX() - event.fromX();
 		float directionY = event.toY() - event.fromY();
+		float flashScale =
+				BukovAccessibilityPresentation.flashScale(
+						SPDSettings.bukovReduceFlashes());
 		switch (event.type()) {
 			case MUZZLE_FLASH:
 				if (vectorVisible(directionX, directionY)) {
@@ -112,7 +116,8 @@ public final class BukovCombatFxViewPool extends Group {
 							directionX,
 							directionY,
 							event.hostile(),
-							event.intensity())) {
+							event.intensity(),
+							flashScale)) {
 						stamp(muzzleStamps, muzzle);
 					}
 				}
@@ -192,7 +197,8 @@ public final class BukovCombatFxViewPool extends Group {
 							toX,
 							toY,
 							event.hostile(),
-							event.intensity())) {
+							event.intensity(),
+							flashScale)) {
 						stamp(explosionStamps, explosion);
 					}
 				}

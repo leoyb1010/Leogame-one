@@ -43,7 +43,7 @@ public class BukovSettlementWiringGuardTest {
 		assertTrue(settlement.contains(
 				"SPDSettings.bukovReduceMotion()"));
 		assertTrue(settlement.contains(
-				"tokens.motionMs(\"instant\")"));
+				"tokens.motionMs(\"slow\")"));
 		assertTrue(settlement.contains(
 				"tokens.motionMs(\"ritual\")"));
 	}
