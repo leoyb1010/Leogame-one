@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BukovRaidModeRuntimeWiringGuardTest {
@@ -22,6 +23,20 @@ public class BukovRaidModeRuntimeWiringGuardTest {
 		assertTrue(world.contains("raidMode.maximumActiveEnemiesAt(elapsed)"));
 		assertTrue(world.contains("raidMode.convergenceStarted(elapsed)"));
 		assertTrue(world.contains("raidMode.overtime(elapsed)"));
+		String convergence = between(
+				world,
+				"private void applyModeConvergence()",
+				"static float themedSpawnInterval");
+		assertFalse(convergence.contains("setExtractionCondition"));
+		String pump = between(
+				world,
+				"private void activatePump()",
+				"private boolean completeNearbyBossObjective()");
+		assertTrue(pump.contains(
+				"setExtractionCondition(CONDITIONAL_EXTRACTION_ID, true)"));
+		assertTrue(pump.contains("Assets.Sounds.Bukov.GATE_UNLOCK"));
+		assertTrue(pump.contains("emitPumpBroadcast("));
+		assertTrue(pump.contains("scheduleInvestigators()"));
 		assertTrue(coordinator.contains(
 				"configureContainersForProfile(\n"
 						+ "\t\t\t\t\t\tprofile,\n"
@@ -40,5 +55,16 @@ public class BukovRaidModeRuntimeWiringGuardTest {
 		return new String(
 				Files.readAllBytes(Paths.get(path)),
 				StandardCharsets.UTF_8);
+	}
+
+	private static String between(
+			String source,
+			String start,
+			String end) {
+		int startIndex = source.indexOf(start);
+		int endIndex = source.indexOf(end, startIndex);
+		assertTrue(startIndex >= 0);
+		assertTrue(endIndex > startIndex);
+		return source.substring(startIndex, endIndex);
 	}
 }

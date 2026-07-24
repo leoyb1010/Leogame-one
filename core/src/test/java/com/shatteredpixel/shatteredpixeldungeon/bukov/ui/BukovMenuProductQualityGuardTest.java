@@ -95,7 +95,9 @@ public class BukovMenuProductQualityGuardTest {
 				"WndBukovVendor.java",
 				"WndBukovServices.java",
 				"WndBukovRaidModeSelection.java",
-				"WndBukovSettlement.java"
+				"WndBukovSettlement.java",
+				"WndBukovFirstRunCalibration.java",
+				"WndBukovSettings.java"
 		}) {
 			String source = source(file);
 			assertTrue(file, source.contains("BukovTouchIcon"));
@@ -108,6 +110,20 @@ public class BukovMenuProductQualityGuardTest {
 				"private static final int BUTTON_HEIGHT = 22"));
 		assertTrue(source("WndBukovInventorySearch.java").contains(
 				"private static final int BUTTON_HEIGHT = 22"));
+		String calibration =
+				source("WndBukovFirstRunCalibration.java");
+		assertTrue(calibration.contains(
+				"BukovTouchIcon.Glyph.DEPLOY"));
+		assertTrue(calibration.contains("actionIcon = done"));
+		String settings = source("WndBukovSettings.java");
+		assertTrue(settings.contains("BukovTouchIcon.Glyph.SEARCH"));
+		assertTrue(settings.contains("BukovTouchIcon.Glyph.BACK"));
+		assertTrue(settings.contains(
+				"navigationIcon = navigationGlyph == null"));
+		assertTrue(settings.contains(
+				"if (setting == Setting.LEGAL)"));
+		assertTrue(settings.contains(
+				"if (setting == Setting.CLOSE)"));
 
 		String hubScene = sceneSource("BukovHubScene.java");
 		assertTrue(hubScene.contains("class AbandonConfirmWindow"));

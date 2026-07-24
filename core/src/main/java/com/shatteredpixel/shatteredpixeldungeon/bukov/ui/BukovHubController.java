@@ -112,7 +112,7 @@ public final class BukovHubController {
 	}
 
 	public List<BukovVendorCatalog.Offer> vendorOffers() {
-		return BukovVendorCatalog.all();
+		return BukovVendorCatalog.availableFor(profile);
 	}
 
 	public BukovVendorViewModel vendorViewModel() {

@@ -109,7 +109,7 @@ public class BukovLevel extends RegularLevel {
 	 */
 	@Override
 	public void create() {
-		Random.pushGenerator(Dungeon.seedCurDepth());
+		Random.pushGenerator(raidMode.mapSeed(Dungeon.seedCurDepth()));
 		try {
 			itemsToSpawn.clear();
 			do {
@@ -281,9 +281,9 @@ public class BukovLevel extends RegularLevel {
 
 	@Override
 	protected void createItems() {
-		// Five deterministic loose items teach the ground-pickup language.
-		// Valuable/randomized rewards still come from searchable containers,
-		// and no legacy fantasy generator is allowed into this raid.
+		// Deterministic loose items teach the ground-pickup language. An
+		// incomplete combat loadout also receives its visible starter pair here.
+		// Valuable/randomized rewards still come from searchable containers.
 		BukovLooseLootPlanner.place(this);
 	}
 
@@ -308,7 +308,10 @@ public class BukovLevel extends RegularLevel {
 		color1 = theme.primaryColor;
 		color2 = theme.secondaryColor;
 		BukovRoomGraphAdapter.AdaptedMap candidate = BukovRoomGraphAdapter.adapt(
-				this, Dungeon.seedCurDepth(), theme.id, raidMode);
+				this,
+				raidMode.mapSeed(Dungeon.seedCurDepth()),
+				theme.id,
+				raidMode);
 		if (!candidate.readyForRaid()) {
 			lastDiagnostics = candidate.diagnostics;
 			if (generationAttempts >= MAX_GENERATION_ATTEMPTS) {

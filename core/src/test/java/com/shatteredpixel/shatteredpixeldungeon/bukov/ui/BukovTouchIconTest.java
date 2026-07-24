@@ -74,9 +74,14 @@ public class BukovTouchIconTest {
 		assertTrue(controls.contains("liveActionAvailability("));
 		assertTrue(controls.contains("icon.visualState("));
 		assertTrue(controls.contains("setDisabled(blocked)"));
-		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.60f"));
+		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.66f"));
 		assertTrue(controls.contains("ACTION_LABEL_HEIGHT_PX = 5f"));
-		assertTrue(controls.contains("iconPlate = new ColorBlock("));
+		assertTrue(controls.contains(
+				"BukovUiAssets.Surface.BUTTON_PRESSED"));
+		assertTrue(controls.contains(
+				"BukovUiAssets.Surface.BUTTON_DISABLED"));
+		assertTrue(controls.contains(
+				"BukovUiAssets.Surface.PANEL_RAISED"));
 		assertTrue(controls.contains("labelDivider = new ColorBlock("));
 		assertTrue(icon.contains("(pressed ? 1f : 0f)"));
 		assertTrue(icon.contains("touchDisabledStrike("));
@@ -112,6 +117,10 @@ public class BukovTouchIconTest {
 				BukovTouchControls.compactActionLabel(
 						BukovTouchState.Action.INTERACT,
 						"Interact")));
+		assertEquals(5, BukovTouchControls.actionLabelFontPx(9));
+		assertTrue(
+				BukovTouchControls.actionIconSize(28f, 28f)
+						> BukovTouchControls.actionLabelFontPx(9));
 		assertEquals(22f, BukovTouchControls.actionHitSize(19f), 0f);
 		assertEquals(28f, BukovTouchControls.actionHitSize(28f), 0f);
 	}

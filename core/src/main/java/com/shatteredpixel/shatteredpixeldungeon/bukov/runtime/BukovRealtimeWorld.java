@@ -12,6 +12,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovEnemySpawnPlanner;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovHostMob;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeRegistry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyAbilityRuntimePolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRangedCombatIntent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyTier;
@@ -128,6 +129,8 @@ public final class BukovRealtimeWorld
 	private static final String PUMP_SEMANTIC_ID = "fog_lamp_pump_station";
 	private static final int BASELINE_ENEMY_RESERVE_AMMO = 15;
 	private static final float ALARM_REINFORCEMENT_DELAY_SECONDS = 1.25f;
+	private static final float PUMP_BROADCAST_RADIUS_TILES = 26f;
+	private static final float PUMP_BROADCAST_LIFETIME_SECONDS = 1.5f;
 	private static final float WHITE_LINE_PHASE_TWO_PULSE_SECONDS = 3.2f;
 	private static final float WHITE_LINE_PHASE_THREE_PULSE_SECONDS = 2.2f;
 	private static final float CAMERA_HALF_DEAD_ZONE_X = 12f;
@@ -243,6 +246,7 @@ public final class BukovRealtimeWorld
 	private int lastExtractionCountdown = Integer.MIN_VALUE;
 	private int lastContainerCountdown = Integer.MIN_VALUE;
 	private float extractionHintCooldown;
+	private float autoPickupRetryCooldown;
 	private float missionGateHintCooldown;
 	private float missionEventRetryCooldown;
 	private boolean missionGateUnlocked;
@@ -1065,7 +1069,9 @@ public final class BukovRealtimeWorld
 										.enemyHearingMultiplier(
 												terrainAt(
 														event.x(),
-														event.y())));
+														event.y())))
+						* EnemyAbilityRuntimePolicy.hearingMultiplier(
+								enemy.definition);
 				float dx = event.x() - enemy.body.x;
 				float dy = event.y() - enemy.body.y;
 				float distanceSquared = dx * dx + dy * dy;
@@ -1431,6 +1437,10 @@ public final class BukovRealtimeWorld
 				0f,
 				extractionHintCooldown - dt
 		);
+		autoPickupRetryCooldown = Math.max(
+				0f,
+				autoPickupRetryCooldown - dt
+		);
 		missionEventRetryCooldown = Math.max(
 				0f,
 				missionEventRetryCooldown - dt
@@ -1555,6 +1565,11 @@ public final class BukovRealtimeWorld
 			showTutorial(BukovTutorialEvent.EXTRACTION_NEAR);
 		}
 
+		if (autoPickupRetryCooldown <= 0f
+				&& pickupNearbyAutomaticItem()) {
+			return;
+		}
+
 		if (!interactPressed) {
 			return;
 		}
@@ -1648,7 +1663,36 @@ public final class BukovRealtimeWorld
 		if (heapCell < 0) {
 			return;
 		}
+		pickupHeap(heapCell, false);
+	}
+
+	private boolean pickupNearbyAutomaticItem() {
+		int heapCell = selectVisibleAutoPickupHeap(
+				hero.pos,
+				Dungeon.level.width(),
+				Dungeon.level.length(),
+				Dungeon.level.heroFOV,
+				Dungeon.level.heaps,
+				extractionCell
+		);
+		if (heapCell < 0) {
+			return false;
+		}
+		LootTransaction.PickupResult result =
+				pickupHeap(heapCell, true);
+		if (result != LootTransaction.PickupResult.ADDED) {
+			autoPickupRetryCooldown = 0.75f;
+		}
+		return result == LootTransaction.PickupResult.ADDED;
+	}
+
+	private LootTransaction.PickupResult pickupHeap(
+			int heapCell,
+			boolean automatic) {
 		Heap heap = Dungeon.level.heaps.get(heapCell);
+		if (heap == null || heap.peek() == null) {
+			return LootTransaction.PickupResult.DUPLICATE_UID;
+		}
 		Item item = heap.peek();
 		LootTransaction.PickupResult result = lootAdapter.pickupTop(heap, hero);
 		if (result == LootTransaction.PickupResult.ADDED) {
@@ -1682,13 +1726,16 @@ public final class BukovRealtimeWorld
 			}
 			checkpointLootChange();
 		} else if (result == LootTransaction.PickupResult.OVERWEIGHT) {
-			showTutorial(BukovTutorialEvent.OVERWEIGHT);
-			showHeroStatus(BukovMessages.get(
-					"bukov.raid.runtime.overweight"));
-		} else {
+			if (!automatic) {
+				showTutorial(BukovTutorialEvent.OVERWEIGHT);
+				showHeroStatus(BukovMessages.get(
+						"bukov.raid.runtime.overweight"));
+			}
+		} else if (!automatic) {
 			showHeroStatus(BukovMessages.get(
 					"bukov.raid.runtime.item_already_picked_up"));
 		}
+		return result;
 	}
 
 	private void dropLatestCarriedItem() {
@@ -2218,6 +2265,41 @@ public final class BukovRealtimeWorld
 			boolean[] visible,
 			SparseArray<Heap> heaps,
 			int excludedCell) {
+		return selectVisibleLootHeap(
+				heroCell,
+				width,
+				length,
+				visible,
+				heaps,
+				excludedCell,
+				false);
+	}
+
+	static int selectVisibleAutoPickupHeap(
+			int heroCell,
+			int width,
+			int length,
+			boolean[] visible,
+			SparseArray<Heap> heaps,
+			int excludedCell) {
+		return selectVisibleLootHeap(
+				heroCell,
+				width,
+				length,
+				visible,
+				heaps,
+				excludedCell,
+				true);
+	}
+
+	private static int selectVisibleLootHeap(
+			int heroCell,
+			int width,
+			int length,
+			boolean[] visible,
+			SparseArray<Heap> heaps,
+			int excludedCell,
+			boolean automaticOnly) {
 		if (heroCell < 0
 				|| heroCell >= length
 				|| width <= 0
@@ -2250,7 +2332,10 @@ public final class BukovRealtimeWorld
 					Heap heap = heaps.get(cell);
 					if (heap != null
 							&& heap.type == Heap.Type.HEAP
-							&& heap.peek() != null) {
+							&& heap.peek() != null
+							&& (!automaticOnly
+									|| BukovAutoPickupPolicy.shouldPickup(
+											heap.peek()))) {
 						return cell;
 					}
 				}
@@ -3206,13 +3291,6 @@ public final class BukovRealtimeWorld
 	private void applyModeConvergence() {
 		float elapsed = raid.session().elapsedSeconds;
 		if (raidMode.convergenceStarted(elapsed)) {
-			ExtractionState conditional =
-					raid.extraction(CONDITIONAL_EXTRACTION_ID);
-			if (conditional != null && !conditional.conditionMet()) {
-				raid.setExtractionCondition(
-						CONDITIONAL_EXTRACTION_ID, true);
-				checkpointLootChange();
-			}
 			if (!modeConvergenceAnnounced) {
 				modeConvergenceAnnounced = true;
 				showHeroStatus(BukovMessages.get(
@@ -3576,7 +3654,11 @@ public final class BukovRealtimeWorld
 					0.9f);
 			pendingEnemyShots.add(new PendingEnemyShot(
 					enemy.mob,
-					enemy.rangedIntent.damage()
+					EnemyAbilityRuntimePolicy.damageAgainstTarget(
+							enemy.definition,
+							enemy.rangedIntent.damage(),
+							hero.HP,
+							hero.HT)
 			));
 		} else if (enemyShotHit.body == null
 				&& enemyShotHit.distance
@@ -3779,6 +3861,11 @@ public final class BukovRealtimeWorld
 				: Random.NormalIntRange(
 						runtime.minimumDamage(),
 						runtime.maximumDamage());
+		damage = EnemyAbilityRuntimePolicy.damageAgainstTarget(
+				runtime == null ? null : runtime.definition,
+				damage,
+				hero.HP,
+				hero.HT);
 		damage = hero.defenseProc(attacker, damage);
 		if (!attacker.isAlive()) {
 			EnemyRuntime enemy = enemiesByMob.get(attacker);
@@ -3857,6 +3944,36 @@ public final class BukovRealtimeWorld
 				heroBody.y,
 				radius,
 				0.35f);
+	}
+
+	static int emitPumpBroadcast(
+			PlayerSoundEventBuffer sounds,
+			int pumpCell,
+			int levelWidth) {
+		if (sounds == null || pumpCell < 0 || levelWidth <= 0) {
+			throw new IllegalArgumentException(
+					"sounds, pumpCell, and levelWidth are required");
+		}
+		return sounds.emit(
+				pumpCell % levelWidth + 0.5f,
+				pumpCell / levelWidth + 0.5f,
+				PUMP_BROADCAST_RADIUS_TILES,
+				PUMP_BROADCAST_LIFETIME_SECONDS);
+	}
+
+	static float investigatorSpawnDeadline(
+			float currentDeadline,
+			float elapsedSeconds) {
+		return Math.min(
+				currentDeadline,
+				elapsedSeconds + ALARM_REINFORCEMENT_DELAY_SECONDS);
+	}
+
+	private void scheduleInvestigators() {
+		if (raid == null) return;
+		nextEnemySpawnSeconds = investigatorSpawnDeadline(
+				nextEnemySpawnSeconds,
+				raid.session().elapsedSeconds);
 	}
 
 	@Override
@@ -4145,15 +4262,8 @@ public final class BukovRealtimeWorld
 	private static boolean hasAbility(
 			EnemyArchetypeDefinition definition,
 			String ability) {
-		if (definition == null || definition.abilities == null) {
-			return false;
-		}
-		for (String candidate : definition.abilities) {
-			if (ability.equals(candidate)) {
-				return true;
-			}
-		}
-		return false;
+		return EnemyAbilityRuntimePolicy.hasAbility(
+				definition, ability);
 	}
 
 	private void broadcastPlayerContact(EnemyRuntime source) {
@@ -4182,10 +4292,7 @@ public final class BukovRealtimeWorld
 						: BukovMessages.get(
 								"bukov.raid.runtime.enemy_broadcast_alarm"));
 		if (raid != null && hasAbility(source, "CALL_INVESTIGATORS")) {
-			nextEnemySpawnSeconds = Math.min(
-					nextEnemySpawnSeconds,
-					raid.session().elapsedSeconds
-							+ ALARM_REINFORCEMENT_DELAY_SECONDS);
+			scheduleInvestigators();
 			showHeroStatus(BukovMessages.get(
 					"bukov.raid.runtime.enemy_reinforcements_incoming"));
 		}
@@ -4715,6 +4822,15 @@ public final class BukovRealtimeWorld
 			return;
 		}
 		raid.setExtractionCondition(CONDITIONAL_EXTRACTION_ID, true);
+		playSfx(
+				Assets.Sounds.Bukov.GATE_UNLOCK,
+				0.82f,
+				0.92f);
+		emitPumpBroadcast(
+				playerSounds,
+				pumpCell,
+				Dungeon.level.width());
+		scheduleInvestigators();
 		showHeroStatus(BukovMessages.get(
 				"bukov.raid.runtime.pump_restored_extraction"));
 		checkpointLootChange();

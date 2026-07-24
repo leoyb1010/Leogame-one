@@ -54,6 +54,8 @@ public final class EnemyArchetypeDefinition {
 			require(text(ability), "blank ability: " + id);
 			require(uniqueAbilities.add(ability),
 					"duplicate ability " + ability + ": " + id);
+			require(EnemyAbilityRuntimePolicy.useFor(ability) != null,
+					"ability has no runtime handler: " + ability + ": " + id);
 		}
 		boolean firearmRole = role == EnemyRole.RANGED_SKIRMISHER
 				|| role == EnemyRole.ARMORED_SUPPRESSOR
@@ -64,6 +66,8 @@ public final class EnemyArchetypeDefinition {
 			require(bossArenaOnly, "boss must be arena-only: " + id);
 			require(optionalRouteOnly, "boss must remain optional: " + id);
 			require(spawnWeight == 0, "boss cannot enter random spawn roll: " + id);
+			require(EnemyAbilityRuntimePolicy.hasWhiteLinePhaseKit(this),
+					"boss requires all White Line phase abilities: " + id);
 		} else {
 			require(!bossArenaOnly, "non-boss cannot require boss arena: " + id);
 			require(spawnWeight > 0, "non-boss needs spawnWeight: " + id);

@@ -158,7 +158,8 @@ public class BukovModeThemeBossAcceptanceMatrixTest {
 		// selected mode geometry and selected theme, then paints real terrain.
 		BukovLevel firstLevel = buildRealLevel(seed);
 		BukovRaidLayout first = firstLevel.raidLayout();
-		BukovLevel secondLevel = buildRealLevel(seed);
+		BukovLevel secondLevel = buildRealLevel(
+				mode.trainingGround() ? seed + 1L : seed);
 		BukovRaidLayout second = secondLevel.raidLayout();
 		assertEquals(mode, firstLevel.raidMode());
 		String effectiveTheme = theme.id;

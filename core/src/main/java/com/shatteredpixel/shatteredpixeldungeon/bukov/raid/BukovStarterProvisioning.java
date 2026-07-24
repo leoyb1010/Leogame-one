@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import java.util.Collection;
+
 /**
  * Grants a coherent first kit and prevents permanent combat-loadout soft locks.
  *
@@ -19,6 +21,33 @@ public final class BukovStarterProvisioning {
 
 	public static boolean ensure(BukovProfile profile) {
 		return ensure(profile, false);
+	}
+
+	/**
+	 * Decides whether a deployment needs the visible ground starter pair.
+	 *
+	 * The map is authored before the durable loadout is withdrawn into the raid
+	 * checkpoint, so this pure decision is prepared from the selected stash
+	 * items at the deployment boundary. Any supported firearm plus ammunition
+	 * of its caliber is already combat-capable and must not receive duplicates.
+	 */
+	public static boolean requiresGroundCombatPair(
+			Collection<RaidItem> deploymentItems) {
+		if (deploymentItems == null) {
+			throw new IllegalArgumentException(
+					"deploymentItems are required");
+		}
+		for (RaidItem firearm : deploymentItems) {
+			if (!supportedFirearm(firearm)) {
+				continue;
+			}
+			for (RaidItem ammunition : deploymentItems) {
+				if (compatibleAmmunition(firearm, ammunition)) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -157,6 +186,9 @@ public final class BukovStarterProvisioning {
 		if (item == null) {
 			return false;
 		}
+		if (!catalogContainsDefinition(item.definitionId())) {
+			return false;
+		}
 		String recoveryOfferId =
 				recoveryAmmunitionOffer(item.definitionId());
 		if (recoveryOfferId == null) {
@@ -258,5 +290,37 @@ public final class BukovStarterProvisioning {
 			return "ammo_12g_buckshot_12";
 		}
 		return null;
+	}
+
+	private static boolean compatibleAmmunition(
+			RaidItem firearm,
+			RaidItem ammunition) {
+		if (firearm == null || ammunition == null) {
+			return false;
+		}
+		String recoveryOfferId =
+				recoveryAmmunitionOffer(firearm.definitionId());
+		if (recoveryOfferId == null) {
+			return false;
+		}
+		String standardDefinition =
+				BukovVendorCatalog.require(recoveryOfferId).definitionId;
+		int variantSeparator = standardDefinition.lastIndexOf('_');
+		if (variantSeparator < 0) {
+			return false;
+		}
+		String caliberPrefix =
+				standardDefinition.substring(0, variantSeparator + 1);
+		return ammunition.definitionId().startsWith(caliberPrefix)
+				&& catalogContainsDefinition(ammunition.definitionId());
+	}
+
+	private static boolean catalogContainsDefinition(String definitionId) {
+		for (BukovVendorCatalog.Offer offer : BukovVendorCatalog.all()) {
+			if (offer.definitionId.equals(definitionId)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

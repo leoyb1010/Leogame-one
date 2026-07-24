@@ -122,7 +122,13 @@ public class BukovHostMobTest {
 		definition.minimumDistanceFromSpawnRooms = 1;
 		definition.maximumActive = 1;
 		definition.firstRaidMaximumActive = 1;
-		definition.abilities = new String[0];
+		definition.abilities = boss
+				? new String[]{
+						"UMBRELLA_SHIELD",
+						"DECOY_BODIES",
+						"FOG_LAMP_OVERLOAD"
+				}
+				: new String[0];
 		definition.optionalRouteOnly = boss;
 		definition.bossArenaOnly = boss;
 		return definition;

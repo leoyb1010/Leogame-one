@@ -81,6 +81,10 @@ public final class BukovEconomyService {
 			saves.saveProfile(staged);
 			return receipt(migrated, true);
 		}
+		if (!BukovVendorCatalog.isAvailable(profile, offer)) {
+			throw new IllegalStateException(
+					"Vendor offer is locked by career progression");
+		}
 		if (profile.currency() < offer.purchasePrice) {
 			throw new IllegalStateException("Insufficient currency");
 		}

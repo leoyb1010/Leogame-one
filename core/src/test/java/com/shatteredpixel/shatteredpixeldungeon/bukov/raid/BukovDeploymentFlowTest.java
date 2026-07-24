@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveServ
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
@@ -13,6 +14,48 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class BukovDeploymentFlowTest {
+
+	@Test
+	public void groundStarterPairIsNeededOnlyForIncompleteCombatLoadouts() {
+		RaidItem needle = item(
+				"needle",
+				"firearm:needle_9",
+				1,
+				0.90f);
+		RaidItem standard = item(
+				"standard",
+				"ammo:ammo_9_standard",
+				24,
+				0.012f);
+		RaidItem training = item(
+				"training",
+				"ammo:ammo_9_training",
+				18,
+				0.012f);
+		RaidItem wrongCaliber = item(
+				"wrong",
+				"ammo:ammo_556_standard",
+				24,
+				0.013f);
+		RaidItem unknownNineMillimeter = item(
+				"unknown",
+				"ammo:ammo_9_unregistered",
+				24,
+				0.012f);
+
+		assertTrue(BukovStarterProvisioning
+				.requiresGroundCombatPair(Collections.<RaidItem>emptyList()));
+		assertTrue(BukovStarterProvisioning
+				.requiresGroundCombatPair(Collections.singletonList(needle)));
+		assertTrue(BukovStarterProvisioning.requiresGroundCombatPair(
+				Arrays.asList(needle, wrongCaliber)));
+		assertTrue(BukovStarterProvisioning.requiresGroundCombatPair(
+				Arrays.asList(needle, unknownNineMillimeter)));
+		assertFalse(BukovStarterProvisioning.requiresGroundCombatPair(
+				Arrays.asList(needle, standard)));
+		assertFalse(BukovStarterProvisioning.requiresGroundCombatPair(
+				Arrays.asList(needle, training)));
+	}
 
 	@Test
 	public void successfulRaidMovesSelectedUidsOutAndBackIntoStash()
@@ -318,6 +361,22 @@ public class BukovDeploymentFlowTest {
 			}
 		}
 		throw new AssertionError("Missing raid item: " + definitionId);
+	}
+
+	private static RaidItem item(
+			String uid,
+			String definitionId,
+			int quantity,
+			float unitWeight) {
+		return new RaidItem(
+				uid,
+				definitionId,
+				quantity,
+				unitWeight,
+				1,
+				false,
+				false,
+				1f);
 	}
 
 	private static int findQuantity(

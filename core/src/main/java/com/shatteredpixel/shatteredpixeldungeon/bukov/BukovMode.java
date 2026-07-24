@@ -23,6 +23,7 @@ public final class BukovMode {
 	private static volatile List<String> deploymentMapIds =
 			Collections.singletonList("fog_depot");
 	private static volatile String deploymentSelectedMap = "fog_depot";
+	private static volatile boolean deploymentGroundStarterKitRequired = true;
 
 	private BukovMode() {
 	}
@@ -44,6 +45,14 @@ public final class BukovMode {
 
 	public static BukovRaidMode raidMode() {
 		return deploymentRaidMode;
+	}
+
+	public static void prepareGroundStarterKit(boolean required) {
+		deploymentGroundStarterKitRequired = required;
+	}
+
+	public static boolean groundStarterKitRequired() {
+		return deploymentGroundStarterKitRequired;
 	}
 
 	public static void prepareUnlockedMaps(Collection<String> mapIds) {
@@ -98,6 +107,7 @@ public final class BukovMode {
 		deploymentRaidMode = BukovRaidMode.EXPEDITION;
 		deploymentMapIds = Collections.singletonList("fog_depot");
 		deploymentSelectedMap = "fog_depot";
+		deploymentGroundStarterKitRequired = true;
 	}
 
 	public static void requestHub() {

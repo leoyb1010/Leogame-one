@@ -7,6 +7,8 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class BukovModeProgressionTest {
 
@@ -39,5 +41,15 @@ public class BukovModeProgressionTest {
 				Collections.singletonList("fog_depot"),
 				BukovMode.unlockedRaidThemes());
 		assertEquals("fog_depot", BukovMode.selectedRaidTheme());
+	}
+
+	@Test
+	public void deploymentStarterDecisionResetsAtModeBoundary() {
+		BukovMode.prepareGroundStarterKit(false);
+		assertFalse(BukovMode.groundStarterKitRequired());
+
+		BukovMode.leave();
+
+		assertTrue(BukovMode.groundStarterKitRequired());
 	}
 }

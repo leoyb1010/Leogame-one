@@ -527,7 +527,10 @@ public class BukovHubControllerTest {
 		saves.saveProfile(profile);
 		BukovHubController hub = new BukovHubController(saves);
 
-		assertEquals(32, hub.vendorOffers().size());
+		assertEquals(8, hub.vendorOffers().size());
+		assertFalse(hub.vendorOffers().stream().anyMatch(
+				offer -> "firearm:frontier_762".equals(
+						offer.definitionId)));
 		hub.buy("hub-buy-001", "scout_pack_1");
 
 		assertEquals(400L, hub.viewModel().currency);

@@ -284,6 +284,7 @@ public final class RealtimeEnemyTactics {
 		}
 		if (definition.role == EnemyRole.MELEE_RUSHER
 				|| hasAbility(definition.abilities, "SHORT_DASH")
+				|| hasAbility(definition.abilities, "CORNER_AMBUSH")
 				|| hasAbility(definition.abilities, "BREACH_CORNERS")) {
 			return Profile.RUSHER;
 		}
@@ -292,6 +293,7 @@ public final class RealtimeEnemyTactics {
 			return Profile.FLANKER;
 		}
 		if (definition.role == EnemyRole.ARMORED_SUPPRESSOR
+				|| hasAbility(definition.abilities, "USE_COVER")
 				|| hasAbility(definition.abilities, "SHORT_SUPPRESSION")
 				|| hasAbility(definition.abilities, "BURST_SUPPRESSION")) {
 			return Profile.SUPPRESSOR;
@@ -308,11 +310,8 @@ public final class RealtimeEnemyTactics {
 	}
 
 	private static boolean hasAbility(String[] abilities, String required) {
-		if (abilities == null) return false;
-		for (String ability : abilities) {
-			if (required.equals(ability)) return true;
-		}
-		return false;
+		return EnemyAbilityRuntimePolicy.hasAbility(
+				abilities, required);
 	}
 
 	private static void requireFinite(float value, String label) {

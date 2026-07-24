@@ -268,11 +268,15 @@ public final class WndBukovSettings extends Window {
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
 		private final ColorBlock valueSurface;
+		private final BukovTouchIcon navigationIcon;
 		private final RenderedTextBlock label;
 		private final RenderedTextBlock value;
+		private boolean pointerPressed;
 
 		private SettingButton(Setting setting) {
 			this.setting = setting;
+			BukovTouchIcon.Glyph navigationGlyph =
+					navigationGlyph(setting);
 			background = new ColorBlock(
 					1,
 					1,
@@ -298,14 +302,33 @@ public final class WndBukovSettings extends Window {
 									: "ink.background",
 							setting == Setting.CLOSE ? 44 : 190));
 			add(valueSurface);
+			navigationIcon = navigationGlyph == null
+					? null
+					: new BukovTouchIcon(
+							navigationGlyph,
+							tokens.color(setting == Setting.CLOSE
+									? "accent.extract"
+									: "text.primary"),
+							tokens.color(setting == Setting.CLOSE
+									? "text.primary"
+									: "accent.interact"),
+							tokens.color("text.disabled"));
+			if (navigationIcon != null) {
+				add(navigationIcon);
+			}
+			boolean navigationAction = navigationIcon != null;
 			label = PixelScene.renderTextBlock(
 					tokens.scaledTypographyPx(
-							BukovVisualContract.FONT_BODY));
+							navigationAction
+									? BukovVisualContract.FONT_CAPTION
+									: BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
 			value = PixelScene.renderTextBlock(
 					tokens.scaledTypographyPx(
-							BukovVisualContract.FONT_BODY));
+							navigationAction
+									? BukovVisualContract.FONT_CAPTION
+									: BukovVisualContract.FONT_BODY));
 			value.hardlight(tokens.color(
 					setting == Setting.CLOSE
 							? "accent.extract"
@@ -313,6 +336,16 @@ public final class WndBukovSettings extends Window {
 			value.align(RenderedTextBlock.RIGHT_ALIGN);
 			add(value);
 			refreshLabel();
+		}
+
+		private BukovTouchIcon.Glyph navigationGlyph(Setting setting) {
+			if (setting == Setting.LEGAL) {
+				return BukovTouchIcon.Glyph.SEARCH;
+			}
+			if (setting == Setting.CLOSE) {
+				return BukovTouchIcon.Glyph.BACK;
+			}
+			return null;
 		}
 
 		@Override
@@ -415,6 +448,18 @@ public final class WndBukovSettings extends Window {
 			updateFocus();
 		}
 
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshNavigationIcon();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshNavigationIcon();
+		}
+
 		private void showLegalNotice() {
 			ShatteredPixelDungeon.scene().addToFront(new WndMessage(
 					entryMessage("settings.legal_notice")));
@@ -467,6 +512,13 @@ public final class WndBukovSettings extends Window {
 					: setting == Setting.CLOSE
 					? tokens.color("accent.extract")
 					: tokens.color("accent.interact"));
+			refreshNavigationIcon();
+		}
+
+		private void refreshNavigationIcon() {
+			if (navigationIcon != null) {
+				navigationIcon.visualState(pointerPressed, false);
+			}
 		}
 
 		private void refreshLabel() {
@@ -610,11 +662,30 @@ public final class WndBukovSettings extends Window {
 					Math.max(1f, height - innerPadding * 2f));
 			float textHeight = Math.max(label.height(), value.height());
 			float textY = y + Math.max(0f, (height - textHeight) * 0.5f);
+			float labelLeft = x + 6f * scale;
+			float labelWidth = Math.max(
+					1f,
+					width - valueWidth - 12f * scale);
+			if (navigationIcon != null) {
+				float iconSize = Math.max(
+						10f * scale,
+						Math.min(
+								14f * scale,
+								height - 6f * scale));
+				navigationIcon.setRect(
+						labelLeft,
+						y + (height - iconSize) * 0.5f,
+						iconSize,
+						iconSize);
+				labelLeft += iconSize + 3f * scale;
+				labelWidth = Math.max(
+						1f,
+						labelWidth - iconSize - 3f * scale);
+			}
 			label.setRect(
-					x + 6f * scale,
+					labelLeft,
 					textY,
-					Math.max(1f,
-							width - valueWidth - 12f * scale),
+					labelWidth,
 					textHeight);
 			value.setRect(
 					x + width - valueWidth,

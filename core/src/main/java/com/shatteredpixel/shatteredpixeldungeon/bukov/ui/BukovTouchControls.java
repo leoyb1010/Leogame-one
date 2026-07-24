@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.input.PointerEvent;
 import com.watabou.noosa.ColorBlock;
+import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.PointerArea;
 import com.watabou.noosa.ui.Component;
 import com.watabou.utils.PointF;
@@ -19,9 +20,10 @@ import com.watabou.utils.PointF;
  */
 public final class BukovTouchControls extends Component {
 
-	private static final int COMPACT_LABEL_REDUCTION_PX = 3;
+	private static final int COMPACT_LABEL_REDUCTION_PX = 4;
+	private static final int ACTION_LABEL_FONT_FLOOR_PX = 5;
 	private static final float ACTION_ICON_MAX_PX = 16f;
-	private static final float ACTION_ICON_HEIGHT_RATIO = 0.60f;
+	private static final float ACTION_ICON_HEIGHT_RATIO = 0.66f;
 	private static final float ACTION_LABEL_HEIGHT_PX = 5f;
 	private static final float MIN_ACTION_HIT_SIZE_PX = 22f;
 
@@ -322,6 +324,23 @@ public final class BukovTouchControls extends Component {
 		return Math.max(MIN_ACTION_HIT_SIZE_PX, visualSize);
 	}
 
+	static int actionLabelFontPx(int captionPx) {
+		return Math.max(
+				ACTION_LABEL_FONT_FLOOR_PX,
+				captionPx - COMPACT_LABEL_REDUCTION_PX);
+	}
+
+	static float actionIconSize(float width, float height) {
+		return Math.max(
+				9f,
+				Math.min(
+						ACTION_ICON_MAX_PX,
+						Math.min(
+								Math.max(1f, width - 5f),
+								Math.max(1f, height)
+										* ACTION_ICON_HEIGHT_RATIO)));
+	}
+
 	static BukovTouchIcon.Glyph iconFor(BukovTouchState.Stick stick) {
 		if (stick == null) {
 			throw new IllegalArgumentException("stick is required");
@@ -620,9 +639,11 @@ public final class BukovTouchControls extends Component {
 		private final int restingBackground;
 		private final int accentColor;
 		private ColorBlock shadow;
-		private ColorBlock background;
+		private NinePatch restingSurface;
+		private NinePatch pressedSurface;
+		private NinePatch disabledSurface;
 		private ColorBlock edge;
-		private ColorBlock iconPlate;
+		private NinePatch iconPlate;
 		private ColorBlock labelDivider;
 		private BukovTouchIcon icon;
 		private RenderedTextBlock label;
@@ -652,13 +673,25 @@ public final class BukovTouchControls extends Component {
 					1, 1,
 					tokens.colorWithAlpha("ink.shadow", 0xCC));
 			add(shadow);
-			background = new ColorBlock(1, 1, restingBackground);
-			add(background);
+			restingSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON,
+					restingBackground);
+			add(restingSurface);
+			pressedSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.color("panel.deep"));
+			pressedSurface.visible = false;
+			add(pressedSurface);
+			disabledSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_DISABLED,
+					tokens.color("panel.deep"));
+			disabledSurface.visible = false;
+			add(disabledSurface);
 			edge = new ColorBlock(
 					1, 1, BukovTouchIcon.withFullAlpha(accentColor));
 			add(edge);
-			iconPlate = new ColorBlock(
-					1, 1,
+			iconPlate = BukovUiAssets.surface(
+					BukovUiAssets.Surface.PANEL_RAISED,
 					tokens.colorWithAlpha("ink.shadow", 0x78));
 			add(iconPlate);
 			labelDivider = new ColorBlock(
@@ -673,13 +706,10 @@ public final class BukovTouchControls extends Component {
 			add(icon);
 			label = PixelScene.renderTextBlock(
 					compactActionLabel(action, text),
-					Math.max(
-							6,
-							tokens.typographyPx(
-									BukovVisualContract.FONT_CAPTION)
-									- COMPACT_LABEL_REDUCTION_PX));
+					actionLabelFontPx(tokens.typographyPx(
+							BukovVisualContract.FONT_CAPTION)));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
-			label.hardlight(tokens.color("text.primary"));
+			label.hardlight(tokens.color("text.secondary"));
 			add(label);
 			pointerArea = new PointerArea(0, 0, 0, 0) {
 				@Override
@@ -718,7 +748,7 @@ public final class BukovTouchControls extends Component {
 
 		@Override
 		protected void layout() {
-			if (background == null) {
+			if (restingSurface == null) {
 				return;
 			}
 			float pressedOffset = pointerId != -1 && !disabled ? 1f : 0f;
@@ -727,19 +757,22 @@ public final class BukovTouchControls extends Component {
 			shadow.size(
 					Math.max(1f, width - 2f),
 					Math.max(1f, height - 2f));
-			background.x = x;
-			background.y = y + pressedOffset;
-			background.size(width, Math.max(1f, height - 2f));
+			layoutSurface(
+					restingSurface,
+					y + pressedOffset,
+					Math.max(1f, height - 2f));
+			layoutSurface(
+					pressedSurface,
+					y + pressedOffset,
+					Math.max(1f, height - 2f));
+			layoutSurface(
+					disabledSurface,
+					y,
+					Math.max(1f, height - 2f));
 			edge.x = x;
 			edge.y = y + pressedOffset;
 			edge.size(width, pointerId != -1 && !disabled ? 2f : 1.5f);
-			float iconSize = Math.max(
-					9f,
-					Math.min(
-							ACTION_ICON_MAX_PX,
-							Math.min(
-									width - 5f,
-									height * ACTION_ICON_HEIGHT_RATIO)));
+			float iconSize = actionIconSize(width, height);
 			float iconTop = y + 1.5f + pressedOffset;
 			float plateSize = Math.min(
 					Math.max(1f, width - 3f),
@@ -769,11 +802,20 @@ public final class BukovTouchControls extends Component {
 			pointerArea.height = hitHeight;
 		}
 
+		private void layoutSurface(
+				NinePatch surface,
+				float surfaceY,
+				float surfaceHeight) {
+			surface.x = x;
+			surface.y = surfaceY;
+			surface.size(width, surfaceHeight);
+		}
+
 		private void setPressed(boolean pressed) {
 			boolean visiblyPressed = pressed && !disabled;
-			background.alpha(disabled
-					? 0.48f
-					: visiblyPressed ? 1f : 0.82f);
+			restingSurface.visible = !disabled && !visiblyPressed;
+			pressedSurface.visible = !disabled && visiblyPressed;
+			disabledSurface.visible = disabled;
 			shadow.alpha(disabled
 					? 0.30f
 					: visiblyPressed ? 0.35f : 0.90f);
@@ -822,7 +864,7 @@ public final class BukovTouchControls extends Component {
 			if (pointerArea != null) {
 				pointerArea.reset();
 			}
-			if (background != null) {
+			if (restingSurface != null) {
 				setPressed(false);
 			}
 		}

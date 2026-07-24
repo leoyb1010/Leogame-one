@@ -35,6 +35,17 @@ public class BukovRaidModeTest {
 				BukovRaidMode.TRAINING_GROUND.targetMinutesMinimum, 0f);
 		assertEquals(5f,
 				BukovRaidMode.TRAINING_GROUND.targetMinutesMaximum, 0f);
+		assertFalse(BukovRaidMode.TRAINING_GROUND.hasTimeLimit());
+		assertFalse(BukovRaidMode.TRAINING_GROUND
+				.convergenceStarted(Float.MAX_VALUE));
+		assertFalse(BukovRaidMode.TRAINING_GROUND
+				.overtime(Float.MAX_VALUE));
+		assertEquals(1f, BukovRaidMode.TRAINING_GROUND
+				.pressureMultiplier(Float.MAX_VALUE), 0f);
+		assertEquals(
+				BukovRaidMode.TRAINING_GROUND.maximumActiveEnemies,
+				BukovRaidMode.TRAINING_GROUND
+						.maximumActiveEnemiesAt(Float.MAX_VALUE));
 		assertEquals(2,
 				BukovRaidMode.TRAINING_GROUND.initialEnemyCount);
 		assertEquals(BukovRaidMode.TRAINING_GROUND,
@@ -43,6 +54,17 @@ public class BukovRaidModeTest {
 				BukovRaidMode.TRAINING_GROUND.next());
 		assertTrue(BukovRaidMode.BOSS_CONTRACT.bossEarliestSeconds
 				< BukovRaidMode.EXPEDITION.bossEarliestSeconds);
+	}
+
+	@Test
+	public void trainingMapIsFixedAndFormalRaidSeedsRemainDistinct() {
+		assertEquals(
+				BukovRaidMode.TRAINING_GROUND.mapSeed(1L),
+				BukovRaidMode.TRAINING_GROUND.mapSeed(999_999L));
+		for (BukovRaidMode mode : BukovRaidMode.values()) {
+			if (mode.trainingGround()) continue;
+			assertEquals(123_456L, mode.mapSeed(123_456L));
+		}
 	}
 
 	@Test

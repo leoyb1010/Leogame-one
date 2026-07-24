@@ -14,6 +14,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHostRecoveryPoli
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
@@ -208,6 +209,12 @@ public final class BukovDeploymentScene extends PixelScene {
 				? deploymentProfile.selectedRaidMode()
 				: checkpoint.session().raidMode();
 		BukovMode.prepareRaidMode(deploymentMode);
+		BukovMode.prepareGroundStarterKit(
+				deploymentMode.usesPlayerLoadout()
+						&& BukovStarterProvisioning
+								.requiresGroundCombatPair(
+										deploymentProfile.loadout().items(
+												deploymentProfile.stash())));
 		boolean hostExists =
 				GamesInProgress.gameExists(BukovMode.SAVE_SLOT);
 		BukovHostRecoveryPolicy.Action recovery =

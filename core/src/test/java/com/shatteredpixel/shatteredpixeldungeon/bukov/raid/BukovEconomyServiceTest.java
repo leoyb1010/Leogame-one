@@ -79,6 +79,32 @@ public class BukovEconomyServiceTest {
 	}
 
 	@Test
+	public void directPurchaseCannotBypassCareerStockUnlock()
+			throws IOException {
+		InMemoryBukovSaveService saves = funded(20_000L);
+		BukovEconomyService economy = new BukovEconomyService(saves);
+
+		try {
+			economy.buy("locked-buy", "firearm_frontier_762");
+			fail("sealed-lab firearm must not be purchasable on a new profile");
+		} catch (IllegalStateException expected) {
+			assertTrue(expected.getMessage().contains("progression"));
+		}
+		assertEquals(20_000L, saves.loadProfile().currency());
+		assertEquals(0, saves.loadProfile().stash().distinctItemCount());
+
+		BukovProfile unlocked = saves.loadProfile();
+		unlocked.unlockMap("sealed_lab");
+		saves.saveProfile(unlocked);
+
+		BukovEconomyService.Receipt purchased =
+				economy.buy("unlocked-buy", "firearm_frontier_762");
+		assertEquals(-14_560L, purchased.currencyDelta);
+		assertNotNull(
+				saves.loadProfile().stash().item("vendor:unlocked-buy"));
+	}
+
+	@Test
 	public void saleRemovesExactUidAndCreditsConditionedValue()
 			throws IOException {
 		InMemoryBukovSaveService saves = new InMemoryBukovSaveService();
@@ -236,7 +262,7 @@ public class BukovEconomyServiceTest {
 
 		try {
 			new BukovEconomyService(failing)
-					.buy("will-fail", "field_pack_1");
+					.buy("will-fail", "scout_pack_1");
 			fail("save failure must escape");
 		} catch (IOException expected) {
 			assertTrue(expected.getMessage().contains("injected"));

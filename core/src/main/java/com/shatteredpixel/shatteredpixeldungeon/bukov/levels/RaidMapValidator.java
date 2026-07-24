@@ -150,7 +150,7 @@ public final class RaidMapValidator {
 			}
 		}
 
-		Result extractionResult = validateExtractions(layout, marks);
+		Result extractionResult = validateExtractions(layout, marks, mode);
 		if (!extractionResult.valid) return extractionResult;
 		Result anchorResult = validateStoredAnchors(layout, marks);
 		if (!anchorResult.valid) return anchorResult;
@@ -299,7 +299,8 @@ public final class RaidMapValidator {
 	}
 
 	private static Result validateExtractions(BukovRaidLayout layout,
-			Map<String, BukovRaidLayout.Mark> marks) {
+			Map<String, BukovRaidLayout.Mark> marks,
+			BukovRaidMode mode) {
 		if (layout.extractions.size() != 3) {
 			return Result.invalid(Failure.INVALID_EXTRACTION, "Expected E01, E02 and E03");
 		}
@@ -319,6 +320,8 @@ public final class RaidMapValidator {
 		ExtractionDefinition baseline = layout.extraction("E01");
 		ExtractionDefinition conditional = layout.extraction("E02");
 		ExtractionDefinition temporary = layout.extraction("E03");
+		BukovRaidMode effectiveMode =
+				mode == null ? BukovRaidMode.EXPEDITION : mode;
 		if (baseline == null
 				|| baseline.type != ExtractionDefinition.Type.BASELINE
 				|| !baseline.isKeylessAndBossIndependent()
@@ -333,8 +336,10 @@ public final class RaidMapValidator {
 				|| temporary == null
 				|| temporary.type != ExtractionDefinition.Type.TEMPORARY
 				|| !temporary.requiredEvent.isEmpty()
-				|| temporary.availableFromSeconds < 480f
-				|| temporary.availableFromSeconds > 840f
+				|| temporary.availableFromSeconds
+						< effectiveMode.temporaryExtractionEarliestSeconds()
+				|| temporary.availableFromSeconds
+						> effectiveMode.temporaryExtractionLatestSeconds()
 				|| temporary.availableUntilSeconds - temporary.availableFromSeconds != 120f
 				|| !ids.contains("E01") || !ids.contains("E02") || !ids.contains("E03")) {
 			return Result.invalid(Failure.INVALID_EXTRACTION, ids.toString());

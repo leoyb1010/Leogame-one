@@ -238,7 +238,7 @@ public final class BukovRoomGraphAdapter {
 				spawns, highValue, boss, extractionMarks, seed, diagnostics);
 		normalizeSupportingZones(rooms, marksById, spawns, extractionMarks,
 				highValue, boss, raidMode, seed);
-		addExtractions(layout, extractionMarks, seed);
+		addExtractions(layout, extractionMarks, seed, raidMode);
 		addRiskRoutes(
 				layout,
 				roomId(entrance),
@@ -712,14 +712,17 @@ public final class BukovRoomGraphAdapter {
 	}
 
 	private static void addExtractions(BukovRaidLayout layout,
-			List<BukovRaidLayout.Mark> extractionMarks, long seed) {
+			List<BukovRaidLayout.Mark> extractionMarks,
+			long seed,
+			BukovRaidMode raidMode) {
 		if (extractionMarks.isEmpty()) return;
 		layout.extractions.add(ExtractionDefinition.baseline(extractionMarks.get(0).roomId()));
 		if (extractionMarks.size() > 1) {
 			layout.extractions.add(ExtractionDefinition.conditional(extractionMarks.get(1).roomId()));
 		}
 		if (extractionMarks.size() > 2) {
-			float temporaryStart = 480f + com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers.floorMod(seed, 361L);
+			float temporaryStart =
+					raidMode.temporaryExtractionStartSeconds(seed);
 			layout.extractions.add(ExtractionDefinition.temporary(
 					extractionMarks.get(2).roomId(), temporaryStart));
 		}

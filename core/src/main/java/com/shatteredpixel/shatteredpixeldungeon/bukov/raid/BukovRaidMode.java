@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import java.util.ArrayList;
@@ -41,6 +42,9 @@ public enum BukovRaidMode {
 			BukovMessages.get("bukov.economy.mode.summary_training_ground"),
 			3f, 5f, 20f, 4, 2, false, Float.MAX_VALUE, 1f,
 			18, 16, 20, 0.22f, 0.55f, 3);
+
+	private static final long FIXED_TRAINING_MAP_SEED =
+			0x42554B4F5654524CL;
 
 	public final String displayName;
 	public final String summary;
@@ -126,6 +130,20 @@ public enum BukovRaidMode {
 		return this == TRAINING_GROUND;
 	}
 
+	/**
+	 * Training is an untimed firing range. Its 3-5 minute values remain a
+	 * recommended exercise length for presentation, never a convergence or
+	 * overtime deadline.
+	 */
+	public boolean hasTimeLimit() {
+		return !trainingGround();
+	}
+
+	/** Every training deployment reuses one authored, validated map. */
+	public long mapSeed(long raidSeed) {
+		return trainingGround() ? FIXED_TRAINING_MAP_SEED : raidSeed;
+	}
+
 	public boolean protectsHighestValueDeploymentOnDeath() {
 		return this == QUICK_SWEEP;
 	}
@@ -139,14 +157,15 @@ public enum BukovRaidMode {
 	}
 
 	public boolean convergenceStarted(float elapsedSeconds) {
-		return elapsedSeconds >= targetMinimumSeconds();
+		return hasTimeLimit() && elapsedSeconds >= targetMinimumSeconds();
 	}
 
 	public boolean overtime(float elapsedSeconds) {
-		return elapsedSeconds >= targetMaximumSeconds();
+		return hasTimeLimit() && elapsedSeconds >= targetMaximumSeconds();
 	}
 
 	public float pressureMultiplier(float elapsedSeconds) {
+		if (!hasTimeLimit()) return 1f;
 		if (elapsedSeconds <= targetMinimumSeconds()) return 1f;
 		if (elapsedSeconds >= targetMaximumSeconds()) return 1.75f;
 		float window = targetMaximumSeconds() - targetMinimumSeconds();
@@ -162,6 +181,32 @@ public enum BukovRaidMode {
 		return maximumActiveEnemies
 				+ (overtime(elapsedSeconds) ? 2
 						: convergenceStarted(elapsedSeconds) ? 1 : 0);
+	}
+
+	/**
+	 * E03 must become useful inside each mode's own session envelope. Expedition
+	 * preserves the authored first-map 8-14 minute window; compact modes reserve
+	 * the final two minutes for the 120-second extraction opportunity.
+	 */
+	public float temporaryExtractionEarliestSeconds() {
+		if (trainingGround()) return 0f;
+		if (this == EXPEDITION) return 8f * 60f;
+		return Math.max(0f, targetMinimumSeconds() - 2f * 60f);
+	}
+
+	public float temporaryExtractionLatestSeconds() {
+		if (trainingGround()) return 0f;
+		if (this == EXPEDITION) return 14f * 60f;
+		return Math.max(
+				temporaryExtractionEarliestSeconds(),
+				targetMaximumSeconds() - 2f * 60f);
+	}
+
+	public float temporaryExtractionStartSeconds(long raidSeed) {
+		int earliest = Math.round(temporaryExtractionEarliestSeconds());
+		int latest = Math.round(temporaryExtractionLatestSeconds());
+		long choices = (long)latest - earliest + 1L;
+		return earliest + BukovNumbers.floorMod(raidSeed, choices);
 	}
 
 	/**

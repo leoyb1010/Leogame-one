@@ -34,6 +34,7 @@ public class BukovLooseLootPlannerTest {
 	private long previousSeed;
 	private String previousVersion;
 	private BukovRaidMode previousRaidMode;
+	private boolean previousGroundStarterKitRequired;
 
 	@Before
 	public void captureGlobals() {
@@ -42,6 +43,9 @@ public class BukovLooseLootPlannerTest {
 		previousSeed = Dungeon.seed;
 		previousVersion = Game.version;
 		previousRaidMode = BukovMode.raidMode();
+		previousGroundStarterKitRequired =
+				BukovMode.groundStarterKitRequired();
+		BukovMode.prepareGroundStarterKit(true);
 		if (Game.version == null) Game.version = "test";
 	}
 
@@ -52,10 +56,12 @@ public class BukovLooseLootPlannerTest {
 		Dungeon.seed = previousSeed;
 		Game.version = previousVersion;
 		BukovMode.prepareRaidMode(previousRaidMode);
+		BukovMode.prepareGroundStarterKit(
+				previousGroundStarterKitRequired);
 	}
 
 	@Test
-	public void everyFirstRaidAuthorsFiveVisibleGroundPickupsOutsideSpawn() {
+	public void unarmedFirstRaidAuthorsVisibleCombatPairInsideSpawnRoom() {
 		BukovMode.prepareRaidMode(BukovRaidMode.EXPEDITION);
 		for (long seed : SEEDS) {
 			Dungeon.depth = 1;
@@ -73,27 +79,58 @@ public class BukovLooseLootPlannerTest {
 							level.entrance(),
 							BukovRaidMode.EXPEDITION,
 							level.semanticCell("scrap_compactor"));
+			List<BukovLooseLootPlanner.Placement> repeated =
+					BukovLooseLootPlanner.plan(
+							level.width(),
+							level.height(),
+							level.passable,
+							level.raidLayout(),
+							level.entrance(),
+							BukovRaidMode.EXPEDITION,
+							level.semanticCell("scrap_compactor"));
 
 			assertEquals("seed=" + seed,
 					BukovLooseLootPlanner.REQUIRED_PLACEMENT_COUNT,
 					placements.size());
+			assertSamePlacements(placements, repeated);
 			Set<Integer> cells = new HashSet<>();
 			boolean foundWeapon = false;
 			boolean foundAmmo = false;
 			boolean foundReserveAmmo = false;
 			boolean foundMedical = false;
 			boolean foundSalvage = false;
+			String deploymentRoomId = deploymentRoomId(level);
 			for (BukovLooseLootPlanner.Placement placement : placements) {
 				assertTrue("seed=" + seed,
 						cells.add(placement.cell));
-				assertTrue("seed=" + seed,
-						placement.distanceFromDeployment
-								>= BukovLooseLootPlanner
-										.MINIMUM_DISTANCE_FROM_DEPLOYMENT);
 				BukovRaidLayout.Mark mark =
 						level.raidLayout().mark(placement.roomId);
 				assertNotNull(mark);
-				assertFalse(mark.zone == BukovRaidLayout.Zone.SPAWN);
+				boolean starter = placement.kind
+						== BukovLooseLootPlanner.Kind.WEAPON
+						|| placement.kind
+								== BukovLooseLootPlanner.Kind.AMMUNITION
+						|| placement.kind
+								== BukovLooseLootPlanner.Kind
+										.RESERVE_AMMUNITION;
+				if (starter) {
+					assertEquals(
+							BukovRaidLayout.Zone.SPAWN,
+							mark.zone);
+					assertEquals(deploymentRoomId, placement.roomId);
+					assertTrue(placement.distanceFromDeployment > 0);
+					assertTrue(
+							placement.distanceFromDeployment
+									<= BukovLooseLootPlanner
+											.GROUND_STARTER_RADIUS);
+				} else {
+					assertTrue(
+							placement.distanceFromDeployment
+									>= BukovLooseLootPlanner
+											.MINIMUM_DISTANCE_FROM_DEPLOYMENT);
+					assertFalse(
+							mark.zone == BukovRaidLayout.Zone.SPAWN);
+				}
 				if (placement.kind == BukovLooseLootPlanner.Kind.MEDICAL
 						|| placement.kind
 								== BukovLooseLootPlanner.Kind.SALVAGE) {
@@ -114,24 +151,20 @@ public class BukovLooseLootPlannerTest {
 								&& "firearm:needle_9".equals(
 										((BukovEconomicItem) heap.peek())
 												.bukovDefinitionId());
-						assertTrue("seed=" + seed,
-								placement.distanceFromDeployment
-										<= BukovLooseLootPlanner
-												.INTRODUCTION_RADIUS);
 						break;
 					case AMMUNITION:
-						foundAmmo = heap.peek() instanceof AmmoStack;
-						assertTrue("seed=" + seed,
-								placement.distanceFromDeployment
-										<= BukovLooseLootPlanner
-												.INTRODUCTION_RADIUS);
+						foundAmmo = heap.peek() instanceof AmmoStack
+								&& "ammo_9_training".equals(
+										((AmmoStack) heap.peek())
+												.definitionId())
+								&& heap.peek().quantity() == 18;
 						break;
 					case RESERVE_AMMUNITION:
-						foundReserveAmmo = heap.peek() instanceof AmmoStack;
-						assertTrue("seed=" + seed,
-								placement.distanceFromDeployment
-										<= BukovLooseLootPlanner
-												.INTRODUCTION_RADIUS);
+						foundReserveAmmo = heap.peek() instanceof AmmoStack
+								&& "ammo_9_standard".equals(
+										((AmmoStack) heap.peek())
+												.definitionId())
+								&& heap.peek().quantity() == 18;
 						break;
 					case MEDICAL:
 						foundMedical = heap.peek() instanceof BukovLootItem
@@ -150,6 +183,37 @@ public class BukovLooseLootPlannerTest {
 			assertTrue("seed=" + seed, foundReserveAmmo);
 			assertTrue("seed=" + seed, foundMedical);
 			assertTrue("seed=" + seed, foundSalvage);
+		}
+	}
+
+	@Test
+	public void completeCombatLoadoutDoesNotReceiveDuplicateGroundPair() {
+		BukovMode.prepareRaidMode(BukovRaidMode.EXPEDITION);
+		Dungeon.depth = 1;
+		Dungeon.branch = 0;
+		Dungeon.seed = 94823742L;
+
+		BukovLevel level = new BukovLevel();
+		level.create();
+		List<BukovLooseLootPlanner.Placement> placements =
+				BukovLooseLootPlanner.plan(
+						level.width(),
+						level.height(),
+						level.passable,
+						level.raidLayout(),
+						level.entrance(),
+						BukovRaidMode.EXPEDITION,
+						level.semanticCell("scrap_compactor"),
+						false);
+
+		assertEquals(
+				BukovLooseLootPlanner.BASE_PLACEMENT_COUNT,
+				placements.size());
+		for (BukovLooseLootPlanner.Placement placement : placements) {
+			assertTrue(placement.kind
+					== BukovLooseLootPlanner.Kind.MEDICAL
+					|| placement.kind
+							== BukovLooseLootPlanner.Kind.SALVAGE);
 		}
 	}
 
@@ -190,5 +254,33 @@ public class BukovLooseLootPlannerTest {
 		}
 		assertTrue(eligibleTargetCells
 				>= BukovRaidMode.TRAINING_GROUND.initialEnemyCount);
+	}
+
+	private static String deploymentRoomId(BukovLevel level) {
+		int entrance = level.entrance();
+		int x = entrance % level.width();
+		int y = entrance / level.width();
+		for (BukovRaidLayout.Mark mark : level.raidLayout().marks) {
+			if (x >= mark.left && x <= mark.right
+					&& y >= mark.top && y <= mark.bottom) {
+				return mark.roomId();
+			}
+		}
+		throw new AssertionError("deployment room missing");
+	}
+
+	private static void assertSamePlacements(
+			List<BukovLooseLootPlanner.Placement> first,
+			List<BukovLooseLootPlanner.Placement> second) {
+		assertEquals(first.size(), second.size());
+		for (int index = 0; index < first.size(); index++) {
+			BukovLooseLootPlanner.Placement expected = first.get(index);
+			BukovLooseLootPlanner.Placement actual = second.get(index);
+			assertEquals(expected.kind, actual.kind);
+			assertEquals(expected.cell, actual.cell);
+			assertEquals(expected.distanceFromDeployment,
+					actual.distanceFromDeployment);
+			assertEquals(expected.roomId, actual.roomId);
+		}
 	}
 }

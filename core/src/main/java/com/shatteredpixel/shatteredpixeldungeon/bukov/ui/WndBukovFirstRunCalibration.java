@@ -158,8 +158,10 @@ public final class WndBukovFirstRunCalibration extends Window {
 		private final ColorBlock surface;
 		private final ColorBlock edge;
 		private final ColorBlock focusRule;
+		private final BukovTouchIcon actionIcon;
 		private final RenderedTextBlock label;
 		private final RenderedTextBlock value;
+		private boolean pointerPressed;
 
 		private CalibrationButton(Calibration calibration) {
 			this.calibration = calibration;
@@ -181,14 +183,28 @@ public final class WndBukovFirstRunCalibration extends Window {
 					1, 1, tokens.color("accent.valuable"));
 			focusRule.visible = false;
 			add(focusRule);
+			actionIcon = done
+					? new BukovTouchIcon(
+							BukovTouchIcon.Glyph.DEPLOY,
+							tokens.color("accent.extract"),
+							tokens.color("text.primary"),
+							tokens.color("text.disabled"))
+					: null;
+			if (actionIcon != null) {
+				add(actionIcon);
+			}
 			label = PixelScene.renderTextBlock(
 					tokens.scaledTypographyPx(
-							BukovVisualContract.FONT_BODY));
+							done
+									? BukovVisualContract.FONT_CAPTION
+									: BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
 			value = PixelScene.renderTextBlock(
 					tokens.scaledTypographyPx(
-							BukovVisualContract.FONT_BODY));
+							done
+									? BukovVisualContract.FONT_CAPTION
+									: BukovVisualContract.FONT_BODY));
 			value.align(RenderedTextBlock.RIGHT_ALIGN);
 			value.hardlight(tokens.color(
 					done ? "accent.extract" : "accent.interact"));
@@ -221,6 +237,18 @@ public final class WndBukovFirstRunCalibration extends Window {
 			}
 			refresh();
 			updateFocus();
+		}
+
+		@Override
+		protected void onPointerDown() {
+			pointerPressed = true;
+			refreshActionIcon();
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pointerPressed = false;
+			refreshActionIcon();
 		}
 
 		private void refresh() {
@@ -264,6 +292,13 @@ public final class WndBukovFirstRunCalibration extends Window {
 			label.hardlight(focused
 					? tokens.color("accent.valuable")
 					: tokens.color("text.primary"));
+			refreshActionIcon();
+		}
+
+		private void refreshActionIcon() {
+			if (actionIcon != null) {
+				actionIcon.visualState(pointerPressed, false);
+			}
 		}
 
 		@Override
@@ -278,10 +313,26 @@ public final class WndBukovFirstRunCalibration extends Window {
 			focusRule.x = x;
 			focusRule.y = y + height - 1;
 			focusRule.size(width, 1);
+			float labelLeft = x + 6;
+			float labelWidth = width * 0.48f;
+			if (actionIcon != null) {
+				float iconSize = Math.max(
+						10f,
+						Math.min(14f, height - 6f));
+				actionIcon.setRect(
+						labelLeft,
+						y + (height - iconSize) * 0.5f,
+						iconSize,
+						iconSize);
+				labelLeft += iconSize + 3f;
+				labelWidth = Math.max(
+						1f,
+						labelWidth - iconSize - 3f);
+			}
 			label.setRect(
-					x + 6,
+					labelLeft,
 					y + (height - 9) / 2f,
-					width * 0.48f,
+					labelWidth,
 					9);
 			value.setRect(
 					x + width * 0.47f,
