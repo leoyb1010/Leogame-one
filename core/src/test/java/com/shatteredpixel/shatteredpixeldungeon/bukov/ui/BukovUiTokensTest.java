@@ -19,11 +19,11 @@ public class BukovUiTokensTest {
 		assertEquals(0x02090C, tokens.color("ink.shadow"));
 		assertEquals(0x101C20, tokens.color("panel.deep"));
 		assertEquals(0xE05A3A, tokens.color("accent.danger"));
-		assertEquals(9, tokens.typographyPx("hud"));
-		assertEquals(11, tokens.typographyPx("body"));
-		assertEquals(14, tokens.typographyPx("section"));
-		assertEquals(18, tokens.typographyPx("title"));
-		assertEquals(24, tokens.typographyPx("display"));
+		assertEquals(7, tokens.typographyPx("hud"));
+		assertEquals(8, tokens.typographyPx("body"));
+		assertEquals(9, tokens.typographyPx("section"));
+		assertEquals(12, tokens.typographyPx("title"));
+		assertEquals(16, tokens.typographyPx("display"));
 		assertEquals(120, tokens.motionMs("fast"));
 		assertEquals(8f, tokens.maximumShakePx(), 0f);
 		assertEquals(
@@ -61,15 +61,15 @@ public class BukovUiTokensTest {
 	public void rejectsTypographyOutsideAuthoredScale()
 			throws IOException {
 		BukovUiTokens.parse(
-				authoredJson().replace("\"hud\": 9", "\"hud\": 8"));
+				authoredJson().replace("\"hud\": 7", "\"hud\": 6"));
 	}
 
 	private static String minimalJson(String colors) {
 		return "{"
 				+ "\"uiTokensVersion\":1,"
 				+ "\"colors\":{" + colors + "},"
-				+ "\"typographyPx\":{\"hud\":9,\"body\":11,"
-				+ "\"section\":14,\"title\":18,\"display\":24},"
+				+ "\"typographyPx\":{\"hud\":7,\"body\":8,"
+				+ "\"section\":9,\"title\":12,\"display\":16},"
 				+ "\"motionMs\":{\"instant\":70,\"fast\":120,\"base\":180,"
 				+ "\"slow\":320,\"ritual\":900},"
 				+ "\"hapticMaximumShakePx\":8,"

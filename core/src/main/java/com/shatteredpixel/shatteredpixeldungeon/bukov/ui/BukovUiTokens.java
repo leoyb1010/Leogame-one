@@ -224,13 +224,13 @@ public final class BukovUiTokens {
 		}
 		String[] tokens = {
 				"hud", "body", "section", "title", "display"};
-		int[] authoredScale = {9, 11, 14, 18, 24};
+		int[] authoredScale = {7, 8, 9, 12, 16};
 		for (int index = 0; index < tokens.length; index++) {
 			String token = tokens[index];
 			int size = require(values, token, "typography");
 			if (size != authoredScale[index]) {
 				throw new IllegalArgumentException(
-						"typographyPx must use the authored 9/11/14/18/24 scale");
+						"typographyPx must use the authored 7/8/9/12/16 scale");
 			}
 		}
 	}

@@ -53,11 +53,11 @@
     "rarity.legendary": "#E3B94E"
   },
   "typographyPx": {
-    "hud": 9,
-    "body": 11,
-    "section": 14,
-    "title": 18,
-    "display": 24
+    "hud": 7,
+    "body": 8,
+    "section": 9,
+    "title": 12,
+    "display": 16
   },
   "motionMs": {
     "instant": 70,
