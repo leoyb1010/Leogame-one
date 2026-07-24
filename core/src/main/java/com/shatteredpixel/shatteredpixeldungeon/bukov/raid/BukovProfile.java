@@ -19,7 +19,7 @@ import java.util.Set;
  */
 public final class BukovProfile implements Bundlable {
 
-	public static final int CURRENT_VERSION = 5;
+	public static final int CURRENT_VERSION = 6;
 
 	private static final String PROFILE_VERSION = "profile_version";
 	private static final String CURRENCY = "currency";
@@ -34,6 +34,7 @@ public final class BukovProfile implements Bundlable {
 	private static final String RAIDS_STARTED = "raids_started";
 	private static final String SEEN_TUTORIAL_EVENTS = "seen_tutorial_events";
 	private static final String ECONOMY_RECEIPTS = "economy_receipts";
+	private static final String SELECTED_MAP = "selected_map";
 
 	private int profileVersion = CURRENT_VERSION;
 	private long currency;
@@ -50,6 +51,7 @@ public final class BukovProfile implements Bundlable {
 			new LinkedHashSet<>();
 	private final Map<String, BukovEconomyReceipt> economyReceipts =
 			new LinkedHashMap<>();
+	private String selectedMap = BukovCareerProgression.STARTING_MAP;
 
 	public BukovProfile() {
 	}
@@ -163,6 +165,18 @@ public final class BukovProfile implements Bundlable {
 		return Collections.unmodifiableSet(new LinkedHashSet<>(completedContracts));
 	}
 
+	public String selectedMap() {
+		return selectedMap;
+	}
+
+	public void selectMap(String mapId) {
+		String selected = requireId(mapId, "mapId");
+		if (!unlockedMaps.contains(selected)) {
+			throw new IllegalArgumentException("Map is not unlocked: " + selected);
+		}
+		selectedMap = selected;
+	}
+
 	public boolean isSettled(String raidId) {
 		return settlementsByRaid.containsKey(raidId);
 	}
@@ -220,6 +234,7 @@ public final class BukovProfile implements Bundlable {
 		result.lastLoadoutDefinitions.addAll(lastLoadoutDefinitions);
 		result.selectedRaidMode = selectedRaidMode;
 		result.raidsStarted = raidsStarted;
+		result.selectedMap = selectedMap;
 		result.seenTutorialEvents.addAll(seenTutorialEvents);
 		for (BukovEconomyReceipt receipt : economyReceipts.values()) {
 			result.economyReceipts.put(
@@ -253,6 +268,7 @@ public final class BukovProfile implements Bundlable {
 		lastLoadoutDefinitions.addAll(replacement.lastLoadoutDefinitions);
 		selectedRaidMode = replacement.selectedRaidMode;
 		raidsStarted = replacement.raidsStarted;
+		selectedMap = replacement.selectedMap;
 		seenTutorialEvents.clear();
 		seenTutorialEvents.addAll(replacement.seenTutorialEvents);
 		economyReceipts.clear();
@@ -288,6 +304,7 @@ public final class BukovProfile implements Bundlable {
 		}
 		bundle.put(SEEN_TUTORIAL_EVENTS, tutorialEvents);
 		bundle.put(ECONOMY_RECEIPTS, economyReceipts.values());
+		bundle.put(SELECTED_MAP, selectedMap);
 	}
 
 	@Override
@@ -371,6 +388,13 @@ public final class BukovProfile implements Bundlable {
 						(BukovEconomyReceipt) stored);
 			}
 		}
+		if (restoredVersion >= 6) {
+			String restoredMap = bundle.getString(SELECTED_MAP);
+			if (restoredMap != null
+					&& restored.unlockedMaps.contains(restoredMap)) {
+				restored.selectedMap = restoredMap;
+			}
+		}
 		Collection<Bundlable> storedSettlements = bundle.getCollection(SETTLEMENTS);
 		for (Bundlable stored : storedSettlements) {
 			if (!(stored instanceof SettlementReceipt)) {
@@ -380,7 +404,8 @@ public final class BukovProfile implements Bundlable {
 		}
 		// v1 had no loadout; v1-v2 had no remembered deployment template;
 		// v1-v3 default to expedition and have no tutorial ledger.
-		// v1-v4 have no durable vendor transaction receipts.
+		// v1-v4 have no durable vendor transaction receipts; v1-v5 select
+		// the starting region until the player explicitly changes it.
 		restored.profileVersion = CURRENT_VERSION;
 		replaceWith(restored);
 	}

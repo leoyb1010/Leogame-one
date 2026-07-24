@@ -10,6 +10,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
@@ -113,6 +114,8 @@ public final class BukovRaidHud extends Component {
 	private float healthFraction;
 	private float uiSeconds;
 	private float healthFlashRemaining;
+	private int uiScaleLevel = -1;
+	private float uiScale = 1f;
 
 	public BukovRaidHud() {
 		super();
@@ -205,6 +208,16 @@ public final class BukovRaidHud extends Component {
 		return availableWidth >= WIDE_THRESHOLD ? 38f : 48f;
 	}
 
+	public static float preferredHeight(
+			float availableWidth, int scaleLevel) {
+		return preferredHeight(availableWidth)
+				* scaleMultiplier(scaleLevel);
+	}
+
+	public static float scaleMultiplier(int scaleLevel) {
+		return 1f + Math.max(0, Math.min(2, scaleLevel)) * 0.25f;
+	}
+
 	@Override
 	public void update() {
 		super.update();
@@ -215,6 +228,7 @@ public final class BukovRaidHud extends Component {
 	}
 
 	public void refresh() {
+		applyUiScale(SPDSettings.bukovUiScale());
 		if (hudSource != null) {
 			hudSource.readRaidHudState(live);
 		}
@@ -224,6 +238,20 @@ public final class BukovRaidHud extends Component {
 		refreshCombatAwareness();
 		refreshAnimationState();
 		layout();
+	}
+
+	private void applyUiScale(int scaleLevel) {
+		int clamped = Math.max(0, Math.min(2, scaleLevel));
+		if (clamped == uiScaleLevel) return;
+		uiScaleLevel = clamped;
+		uiScale = scaleMultiplier(clamped);
+		// RenderedTextBlock.zoom compounds with the 3x iOS UI camera and can
+		// explode glyphs across the whole viewport. UI scaling therefore grows
+		// safe geometry, reticle, badges and touch affordances while keeping
+		// authored text at its verified readable size.
+		if (width > 0f) {
+			height = preferredHeight(width, clamped);
+		}
 	}
 
 	private void refreshVitals() {
@@ -547,12 +575,15 @@ public final class BukovRaidHud extends Component {
 				y + actualHeight + 42f,
 				viewportHeight * 0.52f);
 		float minViewport = Math.min(viewportWidth, viewportHeight);
-		float aimRadius = clamp(minViewport * 0.095f, 24f, 42f);
+		float aimRadius = clamp(
+				minViewport * 0.095f,
+				24f * uiScale,
+				42f * uiScale);
 		float crosshairX = centerX + live.aimX() * aimRadius;
 		float crosshairY = centerY + live.aimY() * aimRadius;
 		positionReticle(crosshairX, crosshairY);
 
-		float navigationRadius = aimRadius + 36f;
+		float navigationRadius = aimRadius + 36f * uiScale;
 		float navigationX = centerX
 				+ directionX(live.navigationDirection())
 						* navigationRadius;
@@ -564,12 +595,12 @@ public final class BukovRaidHud extends Component {
 				navigationText,
 				navigationX,
 				navigationY,
-				112f,
+				112f * uiScale,
 				viewportWidth,
 				viewportHeight,
 				y + actualHeight + 3f);
 
-		float threatRadius = aimRadius + 55f;
+		float threatRadius = aimRadius + 55f * uiScale;
 		float threatX = centerX
 				+ directionX(live.threatDirection()) * threatRadius;
 		float threatY = centerY
@@ -577,20 +608,23 @@ public final class BukovRaidHud extends Component {
 		if (live.threatDirection() != null
 				&& live.threatDirection()
 						== live.navigationDirection()) {
-			threatX -= directionY(live.threatDirection()) * 18f;
-			threatY += directionX(live.threatDirection()) * 18f;
+			threatX -= directionY(live.threatDirection())
+					* 18f * uiScale;
+			threatY += directionX(live.threatDirection())
+					* 18f * uiScale;
 		}
 		positionBadge(
 				threatBadge,
 				threatText,
 				threatX,
 				threatY,
-				94f,
+				94f * uiScale,
 				viewportWidth,
 				viewportHeight,
 				y + actualHeight + 3f);
 
-		float feedbackWidth = Math.min(160f, viewportWidth - 12f);
+		float feedbackWidth = Math.min(
+				160f * uiScale, viewportWidth - 12f);
 		float feedbackX = centerX - feedbackWidth * 0.5f;
 		interactionText.maxWidth((int)feedbackWidth);
 		interactionText.setPos(feedbackX, centerY + aimRadius + 14f);
@@ -601,8 +635,8 @@ public final class BukovRaidHud extends Component {
 	}
 
 	private void positionReticle(float centerX, float centerY) {
-		float gap = 3f;
-		float length = live.firing() ? 6f : 4f;
+		float gap = 3f * uiScale;
+		float length = (live.firing() ? 6f : 4f) * uiScale;
 		reticle[0].x = centerX - gap - length;
 		reticle[0].y = centerY;
 		reticle[0].size(length, 1f);

@@ -8,6 +8,21 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ai;
  */
 public final class FirstRaidEnemySpawnDirector {
 
+	public static final String FIRST_GUNNER = "scavenger_gunner";
+	public static final String FIRST_RUSHER = "melee_rusher";
+	public static final String FIRST_GUARD = "iron_clasp_guard";
+	public static final String FIRST_ALARM = "sensor_doll";
+	public static final String FIRST_ELITE = "iron_clasp_captain";
+	public static final String FIRST_BOSS = "boss_white_line";
+
+	private static final String[] FIRST_RAID_MILESTONES = {
+			FIRST_ELITE,
+			FIRST_ALARM,
+			FIRST_GUARD,
+			FIRST_RUSHER,
+			FIRST_GUNNER
+	};
+
 	public interface ActiveCounts {
 		int active(String definitionId);
 	}
@@ -63,6 +78,9 @@ public final class FirstRaidEnemySpawnDirector {
 				< definition.minimumDistanceFromSpawnRooms) {
 			return false;
 		}
+		if (context.firstRaid && !firstRaidRoster(definition.id)) {
+			return false;
+		}
 		if (definition.optionalRouteOnly && context.mandatorySingleRoute) {
 			return false;
 		}
@@ -80,6 +98,41 @@ public final class FirstRaidEnemySpawnDirector {
 				: definition.minimumSpawnSeconds;
 		return context.elapsedSeconds >= opensAt
 				&& counts.active(definition.id) < limit;
+	}
+
+	/**
+	 * Makes the authored first-level cast actually appear, instead of relying
+	 * on a low-probability weighted roll. The newest unlocked missing role is
+	 * introduced first; normal weighted selection resumes once it is present.
+	 */
+	public static EnemyArchetypeDefinition selectFirstRaidMilestone(
+			Iterable<EnemyArchetypeDefinition> definitions,
+			Context context,
+			ActiveCounts counts) {
+		if (definitions == null || context == null || counts == null) {
+			throw new IllegalArgumentException(
+					"definitions, context, and counts are required");
+		}
+		if (!context.firstRaid) return null;
+		for (String requiredId : FIRST_RAID_MILESTONES) {
+			if (counts.active(requiredId) > 0) continue;
+			for (EnemyArchetypeDefinition definition : definitions) {
+				if (requiredId.equals(definition.id)
+						&& eligible(definition, context, counts)) {
+					return definition;
+				}
+			}
+		}
+		return null;
+	}
+
+	public static boolean firstRaidRoster(String definitionId) {
+		return FIRST_GUNNER.equals(definitionId)
+				|| FIRST_RUSHER.equals(definitionId)
+				|| FIRST_GUARD.equals(definitionId)
+				|| FIRST_ALARM.equals(definitionId)
+				|| FIRST_ELITE.equals(definitionId)
+				|| FIRST_BOSS.equals(definitionId);
 	}
 
 	/**

@@ -6,12 +6,19 @@ import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.shatteredpixel.shatteredpixeldungeon.levels.features.LevelTransition;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
 import com.watabou.utils.Bundle;
+import com.watabou.noosa.Game;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -20,6 +27,61 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class BukovSemanticVisualLayerTest {
+
+	private String previousVersion;
+
+	@Before
+	public void prepareHostStatics() {
+		previousVersion = Game.version;
+		if (Game.version == null) Game.version = "test";
+	}
+
+	@After
+	public void restoreHostStatics() {
+		Game.version = previousVersion;
+	}
+
+	@Test
+	public void sixThemesProduceSixMonochromeReadableSpatialGrammars()
+			throws IOException {
+		ThemeRegistry registry = new ThemeRegistry();
+		registry.loadJson(new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/assets/bukov/content/themes.json")),
+				StandardCharsets.UTF_8));
+		Set<String> fingerprints = new HashSet<>();
+		for (ThemeDefinition theme : registry.all()) {
+			BukovLevel level = level(13, 13);
+			BukovRaidLayout layout = new BukovRaidLayout();
+			layout.seed = 810247L;
+			layout.themeId = theme.id;
+			BukovRaidLayout.Mark mark = new BukovRaidLayout.Mark(
+					1, 1, 11, 11,
+					BukovRaidLayout.Zone.COMBAT, "identity_room");
+			layout.marks.add(mark);
+			for (int y = mark.top + 1; y < mark.bottom; y++) {
+				for (int x = mark.left + 1; x < mark.right; x++) {
+					level.map[x + y * level.width()] = Terrain.EMPTY;
+				}
+			}
+
+			BukovSemanticVisualLayer.apply(level, layout, theme);
+
+			StringBuilder fingerprint = new StringBuilder();
+			for (int y = mark.top + 1; y < mark.bottom; y++) {
+				for (int x = mark.left + 1; x < mark.right; x++) {
+					int terrain = level.map[x + y * level.width()];
+					assertTrue(theme.id + " created a blocked floor",
+							(Terrain.flags[terrain] & Terrain.PASSABLE) != 0);
+					fingerprint.append((char)('A' + terrain));
+				}
+				fingerprint.append('/');
+			}
+			assertTrue(theme.id + " duplicated another theme's floor grammar",
+					fingerprints.add(fingerprint.toString()));
+		}
+		assertTrue(fingerprints.size() == 6);
+	}
 
 	@Test
 	public void dedicatedPainterRemovesFantasyTerrainLanguage() {

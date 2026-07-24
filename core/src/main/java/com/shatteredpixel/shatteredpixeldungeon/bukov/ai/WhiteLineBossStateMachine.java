@@ -23,6 +23,7 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 	private static final String OBJECTIVE = "objective";
 	private static final String VULNERABLE = "vulnerable";
 	private static final String ENCOUNTER_SECONDS = "encounter_seconds";
+	private static final String PHASE_SECONDS = "phase_seconds";
 	private static final String ENCOUNTER_KEY = "encounter_key";
 	private static final String BODY_COUNT = "body_count";
 	private static final String TRUE_BODY_INDEX = "true_body_index";
@@ -57,6 +58,8 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 	}
 
 	public static final float RETREAT_RECOMMENDATION_SECONDS = 120f;
+	public static final float TARGET_MINIMUM_SECONDS = 45f;
+	public static final float TARGET_MAXIMUM_SECONDS = 120f;
 
 	private int maximumHealth;
 	private int phaseTwoThreshold;
@@ -66,6 +69,7 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 	private Objective objective = Objective.NONE;
 	private boolean vulnerable;
 	private float encounterSeconds;
+	private float phaseSeconds;
 	private long encounterKey;
 	private int bodyCount = DEFAULT_BODY_COUNT;
 	private int trueBodyIndex;
@@ -136,6 +140,7 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 		}
 		if (active()) {
 			encounterSeconds += dt;
+			phaseSeconds += dt;
 		}
 	}
 
@@ -308,6 +313,15 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 		return encounterSeconds;
 	}
 
+	public float phaseSeconds() {
+		return phaseSeconds;
+	}
+
+	public boolean insideTargetEncounterWindow() {
+		return encounterSeconds >= TARGET_MINIMUM_SECONDS
+				&& encounterSeconds <= TARGET_MAXIMUM_SECONDS;
+	}
+
 	public int bodyCount() {
 		return bodyCount;
 	}
@@ -335,6 +349,7 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 		phase = nextPhase;
 		objective = nextObjective;
 		vulnerable = false;
+		phaseSeconds = 0f;
 	}
 
 	@Override
@@ -345,6 +360,7 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 		bundle.put(OBJECTIVE, objective);
 		bundle.put(VULNERABLE, vulnerable);
 		bundle.put(ENCOUNTER_SECONDS, encounterSeconds);
+		bundle.put(PHASE_SECONDS, phaseSeconds);
 		bundle.put(ENCOUNTER_KEY, encounterKey);
 		bundle.put(BODY_COUNT, bodyCount);
 		bundle.put(TRUE_BODY_INDEX, trueBodyIndex);
@@ -370,6 +386,9 @@ public final class WhiteLineBossStateMachine implements Bundlable {
 		vulnerable = bundle.getBoolean(VULNERABLE);
 		encounterSeconds = Math.max(
 				0f, bundle.getFloat(ENCOUNTER_SECONDS));
+		phaseSeconds = bundle.contains(PHASE_SECONDS)
+				? Math.max(0f, bundle.getFloat(PHASE_SECONDS))
+				: 0f;
 		// Persist the value as an audit check, but a corrupt or older value
 		// cannot change the seed-authored answer.
 		trueBodyIndex = deterministicBodyIndex(encounterKey, bodyCount);

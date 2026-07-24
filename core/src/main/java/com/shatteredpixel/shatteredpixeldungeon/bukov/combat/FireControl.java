@@ -38,6 +38,7 @@ public final class FireControl {
 
 	private float shotCooldown;
 	private float reloadRemaining;
+	private float recoilSpreadDeg;
 	private boolean previousHeld;
 
 	public void update(float dt,
@@ -55,6 +56,9 @@ public final class FireControl {
 		}
 
 		shotCooldown = Math.max(0f, shotCooldown - dt);
+		recoilSpreadDeg = Math.max(
+				0f,
+				recoilSpreadDeg - definition.recoilRecovery * dt);
 
 		if (reloadRemaining > 0f) {
 			reloadRemaining -= dt;
@@ -96,6 +100,9 @@ public final class FireControl {
 			if (firearm.consumeRound()) {
 				shotCooldown = definition.secondsPerShot();
 				sink.fire(firearm, definition);
+				recoilSpreadDeg = Math.min(
+						12f,
+						recoilSpreadDeg + definition.recoilPerShot);
 			} else {
 				shotCooldown = 0.15f;
 				sink.dryFire();
@@ -116,10 +123,20 @@ public final class FireControl {
 		return reloadRemaining;
 	}
 
+	/**
+	 * Accumulated bloom from the previously fired rounds. The live hitscan
+	 * path adds this to authored base/moving spread, making recoil stats real
+	 * gameplay instead of dead content.
+	 */
+	public float recoilSpreadDeg() {
+		return recoilSpreadDeg;
+	}
+
 	/** Cancels transient trigger/reload state when the equipped firearm changes. */
 	public void resetForWeaponSwap() {
 		shotCooldown = 0f;
 		reloadRemaining = 0f;
+		recoilSpreadDeg = 0f;
 		previousHeld = false;
 	}
 }

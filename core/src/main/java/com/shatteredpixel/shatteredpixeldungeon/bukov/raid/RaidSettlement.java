@@ -228,6 +228,7 @@ public final class RaidSettlement {
 					com.shatteredpixel.shatteredpixeldungeon.bukov.mission
 							.FirstRaidMission.EVENT_ID);
 		}
+		BukovCareerProgression.reconcile(working);
 
 		// Single in-memory commit point. File persistence can atomically write
 		// this resulting profile through a later BukovSaveService adapter.

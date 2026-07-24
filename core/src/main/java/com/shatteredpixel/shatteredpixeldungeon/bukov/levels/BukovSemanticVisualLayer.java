@@ -34,12 +34,12 @@ public final class BukovSemanticVisualLayer {
 		}
 		removeOldLandmarks(level);
 
+		Set<Integer> protectedCells = protectedCells(level, layout);
 		for (BukovRaidLayout.Mark mark : layout.marks) {
-			styleFloor(level, mark);
-			styleWallEdge(level, layout.seed, mark);
+			styleFloor(level, layout.seed, mark, theme, protectedCells);
+			styleWallEdge(level, layout.seed, mark, theme);
 		}
 
-		Set<Integer> protectedCells = protectedCells(level, layout);
 		placeMissionLandmarks(level, layout);
 		placeExtractionLandmarks(level, layout);
 		placeSemanticLandmark(
@@ -48,13 +48,20 @@ public final class BukovSemanticVisualLayer {
 				level, layout, "flooded_warehouse", Kind.INDUSTRIAL_CACHE);
 		placeCover(
 				level, layout, "flooded_warehouse",
-				coverKind(theme, 0, Kind.CONCRETE_COVER), protectedCells);
+				coverKind(theme, 0, Kind.CONCRETE_COVER),
+				coverClusters(theme), protectedCells);
 		placeCover(
 				level, layout, "broken_rail_loading",
-				coverKind(theme, 1, Kind.SANDBAG_COVER), protectedCells);
+				coverKind(theme, 1, Kind.SANDBAG_COVER),
+				coverClusters(theme), protectedCells);
 		placeCover(
 				level, layout, "umbrella_frame_workshop",
-				coverKind(theme, 2, Kind.CONCRETE_COVER), protectedCells);
+				coverKind(theme, 2, Kind.CONCRETE_COVER),
+				coverClusters(theme), protectedCells);
+	}
+
+	private static int coverClusters(ThemeDefinition theme) {
+		return theme == null ? 1 : theme.coverClusters;
 	}
 
 	private static Kind coverKind(
@@ -76,13 +83,74 @@ public final class BukovSemanticVisualLayer {
 	}
 
 	private static void styleFloor(
-			BukovLevel level, BukovRaidLayout.Mark mark) {
+			BukovLevel level,
+			long seed,
+			BukovRaidLayout.Mark mark,
+			ThemeDefinition theme,
+			Set<Integer> protectedCells) {
 		for (int y = mark.top + 1; y < mark.bottom; y++) {
 			for (int x = mark.left + 1; x < mark.right; x++) {
 				int cell = x + y * level.width();
 				if (!isStyleableFloor(level.map[cell])) continue;
-				level.map[cell] = floorFor(mark, x, y);
+				level.map[cell] = theme == null
+						? floorFor(mark, x, y)
+						: themedFloorFor(
+								theme, mark, seed, x, y,
+								protectedCells.contains(cell));
 			}
+		}
+	}
+
+	/**
+	 * Six deliberately different spatial grammars, built from the existing
+	 * Bukov atlas. The pattern changes silhouettes and navigation cues, not
+	 * merely tint: channels, lanes, grids and circuit paths remain readable
+	 * even in a monochrome screenshot.
+	 */
+	private static int themedFloorFor(
+			ThemeDefinition theme,
+			BukovRaidLayout.Mark mark,
+			long seed,
+			int x,
+			int y,
+			boolean protectedCell) {
+		int localX = x - mark.left - 1;
+		int localY = y - mark.top - 1;
+		long noise = visualNoise(seed, theme.id, x, y);
+		switch (theme.floorPattern) {
+			case "FOG_PATCHES":
+				if (!protectedCell && noise % 17L == 0L) return Terrain.WATER;
+				return noise % 5L == 0L
+						? Terrain.EMPTY_DECO
+						: (noise % 3L == 0L
+								? Terrain.CUSTOM_DECO_EMPTY : Terrain.EMPTY);
+			case "RUST_STRIPES":
+				if ((localX + localY) % 5 == 0) return Terrain.EMBERS;
+				return localX % 3 == 0
+						? Terrain.EMPTY_SP : Terrain.EMPTY_DECO;
+			case "FLOOD_CHANNELS":
+				if (!protectedCell
+						&& (localY % 4 == 1 || localY % 4 == 2)) {
+					return Terrain.WATER;
+				}
+				return localX % 4 == 0
+						? Terrain.EMPTY_SP : Terrain.CUSTOM_DECO_EMPTY;
+			case "YARD_BLOCKS":
+				if (!protectedCell && noise % 13L == 0L) return Terrain.WATER;
+				return ((localX / 2) + (localY / 2)) % 2 == 0
+						? Terrain.CUSTOM_DECO_EMPTY : Terrain.EMPTY_DECO;
+			case "COLD_GRID":
+				return localX % 4 == 0 || localY % 4 == 0
+						? Terrain.EMPTY_SP : Terrain.CUSTOM_DECO_EMPTY;
+			case "LAB_CIRCUIT":
+				if (localX == localY || localX + localY == 5) {
+					return Terrain.EMBERS;
+				}
+				return (localX + localY) % 2 == 0
+						? Terrain.CUSTOM_DECO_EMPTY : Terrain.EMPTY_SP;
+			default:
+				throw new IllegalArgumentException(
+						"Unknown floor pattern: " + theme.floorPattern);
 		}
 	}
 
@@ -131,26 +199,34 @@ public final class BukovSemanticVisualLayer {
 	}
 
 	private static void styleWallEdge(
-			BukovLevel level, long seed, BukovRaidLayout.Mark mark) {
+			BukovLevel level,
+			long seed,
+			BukovRaidLayout.Mark mark,
+			ThemeDefinition theme) {
 		int width = level.width();
 		for (int x = mark.left; x <= mark.right; x++) {
-			decorateWall(level, seed, x + mark.top * width);
-			decorateWall(level, seed, x + mark.bottom * width);
+			decorateWall(level, seed, x + mark.top * width, theme);
+			decorateWall(level, seed, x + mark.bottom * width, theme);
 		}
 		for (int y = mark.top + 1; y < mark.bottom; y++) {
-			decorateWall(level, seed, mark.left + y * width);
-			decorateWall(level, seed, mark.right + y * width);
+			decorateWall(level, seed, mark.left + y * width, theme);
+			decorateWall(level, seed, mark.right + y * width, theme);
 		}
 	}
 
 	private static void decorateWall(
-			BukovLevel level, long seed, int cell) {
+			BukovLevel level,
+			long seed,
+			int cell,
+			ThemeDefinition theme) {
 		if (cell < 0 || cell >= level.length()
 				|| level.map[cell] != Terrain.WALL) {
 			return;
 		}
 		long signature = seed ^ (cell * 0x9E3779B97F4A7C15L);
-		if ((signature & 3L) == 0L) {
+		int modulo = theme == null ? 4 : theme.wallDecoModulo;
+		if (com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+				.remainderUnsigned(signature, modulo) == 0L) {
 			level.map[cell] = Terrain.WALL_DECO;
 		}
 	}
@@ -201,9 +277,11 @@ public final class BukovSemanticVisualLayer {
 			BukovRaidLayout layout,
 			String semanticId,
 			Kind kind,
+			int clusters,
 			Set<Integer> protectedCells) {
 		BukovRaidLayout.Mark mark = semanticMark(layout, semanticId);
 		if (mark == null) return;
+		int placed = 0;
 		for (int y = mark.top + 2; y <= mark.bottom - 3; y++) {
 			for (int x = mark.left + 2; x <= mark.right - 3; x++) {
 				if (!safeTwoCellCover(
@@ -214,19 +292,39 @@ public final class BukovSemanticVisualLayer {
 						new BukovLandmarkTilemap(kind);
 				landmark.pos(x, y - 1);
 				level.customTiles.add(landmark);
-				level.map[x + y * level.width()] = Terrain.STATUE;
-				level.map[x + 1 + y * level.width()] = Terrain.STATUE;
-				return;
+				int first = x + y * level.width();
+				int second = x + 1 + y * level.width();
+				level.map[first] = Terrain.STATUE;
+				level.map[second] = Terrain.STATUE;
+				protectedCells.add(first);
+				protectedCells.add(second);
+				placed++;
+				if (placed >= clusters) return;
 			}
 		}
 		// Small or already structured rooms still get the visual language, but
 		// never at the cost of a narrow traversal lane.
-		addLandmark(
-				level,
-				mark,
-				(mark.left + mark.right) / 2,
-				(mark.top + mark.bottom) / 2,
-				kind);
+		if (placed == 0) {
+			addLandmark(
+					level,
+					mark,
+					(mark.left + mark.right) / 2,
+					(mark.top + mark.bottom) / 2,
+					kind);
+		}
+	}
+
+	private static long visualNoise(
+			long seed, String themeId, int x, int y) {
+		long value = seed
+				^ ((long)themeId.hashCode() << 32)
+				^ (x * 0x9E3779B97F4A7C15L)
+				^ (y * 0xC2B2AE3D27D4EB4FL);
+		value ^= value >>> 30;
+		value *= 0xBF58476D1CE4E5B9L;
+		value ^= value >>> 27;
+		value *= 0x94D049BB133111EBL;
+		return (value ^ value >>> 31) & Long.MAX_VALUE;
 	}
 
 	private static boolean safeTwoCellCover(

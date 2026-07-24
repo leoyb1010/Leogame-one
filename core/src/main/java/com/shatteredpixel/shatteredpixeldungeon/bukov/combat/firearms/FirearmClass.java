@@ -4,7 +4,9 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms;
 public enum FirearmClass {
 	PISTOL,
 	SUBMACHINE_GUN,
+	CARBINE,
 	ASSAULT_RIFLE,
 	SHOTGUN,
-	MARKSMAN_RIFLE
+	MARKSMAN_RIFLE,
+	HEAVY_WEAPON
 }

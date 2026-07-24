@@ -103,7 +103,7 @@ public final class BukovHubScene extends PixelScene {
 
 		String statusText = state.activeRaid
 				? "ACTIVE RAID  ·  行动检查点已锁定"
-				: "READY  ·  装备、行动与演练均可用";
+				: "READY  ·  " + state.careerSummary;
 		RenderedTextBlock status = label(
 				statusText,
 				6,
@@ -236,6 +236,15 @@ public final class BukovHubScene extends PixelScene {
 				state.activeRaid ? "accent.extract" : "text.secondary");
 
 		if (height > 70f) {
+			RenderedTextBlock contract = label(
+					"当前合同  " + state.activeContract
+							+ "\n" + state.activeContractObjective,
+					6,
+					tokens.color("accent.extract"));
+			contract.maxWidth(Math.max(1, (int) width - 12));
+			contract.setPos(textLeft, textTop + 47f);
+			add(contract);
+
 			RenderedTextBlock loadout = label(
 					state.activeRaid
 							? "配装与交易在行动结束前锁定"
@@ -274,7 +283,7 @@ public final class BukovHubScene extends PixelScene {
 				: controller.selectedRaidMode();
 		ModeCard formalCard = new ModeCard(
 				"正式行动  /  " + formal.displayName,
-				formal.summary,
+				state.selectedMapName + " · " + formal.summary,
 				!training,
 				false) {
 			@Override
@@ -321,14 +330,14 @@ public final class BukovHubScene extends PixelScene {
 		float actionsY = Math.max(
 				formalCard.bottom(),
 				trainingCard.bottom()) + 5f;
-		float half = (innerWidth - GAP) / 2f;
+		float third = (innerWidth - GAP * 2f) / 3f;
 		addButton(
 				state.canDeploy
 						? (training ? "进入演练场" : "确认出击")
 						: "配装不完整",
 				innerX,
 				actionsY,
-				half,
+				third,
 				18f,
 				state.canDeploy ? "accent.extract" : "accent.danger",
 				state.canDeploy,
@@ -340,10 +349,30 @@ public final class BukovHubScene extends PixelScene {
 					}
 				});
 		addButton(
-				training ? "训练装备已配置" : "管理配装",
-				innerX + half + GAP,
+				training ? "固定训练区" : "切换区域",
+				innerX + third + GAP,
 				actionsY,
-				half,
+				third,
+				18f,
+				"accent.interact",
+				!training,
+				SPDAction.TAG_RESUME,
+				new Callback() {
+					@Override
+					public void call() {
+						try {
+							controller.cycleSelectedMap();
+							reload();
+						} catch (IOException | RuntimeException error) {
+							showError("区域选择失败", error);
+						}
+					}
+				});
+		addButton(
+				training ? "训练装备" : "管理配装",
+				innerX + (third + GAP) * 2f,
+				actionsY,
+				third,
 				18f,
 				"accent.interact",
 				!training,

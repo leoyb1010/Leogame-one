@@ -51,6 +51,30 @@ public class FireControlTest {
 	}
 
 	@Test
+	public void authoredRecoilAccumulatesRecoversAndResetsOnSwap() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		definition.fireMode = FireMode.AUTO;
+		definition.rpm = 600f;
+		definition.recoilPerShot = 1.2f;
+		definition.recoilRecovery = 4f;
+		Firearm firearm = new Firearm().configure("test", "uid", 4);
+		RecordingSink sink = new RecordingSink();
+		FireControl control = new FireControl();
+
+		control.update(0f, true, true, false, firearm, definition, sink);
+		assertEquals(1.2f, control.recoilSpreadDeg(), 0.0001f);
+
+		control.update(0.1f, true, false, false, firearm, definition, sink);
+		assertEquals(2f, control.recoilSpreadDeg(), 0.0001f);
+
+		control.update(0.25f, false, false, false, firearm, definition, sink);
+		assertEquals(1f, control.recoilSpreadDeg(), 0.0001f);
+
+		control.resetForWeaponSwap();
+		assertEquals(0f, control.recoilSpreadDeg(), 0f);
+	}
+
+	@Test
 	public void reloadRequestsOnlyMissingRounds() {
 		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
 		definition.magazineSize = 5;

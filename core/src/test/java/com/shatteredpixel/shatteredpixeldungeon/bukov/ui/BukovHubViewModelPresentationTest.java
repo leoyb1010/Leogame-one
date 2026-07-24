@@ -6,6 +6,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.LootTransaction;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidSession;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgression;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
@@ -187,6 +188,19 @@ public class BukovHubViewModelPresentationTest {
 		assertEquals(1, model.stashItems.size());
 		assertTrue(model.stashItems.get(0).selected);
 		assertEquals("针蜂-9", model.stashItems.get(0).label);
+	}
+
+	@Test
+	public void hideoutPresentsCareerAndCurrentContractWithoutRawIds() {
+		BukovProfile profile = new BukovProfile();
+		BukovCareerProgression.reconcile(profile);
+
+		BukovHubViewModel model = BukovHubViewModel.from(profile, 40f);
+
+		assertEquals("合同 0/5 · 区域 1/6", model.careerSummary);
+		assertEquals("找回维修档案", model.activeContract);
+		assertTrue(model.activeContractObjective.contains("维修间档案"));
+		assertFalse(model.activeContract.contains("maintenance_"));
 	}
 
 	private static RaidItem item(

@@ -21,7 +21,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 13,
       "weightKg": 0.9,
-      "value": 850
+      "value": 850,
+      "feedbackProfile": "SIDEARM_LIGHT",
+      "soundPitch": 1.08,
+      "soundGain": 0.72,
+      "muzzleIntensity": 0.65,
+      "tracerIntensity": 0.75,
+      "impactIntensity": 0.65,
+      "feedbackIntensity": 0.55
     },
     {
       "id": "shuttle_9",
@@ -43,7 +50,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 15,
       "weightKg": 2.2,
-      "value": 2100
+      "value": 2100,
+      "feedbackProfile": "SMG_FAST",
+      "soundPitch": 1.04,
+      "soundGain": 0.78,
+      "muzzleIntensity": 0.72,
+      "tracerIntensity": 0.78,
+      "impactIntensity": 0.68,
+      "feedbackIntensity": 0.60
     },
     {
       "id": "ward_556",
@@ -65,7 +79,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 19,
       "weightKg": 3.0,
-      "value": 4200
+      "value": 4200,
+      "feedbackProfile": "RIFLE_CONTROLLED",
+      "soundPitch": 0.98,
+      "soundGain": 0.95,
+      "muzzleIntensity": 0.96,
+      "tracerIntensity": 1.00,
+      "impactIntensity": 0.92,
+      "feedbackIntensity": 0.85
     },
     {
       "id": "mountain_762",
@@ -87,7 +108,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 22,
       "weightKg": 3.6,
-      "value": 6100
+      "value": 6100,
+      "feedbackProfile": "RIFLE_HEAVY",
+      "soundPitch": 0.91,
+      "soundGain": 1.12,
+      "muzzleIntensity": 1.18,
+      "tracerIntensity": 1.12,
+      "impactIntensity": 1.16,
+      "feedbackIntensity": 1.10
     },
     {
       "id": "bolt_12",
@@ -109,7 +137,14 @@
       "pellets": 7,
       "noiseRadiusTiles": 24,
       "weightKg": 3.1,
-      "value": 4800
+      "value": 4800,
+      "feedbackProfile": "SHOTGUN_PUMP",
+      "soundPitch": 0.84,
+      "soundGain": 1.24,
+      "muzzleIntensity": 1.38,
+      "tracerIntensity": 1.22,
+      "impactIntensity": 1.38,
+      "feedbackIntensity": 1.35
     },
     {
       "id": "longstreet_762",
@@ -131,7 +166,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 23,
       "weightKg": 4.0,
-      "value": 7600
+      "value": 7600,
+      "feedbackProfile": "MARKSMAN_SEMI",
+      "soundPitch": 0.88,
+      "soundGain": 1.18,
+      "muzzleIntensity": 1.14,
+      "tracerIntensity": 1.20,
+      "impactIntensity": 1.26,
+      "feedbackIntensity": 1.18
     },
     {
       "id": "sentinel_9",
@@ -153,7 +195,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 14,
       "weightKg": 1.05,
-      "value": 1450
+      "value": 1450,
+      "feedbackProfile": "SIDEARM_DUTY",
+      "soundPitch": 1.03,
+      "soundGain": 0.80,
+      "muzzleIntensity": 0.72,
+      "tracerIntensity": 0.80,
+      "impactIntensity": 0.72,
+      "feedbackIntensity": 0.68
     },
     {
       "id": "sparrow_9",
@@ -175,7 +224,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 9,
       "weightKg": 0.78,
-      "value": 1750
+      "value": 1750,
+      "feedbackProfile": "SIDEARM_SUPPRESSED",
+      "soundPitch": 1.14,
+      "soundGain": 0.55,
+      "muzzleIntensity": 0.50,
+      "tracerIntensity": 0.62,
+      "impactIntensity": 0.55,
+      "feedbackIntensity": 0.42
     },
     {
       "id": "hive_9",
@@ -197,7 +253,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 16,
       "weightKg": 2.55,
-      "value": 3200
+      "value": 3200,
+      "feedbackProfile": "SMG_BULLET_HOSE",
+      "soundPitch": 1.09,
+      "soundGain": 0.75,
+      "muzzleIntensity": 0.68,
+      "tracerIntensity": 0.72,
+      "impactIntensity": 0.62,
+      "feedbackIntensity": 0.52
     },
     {
       "id": "whisper_9",
@@ -219,7 +282,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 10,
       "weightKg": 2.35,
-      "value": 3900
+      "value": 3900,
+      "feedbackProfile": "SMG_SUPPRESSED",
+      "soundPitch": 1.12,
+      "soundGain": 0.60,
+      "muzzleIntensity": 0.55,
+      "tracerIntensity": 0.70,
+      "impactIntensity": 0.60,
+      "feedbackIntensity": 0.48
     },
     {
       "id": "jackal_9",
@@ -241,7 +311,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 17,
       "weightKg": 2.7,
-      "value": 4400
+      "value": 4400,
+      "feedbackProfile": "SMG_HEAVY",
+      "soundPitch": 0.99,
+      "soundGain": 0.88,
+      "muzzleIntensity": 0.82,
+      "tracerIntensity": 0.88,
+      "impactIntensity": 0.82,
+      "feedbackIntensity": 0.76
     },
     {
       "id": "river_556",
@@ -263,7 +340,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 19,
       "weightKg": 2.85,
-      "value": 4700
+      "value": 4700,
+      "feedbackProfile": "RIFLE_FAST",
+      "soundPitch": 1.02,
+      "soundGain": 0.93,
+      "muzzleIntensity": 0.90,
+      "tracerIntensity": 0.95,
+      "impactIntensity": 0.88,
+      "feedbackIntensity": 0.78
     },
     {
       "id": "foundry_762",
@@ -285,12 +369,19 @@
       "pellets": 1,
       "noiseRadiusTiles": 24,
       "weightKg": 4.15,
-      "value": 7200
+      "value": 7200,
+      "feedbackProfile": "RIFLE_BRUTAL",
+      "soundPitch": 0.86,
+      "soundGain": 1.20,
+      "muzzleIntensity": 1.24,
+      "tracerIntensity": 1.18,
+      "impactIntensity": 1.25,
+      "feedbackIntensity": 1.22
     },
     {
       "id": "carbine_556",
       "name": "岗哨-556",
-      "weaponClass": "ASSAULT_RIFLE",
+      "weaponClass": "CARBINE",
       "caliber": "5.56x45",
       "defaultAmmo": "ammo_556_standard",
       "fireMode": "SEMI",
@@ -307,7 +398,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 18,
       "weightKg": 2.65,
-      "value": 5600
+      "value": 5600,
+      "feedbackProfile": "CARBINE_SCOUT",
+      "soundPitch": 1.00,
+      "soundGain": 0.90,
+      "muzzleIntensity": 0.84,
+      "tracerIntensity": 0.92,
+      "impactIntensity": 0.84,
+      "feedbackIntensity": 0.72
     },
     {
       "id": "breaker_12",
@@ -329,12 +427,19 @@
       "pellets": 8,
       "noiseRadiusTiles": 25,
       "weightKg": 3.55,
-      "value": 5900
+      "value": 5900,
+      "feedbackProfile": "SHOTGUN_SEMI",
+      "soundPitch": 0.88,
+      "soundGain": 1.18,
+      "muzzleIntensity": 1.28,
+      "tracerIntensity": 1.14,
+      "impactIntensity": 1.30,
+      "feedbackIntensity": 1.22
     },
     {
       "id": "rainstorm_12",
       "name": "暴雨-12",
-      "weaponClass": "SHOTGUN",
+      "weaponClass": "HEAVY_WEAPON",
       "caliber": "12g",
       "defaultAmmo": "ammo_12g_buckshot",
       "fireMode": "AUTO",
@@ -351,7 +456,14 @@
       "pellets": 7,
       "noiseRadiusTiles": 27,
       "weightKg": 4.8,
-      "value": 9800
+      "value": 9800,
+      "feedbackProfile": "HEAVY_AUTOSHOTGUN",
+      "soundPitch": 0.80,
+      "soundGain": 1.42,
+      "muzzleIntensity": 1.50,
+      "tracerIntensity": 1.30,
+      "impactIntensity": 1.48,
+      "feedbackIntensity": 1.50
     },
     {
       "id": "watchtower_556",
@@ -373,7 +485,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 21,
       "weightKg": 3.7,
-      "value": 8900
+      "value": 8900,
+      "feedbackProfile": "MARKSMAN_AP",
+      "soundPitch": 0.94,
+      "soundGain": 1.05,
+      "muzzleIntensity": 1.02,
+      "tracerIntensity": 1.15,
+      "impactIntensity": 1.14,
+      "feedbackIntensity": 1.00
     },
     {
       "id": "frontier_762",
@@ -395,7 +514,14 @@
       "pellets": 1,
       "noiseRadiusTiles": 25,
       "weightKg": 4.6,
-      "value": 11200
+      "value": 11200,
+      "feedbackProfile": "MARKSMAN_HEAVY",
+      "soundPitch": 0.82,
+      "soundGain": 1.32,
+      "muzzleIntensity": 1.36,
+      "tracerIntensity": 1.28,
+      "impactIntensity": 1.42,
+      "feedbackIntensity": 1.40
     }
   ]
 }

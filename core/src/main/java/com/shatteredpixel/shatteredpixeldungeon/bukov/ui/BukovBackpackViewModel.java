@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmClass;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.MedicalCatalog;
@@ -84,6 +85,7 @@ public final class BukovBackpackViewModel {
 		public final float durability;
 		public final int magazineAmmo;
 		public final int magazineCapacity;
+		public final String weaponProfile;
 		public final boolean equipped;
 		public final boolean canDrop;
 		public final boolean canUse;
@@ -115,9 +117,20 @@ public final class BukovBackpackViewModel {
 				magazineAmmo = equipped
 						? equippedFirearm.magazineAmmo
 						: 0;
+				weaponProfile = definition == null
+						? "武器数据不可用"
+						: firearmClassName(definition.weaponClass)
+								+ " · " + definition.caliber
+								+ " · " + (definition.fireMode.name().equals("AUTO")
+										? "全自动" : "半自动")
+								+ " · 伤害"
+								+ compactNumber(definition.damage)
+								+ " · 后坐"
+								+ compactNumber(definition.recoilPerShot);
 			} else {
 				magazineCapacity = 0;
 				magazineAmmo = 0;
+				weaponProfile = "";
 			}
 			canDrop = category != Category.MISSION;
 			canUse = category == Category.MEDICAL;
@@ -143,7 +156,8 @@ public final class BukovBackpackViewModel {
 
 		public String stateSummary() {
 			if (category == Category.FIREARM) {
-				return "弹匣 " + magazineAmmo + "/" + magazineCapacity
+				return weaponProfile + "\n弹匣 "
+						+ magazineAmmo + "/" + magazineCapacity
 						+ " · 耐久 " + Math.round(durability * 100f) + "%";
 			}
 			if (category == Category.MISSION) {
@@ -220,6 +234,36 @@ public final class BukovBackpackViewModel {
 
 	public static String formatWeight(float weight) {
 		return String.format(Locale.ROOT, "%.2f", weight);
+	}
+
+	private static String compactNumber(float value) {
+		return value == Math.round(value)
+				? Integer.toString(Math.round(value))
+				: String.format(Locale.ROOT, "%.2f", value)
+						.replaceAll("0+$", "")
+						.replaceAll("\\.$", "");
+	}
+
+	private static String firearmClassName(FirearmClass weaponClass) {
+		if (weaponClass == null) return "枪械";
+		switch (weaponClass) {
+			case PISTOL:
+				return "手枪";
+			case SUBMACHINE_GUN:
+				return "冲锋枪";
+			case CARBINE:
+				return "卡宾枪";
+			case ASSAULT_RIFLE:
+				return "突击步枪";
+			case SHOTGUN:
+				return "霰弹枪";
+			case MARKSMAN_RIFLE:
+				return "精确步枪";
+			case HEAVY_WEAPON:
+				return "重型武器";
+			default:
+				return "枪械";
+		}
 	}
 
 	private static Category category(String definitionId) {

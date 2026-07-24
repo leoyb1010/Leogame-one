@@ -40,6 +40,12 @@ public final class ThemeDefinition {
 	public final int primaryColor;
 	public final int secondaryColor;
 	public final float riskMultiplier;
+	/** Procedural floor grammar consumed by the semantic visual layer. */
+	public final String floorPattern;
+	/** Lower values create denser decorated equipment walls. */
+	public final int wallDecoModulo;
+	/** Number of safe two-cell cover clusters attempted per authored room. */
+	public final int coverClusters;
 	private final Map<BukovRaidLayout.Zone, Float> roomWeights;
 	private final Map<String, Float> lootWeights;
 	private final Map<String, Float> enemyWeights;
@@ -51,6 +57,9 @@ public final class ThemeDefinition {
 			int primaryColor,
 			int secondaryColor,
 			float riskMultiplier,
+			String floorPattern,
+			int wallDecoModulo,
+			int coverClusters,
 			Map<BukovRaidLayout.Zone, Float> roomWeights,
 			Map<String, Float> lootWeights,
 			Map<String, Float> enemyWeights,
@@ -60,6 +69,9 @@ public final class ThemeDefinition {
 		this.primaryColor = primaryColor;
 		this.secondaryColor = secondaryColor;
 		this.riskMultiplier = riskMultiplier;
+		this.floorPattern = floorPattern;
+		this.wallDecoModulo = wallDecoModulo;
+		this.coverClusters = coverClusters;
 		this.roomWeights = immutableCopy(roomWeights);
 		this.lootWeights = immutableCopy(lootWeights);
 		this.enemyWeights = immutableCopy(enemyWeights);
@@ -204,6 +216,17 @@ public final class ThemeDefinition {
 				&& riskMultiplier >= 0.65f
 				&& riskMultiplier <= 1.50f,
 				"theme riskMultiplier out of range: " + id);
+		require("FOG_PATCHES".equals(floorPattern)
+						|| "RUST_STRIPES".equals(floorPattern)
+						|| "FLOOD_CHANNELS".equals(floorPattern)
+						|| "YARD_BLOCKS".equals(floorPattern)
+						|| "COLD_GRID".equals(floorPattern)
+						|| "LAB_CIRCUIT".equals(floorPattern),
+				"unknown theme floorPattern: " + id);
+		require(wallDecoModulo >= 2 && wallDecoModulo <= 17,
+				"theme wallDecoModulo out of range: " + id);
+		require(coverClusters >= 1 && coverClusters <= 3,
+				"theme coverClusters out of range: " + id);
 
 		require(roomWeights.size() == 5
 				&& roomWeights.containsKey(BukovRaidLayout.Zone.LOW_LOOT)

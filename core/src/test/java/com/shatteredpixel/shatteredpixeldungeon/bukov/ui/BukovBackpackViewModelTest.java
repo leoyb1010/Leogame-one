@@ -51,7 +51,10 @@ public class BukovBackpackViewModelTest {
 		assertEquals(BukovBackpackViewModel.Category.FIREARM, equipped.category);
 		assertEquals(7, equipped.magazineAmmo);
 		assertEquals(12, equipped.magazineCapacity);
-		assertEquals("弹匣 7/12 · 耐久 78%", equipped.stateSummary());
+		assertEquals(
+				"手枪 · 9x19 · 半自动 · 伤害21 · 后坐0.8\n"
+						+ "弹匣 7/12 · 耐久 78%",
+				equipped.stateSummary());
 		assertEquals(
 				"单0.90kg · 总0.90kg · 值850",
 				equipped.rowEconomySummary());
@@ -119,6 +122,7 @@ public class BukovBackpackViewModelTest {
 		FirearmRegistry registry = new FirearmRegistry();
 		registry.loadJson("{\"schemaVersion\":1,\"firearms\":["
 				+ "{\"id\":\"needle_9\",\"name\":\"针蜂-9\","
+				+ "\"weaponClass\":\"PISTOL\","
 				+ "\"caliber\":\"9x19\",\"defaultAmmo\":\"ammo_9_standard\","
 				+ "\"fireMode\":\"SEMI\",\"damage\":21,\"penetration\":8,"
 				+ "\"rpm\":360,\"magazineSize\":12,\"reloadSeconds\":1.45,"
@@ -127,6 +131,7 @@ public class BukovBackpackViewModelTest {
 				+ "\"recoilRecovery\":6,\"pellets\":1,"
 				+ "\"noiseRadiusTiles\":13,\"weightKg\":0.9,\"value\":850},"
 				+ "{\"id\":\"shuttle_9\",\"name\":\"梭子-9\","
+				+ "\"weaponClass\":\"SUBMACHINE_GUN\","
 				+ "\"caliber\":\"9x19\",\"defaultAmmo\":\"ammo_9_standard\","
 				+ "\"fireMode\":\"AUTO\",\"damage\":17,\"penetration\":7,"
 				+ "\"rpm\":780,\"magazineSize\":24,\"reloadSeconds\":2.1,"

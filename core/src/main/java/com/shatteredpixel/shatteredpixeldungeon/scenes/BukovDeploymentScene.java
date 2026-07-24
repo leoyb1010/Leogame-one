@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovOperator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
@@ -128,8 +129,11 @@ public final class BukovDeploymentScene extends PixelScene {
 		BukovSaveService saves = BukovSaveServices.platformDefault();
 		BukovRaidCoordinator checkpoint =
 				BukovRaidCoordinator.resume(saves);
+		BukovProfile deploymentProfile = saves.loadProfile();
+		BukovMode.prepareUnlockedMaps(deploymentProfile.unlockedMaps());
+		BukovMode.prepareSelectedMap(deploymentProfile.selectedMap());
 		BukovRaidMode deploymentMode = checkpoint == null
-				? saves.loadProfile().selectedRaidMode()
+				? deploymentProfile.selectedRaidMode()
 				: checkpoint.session().raidMode();
 		BukovMode.prepareRaidMode(deploymentMode);
 		if (GamesInProgress.gameExists(BukovMode.SAVE_SLOT)) {

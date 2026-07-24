@@ -22,6 +22,16 @@ public final class FirearmDefinition {
 	public float noiseRadiusTiles;
 	public float weightKg;
 	public int value;
+	/** Human-readable authored family used by audio/FX QA and weapon UI. */
+	public String feedbackProfile = "SIDEARM";
+	/** Per-weapon mix controls. The same authored sample no longer means the same sound. */
+	public float soundPitch = 1f;
+	public float soundGain = 1f;
+	/** Per-weapon presentation controls consumed by the live firing path. */
+	public float muzzleIntensity = 1f;
+	public float tracerIntensity = 1f;
+	public float impactIntensity = 1f;
+	public float feedbackIntensity = 1f;
 
 	public float secondsPerShot() {
 		if (rpm <= 0f) {
@@ -57,6 +67,19 @@ public final class FirearmDefinition {
 				"noise radius must not be negative: " + id);
 		require(finitePositive(weightKg), "weight must be positive: " + id);
 		require(value > 0, "value must be positive: " + id);
+		require(text(feedbackProfile), "missing feedbackProfile: " + id);
+		require(finite(soundPitch) && soundPitch >= 0.72f && soundPitch <= 1.28f,
+				"soundPitch out of range: " + id);
+		require(finite(soundGain) && soundGain >= 0.35f && soundGain <= 1.5f,
+				"soundGain out of range: " + id);
+		require(unitPresentation(muzzleIntensity),
+				"muzzleIntensity out of range: " + id);
+		require(unitPresentation(tracerIntensity),
+				"tracerIntensity out of range: " + id);
+		require(unitPresentation(impactIntensity),
+				"impactIntensity out of range: " + id);
+		require(unitPresentation(feedbackIntensity),
+				"feedbackIntensity out of range: " + id);
 	}
 
 	private static boolean finite(float value) {
@@ -74,6 +97,10 @@ public final class FirearmDefinition {
 
 	private static boolean finiteNonNegative(float value) {
 		return finite(value) && value >= 0f;
+	}
+
+	private static boolean unitPresentation(float value) {
+		return finite(value) && value >= 0.35f && value <= 1.5f;
 	}
 
 	private static void require(boolean condition, String message) {

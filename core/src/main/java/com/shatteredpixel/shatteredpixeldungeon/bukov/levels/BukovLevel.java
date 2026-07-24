@@ -285,7 +285,7 @@ public class BukovLevel extends RegularLevel {
 		if (raidMode.trainingGround()) viewDistance = 24;
 		ThemeDefinition theme = raidMode.trainingGround()
 				? themeForId("cold_storage")
-				: themeForSeed(Dungeon.seedCurDepth());
+				: themeForId(BukovMode.selectedRaidTheme());
 		color1 = theme.primaryColor;
 		color2 = theme.secondaryColor;
 		BukovRoomGraphAdapter.AdaptedMap candidate = BukovRoomGraphAdapter.adapt(
@@ -544,12 +544,6 @@ public class BukovLevel extends RegularLevel {
 		}
 		buildFlagMaps();
 		cleanWalls();
-	}
-
-	private static ThemeDefinition themeForSeed(long seed) {
-		ThemeRegistry registry = new ThemeRegistry();
-		registry.loadDefault();
-		return registry.forSeed(seed);
 	}
 
 	private static ThemeDefinition themeForId(String themeId) {

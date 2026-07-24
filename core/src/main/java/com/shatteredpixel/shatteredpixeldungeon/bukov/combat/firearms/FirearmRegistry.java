@@ -122,6 +122,19 @@ public final class FirearmRegistry {
 		out.noiseRadiusTiles = node.getFloat("noiseRadiusTiles");
 		out.weightKg = node.getFloat("weightKg");
 		out.value = node.getInt("value");
+		out.feedbackProfile = node.getString(
+				"feedbackProfile",
+				defaultFeedbackProfile(out.weaponClass));
+		out.soundPitch = node.getFloat("soundPitch", 1f);
+		out.soundGain = node.getFloat("soundGain", 1f);
+		out.muzzleIntensity = node.getFloat("muzzleIntensity", 1f);
+		out.tracerIntensity = node.getFloat("tracerIntensity", 1f);
+		out.impactIntensity = node.getFloat("impactIntensity", 1f);
+		out.feedbackIntensity = node.getFloat("feedbackIntensity", 1f);
 		return out;
+	}
+
+	private static String defaultFeedbackProfile(FirearmClass weaponClass) {
+		return weaponClass == null ? "SIDEARM" : weaponClass.name();
 	}
 }

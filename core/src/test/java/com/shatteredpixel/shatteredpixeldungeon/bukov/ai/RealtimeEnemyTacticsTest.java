@@ -159,6 +159,48 @@ public class RealtimeEnemyTacticsTest {
 		assertTrue(tactics.decisionSequence() <= 9);
 	}
 
+	@Test
+	public void thirtyEnemiesStayOnEightHertzDecisionBudget() {
+		RealtimeEnemyTactics[] tactics =
+				new RealtimeEnemyTactics[30];
+		RealtimeEnemyTactics.Intent[] intents =
+				new RealtimeEnemyTactics.Intent[30];
+		for (int i = 0; i < tactics.length; i++) {
+			tactics[i] = tactics(
+					i % 4 == 0
+							? RealtimeEnemyTactics.Profile.SUPPRESSOR
+							: i % 4 == 1
+									? RealtimeEnemyTactics.Profile.FLANKER
+									: i % 4 == 2
+											? RealtimeEnemyTactics.Profile.RUSHER
+											: RealtimeEnemyTactics.Profile
+													.RETREATING_SKIRMISHER,
+					i);
+			intents[i] = new RealtimeEnemyTactics.Intent();
+		}
+		for (int frame = 0; frame < 600; frame++) {
+			for (int i = 0; i < tactics.length; i++) {
+				tactics[i].step(
+						1f / 60f,
+						true,
+						i % 6,
+						i / 6,
+						5f,
+						5f,
+						8f,
+						1f,
+						0f,
+						intents[i]);
+				assertTrue(intents[i].speedMultiplier()
+						<= RealtimeEnemyTactics.MAXIMUM_SPEED_MULTIPLIER);
+			}
+		}
+		for (RealtimeEnemyTactics enemy : tactics) {
+			assertTrue(enemy.decisionSequence() >= 79);
+			assertTrue(enemy.decisionSequence() <= 81);
+		}
+	}
+
 	private static RealtimeEnemyTactics tactics(
 			RealtimeEnemyTactics.Profile profile,
 			int stableKey) {

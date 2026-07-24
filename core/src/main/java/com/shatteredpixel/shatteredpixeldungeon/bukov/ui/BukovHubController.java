@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCheckpoint;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgression;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovVendorCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
@@ -42,6 +43,7 @@ public final class BukovHubController {
 		int selectedBefore = profile.loadout().distinctItemCount();
 		profile.loadout().pruneMissing(profile.stash());
 		boolean changed = selectedBefore != profile.loadout().distinctItemCount();
+		changed |= BukovCareerProgression.reconcile(profile);
 		changed |= BukovStarterProvisioning.ensure(profile, false);
 		if (changed) {
 			saves.saveProfile(profile);
@@ -134,6 +136,15 @@ public final class BukovHubController {
 
 	public void selectTrainingGround() throws IOException {
 		selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+	}
+
+	public void cycleSelectedMap() throws IOException {
+		requireEditableLoadout();
+		List<String> available =
+				BukovCareerProgression.availableMapIds(profile);
+		int current = available.indexOf(profile.selectedMap());
+		profile.selectMap(available.get((current + 1) % available.size()));
+		saves.saveProfile(profile);
 	}
 
 	public BukovRaidMode selectedRaidMode() {

@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.MedicalCata
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovEnemyFirearmDropPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovMissionArchive;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEventPool;
@@ -114,6 +115,9 @@ public final class BukovRealtimeWorld
 	private static final String CONDITIONAL_EXTRACTION_ID = "E02";
 	private static final String PUMP_SEMANTIC_ID = "fog_lamp_pump_station";
 	private static final int BASELINE_ENEMY_RESERVE_AMMO = 15;
+	private static final float ALARM_REINFORCEMENT_DELAY_SECONDS = 1.25f;
+	private static final float WHITE_LINE_PHASE_TWO_PULSE_SECONDS = 3.2f;
+	private static final float WHITE_LINE_PHASE_THREE_PULSE_SECONDS = 2.2f;
 	private static final float CAMERA_HALF_DEAD_ZONE_X = 12f;
 	private static final float CAMERA_HALF_DEAD_ZONE_Y = 8f;
 	private static final float CAMERA_RESPONSIVENESS = 8f;
@@ -163,6 +167,7 @@ public final class BukovRealtimeWorld
 			new KeySoundVisualEvent();
 	private final HitscanResolver.Hit shotHit = new HitscanResolver.Hit();
 	private final HitscanResolver.Hit enemyShotHit = new HitscanResolver.Hit();
+	private final PointF assistedAim = new PointF();
 	private final ArrayList<RealtimeBody> targetBodies = new ArrayList<>();
 	private final ArrayList<RealtimeBody> enemyShotTargetBodies =
 			new ArrayList<>();
@@ -728,6 +733,7 @@ public final class BukovRealtimeWorld
 		if (equippedFirearm == null || equippedDefinition == null) {
 			return;
 		}
+		applyPlayerAimAssist(equippedDefinition.effectiveRangeTiles);
 		boolean aimReady =
 				inputFrame.aim.x != 0f || inputFrame.aim.y != 0f;
 		boolean aimedPress = aimReady
@@ -743,6 +749,65 @@ public final class BukovRealtimeWorld
 				this
 		);
 		fireAimReadyLastStep = aimReady;
+	}
+
+	private void applyPlayerAimAssist(float maximumRange) {
+		float strength = inputFrame == null
+				? 0f : inputFrame.aimAssistScale;
+		if (strength <= 0f
+				|| inputFrame.aim.x == 0f && inputFrame.aim.y == 0f) {
+			return;
+		}
+		EnemyRuntime best = null;
+		float bestScore = Float.POSITIVE_INFINITY;
+		for (EnemyRuntime enemy : enemies) {
+			if (enemy == null
+					|| enemy.mob == null
+					|| !enemy.mob.isAlive()
+					|| !enemy.body.active
+					|| enemy.mob.pos < 0
+					|| enemy.mob.pos >= Dungeon.level.heroFOV.length
+					|| !Dungeon.level.heroFOV[enemy.mob.pos]) {
+				continue;
+			}
+			float targetX = enemy.body.x - heroBody.x;
+			float targetY = enemy.body.y - heroBody.y;
+			boolean visible = GridLineOfSight.visible(
+					heroBody.x,
+					heroBody.y,
+					enemy.body.x,
+					enemy.body.y,
+					maximumRange,
+					collisionMap);
+			if (!BukovAimAssist.accepts(
+					inputFrame.aim.x,
+					inputFrame.aim.y,
+					targetX,
+					targetY,
+					maximumRange,
+					visible)) {
+				continue;
+			}
+			float score = BukovAimAssist.score(
+					inputFrame.aim.x,
+					inputFrame.aim.y,
+					targetX,
+					targetY,
+					maximumRange);
+			if (score < bestScore) {
+				best = enemy;
+				bestScore = score;
+			}
+		}
+		if (best == null) return;
+		BukovAimAssist.blend(
+				inputFrame.aim.x,
+				inputFrame.aim.y,
+				best.body.x - heroBody.x,
+				best.body.y - heroBody.y,
+				strength,
+				assistedAim);
+		inputFrame.aim.set(assistedAim);
 	}
 
 	@Override
@@ -871,6 +936,9 @@ public final class BukovRealtimeWorld
 		}
 		for (EnemyRuntime enemy : enemies) {
 			updateEnemyMovement(enemy, dt);
+			if (enemy.bossState != null) {
+				updateWhiteLineOffense(enemy, dt);
+			}
 			if (enemy.rangedCombat != null) {
 				updateEnemyRangedCombat(enemy, dt);
 			} else if (enemy.brain.consumeAttack(
@@ -911,6 +979,21 @@ public final class BukovRealtimeWorld
 					emitEnemyHitOutcome(target, wasAlive, damage);
 					continue;
 				}
+				if (enemy != null) {
+					int armored = resolveEnemyArmor(
+							enemy.definition,
+							damage,
+							equippedDefinition == null
+									? 0f
+									: equippedDefinition.penetration);
+					if (armored < damage) {
+						showEnemyStatus(
+								enemy,
+								CharSprite.NEUTRAL,
+								"护甲吸收");
+					}
+					damage = armored;
+				}
 			}
 			// Keep Mob.damage/die authoritative so XP, loot rolls, death VFX, and
 			// Dungeon.level.mobs removal stay in the host implementation.
@@ -918,6 +1001,12 @@ public final class BukovRealtimeWorld
 			target.damage(damage, hero);
 			emitEnemyHitOutcome(target, wasAlive, damage);
 			if (wasAlive && !target.isAlive() && target instanceof Mob) {
+				EnemyRuntime defeated =
+						enemiesByMob.get((Mob)target);
+				if (defeated != null) {
+					releaseEnemyLoot(defeated, target.pos);
+				}
+				releaseEnemyFirearm((Mob)target);
 				recordEnemyKill();
 			}
 			if (!target.isAlive() && target.realtimeBody != null) {
@@ -1874,9 +1963,15 @@ public final class BukovRealtimeWorld
 								* (equippedGear == null
 										? 1f
 										: equippedGear.noiseMultiplier())));
-		playPlayerGunshot(Math.max(
-				0.45f,
-				Math.min(1f, 0.85f * ammunition.noiseMultiplier)));
+		playPlayerGunshot(
+				Math.max(
+						0.22f,
+						Math.min(
+								1.5f,
+								0.85f
+										* ammunition.noiseMultiplier
+										* definition.soundGain)),
+				definition.soundPitch);
 		if (inputFrame == null
 				|| (inputFrame.aim.x == 0f && inputFrame.aim.y == 0f)) {
 			return;
@@ -1888,7 +1983,7 @@ public final class BukovRealtimeWorld
 				hero.pos,
 				playerAimCell(),
 				CombatFeedbackType.RIFLE_SHOT,
-				1f);
+				definition.feedbackIntensity);
 
 		int fxSequence = playerFxSequence++;
 		combatFx.muzzle(
@@ -1899,11 +1994,12 @@ public final class BukovRealtimeWorld
 				heroBody.y,
 				inputFrame.aim.x,
 				inputFrame.aim.y,
-				1f
+				definition.muzzleIntensity
 		);
 		float spread = moving
 				? definition.movingSpreadDeg
 				: definition.baseSpreadDeg;
+		spread += fireControl.recoilSpreadDeg();
 		for (int pellet = 0; pellet < definition.pellets; pellet++) {
 			float radians = (float)Math.toRadians(
 					Random.Float(-spread, spread)
@@ -1932,7 +2028,7 @@ public final class BukovRealtimeWorld
 					heroBody.y,
 					shotHit.x,
 					shotHit.y,
-					0.85f
+					definition.tracerIntensity
 			);
 			// The endpoint is meaningful even when the ray stops on geometry:
 			// without this wall spark, misses looked like the round vanished.
@@ -1942,7 +2038,7 @@ public final class BukovRealtimeWorld
 					false,
 					shotHit.x,
 					shotHit.y,
-					0.8f
+					definition.impactIntensity
 			);
 			Char target = charsByBody.get(shotHit.body);
 			if (target != null && target.isAlive()) {
@@ -2098,6 +2194,7 @@ public final class BukovRealtimeWorld
 		if (enemySpawnPoints.isEmpty()) return false;
 		float elapsed = raid.session().elapsedSeconds;
 		long spawnEpoch = raid.session().claimEnemySpawnEpoch();
+		if (attemptWhiteLineSpawn(elapsed)) return true;
 		int start = (int)com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
 				.remainderUnsigned(
 				Dungeon.seed + spawnEpoch * 0x9E3779B97F4A7C15L,
@@ -2121,25 +2218,40 @@ public final class BukovRealtimeWorld
 			}
 			EnemyArchetypeDefinition selected;
 			if (point.bossArena) {
+				selected = enemyArchetypes.require(
+						FirstRaidEnemySpawnDirector.FIRST_BOSS);
+				float bossEarliest = raidMode.bossEarliestSeconds;
+				if (raid.session().raidOrdinal() == 1
+						&& raidMode != BukovRaidMode.BOSS_CONTRACT) {
+					bossEarliest = Math.max(
+							bossEarliest,
+							selected.firstRaidMinimumSeconds);
+				}
 				if (!raidMode.bossEnabled
-						|| elapsed < raidMode.bossEarliestSeconds
+						|| elapsed < bossEarliest
 						|| raid.session().firstRaidProtectionActive()) {
 					continue;
 				}
-				selected = enemyArchetypes.require("boss_white_line");
 				if (activeEnemyCount(selected.id) > 0) {
 					continue;
 				}
 			} else {
+				boolean firstRaid = raid.session().raidOrdinal() == 1;
 				FirstRaidEnemySpawnDirector.Context context =
 					new FirstRaidEnemySpawnDirector.Context(
 							elapsed,
-							raid.session().firstRaidProtectionActive(),
+							firstRaid,
 							point.distanceFromSpawnRooms,
 							false,
 							point.mandatorySingleRoute,
 							point.bossArena);
-				selected = FirstRaidEnemySpawnDirector.select(
+				selected = FirstRaidEnemySpawnDirector
+						.selectFirstRaidMilestone(
+								enemyArchetypes.all(),
+								context,
+								this::activeEnemyCount);
+				if (selected == null) {
+					selected = FirstRaidEnemySpawnDirector.select(
 							enemyArchetypes.all(),
 							context,
 							this::activeEnemyCount,
@@ -2155,6 +2267,7 @@ public final class BukovRealtimeWorld
 													definition.spawnWeight);
 								}
 							});
+				}
 			}
 			if (selected == null
 					|| (selected.tier == EnemyTier.BOSS
@@ -2162,6 +2275,41 @@ public final class BukovRealtimeWorld
 				continue;
 			}
 			BukovHostMob mob = new BukovHostMob().configure(selected);
+			mob.pos = point.cell;
+			mob.state = mob.WANDERING;
+			GameScene.add(mob);
+			return true;
+		}
+		return false;
+	}
+
+	private boolean attemptWhiteLineSpawn(float elapsed) {
+		if (!raidMode.bossEnabled || whiteLineResolved()) return false;
+		EnemyArchetypeDefinition boss = enemyArchetypes.require(
+				FirstRaidEnemySpawnDirector.FIRST_BOSS);
+		float earliest = raidMode.bossEarliestSeconds;
+		if (raid.session().raidOrdinal() == 1
+				&& raidMode != BukovRaidMode.BOSS_CONTRACT) {
+			earliest = Math.max(
+					earliest,
+					boss.firstRaidMinimumSeconds);
+		}
+		if (elapsed < earliest
+				|| raid.session().firstRaidProtectionActive()
+				|| activeEnemyCount(boss.id) > 0) {
+			return false;
+		}
+		for (BukovEnemySpawnPlanner.SpawnPoint point :
+				enemySpawnPoints) {
+			if (!point.bossArena
+					|| point.cell < 0
+					|| point.cell >= Dungeon.level.length()
+					|| Dungeon.level.heroFOV[point.cell]
+					|| Actor.findChar(point.cell) != null
+					|| tooCloseToHero(point.cell)) {
+				continue;
+			}
+			BukovHostMob mob = new BukovHostMob().configure(boss);
 			mob.pos = point.cell;
 			mob.state = mob.WANDERING;
 			GameScene.add(mob);
@@ -2293,6 +2441,7 @@ public final class BukovRealtimeWorld
 								: raid.enemyRuntime(mob.id()));
 				enemiesByMob.put(mob, enemy);
 				enemies.add(enemy);
+				announceEnemyIdentity(enemy);
 			}
 			enemy.present = true;
 			enemy.body.active = true;
@@ -2506,6 +2655,35 @@ public final class BukovRealtimeWorld
 		}
 	}
 
+	private static void announceEnemyIdentity(EnemyRuntime enemy) {
+		if (enemy == null || enemy.definition == null) return;
+		showEnemyStatus(
+				enemy,
+				enemy.definition.tier == EnemyTier.BOSS
+						? CharSprite.NEGATIVE : CharSprite.WARNING,
+				enemyRoleLabel(enemy.definition));
+	}
+
+	static String enemyRoleLabel(EnemyArchetypeDefinition definition) {
+		if (definition == null || definition.role == null) return "敌对目标";
+		switch (definition.role) {
+			case RANGED_SKIRMISHER:
+				return "游击射手";
+			case MELEE_RUSHER:
+				return "突击近战";
+			case ARMORED_SUPPRESSOR:
+				return "正面装甲";
+			case SCOUT_ALARM:
+				return "侦测报警";
+			case ELITE_COMMANDER:
+				return "精英指挥";
+			case OPTIONAL_BOSS:
+				return "可选Boss · 白线";
+			default:
+				return "敌对目标";
+		}
+	}
+
 	private boolean overlapsAnotherBody(EnemyRuntime movingEnemy) {
 		if (overlaps(
 				movingEnemy.body,
@@ -2662,7 +2840,7 @@ public final class BukovRealtimeWorld
 		target.set(tense, combat);
 	}
 
-	private void playPlayerGunshot(float gainScale) {
+	private void playPlayerGunshot(float gainScale, float pitchScale) {
 		SpatialAudioModel.resolve(
 				audioContract,
 				1f,
@@ -2679,7 +2857,8 @@ public final class BukovRealtimeWorld
 				gunshotAudio);
 		playGunshotLayers(
 				Assets.Sounds.Bukov.GUNSHOT_PLAYER,
-				gainScale);
+				gainScale,
+				pitchScale);
 	}
 
 	private void playEnemyGunshot(EnemyRuntime enemy, float noiseRadius) {
@@ -2729,22 +2908,45 @@ public final class BukovRealtimeWorld
 	}
 
 	private void playGunshotLayers(String bodyAsset, float gainScale) {
+		playGunshotLayers(bodyAsset, gainScale, 1f);
+	}
+
+	private void playGunshotLayers(
+			String bodyAsset,
+			float gainScale,
+			float pitchScale) {
 		if (!gunshotAudio.audible()) return;
+		float safePitchScale = Math.max(0.5f, Math.min(2f, pitchScale));
 		playSfxStereo(
 				Assets.Sounds.Bukov.DRY_FIRE,
 				gunshotAudio.mechanicalLeft() * gainScale,
 				gunshotAudio.mechanicalRight() * gainScale,
-				gunshotAudio.mechanicalPitch());
+				Math.max(
+						0.5f,
+						Math.min(
+								2f,
+								gunshotAudio.mechanicalPitch()
+										* safePitchScale)));
 		playSfxStereo(
 				bodyAsset,
 				gunshotAudio.bodyLeft() * gainScale,
 				gunshotAudio.bodyRight() * gainScale,
-				gunshotAudio.bodyPitch());
+				Math.max(
+						0.5f,
+						Math.min(
+								2f,
+								gunshotAudio.bodyPitch()
+										* safePitchScale)));
 		playSfxStereo(
 				bodyAsset,
 				gunshotAudio.tailLeft() * gainScale,
 				gunshotAudio.tailRight() * gainScale,
-				gunshotAudio.tailPitch());
+				Math.max(
+						0.5f,
+						Math.min(
+								2f,
+								gunshotAudio.tailPitch()
+										* safePitchScale)));
 	}
 
 	private float realtimeSfxGain() {
@@ -2846,11 +3048,16 @@ public final class BukovRealtimeWorld
 	private static boolean hasAbility(
 			EnemyRuntime enemy,
 			String ability) {
-		if (enemy == null || enemy.definition == null
-				|| enemy.definition.abilities == null) {
+		return enemy != null && hasAbility(enemy.definition, ability);
+	}
+
+	private static boolean hasAbility(
+			EnemyArchetypeDefinition definition,
+			String ability) {
+		if (definition == null || definition.abilities == null) {
 			return false;
 		}
-		for (String candidate : enemy.definition.abilities) {
+		for (String candidate : definition.abilities) {
 			if (ability.equals(candidate)) {
 				return true;
 			}
@@ -2879,6 +3086,72 @@ public final class BukovRealtimeWorld
 				CharSprite.WARNING,
 				hasAbility(source, "ORDER_FLANK")
 						? "指挥夹击" : "广播警报");
+		if (raid != null && hasAbility(source, "CALL_INVESTIGATORS")) {
+			nextEnemySpawnSeconds = Math.min(
+					nextEnemySpawnSeconds,
+					raid.session().elapsedSeconds
+							+ ALARM_REINFORCEMENT_DELAY_SECONDS);
+			showHeroStatus("警报已广播 · 敌方增援正在接近");
+		}
+	}
+
+	private void updateWhiteLineOffense(EnemyRuntime boss, float dt) {
+		if (boss.bossState == null || !boss.bossState.active()) {
+			boss.bossPulseRemaining = 0f;
+			return;
+		}
+		WhiteLineBossStateMachine.Phase phase =
+				boss.bossState.phase();
+		if (phase == WhiteLineBossStateMachine.Phase.UMBRELLA_SHIELD) {
+			return;
+		}
+		boss.bossPulseRemaining -= dt;
+		if (boss.bossPulseRemaining > 0f) return;
+		float range = phase
+				== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+				? 4.5f : 7.5f;
+		if (!GridLineOfSight.visible(
+				boss.body.x,
+				boss.body.y,
+				heroBody.x,
+				heroBody.y,
+				range,
+				collisionMap)) {
+			return;
+		}
+		int damage = phase
+				== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+				? Math.max(4, boss.minimumDamage() - 2)
+				: boss.maximumDamage();
+		pendingEnemyShots.add(new PendingEnemyShot(boss.mob, damage));
+		combatPresentation.emit(
+				CombatPresentationEvent.Type.ENEMY_FIRE,
+				boss.stableId,
+				hero.id(),
+				boss.mob.pos,
+				hero.pos,
+				null,
+				phase
+						== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+						? 0.7f : 1f);
+		combatFx.impact(
+				boss.stableId,
+				++boss.bossPulseSequence,
+				true,
+				heroBody.x,
+				heroBody.y,
+				phase
+						== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+						? 0.65f : 1f);
+		showEnemyStatus(
+				boss,
+				CharSprite.NEGATIVE,
+				phase == WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+						? "诱饵冲击" : "雾灯过载");
+		boss.bossPulseRemaining = phase
+				== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
+				? WHITE_LINE_PHASE_TWO_PULSE_SECONDS
+				: WHITE_LINE_PHASE_THREE_PULSE_SECONDS;
 	}
 
 	private static float interpolate(float from, float to, float alpha) {
@@ -3494,6 +3767,94 @@ public final class BukovRealtimeWorld
 		checkpointLootChange();
 	}
 
+	private void releaseEnemyLoot(EnemyRuntime enemy, int cell) {
+		if (enemy.definition == null
+				|| enemy.definition.tier == EnemyTier.BOSS
+				|| !enemyDropsLoot(
+						Dungeon.seed,
+						enemy.stableId,
+						enemy.definition.tier)) {
+			return;
+		}
+		String table = enemy.definition.tier == EnemyTier.ELITE
+				? BukovFirstRaidLootTables.INDUSTRIAL
+				: BukovFirstRaidLootTables.LOW;
+		Heap heap = Dungeon.level.heaps.get(cell);
+		boolean created = false;
+		if (heap == null) {
+			heap = new Heap();
+			heap.pos = cell;
+			heap.seen = true;
+			created = true;
+		} else if (heap.type != Heap.Type.HEAP) {
+			return;
+		}
+		int rolls = enemy.definition.tier == EnemyTier.ELITE ? 2 : 1;
+		for (Item item : BukovFirstRaidLootTables.require(table).roll(
+				Dungeon.seed,
+				"enemy:" + enemy.stableId,
+				rolls)) {
+			heap.items.addLast(item);
+		}
+		if (created) {
+			Dungeon.level.heaps.put(cell, heap);
+			GameScene.add(heap);
+		} else if (heap.sprite != null) {
+			heap.sprite.link();
+			heap.sprite.drop();
+		}
+	}
+
+	static boolean enemyDropsLoot(
+			long seed,
+			int stableId,
+			EnemyTier tier) {
+		if (tier == null || tier == EnemyTier.BOSS) return false;
+		if (tier == EnemyTier.ELITE) return true;
+		long mixed = seed ^ stableId * 0x9E3779B97F4A7C15L;
+		mixed ^= mixed >>> 33;
+		return com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+				.remainderUnsigned(mixed, 100L) < 35L;
+	}
+
+	static int resolveEnemyArmor(
+			EnemyArchetypeDefinition definition,
+			int damage,
+			float penetration) {
+		if (definition == null || damage <= 0
+				|| !hasAbility(definition, "ARMORED_FRONT")) {
+			return Math.max(0, damage);
+		}
+		float absorbed = penetration >= 25f
+				? 0.10f : penetration >= 15f ? 0.20f : 0.35f;
+		return Math.max(1, Math.round(damage * (1f - absorbed)));
+	}
+
+	private void releaseEnemyFirearm(Mob defeated) {
+		EnemyRuntime enemy = enemiesByMob.get(defeated);
+		if (enemy == null
+				|| enemy.definition.weaponDefinitionId == null
+				|| !BukovEnemyFirearmDropPolicy.shouldDrop(
+						enemy.definition.tier,
+						enemy.definition.id,
+						defeated.id())) {
+			return;
+		}
+		Item weapon = BukovFirstRaidLootTables
+				.createByEconomicDefinitionId(
+						"firearm:"
+								+ enemy.definition.weaponDefinitionId);
+		if (weapon == null) {
+			throw new IllegalStateException(
+					"Enemy weapon is not obtainable: "
+							+ enemy.definition.weaponDefinitionId);
+		}
+		Heap heap = Dungeon.level.drop(weapon, defeated.pos);
+		heap.type = Heap.Type.HEAP;
+		heap.hidden = false;
+		heap.seen = true;
+	}
+
 	private int resolveExtractionCell(String extractionId) {
 		if (Dungeon.level instanceof BukovLevel) {
 			return ((BukovLevel)Dungeon.level).extractionCell(
@@ -3796,6 +4157,8 @@ public final class BukovRealtimeWorld
 		private boolean present;
 		private boolean moving;
 		private boolean broadcastedContact;
+		private float bossPulseRemaining;
+		private int bossPulseSequence;
 		private int heardSoundSequence = Integer.MIN_VALUE;
 
 		private EnemyRuntime(
@@ -3871,7 +4234,7 @@ public final class BukovRealtimeWorld
 		}
 
 		private float movementSpeed() {
-			return definition == null
+			float baseline = definition == null
 					? Math.max(
 							1.35f,
 							Math.min(
@@ -3879,6 +4242,20 @@ public final class BukovRealtimeWorld
 									MOB_SPEED_TILES_PER_SECOND
 											* mob.speed()))
 					: definition.movementSpeed;
+			if (bossState == null) return baseline;
+			if (bossState.phase()
+					== WhiteLineBossStateMachine.Phase.UMBRELLA_SHIELD) {
+				return baseline * 0.82f;
+			}
+			if (bossState.phase()
+					== WhiteLineBossStateMachine.Phase.DECOY_SEARCH) {
+				return baseline * 1.18f;
+			}
+			if (bossState.phase()
+					== WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD) {
+				return baseline * 1.08f;
+			}
+			return baseline;
 		}
 
 		private float perceptionRange() {

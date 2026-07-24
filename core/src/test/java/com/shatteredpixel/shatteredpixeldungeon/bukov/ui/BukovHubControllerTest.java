@@ -23,6 +23,17 @@ import static org.junit.Assert.assertTrue;
 public class BukovHubControllerTest {
 
 	@Test
+	public void firstHubVisitPersistsStartingRegionAndCareerStatus()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+
+		BukovHubController hub = new BukovHubController(saves);
+
+		assertTrue(saves.loadProfile().unlockedMaps().contains("fog_depot"));
+		assertEquals("合同 0/5 · 区域 1/6", hub.viewModel().careerSummary);
+	}
+
+	@Test
 	public void firstOpenCreatesAndPersistsRecommendedStarterDeployment()
 			throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
@@ -38,6 +49,24 @@ public class BukovHubControllerTest {
 		assertTrue(hub.viewModel().canDeploy);
 
 		hub.confirmDeployment();
+	}
+
+	@Test
+	public void unlockedRegionsCycleAndPersistAsNextDeploymentChoice()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		new BukovHubController(saves);
+		BukovProfile profile = saves.loadProfile();
+		profile.unlockMap("rust_workshop");
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		hub.cycleSelectedMap();
+
+		assertEquals("rust_workshop", saves.loadProfile().selectedMap());
+		assertEquals("锈蚀工场", hub.viewModel().selectedMapName);
+		hub.cycleSelectedMap();
+		assertEquals("fog_depot", saves.loadProfile().selectedMap());
 	}
 
 	@Test

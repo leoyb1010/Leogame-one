@@ -77,6 +77,7 @@ public class BukovContentCompletenessTest {
 		EnumSet<FirearmClass> classes =
 				EnumSet.noneOf(FirearmClass.class);
 		Set<String> balanceProfiles = new HashSet<>();
+		Set<String> feedbackProfiles = new HashSet<>();
 		for (FirearmDefinition definition : firearms.all()) {
 			actual.add(definition.id);
 			classes.add(definition.weaponClass);
@@ -88,6 +89,16 @@ public class BukovContentCompletenessTest {
 									+ definition.magazineSize + ":"
 									+ definition.effectiveRangeTiles + ":"
 									+ definition.pellets));
+			assertTrue(
+					"Duplicate firearm feedback profile: " + definition.id,
+					feedbackProfiles.add(
+							definition.feedbackProfile + ":"
+									+ definition.soundPitch + ":"
+									+ definition.soundGain + ":"
+									+ definition.muzzleIntensity + ":"
+									+ definition.tracerIntensity + ":"
+									+ definition.impactIntensity + ":"
+									+ definition.feedbackIntensity));
 			Item obtainable = BukovFirstRaidLootTables
 					.createByEconomicDefinitionId("firearm:" + definition.id);
 			assertNotNull("No obtainable raid item for " + definition.id, obtainable);

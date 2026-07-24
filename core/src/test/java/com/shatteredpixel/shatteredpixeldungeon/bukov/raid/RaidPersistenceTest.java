@@ -15,6 +15,8 @@ public class RaidPersistenceTest {
 		BukovProfile profile = new BukovProfile();
 		profile.setCurrency(250L);
 		profile.unlockMap("first_level");
+		profile.unlockMap("rust_workshop");
+		profile.selectMap("rust_workshop");
 		profile.completeContract("first_extract");
 
 		LootTransaction loot = new LootTransaction("persisted-raid", 100f);
@@ -31,6 +33,7 @@ public class RaidPersistenceTest {
 		assertEquals(BukovProfile.CURRENT_VERSION, restored.profileVersion());
 		assertEquals(250L, restored.currency());
 		assertTrue(restored.unlockedMaps().contains("first_level"));
+		assertEquals("rust_workshop", restored.selectedMap());
 		assertTrue(restored.completedContracts().contains("first_extract"));
 		assertEquals(1, restored.stash().distinctItemCount());
 		assertEquals(4L, restored.stash().totalQuantity());

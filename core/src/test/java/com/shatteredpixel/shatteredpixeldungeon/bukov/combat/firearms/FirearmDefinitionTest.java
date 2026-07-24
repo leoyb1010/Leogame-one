@@ -35,6 +35,13 @@ public class FirearmDefinitionTest {
 		definition.validate();
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void rejectsUnusableWeaponFeedbackTuning() {
+		FirearmDefinition definition = validDefinition();
+		definition.muzzleIntensity = 0f;
+		definition.validate();
+	}
+
 	public static FirearmDefinition validDefinition() {
 		FirearmDefinition definition = new FirearmDefinition();
 		definition.id = "test";

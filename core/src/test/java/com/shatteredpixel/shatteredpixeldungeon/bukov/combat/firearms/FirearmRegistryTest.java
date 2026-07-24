@@ -41,10 +41,23 @@ public class FirearmRegistryTest {
 				registry.require("river_556").weaponClass);
 		assertEquals(
 				FirearmClass.SHOTGUN,
+				registry.require("breaker_12").weaponClass);
+		assertEquals(
+				FirearmClass.CARBINE,
+				registry.require("carbine_556").weaponClass);
+		assertEquals(
+				FirearmClass.HEAVY_WEAPON,
 				registry.require("rainstorm_12").weaponClass);
 		assertEquals(
 				FirearmClass.MARKSMAN_RIFLE,
 				registry.require("frontier_762").weaponClass);
+		assertEquals(
+				"HEAVY_AUTOSHOTGUN",
+				registry.require("rainstorm_12").feedbackProfile);
+		assertEquals(
+				1.42f,
+				registry.require("rainstorm_12").soundGain,
+				0.0001f);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

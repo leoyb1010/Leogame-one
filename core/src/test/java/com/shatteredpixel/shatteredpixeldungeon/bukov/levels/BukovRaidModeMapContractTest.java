@@ -40,11 +40,15 @@ public class BukovRaidModeMapContractTest {
 		assertTrue(deployment.contains(
 				"checkpoint.session().raidMode()"));
 		assertTrue(deployment.contains(
-				"saves.loadProfile().selectedRaidMode()"));
+				"deploymentProfile.selectedRaidMode()"));
 		assertTrue(deployment.contains(
 				"BukovMode.prepareRaidMode(deploymentMode)"));
+		assertTrue(deployment.contains(
+				"BukovMode.prepareSelectedMap(deploymentProfile.selectedMap())"));
 		assertTrue(level.contains(
 				"private final BukovRaidMode raidMode = BukovMode.raidMode()"));
+		assertTrue(level.contains(
+				"themeForId(BukovMode.selectedRaidTheme())"));
 		assertTrue(level.contains(
 				"BukovRoomGraphAdapter.adapt(\n"
 						+ "\t\t\t\tthis, Dungeon.seedCurDepth(), theme.id, raidMode)"));

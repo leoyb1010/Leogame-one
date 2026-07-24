@@ -19,7 +19,7 @@ public class FirstRaidEnemySpawnDirectorTest {
 	@Test
 	public void firstTwoMinutesAllowOnlyAuthoredLowThreatGunner() {
 		EnemyArchetypeDefinition gunner = definition(
-				"gunner",
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER,
 				EnemyTier.COMMON,
 				38,
 				0f,
@@ -28,7 +28,7 @@ public class FirstRaidEnemySpawnDirectorTest {
 				false
 		);
 		EnemyArchetypeDefinition rusher = definition(
-				"rusher",
+				FirstRaidEnemySpawnDirector.FIRST_RUSHER,
 				EnemyTier.COMMON,
 				30,
 				120f,
@@ -61,7 +61,7 @@ public class FirstRaidEnemySpawnDirectorTest {
 	@Test
 	public void playerFovAndMandatoryRouteProtectSpawn() {
 		EnemyArchetypeDefinition elite = definition(
-				"elite",
+				FirstRaidEnemySpawnDirector.FIRST_ELITE,
 				EnemyTier.ELITE,
 				5,
 				360f,
@@ -90,7 +90,7 @@ public class FirstRaidEnemySpawnDirectorTest {
 	@Test
 	public void firstRaidActiveCapPreventsPressureSpike() {
 		EnemyArchetypeDefinition enemy = definition(
-				"limited",
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER,
 				EnemyTier.COMMON,
 				20,
 				0f,
@@ -116,7 +116,7 @@ public class FirstRaidEnemySpawnDirectorTest {
 	@Test
 	public void bossIsExplicitOptionalArenaContentNotRandomSpawn() {
 		EnemyArchetypeDefinition boss = definition(
-				"boss",
+				FirstRaidEnemySpawnDirector.FIRST_BOSS,
 				EnemyTier.BOSS,
 				0,
 				360f,
@@ -157,6 +157,46 @@ public class FirstRaidEnemySpawnDirectorTest {
 						Arrays.asList(first, second), context, NONE, 42L
 				).id
 		);
+	}
+
+	@Test
+	public void firstRaidUsesExactlyFourCommonOneEliteAndMilestonesThem() {
+		EnemyArchetypeDefinition gunner = definition(
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER,
+				EnemyTier.COMMON, 38, 0f, 0f, false, false);
+		EnemyArchetypeDefinition rusher = definition(
+				FirstRaidEnemySpawnDirector.FIRST_RUSHER,
+				EnemyTier.COMMON, 30, 120f, 120f, false, false);
+		EnemyArchetypeDefinition guard = definition(
+				FirstRaidEnemySpawnDirector.FIRST_GUARD,
+				EnemyTier.COMMON, 20, 240f, 300f, false, false);
+		EnemyArchetypeDefinition alarm = definition(
+				FirstRaidEnemySpawnDirector.FIRST_ALARM,
+				EnemyTier.COMMON, 12, 300f, 360f, false, false);
+		EnemyArchetypeDefinition elite = definition(
+				FirstRaidEnemySpawnDirector.FIRST_ELITE,
+				EnemyTier.ELITE, 5, 360f, 480f, true, false);
+		EnemyArchetypeDefinition later = definition(
+				"alley_scout",
+				EnemyTier.COMMON, 20, 45f, 90f, false, false);
+		java.util.List<EnemyArchetypeDefinition> cast = Arrays.asList(
+				gunner, rusher, guard, alarm, elite, later);
+		FirstRaidEnemySpawnDirector.Context firstRaid =
+				context(500f, true, false, false, false);
+
+		assertFalse(FirstRaidEnemySpawnDirector.eligible(
+				later, firstRaid, NONE));
+		assertSame(
+				elite,
+				FirstRaidEnemySpawnDirector.selectFirstRaidMilestone(
+						cast, firstRaid, NONE));
+		assertSame(
+				alarm,
+				FirstRaidEnemySpawnDirector.selectFirstRaidMilestone(
+						cast,
+						firstRaid,
+						id -> FirstRaidEnemySpawnDirector.FIRST_ELITE
+								.equals(id) ? 1 : 0));
 	}
 
 	private static FirstRaidEnemySpawnDirector.Context context(

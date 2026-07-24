@@ -70,8 +70,25 @@ public final class ThemeRegistry {
 	}
 
 	public ThemeDefinition forSeed(long seed) {
+		return forSeed(seed, definitions.keySet());
+	}
+
+	public ThemeDefinition forSeed(
+			long seed,
+			Collection<String> allowedIds) {
 		if (definitions.isEmpty()) {
 			throw new IllegalStateException("Theme registry is not loaded");
+		}
+		List<ThemeDefinition> allowed = new ArrayList<>();
+		if (allowedIds != null) {
+			for (String id : definitions.keySet()) {
+				if (allowedIds.contains(id)) {
+					allowed.add(definitions.get(id));
+				}
+			}
+		}
+		if (allowed.isEmpty()) {
+			allowed.add(require("fog_depot"));
 		}
 		long mixed = seed;
 		mixed ^= mixed >>> 33;
@@ -79,8 +96,8 @@ public final class ThemeRegistry {
 		mixed ^= mixed >>> 33;
 		mixed *= 0xc4ceb9fe1a85ec53l;
 		mixed ^= mixed >>> 33;
-		int index = nonNegativeIndex(mixed, definitions.size());
-		return new ArrayList<>(definitions.values()).get(index);
+		int index = nonNegativeIndex(mixed, allowed.size());
+		return allowed.get(index);
 	}
 
 	/**
@@ -104,6 +121,9 @@ public final class ThemeRegistry {
 				parseColor(node.getString("primaryColor")),
 				parseColor(node.getString("secondaryColor")),
 				node.getFloat("riskMultiplier"),
+				node.getString("floorPattern"),
+				node.getInt("wallDecoModulo"),
+				node.getInt("coverClusters"),
 				parseRoomWeights(node.get("roomWeights")),
 				parseStringWeights(node.get("lootWeights"), "lootWeights"),
 				parseStringWeights(node.get("enemyWeights"), "enemyWeights"),

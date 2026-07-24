@@ -36,10 +36,25 @@ assert len(firearm_ids) == len(firearms), "duplicate firearm id"
 assert {item["weaponClass"] for item in firearms} == {
     "PISTOL",
     "SUBMACHINE_GUN",
+    "CARBINE",
     "ASSAULT_RIFLE",
     "SHOTGUN",
     "MARKSMAN_RIFLE",
+    "HEAVY_WEAPON",
 }
+representative_six = {
+    "needle_9": "PISTOL",
+    "shuttle_9": "SUBMACHINE_GUN",
+    "carbine_556": "CARBINE",
+    "bolt_12": "SHOTGUN",
+    "longstreet_762": "MARKSMAN_RIFLE",
+    "rainstorm_12": "HEAVY_WEAPON",
+}
+firearm_by_id = {item["id"]: item for item in firearms}
+assert {
+    firearm_id: firearm_by_id[firearm_id]["weaponClass"]
+    for firearm_id in representative_six
+} == representative_six
 
 ammo_by_id = {item["id"]: item for item in ammunition}
 for ammo_id in ammo_by_id:
@@ -58,6 +73,18 @@ for firearm in firearms:
     assert 1 <= firearm["pellets"] <= 20
     assert firearm["noiseRadiusTiles"] >= 0
     assert firearm["weightKg"] > 0 and firearm["value"] > 0
+    assert firearm["feedbackProfile"]
+    assert 0.72 <= firearm["soundPitch"] <= 1.28
+    assert 0.35 <= firearm["soundGain"] <= 1.5
+    for field in (
+        "muzzleIntensity",
+        "tracerIntensity",
+        "impactIntensity",
+        "feedbackIntensity",
+    ):
+        assert 0.35 <= firearm[field] <= 1.5, (
+            f"invalid {field}: {firearm['id']}"
+        )
     default_ammo = ammo_by_id.get(firearm["defaultAmmo"])
     assert default_ammo is not None, f"missing ammo: {firearm['id']}"
     assert default_ammo["caliber"] == firearm["caliber"], (
@@ -70,6 +97,22 @@ for firearm in firearms:
     assert f'firearm("{firearm["id"]}"' in VENDOR_SOURCE, (
         f"not obtainable from vendor: {firearm['id']}"
     )
+
+feel_signatures = {
+    (
+        firearm["feedbackProfile"],
+        firearm["soundPitch"],
+        firearm["soundGain"],
+        firearm["muzzleIntensity"],
+        firearm["tracerIntensity"],
+        firearm["impactIntensity"],
+        firearm["feedbackIntensity"],
+    )
+    for firearm in firearms
+}
+assert len(feel_signatures) == len(firearms), (
+    "every firearm requires an independent sound/FX signature"
+)
 
 tiers = {
     tier: sum(enemy["tier"] == tier for enemy in enemies)

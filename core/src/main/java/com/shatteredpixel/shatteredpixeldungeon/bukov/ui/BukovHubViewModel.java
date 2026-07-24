@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgression;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCheckpoint;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovGearRules;
@@ -122,6 +123,11 @@ public final class BukovHubViewModel {
 	public final BukovRaidMode raidMode;
 	public final String raidModeName;
 	public final String raidModeSummary;
+	public final String careerSummary;
+	public final String activeContract;
+	public final String activeContractObjective;
+	public final String selectedMapId;
+	public final String selectedMapName;
 	private final float weightLimit;
 
 	private BukovHubViewModel(
@@ -140,7 +146,9 @@ public final class BukovHubViewModel {
 			String activeRaidId,
 			float activeElapsedSeconds,
 			float weightLimit,
-			BukovRaidMode raidMode) {
+			BukovRaidMode raidMode,
+			BukovCareerProgression.Snapshot career,
+			String selectedMapId) {
 		this.stashItems = Collections.unmodifiableList(stashItems);
 		this.selectedCount = selectedCount;
 		this.totalWeight = totalWeight;
@@ -160,6 +168,12 @@ public final class BukovHubViewModel {
 		this.raidMode = raidMode;
 		raidModeName = raidMode.displayName;
 		raidModeSummary = raidMode.summary;
+		careerSummary = career.careerSummary();
+		activeContract = career.activeContract;
+		activeContractObjective = career.activeObjective;
+		this.selectedMapId = selectedMapId;
+		selectedMapName =
+				BukovCareerProgression.mapDisplayName(selectedMapId);
 	}
 
 	static BukovHubViewModel from(BukovProfile profile, float weightLimit) {
@@ -221,6 +235,8 @@ public final class BukovHubViewModel {
 		BukovRaidMode raidMode = activeRaid
 				? activeCheckpoint.session().raidMode()
 				: profile.selectedRaidMode();
+		BukovCareerProgression.Snapshot career =
+				BukovCareerProgression.snapshot(profile);
 		String deploymentBlockReason = activeRaid
 				? null
 				: !raidMode.usesPlayerLoadout()
@@ -251,7 +267,9 @@ public final class BukovHubViewModel {
 				activeRaid ? activeCheckpoint.session().raidId : null,
 				activeRaid ? activeCheckpoint.session().elapsedSeconds : 0f,
 				effectiveWeightLimit,
-				raidMode);
+				raidMode,
+				career,
+				profile.selectedMap());
 	}
 
 	private static String deploymentBlockReason(

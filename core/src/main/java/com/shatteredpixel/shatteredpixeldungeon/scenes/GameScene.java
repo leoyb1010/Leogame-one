@@ -980,7 +980,9 @@ public class GameScene extends PixelScene {
 						insets.left + 4f,
 						screentop + 4f,
 						hudWidth,
-						BukovRaidHud.preferredHeight(hudWidth)
+						BukovRaidHud.preferredHeight(
+								hudWidth,
+								SPDSettings.bukovUiScale())
 				);
 				if (bukovTouchControls != null) {
 					bukovTouchControls.hudBottom(bukovHud.bottom() + 2f);

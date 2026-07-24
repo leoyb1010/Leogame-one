@@ -161,4 +161,26 @@ public class WhiteLineBossStateMachineTest {
 			assertEquals(first.trueBodyIndex(), second.trueBodyIndex());
 		}
 	}
+
+	@Test
+	public void phaseClockResetsAndTargetWindowIsFortyFiveToOneTwentySeconds() {
+		WhiteLineBossStateMachine boss =
+				new WhiteLineBossStateMachine(240, 77L);
+		boss.engage();
+		boss.update(44.9f);
+		assertFalse(boss.insideTargetEncounterWindow());
+		assertEquals(44.9f, boss.phaseSeconds(), 0.0001f);
+		boss.update(0.1f);
+		assertTrue(boss.insideTargetEncounterWindow());
+
+		boss.flankUmbrella(1f, 0f, -1f, 0f);
+		boss.applyDamage(999);
+		assertEquals(
+				WhiteLineBossStateMachine.Phase.DECOY_SEARCH,
+				boss.phase());
+		assertEquals(0f, boss.phaseSeconds(), 0f);
+		boss.update(76f);
+		assertFalse(boss.insideTargetEncounterWindow());
+		assertTrue(boss.retreatRecommended());
+	}
 }

@@ -65,6 +65,7 @@ public class BukovThemeSeedSweepTest {
 		Set<String> names = new HashSet<>();
 		Set<String> palettes = new HashSet<>();
 		Set<String> compositionFingerprints = new HashSet<>();
+		Set<String> visualGrammars = new HashSet<>();
 		for (ThemeDefinition theme : registry.all()) {
 			assertTrue(names.add(theme.name));
 			assertTrue(palettes.add(
@@ -79,8 +80,14 @@ public class BukovThemeSeedSweepTest {
 							+ theme.lootWeights() + ":"
 							+ theme.enemyWeights() + ":"
 							+ theme.coverCombination());
+			visualGrammars.add(
+					theme.floorPattern + ":"
+							+ theme.wallDecoModulo + ":"
+							+ theme.coverClusters);
 		}
 		assertEquals(6, compositionFingerprints.size());
+		assertEquals("each theme needs a unique spatial visual grammar",
+				6, visualGrammars.size());
 		assertEquals(
 				new HashSet<>(Arrays.asList(
 						"雾港回收区",

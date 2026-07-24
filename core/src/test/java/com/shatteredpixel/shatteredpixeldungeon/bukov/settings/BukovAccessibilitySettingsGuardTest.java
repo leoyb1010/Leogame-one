@@ -57,6 +57,26 @@ public class BukovAccessibilitySettingsGuardTest {
 		assertTrue(input.contains("bukovAimCurve"));
 		assertTrue(input.contains("bukovAimAssist"));
 		assertTrue(input.contains("configureTriggerThresholds"));
+		String world = read(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/runtime/BukovRealtimeWorld.java");
+		assertTrue(world.contains("applyPlayerAimAssist"));
+		assertTrue(world.contains("GridLineOfSight.visible"));
+		assertTrue(world.contains("Dungeon.level.heroFOV"));
+	}
+
+	@Test
+	public void uiScaleChangesProductionHudGeometry() throws Exception {
+		String gameScene = read(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "scenes/GameScene.java");
+		String hud = read(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/ui/BukovRaidHud.java");
+		assertTrue(gameScene.contains("SPDSettings.bukovUiScale()"));
+		assertTrue(gameScene.contains("BukovRaidHud.preferredHeight("));
+		assertTrue(hud.contains("scaleMultiplier"));
+		assertTrue(hud.contains("label.zoom(scale)"));
 	}
 
 	private static String read(String path) throws Exception {
