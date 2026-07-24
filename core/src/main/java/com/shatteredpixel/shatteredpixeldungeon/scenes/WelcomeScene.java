@@ -22,55 +22,55 @@
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.shatteredpixel.shatteredpixeldungeon.Badges;
-import com.shatteredpixel.shatteredpixeldungeon.Chrome;
-import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
-import com.shatteredpixel.shatteredpixeldungeon.GamesInProgress;
-import com.shatteredpixel.shatteredpixeldungeon.LeoIdentityConfig;
-import com.shatteredpixel.shatteredpixeldungeon.Rankings;
+import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
-import com.shatteredpixel.shatteredpixeldungeon.effects.Fireball;
-import com.shatteredpixel.shatteredpixeldungeon.journal.Document;
-import com.shatteredpixel.shatteredpixeldungeon.journal.Journal;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.messages.Messages;
+import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Icons;
-import com.shatteredpixel.shatteredpixeldungeon.ui.TitleBackground;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
-import com.shatteredpixel.shatteredpixeldungeon.ui.StyledButton;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndError;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndHardNotification;
-import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.watabou.gltextures.SmartTexture;
 import com.watabou.input.ControllerHandler;
+import com.watabou.input.GameAction;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
-import com.watabou.noosa.Game;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.audio.Music;
+import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.FileUtils;
 import com.watabou.utils.RectF;
 
-import java.util.Collections;
-
+/**
+ * One-shot Bukov briefing for a new local profile.
+ *
+ * <p>Version bookkeeping is intentionally silent. Returning players go
+ * straight to the product title instead of seeing the host game's update,
+ * class, ranking, or developer-promotion surfaces.</p>
+ */
 public class WelcomeScene extends PixelScene {
 
-	private static final int LATEST_UPDATE = ShatteredPixelDungeon.v3_3_0;
-
-	//used so that the game does not keep showing the window forever if cleaning fails
 	private static boolean triedCleaningTemp = false;
+
+	private BukovUiTokens tokens;
 
 	@Override
 	public void create() {
 		super.create();
+		Music.INSTANCE.end();
 
 		final int previousVersion = SPDSettings.version();
 
-		if (!triedCleaningTemp && FileUtils.cleanTempFiles()){
-			add(new WndHardNotification(Icons.get(Icons.WARNING),
+		if (!triedCleaningTemp && FileUtils.cleanTempFiles()) {
+			add(new WndHardNotification(
+					Icons.get(Icons.WARNING),
 					Messages.get(WndError.class, "title"),
 					Messages.get(this, "bukov_save_warning"),
 					Messages.get(this, "continue"),
-					5){
+					5) {
 				@Override
 				public void hide() {
 					super.hide();
@@ -81,175 +81,257 @@ public class WelcomeScene extends PixelScene {
 			return;
 		}
 
-		if (ShatteredPixelDungeon.versionCode == previousVersion && !SPDSettings.intro()) {
+		if (previousVersion != 0 && !SPDSettings.intro()) {
+			SPDSettings.version(ShatteredPixelDungeon.versionCode);
 			ShatteredPixelDungeon.switchNoFade(TitleScene.class);
 			return;
 		}
 
-		Music.INSTANCE.playTracks(
-				new String[]{Assets.Music.THEME_1, Assets.Music.THEME_2},
-				new float[]{1, 1},
-				false);
-
 		uiCamera.visible = false;
+		tokens = BukovUiTokens.loadDefault();
 
-		int w = Camera.main.width;
-		int h = Camera.main.height;
-		RectF insets = getCommonInsets();
+		final int screenWidth = Camera.main.width;
+		final int screenHeight = Camera.main.height;
+		final boolean wide = landscape();
+		final RectF insets = getCommonInsets();
+		final float safeWidth =
+				screenWidth - insets.left - insets.right;
+		final float safeHeight =
+				screenHeight - insets.top - insets.bottom;
 
-		TitleBackground BG = new TitleBackground(w, h);
-		add( BG );
+		addBukovBackdrop(screenWidth, screenHeight, wide);
 
-		// Keeps first-run copy legible on the shared Bukov tactical palette.
-		BukovUiTokens tokens = BukovUiTokens.loadDefault();
-		add(new ColorBlock(
-				w,
-				h,
-				tokens.colorWithAlpha("ink.shadow", 68)));
+		float panelWidth = Math.min(
+				BukovVisualContract.panelWidth(safeWidth, wide),
+				safeWidth - BukovVisualContract.OUTER_MARGIN * 2f);
+		float panelLeft =
+				insets.left + (safeWidth - panelWidth) / 2f;
+		float contentWidth = panelWidth - 14f;
 
-		w -= insets.left + insets.right;
-		h -= insets.top + insets.bottom;
+		RenderedTextBlock eyebrow = label(
+				"OFFLINE EXTRACTION / 单机搜打撤",
+				BukovVisualContract.FONT_CAPTION,
+				tokens.color("text.secondary"));
+		RenderedTextBlock title = label(
+				"逃离布科夫",
+				wide ? 16 : BukovVisualContract.FONT_TITLE,
+				tokens.color("accent.valuable"));
+		RenderedTextBlock englishTitle = label(
+				"ESCAPE FROM BUKOV",
+				BukovVisualContract.FONT_BODY,
+				tokens.color("text.primary"));
+		RenderedTextBlock briefing = label(
+				"FIRST DEPLOYMENT  /  首次行动简报",
+				BukovVisualContract.FONT_CAPTION,
+				tokens.color("accent.extract"));
+		RenderedTextBlock message = renderTextBlock(
+				Messages.get(this, "bukov_intro"),
+				BukovVisualContract.FONT_BODY);
+		message.maxWidth(Math.max(1, (int)contentWidth));
+		message.hardlight(tokens.color("text.secondary"));
 
-		RenderedTextBlock title = renderTextBlock(LeoIdentityConfig.gameTitle(), landscape() ? 18 : 16);
-		title.align(RenderedTextBlock.CENTER_ALIGN);
-		title.hardlight(Window.TITLE_COLOR);
-		add( title );
-
-		float topRegion = Math.max(title.height() + 24, h*0.30f);
-
-		title.setPos(insets.left + (w - title.width()) / 2f,
-				insets.top + (topRegion - title.height()) / 2f);
-
-		align(title);
-
-		placeTorch(title.left() - 10, title.bottom() + 5);
-		placeTorch(title.right() + 10, title.bottom() + 5);
-		
-		StyledButton okay = new StyledButton(Chrome.Type.GREY_BUTTON_TR, Messages.get(this, "continue")){
-			@Override
-			protected void onClick() {
-				super.onClick();
-				if (previousVersion == 0 || SPDSettings.intro()){
-
-					if (previousVersion > 0){
-						updateVersion(previousVersion);
-					} else {
-						SPDSettings.scheduleBukovFirstRunCalibration();
-					}
-
-					SPDSettings.version(ShatteredPixelDungeon.versionCode);
-					GamesInProgress.selectedClass = null;
-					SPDSettings.intro(false);
-					ShatteredPixelDungeon.switchScene(TitleScene.class);
-				} else {
-					updateVersion(previousVersion);
-					ShatteredPixelDungeon.switchScene(TitleScene.class);
-				}
-			}
-		};
-
-		float buttonY = insets.top + Math.min(topRegion + (PixelScene.landscape() ? 60 : 120), h - 24);
-
-		float buttonAreaWidth = landscape() ? PixelScene.MIN_WIDTH_L-6 : PixelScene.MIN_WIDTH_P-2;
-		float btnAreaLeft = insets.left + (w - buttonAreaWidth) / 2f;
-		// Bukov never routes players into the inherited dungeon changelog.
-		// License attribution remains available in About/third-party notices.
-		okay.text(Messages.get(TitleScene.class, "enter"));
-		okay.setRect(btnAreaLeft, buttonY, buttonAreaWidth, 20);
-		okay.icon(Icons.get(Icons.ENTER));
-		add(okay);
-
-		RenderedTextBlock text = PixelScene.renderTextBlock(6);
-		String message;
-		if (previousVersion == 0 || SPDSettings.intro()) {
-			message = Messages.get(this, "bukov_intro");
-		} else if (previousVersion <= ShatteredPixelDungeon.versionCode) {
-			message = Messages.get(this, "bukov_update");
-		} else {
-			message = Messages.get(this, "bukov_future_save");
+		float buttonHeight = BukovVisualContract.controlHeight(
+				!com.watabou.utils.DeviceCompat.isDesktop());
+		float panelHeight =
+				7f + eyebrow.height()
+				+ 3f + title.height()
+				+ 2f + englishTitle.height()
+				+ 7f + briefing.height()
+				+ 4f + message.height()
+				+ 8f + buttonHeight + 7f;
+		float panelTop = insets.top + Math.max(
+				BukovVisualContract.OUTER_MARGIN,
+				(safeHeight - panelHeight) / 2f);
+		if (panelTop + panelHeight
+				> screenHeight - insets.bottom
+						- BukovVisualContract.OUTER_MARGIN) {
+			panelTop = insets.top + BukovVisualContract.OUTER_MARGIN;
 		}
 
-		text.text(message, Math.min(w-20, 300));
-		float titleBottom = title.bottom();
-		float textSpace = okay.top() - titleBottom - 4;
-		text.setPos(insets.left + (w - text.width()) / 2f, (titleBottom + 2) + (textSpace - text.height())/2);
-		add(text);
+		ColorBlock panel = new ColorBlock(
+				panelWidth,
+				panelHeight,
+				tokens.colorWithAlpha("ink.background", 238));
+		panel.x = panelLeft;
+		panel.y = panelTop;
+		add(panel);
 
-		if (SPDSettings.intro() && ControllerHandler.isControllerConnected()){
-			addToFront(new WndHardNotification(Icons.CONTROLLER.get(),
+		ColorBlock edge = new ColorBlock(
+				2f,
+				panelHeight,
+				tokens.color("accent.interact"));
+		edge.x = panelLeft;
+		edge.y = panelTop;
+		add(edge);
+
+		ColorBlock topRule = new ColorBlock(
+				panelWidth,
+				1f,
+				tokens.color("panel.border"));
+		topRule.x = panelLeft;
+		topRule.y = panelTop;
+		add(topRule);
+
+		float contentLeft = panelLeft + 7f;
+		float cursor = panelTop + 7f;
+		eyebrow.setPos(contentLeft, cursor);
+		add(eyebrow);
+		cursor = eyebrow.bottom() + 3f;
+		title.setPos(contentLeft, cursor);
+		add(title);
+		cursor = title.bottom() + 2f;
+		englishTitle.setPos(contentLeft, cursor);
+		add(englishTitle);
+		cursor = englishTitle.bottom() + 7f;
+		briefing.setPos(contentLeft, cursor);
+		add(briefing);
+		cursor = briefing.bottom() + 4f;
+		message.setPos(contentLeft, cursor);
+		add(message);
+		cursor = message.bottom() + 8f;
+
+		WelcomeActionButton enter = new WelcomeActionButton(
+				"进入行动系统  /  ENTER OPERATIONS",
+				previousVersion == 0);
+		enter.setRect(
+				contentLeft,
+				cursor,
+				contentWidth,
+				buttonHeight);
+		add(enter);
+
+		if (SPDSettings.intro()
+				&& ControllerHandler.isControllerConnected()) {
+			addToFront(new WndHardNotification(
+					Icons.CONTROLLER.get(),
 					Messages.get(WelcomeScene.class, "controller_title"),
 					Messages.get(WelcomeScene.class, "controller_body"),
 					Messages.get(WelcomeScene.class, "controller_okay"),
-					0){
+					0) {
 				@Override
 				public void onBackPressed() {
-					//do nothing, must press the okay button
+					// The first controller hint must be acknowledged.
 				}
 			});
 		}
 	}
 
-	private void placeTorch( float x, float y ) {
-		Fireball fb = new Fireball();
-		fb.x = x - fb.width()/2f;
-		fb.y = y - fb.height();
+	private void addBukovBackdrop(
+			int screenWidth, int screenHeight, boolean wide) {
+		Image background = new Image(wide
+				? Assets.Splashes.Bukov.TITLE_INDUSTRIAL_LANDSCAPE_V2
+				: Assets.Splashes.Bukov.TITLE_INDUSTRIAL_PORTRAIT_V2);
+		background.texture.filter(
+				SmartTexture.LINEAR,
+				SmartTexture.LINEAR);
+		float cover = Math.max(
+				screenWidth / background.width(),
+				screenHeight / background.height());
+		background.scale.set(cover);
+		background.x = (screenWidth - background.width()) / 2f;
+		background.y = (screenHeight - background.height()) / 2f;
+		add(background);
 
-		align(fb);
-		add( fb );
+		ColorBlock atmosphere = new ColorBlock(
+				screenWidth,
+				screenHeight,
+				tokens.colorWithAlpha("ink.shadow", 255));
+		atmosphere.alpha(wide ? 0.24f : 0.34f);
+		add(atmosphere);
 	}
 
-	private void updateVersion(int previousVersion){
+	private RenderedTextBlock label(String value, int size, int color) {
+		RenderedTextBlock block = renderTextBlock(value, size);
+		block.hardlight(color);
+		return block;
+	}
 
-		//update rankings, to update any data which may be outdated
-		if (previousVersion < LATEST_UPDATE){
+	private void enterBukov(boolean brandNewProfile) {
+		if (brandNewProfile) {
+			SPDSettings.scheduleBukovFirstRunCalibration();
+		}
+		SPDSettings.version(ShatteredPixelDungeon.versionCode);
+		SPDSettings.intro(false);
+		ShatteredPixelDungeon.switchScene(TitleScene.class);
+	}
 
-			Badges.loadGlobal();
-			Journal.loadGlobal();
+	private final class WelcomeActionButton extends Button {
 
-			//pre-unlock Cleric for those who already have a win
-			if (previousVersion <= ShatteredPixelDungeon.v2_5_4){
-				if (Badges.isUnlocked(Badges.Badge.VICTORY) && !Badges.isUnlocked(Badges.Badge.UNLOCK_CLERIC)){
-					Badges.unlock(Badges.Badge.UNLOCK_CLERIC);
-				}
-			}
+		private final ColorBlock surface;
+		private final ColorBlock pressed;
+		private final ColorBlock edge;
+		private final RenderedTextBlock text;
+		private final boolean brandNewProfile;
 
-			try {
-				Rankings.INSTANCE.load();
-				for (Rankings.Record rec : Rankings.INSTANCE.records.toArray(new Rankings.Record[0])){
-					try {
-						Rankings.INSTANCE.loadGameData(rec);
-						Rankings.INSTANCE.saveGameData(rec);
-					} catch (Exception e) {
-						//if we encounter a fatal per-record error, then clear that record's data
-						rec.gameData = null;
-						Game.reportException( new RuntimeException("Rankings Updating Failed!",e));
-					}
-				}
-				if (Rankings.INSTANCE.latestDaily != null){
-					try {
-						Rankings.INSTANCE.loadGameData(Rankings.INSTANCE.latestDaily);
-						Rankings.INSTANCE.saveGameData(Rankings.INSTANCE.latestDaily);
-					} catch (Exception e) {
-						//if we encounter a fatal per-record error, then clear that record's data
-						Rankings.INSTANCE.latestDaily.gameData = null;
-						Game.reportException( new RuntimeException("Rankings Updating Failed!",e));
-					}
-				}
-				Collections.sort(Rankings.INSTANCE.records, Rankings.scoreComparator);
-				Rankings.INSTANCE.save();
-			} catch (Exception e) {
-				//if we encounter a fatal error, then just clear the rankings
-				FileUtils.deleteFile( Rankings.RANKINGS_FILE );
-				Game.reportException( new RuntimeException("Rankings Updating Failed!",e));
-			}
-			Dungeon.daily = Dungeon.dailyReplay = false;
-
-			Badges.saveGlobal(true);
-			Journal.saveGlobal(true);
-
+		private WelcomeActionButton(
+				String value, boolean brandNewProfile) {
+			this.brandNewProfile = brandNewProfile;
+			surface = new ColorBlock(
+					1f,
+					1f,
+					tokens.color("accent.interact"));
+			surface.alpha(0.22f);
+			addToBack(surface);
+			pressed = new ColorBlock(
+					1f,
+					1f,
+					tokens.color("panel.border"));
+			pressed.visible = false;
+			addToBack(pressed);
+			edge = new ColorBlock(
+					1f,
+					1f,
+					tokens.color("accent.interact"));
+			add(edge);
+			text = label(
+					value,
+					BukovVisualContract.FONT_BODY,
+					tokens.color("text.primary"));
+			text.align(RenderedTextBlock.CENTER_ALIGN);
+			add(text);
 		}
 
-		SPDSettings.version(ShatteredPixelDungeon.versionCode);
+		@Override
+		protected void onClick() {
+			Sample.INSTANCE.play(Assets.Sounds.Bukov.UI_CONFIRM);
+			enterBukov(brandNewProfile);
+		}
+
+		@Override
+		protected void onPointerDown() {
+			surface.visible = false;
+			pressed.visible = true;
+		}
+
+		@Override
+		protected void onPointerUp() {
+			surface.visible = true;
+			pressed.visible = false;
+		}
+
+		@Override
+		public GameAction keyAction() {
+			return SPDAction.TAG_ATTACK;
+		}
+
+		@Override
+		protected void layout() {
+			super.layout();
+			fit(surface);
+			fit(pressed);
+			edge.x = x;
+			edge.y = y;
+			edge.size(3f, height);
+			text.maxWidth(Math.max(1, (int)width - 8));
+			text.setPos(
+					x + (width - text.width()) / 2f,
+					y + (height - text.height()) / 2f);
+		}
+
+		private void fit(ColorBlock block) {
+			block.x = x;
+			block.y = y;
+			block.size(width, height);
+		}
 	}
-	
 }

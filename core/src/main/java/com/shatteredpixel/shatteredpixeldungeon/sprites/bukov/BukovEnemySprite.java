@@ -13,6 +13,13 @@ import com.watabou.noosa.TextureFilm;
  */
 public abstract class BukovEnemySprite extends MobSprite {
 
+	public enum SpecialAction {
+		RUSH,
+		RELOAD,
+		SCAN,
+		PHASE_CAST
+	}
+
 	/**
 	 * The authored sheets are intentionally dark industrial pixel art. At the
 	 * wide realtime camera scale their original 11x14 opaque silhouettes blend
@@ -25,6 +32,9 @@ public abstract class BukovEnemySprite extends MobSprite {
 	public static final int CONTACT_COLOR = 0xFFFF6847;
 
 	private final int bloodColor;
+	private final SpecialAction specialAction;
+	protected final Animation hit;
+	protected final Animation special;
 	private final ColorBlock contactUnderline =
 			new ColorBlock(12f, 1f, CONTACT_COLOR);
 	private final ColorBlock contactBracketLeft =
@@ -32,9 +42,14 @@ public abstract class BukovEnemySprite extends MobSprite {
 	private final ColorBlock contactBracketRight =
 			new ColorBlock(1f, 4f, CONTACT_COLOR);
 
-	protected BukovEnemySprite(String asset, int bloodColor) {
+	protected BukovEnemySprite(
+			String asset, int bloodColor, SpecialAction specialAction) {
 		super();
 		this.bloodColor = bloodColor;
+		if (specialAction == null) {
+			throw new IllegalArgumentException("specialAction is required");
+		}
+		this.specialAction = specialAction;
 
 		texture(asset);
 		texture.filter(SmartTexture.NEAREST, SmartTexture.NEAREST);
@@ -52,9 +67,47 @@ public abstract class BukovEnemySprite extends MobSprite {
 		die = new Animation(10, false);
 		die.frames(frames, 8, 9, 10);
 
+		hit = new Animation(18, false);
+		hit.frames(frames, 11, 12);
+
+		special = new Animation(12, false);
+		special.frames(frames, 13, 14, 15);
+
 		scale.set(CONTACT_SCALE, CONTACT_SCALE);
 		resetColor();
 		play(idle);
+	}
+
+	/**
+	 * Unlike the generic flash fallback, every Bukov combatant owns a real
+	 * two-frame impact film. Priority three lets a confirmed hit interrupt
+	 * attack/reload/rush presentation, while death still remains authoritative.
+	 */
+	@Override
+	public void realtimeHitReaction() {
+		playRealtimeAction(hit, ch == null ? 0 : ch.pos, 3, null);
+	}
+
+	public boolean realtimeRush(int targetCell) {
+		return playSpecial(SpecialAction.RUSH, targetCell);
+	}
+
+	public boolean realtimeReload(int targetCell) {
+		return playSpecial(SpecialAction.RELOAD, targetCell);
+	}
+
+	public boolean realtimeScan(int targetCell) {
+		return playSpecial(SpecialAction.SCAN, targetCell);
+	}
+
+	public boolean realtimePhaseCast(int targetCell) {
+		return playSpecial(SpecialAction.PHASE_CAST, targetCell);
+	}
+
+	private boolean playSpecial(
+			SpecialAction requested, int targetCell) {
+		return requested == specialAction
+				&& playRealtimeAction(special, targetCell, 2, null);
 	}
 
 	@Override

@@ -109,12 +109,14 @@ public class BukovPlayerPathCopyTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/WelcomeScene.java"));
 
 		assertFalse(welcome.contains("ChangesScene.class"));
-		assertTrue(welcome.contains("\"bukov_update\""));
-		assertTrue(welcome.contains("\"bukov_future_save\""));
+		assertTrue(welcome.contains("\"bukov_intro\""));
 		assertTrue(welcome.contains("\"bukov_save_warning\""));
+		assertFalse(welcome.contains("\"bukov_update\""));
+		assertFalse(welcome.contains("\"bukov_future_save\""));
 		assertFalse(welcome.contains("Messages.get(this, \"update_intro\")"));
 		assertFalse(welcome.contains("Messages.get(this, \"what_msg\")"));
 		assertFalse(welcome.contains("Messages.get(this, \"save_warning\")"));
+		assertFalse(welcome.contains("updateVersion("));
 	}
 
 	@Test

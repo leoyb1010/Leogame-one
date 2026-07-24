@@ -13,6 +13,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovHub;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovRaidModeSelection;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovVendor;
@@ -278,70 +279,32 @@ public final class BukovHubScene extends PixelScene {
 		float innerX = x + 5f;
 		float innerY = y + 18f;
 		float innerWidth = width - 10f;
-		float cardGap = 4f;
-		float cardWidth = wide
-				? (innerWidth - cardGap) / 2f
-				: innerWidth;
 		float cardHeight = wide
-				? Math.max(27f,
+				? Math.max(32f,
 						Math.min(46f, height - actionHeight - 25f))
-				: Math.max(23f,
-						Math.min(32f,
-								(height - actionHeight - 31f) / 2f));
+				: Math.max(29f,
+						Math.min(38f, height - actionHeight - 31f));
 
-		boolean training = controller.selectedRaidMode().trainingGround();
-		BukovRaidMode formal = training
-				? BukovRaidMode.EXPEDITION
-				: controller.selectedRaidMode();
-		ModeCard formalCard = new ModeCard(
-				"正式行动  /  " + formal.displayName,
-				state.selectedMapName + " · " + formal.summary,
-				!training,
-				false) {
+		BukovRaidMode selectedMode = controller.selectedRaidMode();
+		boolean training = selectedMode.trainingGround();
+		ModeCard modeCard = new ModeCard(
+				"当前模式  /  " + selectedMode.displayName,
+				selectedMode.summary + " · 点击查看全部5种模式",
+				true,
+				training) {
 			@Override
 			protected void activate() {
-				try {
-					controller.cycleFormalRaidMode();
-					reload();
-				} catch (IOException | RuntimeException error) {
-					showError("行动选择失败", error);
-				}
+				openRaidModeSelection();
 			}
 		};
-		formalCard.setRect(
+		modeCard.setRect(
 				innerX,
 				innerY,
-				cardWidth,
+				innerWidth,
 				cardHeight);
-		add(formalCard);
+		add(modeCard);
 
-		float trainingX = wide ? innerX + cardWidth + cardGap : innerX;
-		float trainingY = wide ? innerY : formalCard.bottom() + cardGap;
-		ModeCard trainingCard = new ModeCard(
-				"演练场  /  TRAINING",
-				"3-5分钟 · 免费制式装备 · 无损失 · 随时进入",
-				training,
-				true) {
-			@Override
-			protected void activate() {
-				try {
-					controller.selectTrainingGround();
-					reload();
-				} catch (IOException | RuntimeException error) {
-					showError("演练场选择失败", error);
-				}
-			}
-		};
-		trainingCard.setRect(
-				trainingX,
-				trainingY,
-				cardWidth,
-				cardHeight);
-		add(trainingCard);
-
-		float actionsY = Math.max(
-				formalCard.bottom(),
-				trainingCard.bottom()) + 5f;
+		float actionsY = modeCard.bottom() + 5f;
 		float third = (innerWidth - GAP * 2f) / 3f;
 		addButton(
 				state.canDeploy
@@ -661,6 +624,17 @@ public final class BukovHubScene extends PixelScene {
 				deploy();
 			}
 		}));
+	}
+
+	private void openRaidModeSelection() {
+		addToFront(new WndBukovRaidModeSelection(
+				controller,
+				new Callback() {
+					@Override
+					public void call() {
+						reload();
+					}
+				}));
 	}
 
 	private void openVendor() {

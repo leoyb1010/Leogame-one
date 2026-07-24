@@ -48,7 +48,9 @@ public final class BukovHubController {
 		profile.loadout().pruneMissing(profile.stash());
 		boolean changed = selectedBefore != profile.loadout().distinctItemCount();
 		changed |= BukovCareerProgression.reconcile(profile);
-		changed |= BukovStarterProvisioning.ensure(profile, false);
+		if (profile.selectedRaidMode().usesPlayerLoadout()) {
+			changed |= BukovStarterProvisioning.ensure(profile, false);
+		}
 		if (changed) {
 			saves.saveProfile(profile);
 		}
@@ -188,12 +190,7 @@ public final class BukovHubController {
 	}
 
 	public void cycleRaidMode() throws IOException {
-		requireEditableLoadout();
-		profile.selectRaidMode(profile.selectedRaidMode().next());
-		if (!profile.selectedRaidMode().usesPlayerLoadout()) {
-			profile.loadout().clear();
-		}
-		saves.saveProfile(profile);
+		selectRaidMode(profile.selectedRaidMode().next());
 	}
 
 	/**
@@ -249,6 +246,12 @@ public final class BukovHubController {
 		profile.selectRaidMode(mode);
 		if (!mode.usesPlayerLoadout()) {
 			profile.loadout().clear();
+		} else {
+			// The mode picker reuses this controller when it returns to the
+			// hideout. Risk-free modes intentionally clear the loadout, so a
+			// direct switch back to a formal raid must restore a usable firearm
+			// and matching ammunition without requiring an app restart.
+			BukovStarterProvisioning.ensure(profile, false);
 		}
 		saves.saveProfile(profile);
 	}

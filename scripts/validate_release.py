@@ -59,9 +59,61 @@ def check_build_metadata() -> None:
     build = (ROOT / "build.gradle").read_text(encoding="utf-8")
     require(f"appName = '{EXPECTED_APP_NAME}'" in build, "unexpected appName")
     require(f"appBundleId = '{EXPECTED_BUNDLE_ID}'" in build, "unexpected appBundleId")
-    info = (ROOT / "ios/Info.plist").read_text(encoding="utf-8")
-    require("${appApplePackageName}" in info, "Info.plist must use the generated bundle identifier")
-    require("<string>${appName}</string>" in info, "Info.plist must use the generated app name")
+    ios_info = (ROOT / "ios/Info.plist").read_text(encoding="utf-8")
+    require("${appApplePackageName}" in ios_info,
+            "iOS Info.plist must use the generated bundle identifier")
+    require("<string>${appName}</string>" in ios_info,
+            "iOS Info.plist must use the generated app name")
+
+    desktop_build = (ROOT / "desktop/build.gradle").read_text(encoding="utf-8")
+    require('"--mac-app-category", "games"' in desktop_build,
+            "macOS package must use the Games application category")
+    require('"--resource-dir", file("./src/main/jpackage")' in desktop_build,
+            "macOS package must use the project-owned Info.plist template")
+    require('"--mac-package-identifier", appBundleId' in desktop_build,
+            "macOS package identifier must come from the compatible bundle ID")
+
+    ios_build = (ROOT / "ios/build.gradle").read_text(encoding="utf-8")
+    require("robovmProps.setProperty('appApplePackageName', appBundleId)" in ios_build,
+            "iOS package identifier must come from the compatible bundle ID")
+    require("robovmProps.setProperty('appName', appName)" in ios_build,
+            "iOS product name must come from the Bukov app name")
+
+    mac_info = (ROOT / "desktop/src/main/jpackage/Info.plist").read_text(encoding="utf-8")
+    require("<string>DEPLOY_BUNDLE_IDENTIFIER</string>" in mac_info,
+            "macOS Info.plist must use the generated bundle identifier")
+    require("<string>DEPLOY_BUNDLE_NAME</string>" in mac_info,
+            "macOS Info.plist must use the generated product name")
+    require("<string>DEPLOY_APP_CATEGORY</string>" in mac_info,
+            "macOS Info.plist must use the generated application category")
+
+    apple_metadata = "\n".join((
+        ios_info,
+        mac_info,
+        (ROOT / "desktop/macos-entitlements.plist").read_text(encoding="utf-8"),
+    ))
+    for microphone_key in (
+        "NSMicrophoneUsageDescription",
+        "com.apple.security.device.audio-input",
+    ):
+        require(microphone_key not in apple_metadata,
+                f"unused microphone metadata remains: {microphone_key}")
+
+    player_facing_metadata = "\n".join((
+        ios_info,
+        mac_info,
+        desktop_build,
+        ios_build,
+    )).lower()
+    for former_name in (
+        "shattered pixel dungeon",
+        "leogame-one",
+        "leogameone",
+        "leo's dungeon",
+        "leo dungeon",
+    ):
+        require(former_name not in player_facing_metadata,
+                f"former product identity remains in Apple package metadata: {former_name}")
 
     launch_screen = (ROOT / "ios/assets/LaunchScreen.storyboard").read_text(encoding="utf-8")
     require(f'text="{EXPECTED_APP_NAME}"' in launch_screen, "Chinese Bukov launch title is missing")

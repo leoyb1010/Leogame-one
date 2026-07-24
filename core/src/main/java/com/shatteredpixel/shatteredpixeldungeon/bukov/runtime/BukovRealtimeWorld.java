@@ -22,6 +22,8 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyTactics;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignal;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignalSource;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepCadence;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepSurface;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpace;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpaceResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioPlan;
@@ -90,6 +92,7 @@ import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovEnemySprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovInteractionMarker;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
 import com.watabou.noosa.Camera;
@@ -197,6 +200,8 @@ public final class BukovRealtimeWorld
 			new KeySoundVisualEvent();
 	private final PlayerSoundEventBuffer playerSounds =
 			new PlayerSoundEventBuffer();
+	private final FootstepCadence footstepCadence =
+			new FootstepCadence();
 	private final BukovCombatHudTimeline combatHudTimeline =
 			new BukovCombatHudTimeline();
 	private final HitscanResolver.Hit shotHit = new HitscanResolver.Hit();
@@ -248,6 +253,7 @@ public final class BukovRealtimeWorld
 	private float nextEnemySpawnSeconds;
 	private int playerFxSequence;
 	private int audioSequence;
+	private int footstepSequence;
 	private int keySoundSequence;
 	private int transientKillCount;
 	private float environmentStepNoiseRemaining;
@@ -830,6 +836,20 @@ public final class BukovRealtimeWorld
 		}
 		moving = Math.abs(heroBody.x - heroBody.previousX) > 0.00001f
 				|| Math.abs(heroBody.y - heroBody.previousY) > 0.00001f;
+		if (footstepCadence.advance(
+				heroBody.x - heroBody.previousX,
+				heroBody.y - heroBody.previousY,
+				dt)) {
+			FootstepSurface footstepSurface = FootstepSurface.resolve(
+					heroTerrain(),
+					raidTheme == null
+							? null : raidTheme.environmentRules);
+			playSfx(
+					footstepSurface.asset(footstepSequence),
+					footstepSurface.gain(),
+					footstepSurface.pitch(footstepSequence));
+			footstepSequence++;
+		}
 
 		int previousCell = hero.pos;
 		hero.pos = heroBody.cell(Dungeon.level.width());
@@ -1374,10 +1394,14 @@ public final class BukovRealtimeWorld
 					inputFrame.interactHeld,
 					stationary,
 					reloading,
-					damageTaken
+					damageTaken,
+					hero.HT
 			);
 			if (extractionInteraction == ExtractionState.Interaction.ACTIVE) {
 				showExtractionCountdown(extraction);
+			} else if (extractionInteraction
+					== ExtractionState.Interaction.LIGHT_HIT) {
+				showHeroStatus("撤离受干扰 · 进度回退");
 			} else if (extractionInteraction != ExtractionState.Interaction.NONE) {
 				lastExtractionCountdown = Integer.MIN_VALUE;
 				showHeroStatus("撤离中断");
@@ -2210,8 +2234,17 @@ public final class BukovRealtimeWorld
 			}
 			if (enemy.bossState != null
 					&& enemy.mob.sprite instanceof BukovWhiteLineSprite) {
+				WhiteLineBossStateMachine.Phase phase =
+						enemy.bossState.phase();
+				if (phase != enemy.previousBossPhase) {
+					enemy.previousBossPhase = phase;
+					if (phase != WhiteLineBossStateMachine.Phase.DORMANT) {
+						((BukovWhiteLineSprite)enemy.mob.sprite)
+								.realtimePhaseCast(hero.pos);
+					}
+				}
 				((BukovWhiteLineSprite)enemy.mob.sprite).setEncounterVisual(
-						bossPhase(enemy.bossState.phase()),
+						bossPhase(phase),
 						enemy.bossState.vulnerable()
 				);
 			}
@@ -2347,6 +2380,7 @@ public final class BukovRealtimeWorld
 			float sin = (float)Math.sin(radians);
 			float directionX = inputFrame.aim.x * cos - inputFrame.aim.y * sin;
 			float directionY = inputFrame.aim.x * sin + inputFrame.aim.y * cos;
+			float maximumDistance = definition.effectiveRangeTiles * 2f;
 
 			resolvePlayerShot(
 					hero.id(),
@@ -2355,7 +2389,7 @@ public final class BukovRealtimeWorld
 					heroBody.y,
 					directionX,
 					directionY,
-					definition.effectiveRangeTiles * 2f,
+					maximumDistance,
 					definition.tracerIntensity,
 					collisionMap,
 					targetQuery,
@@ -2374,11 +2408,21 @@ public final class BukovRealtimeWorld
 					definition.impactIntensity
 			);
 			Char target = charsByBody.get(shotHit.body);
-			if (playerShotCanDamage(
+			boolean canDamage = playerShotCanDamage(
 					shotHit,
 					heroBody,
 					hero,
-					target)) {
+					target);
+			if (canDamage) {
+				combatFx.bloodMist(
+						hero.id(),
+						fxSequence,
+						false,
+						shotHit.x,
+						shotHit.y,
+						directionX,
+						directionY,
+						definition.impactIntensity);
 				float damage = RealtimeDamage.resolve(
 						ammunition.applyDamage(definition.damage),
 						1f,
@@ -2389,6 +2433,17 @@ public final class BukovRealtimeWorld
 						null
 				);
 				pendingHits.add(new PendingHit(target, damage));
+			} else if (shotHit.body == null
+					&& shotHit.distance < maximumDistance - 0.001f) {
+				combatFx.bulletMark(
+						hero.id(),
+						fxSequence,
+						false,
+						shotHit.x,
+						shotHit.y,
+						directionX,
+						directionY,
+						definition.impactIntensity);
 			}
 		}
 	}
@@ -3119,6 +3174,7 @@ public final class BukovRealtimeWorld
 				showEnemyStatus(enemy, CharSprite.WARNING, "右侧迂回");
 				break;
 			case DASH:
+				playEnemyRush(enemy);
 				showEnemyStatus(enemy, CharSprite.NEGATIVE, "突进");
 				break;
 			case RETREAT:
@@ -3155,6 +3211,7 @@ public final class BukovRealtimeWorld
 				&& enemy.previousRangedAction != action) {
 			showEnemyStatus(enemy, CharSprite.WARNING, "锁定");
 		} else if (enemy.rangedIntent.reloadStarted()) {
+			playEnemyReload(enemy);
 			showEnemyStatus(enemy, CharSprite.NEUTRAL, "换弹");
 			playSfx(
 					Assets.Sounds.Bukov.RELOAD_START,
@@ -3233,17 +3290,39 @@ public final class BukovRealtimeWorld
 				enemyShotHit.y,
 				0.9f
 		);
-		if (enemyShotCanDamage(
+		boolean canDamage = enemyShotCanDamage(
 				enemyShotHit,
 				enemy.body,
 				heroBody,
 				enemy.mob,
 				hero)
-				&& enemy.rangedIntent.hasDamageEvent()) {
+				&& enemy.rangedIntent.hasDamageEvent();
+		if (canDamage) {
+			combatFx.bloodMist(
+					enemy.stableId,
+					enemy.rangedIntent.shotSequence(),
+					true,
+					enemyShotHit.x,
+					enemyShotHit.y,
+					enemy.rangedIntent.directionX(),
+					enemy.rangedIntent.directionY(),
+					0.9f);
 			pendingEnemyShots.add(new PendingEnemyShot(
 					enemy.mob,
 					enemy.rangedIntent.damage()
 			));
+		} else if (enemyShotHit.body == null
+				&& enemyShotHit.distance
+						< enemy.rangedConfig.maximumRange - 0.001f) {
+			combatFx.bulletMark(
+					enemy.stableId,
+					enemy.rangedIntent.shotSequence(),
+					true,
+					enemyShotHit.x,
+					enemyShotHit.y,
+					enemy.rangedIntent.directionX(),
+					enemy.rangedIntent.directionY(),
+					0.9f);
 		}
 	}
 
@@ -3286,6 +3365,32 @@ public final class BukovRealtimeWorld
 		if (enemy.mob.sprite != null) {
 			enemy.mob.sprite.showStatus(color, text);
 		}
+	}
+
+	private static void playEnemyRush(EnemyRuntime enemy) {
+		BukovEnemySprite sprite = bukovSprite(enemy);
+		if (sprite != null) {
+			sprite.realtimeRush(Dungeon.hero.pos);
+		}
+	}
+
+	private static void playEnemyReload(EnemyRuntime enemy) {
+		BukovEnemySprite sprite = bukovSprite(enemy);
+		if (sprite != null) {
+			sprite.realtimeReload(Dungeon.hero.pos);
+		}
+	}
+
+	private static void playEnemyScan(EnemyRuntime enemy) {
+		BukovEnemySprite sprite = bukovSprite(enemy);
+		if (sprite != null) {
+			sprite.realtimeScan(Dungeon.hero.pos);
+		}
+	}
+
+	private static BukovEnemySprite bukovSprite(EnemyRuntime enemy) {
+		return enemy != null && enemy.mob.sprite instanceof BukovEnemySprite
+				? (BukovEnemySprite)enemy.mob.sprite : null;
 	}
 
 	private static void announceEnemyIdentity(EnemyRuntime enemy) {
@@ -3767,6 +3872,7 @@ public final class BukovRealtimeWorld
 	}
 
 	private void broadcastPlayerContact(EnemyRuntime source) {
+		playEnemyScan(source);
 		for (EnemyRuntime ally : enemies) {
 			if (ally == source || !ally.mob.isAlive()) continue;
 			float dx = ally.body.x - source.body.x;
@@ -3835,7 +3941,7 @@ public final class BukovRealtimeWorld
 				phase
 						== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
 						? 0.7f : 1f);
-		combatFx.impact(
+		combatFx.explosion(
 				boss.stableId,
 				++boss.bossPulseSequence,
 				true,
@@ -5020,6 +5126,7 @@ public final class BukovRealtimeWorld
 		private boolean present;
 		private boolean moving;
 		private boolean broadcastedContact;
+		private WhiteLineBossStateMachine.Phase previousBossPhase;
 		private float bossPulseRemaining;
 		private int bossPulseSequence;
 		private int heardSoundSequence = Integer.MIN_VALUE;

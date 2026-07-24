@@ -17,15 +17,16 @@ public class BukovFirstRunCalibrationGuardTest {
 			throws Exception {
 		String welcome = source("scenes/WelcomeScene.java");
 
-		assertTrue(welcome.contains("if (previousVersion > 0)"));
 		assertTrue(welcome.contains(
-				"} else {\n"
-						+ "\t\t\t\t\t\tSPDSettings"
+				"previousVersion != 0 && !SPDSettings.intro()"));
+		assertTrue(welcome.contains(
+				"previousVersion == 0);"));
+		assertTrue(welcome.contains(
+				"if (brandNewProfile) {\n"
+						+ "\t\t\tSPDSettings"
 						+ ".scheduleBukovFirstRunCalibration();"));
 		assertFalse(welcome.contains(
-				"updateVersion(previousVersion);\n"
-						+ "\t\t\t\t\t\tSPDSettings"
-						+ ".scheduleBukovFirstRunCalibration();"));
+				"updateVersion("));
 	}
 
 	@Test

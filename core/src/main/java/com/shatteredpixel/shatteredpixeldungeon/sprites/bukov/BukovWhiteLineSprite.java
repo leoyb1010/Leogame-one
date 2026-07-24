@@ -13,20 +13,21 @@ public final class BukovWhiteLineSprite extends BukovEnemySprite {
 	private int encounterVisual;
 
 	public BukovWhiteLineSprite() {
-		super(Assets.Sprites.BUKOV_WHITE_LINE, 0xFF3F4545);
+		super(Assets.Sprites.BUKOV_WHITE_LINE, 0xFF3F4545,
+				SpecialAction.PHASE_CAST);
 		TextureFilm frames = new TextureFilm(texture, 16, 18);
 
 		shieldPhase = new Animation(5, true);
-		shieldPhase.frames(frames, 11, 12);
+		shieldPhase.frames(frames, 16, 17);
 
 		decoyPhase = new Animation(4, true);
-		decoyPhase.frames(frames, 13, 0, 13, 1);
+		decoyPhase.frames(frames, 18, 0, 18, 1);
 
 		overloadPhase = new Animation(7, true);
-		overloadPhase.frames(frames, 14, 1, 14, 0);
+		overloadPhase.frames(frames, 19, 1, 19, 0);
 
 		vulnerablePhase = new Animation(8, true);
-		vulnerablePhase.frames(frames, 15, 15, 0);
+		vulnerablePhase.frames(frames, 20, 20, 0);
 	}
 
 	/**
@@ -34,7 +35,8 @@ public final class BukovWhiteLineSprite extends BukovEnemySprite {
 	 * this class; it only makes all three phases and the damage window visible.
 	 */
 	public void setEncounterVisual(int phase, boolean vulnerable) {
-		if (curAnim == die || curAnim == attack) {
+		if (curAnim == die || curAnim == attack
+				|| curAnim == hit || curAnim == special) {
 			return;
 		}
 		int requested = vulnerable ? 10 : phase;

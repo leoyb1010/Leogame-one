@@ -105,6 +105,67 @@ public final class CombatFxEventPool {
 		);
 	}
 
+	public void bloodMist(int sourceId,
+						  int sequence,
+						  boolean hostile,
+						  float x,
+						  float y,
+						  float directionX,
+						  float directionY,
+						  float intensity) {
+		emit(
+				CombatFxEvent.Type.BLOOD_MIST,
+				sourceId,
+				sequence,
+				hostile,
+				x - directionX,
+				y - directionY,
+				x,
+				y,
+				intensity
+		);
+	}
+
+	public void bulletMark(int sourceId,
+						   int sequence,
+						   boolean hostile,
+						   float x,
+						   float y,
+						   float directionX,
+						   float directionY,
+						   float intensity) {
+		emit(
+				CombatFxEvent.Type.BULLET_MARK,
+				sourceId,
+				sequence,
+				hostile,
+				x - directionX,
+				y - directionY,
+				x,
+				y,
+				intensity
+		);
+	}
+
+	public void explosion(int sourceId,
+						  int sequence,
+						  boolean hostile,
+						  float x,
+						  float y,
+						  float intensity) {
+		emit(
+				CombatFxEvent.Type.EXPLOSION,
+				sourceId,
+				sequence,
+				hostile,
+				x,
+				y,
+				x,
+				y,
+				intensity
+		);
+	}
+
 	public int drain(CombatFxEvent.Consumer consumer) {
 		if (consumer == null) {
 			throw new IllegalArgumentException("consumer is required");

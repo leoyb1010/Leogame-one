@@ -366,6 +366,18 @@ public class Assets {
 					"sounds/bukov/ambience_tense.wav";
 			public static final String AMBIENCE_COMBAT =
 					"sounds/bukov/ambience_combat.wav";
+			public static final String[] FOOTSTEP_HARD = {
+					"sounds/bukov/footstep_hard_1.wav",
+					"sounds/bukov/footstep_hard_2.wav"
+			};
+			public static final String[] FOOTSTEP_WATER = {
+					"sounds/bukov/footstep_water_1.wav",
+					"sounds/bukov/footstep_water_2.wav"
+			};
+			public static final String[] FOOTSTEP_METAL = {
+					"sounds/bukov/footstep_metal_1.wav",
+					"sounds/bukov/footstep_metal_2.wav"
+			};
 
 			private Bukov() {
 			}
@@ -441,7 +453,10 @@ public class Assets {
 				Bukov.LOOT_PICKUP, Bukov.SEARCH_COMPLETE, Bukov.GATE_UNLOCK,
 				Bukov.EXTRACTION_START, Bukov.EXTRACTION_COMPLETE,
 				Bukov.UI_FOCUS, Bukov.UI_CONFIRM, Bukov.UI_CANCEL,
-				Bukov.UI_ERROR
+				Bukov.UI_ERROR,
+				Bukov.FOOTSTEP_HARD[0], Bukov.FOOTSTEP_HARD[1],
+				Bukov.FOOTSTEP_WATER[0], Bukov.FOOTSTEP_WATER[1],
+				Bukov.FOOTSTEP_METAL[0], Bukov.FOOTSTEP_METAL[1]
 		};
 	}
 

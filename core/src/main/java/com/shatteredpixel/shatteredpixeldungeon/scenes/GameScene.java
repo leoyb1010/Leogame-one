@@ -21,6 +21,7 @@
 
 package com.shatteredpixel.shatteredpixeldungeon.scenes;
 
+import com.badlogic.gdx.Gdx;
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
 import com.shatteredpixel.shatteredpixeldungeon.Badges;
 import com.shatteredpixel.shatteredpixeldungeon.Challenges;
@@ -63,6 +64,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ExtractionDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovFrameTelemetry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovContainerDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
@@ -88,6 +90,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovNavigation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovPauseButton;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHud;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovBackpack;
@@ -266,7 +269,10 @@ public class GameScene extends PixelScene {
 	private ActionIndicator action;
 	private ResumeIndicator resume;
 	private static final float BUKOV_CHECKPOINT_SECONDS = 5f;
+	private static final String BUKOV_FRAME_TELEMETRY_TAG =
+			"BUKOV_FRAME_TELEMETRY";
 	private RealtimeRaidSystem bukovRealtime;
+	private BukovFrameTelemetry bukovFrameTelemetry;
 	private BukovRealtimeWorld bukovWorld;
 	private BukovRaidCoordinator bukovRaid;
 	private BukovRuntimeLoadoutAdapter.RuntimeLoadout bukovRuntimeLoadout;
@@ -916,6 +922,13 @@ public class GameScene extends PixelScene {
 				if (!initializeBukovRaid()) {
 					return;
 				}
+				// Use the stricter of the blocking and common safe-area tops.
+				// Some portrait iPhones report the Dynamic Island only through
+				// the common inset, so using screentop alone can put the HUD
+				// underneath the cutout and misalign its touch reservation.
+				float bukovSafeTop = Math.max(
+						Math.max(0f, screentop),
+						Math.max(0f, insets.top));
 				installBukovRuntimeLoadout();
 				if (bukovEmergencyLoadoutRecovered) {
 					GLog.p(Messages.get(
@@ -936,12 +949,14 @@ public class GameScene extends PixelScene {
 						bukovRuntimeLoadout.equippedGear());
 				initializeBukovAudio();
 				bukovCombatPresentation = new BukovCombatPresentation();
-				bukovCombatFxViews = new BukovCombatFxViewPool();
+				bukovCombatFxViews = new BukovCombatFxViewPool(
+						BukovUiTokens.loadDefault());
 				overFogEffects.add(bukovCombatFxViews);
 				bukovRealtime = new RealtimeRaidSystem(
 						bukovWorld,
 						bukovRaid
 				);
+				initializeBukovFrameTelemetry();
 				bukovHud = new BukovRaidHud().bind(
 						Dungeon.hero,
 						bukovWorld.firearmRegistry(),
@@ -981,7 +996,7 @@ public class GameScene extends PixelScene {
 							})
 							.safeInsets(
 									insets.left,
-									Math.max(0f, screentop),
+									bukovSafeTop,
 									insets.right,
 									insets.bottom);
 					bukovTouchControls.camera = uiCamera;
@@ -994,7 +1009,7 @@ public class GameScene extends PixelScene {
 						- (DeviceCompat.isDesktop() ? 44f : 8f);
 				bukovHud.setRect(
 						insets.left + 4f,
-						screentop + 4f,
+						bukovSafeTop + 4f,
 						hudWidth,
 						BukovRaidHud.preferredHeight(
 								hudWidth,
@@ -1031,6 +1046,33 @@ public class GameScene extends PixelScene {
 			bukovAtmospherePlayer = new BukovAtmospherePlayer();
 			refreshBukovAudioMix();
 			bukovAtmospherePlayer.start();
+		}
+
+		private void initializeBukovFrameTelemetry() {
+			int targetRefreshHz = 0;
+			if (Gdx.graphics.getDisplayMode() != null) {
+				targetRefreshHz = Math.max(
+						0,
+						Gdx.graphics.getDisplayMode().refreshRate);
+			}
+			bukovFrameTelemetry = new BukovFrameTelemetry(
+					Math.max(1, Gdx.graphics.getBackBufferWidth()),
+					Math.max(1, Gdx.graphics.getBackBufferHeight()),
+					targetRefreshHz);
+		}
+
+		private void updateBukovFrameTelemetry() {
+			if (bukovFrameTelemetry == null) {
+				return;
+			}
+			BukovFrameTelemetry.Report report =
+					bukovFrameTelemetry.recordFrame(
+							Gdx.graphics.getDeltaTime());
+			if (report != null) {
+				DeviceCompat.log(
+						BUKOV_FRAME_TELEMETRY_TAG,
+						report.toLogLine());
+			}
 		}
 
 		private void updateBukovAudio(float deltaSeconds) {
@@ -1393,6 +1435,7 @@ public class GameScene extends PixelScene {
 				bukovRealtime = null;
 			}
 			bukovWorld = null;
+			bukovFrameTelemetry = null;
 			disposeBukovCombatPresentation();
 			bukovCombatFxViews = null;
 			bukovRuntimeLoadout = null;
@@ -1589,6 +1632,7 @@ public class GameScene extends PixelScene {
 			}
 
 			if (BukovMode.active() && bukovRealtime != null) {
+				updateBukovFrameTelemetry();
 				bukovRealtime.update(Game.elapsed);
 				/*
 				 * RealtimeWorld owns the smooth camera, while this final

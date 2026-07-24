@@ -7,13 +7,20 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
  */
 public final class ExtractionIntentResolver {
 
+	/**
+	 * Matches the realtime medical system's severe-hit boundary. Smaller
+	 * impacts pressure the extraction timer without deleting all progress.
+	 */
+	public static final float HEAVY_HIT_HEALTH_FRACTION = 0.18f;
+
 	public static boolean wantsToStart(boolean insideZone,
 									   boolean interactHeld,
 									   boolean stationary,
 									   boolean reloading,
 									   int damageTaken) {
 		return insideZone
-				&& (interactHeld || stationary)
+				&& interactHeld
+				&& stationary
 				&& !reloading
 				&& damageTaken <= 0;
 	}
@@ -24,22 +31,36 @@ public final class ExtractionIntentResolver {
 			boolean interactHeld,
 			boolean stationary,
 			boolean reloading,
-			int damageTaken) {
+			int damageTaken,
+			int maximumHealth) {
 		if (!extractionActive) {
 			return ExtractionState.Interaction.NONE;
 		}
 		if (damageTaken > 0) {
-			return ExtractionState.Interaction.HEAVY_HIT;
+			return damageInteraction(damageTaken, maximumHealth);
 		}
 		if (reloading) {
 			return ExtractionState.Interaction.RELOADED;
 		}
-		if (!insideActiveZone || !stationary) {
+		if (!insideActiveZone || !stationary || !interactHeld) {
 			return ExtractionState.Interaction.MOVED;
 		}
-		return interactHeld || stationary
-				? ExtractionState.Interaction.ACTIVE
-				: ExtractionState.Interaction.NONE;
+		return ExtractionState.Interaction.ACTIVE;
+	}
+
+	static ExtractionState.Interaction damageInteraction(
+			int damageTaken,
+			int maximumHealth) {
+		if (damageTaken <= 0) {
+			return ExtractionState.Interaction.NONE;
+		}
+		if (maximumHealth <= 0) {
+			return ExtractionState.Interaction.HEAVY_HIT;
+		}
+		float fraction = damageTaken / (float)maximumHealth;
+		return fraction >= HEAVY_HIT_HEALTH_FRACTION
+				? ExtractionState.Interaction.HEAVY_HIT
+				: ExtractionState.Interaction.LIGHT_HIT;
 	}
 
 	private ExtractionIntentResolver() {

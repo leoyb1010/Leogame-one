@@ -29,6 +29,10 @@ public class FirearmRegistryTest {
 		assertEquals("9x19", registry.require("needle_9").caliber);
 		assertEquals("ammo_9_standard", registry.require("needle_9").defaultAmmo);
 		assertEquals(FireMode.AUTO, registry.require("ward_556").fireMode);
+		assertEquals(
+				1.4f,
+				registry.require("ward_556").reloadSeconds,
+				0.0001f);
 		assertEquals(24, registry.require("shuttle_9").magazineSize);
 		assertEquals(7, registry.require("bolt_12").pellets);
 		assertEquals(FireMode.SEMI, registry.require("longstreet_762").fireMode);

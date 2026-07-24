@@ -58,7 +58,12 @@ for required in \
   'Assets.Sounds.Bukov.SEARCH_COMPLETE' \
   'Assets.Sounds.Bukov.GATE_UNLOCK' \
   'Assets.Sounds.Bukov.EXTRACTION_START' \
-  'Assets.Sounds.Bukov.EXTRACTION_COMPLETE'
+  'Assets.Sounds.Bukov.EXTRACTION_COMPLETE' \
+  'FootstepCadence footstepCadence' \
+  'footstepCadence.advance(' \
+  'FootstepSurface.resolve(' \
+  'footstepSurface.asset(footstepSequence)' \
+  'footstepSurface.gain()'
 do
   if ! rg -F --quiet "$required" "$world"; then
     echo "Bukov audio gate: runtime contract missing: $required" >&2
@@ -191,6 +196,12 @@ expected=(
   "gunshot_tail_open_1.wav:4d1e0302e9b23a91cbc8bf56e3f2f0b842bdbc2bdb14a0b38627b9381d5c248e"
   "gunshot_tail_open_2.wav:67ba37b204ac37acd5074c225303c8c5252c41dfd150860737f5a9a4988d4be7"
   "gunshot_tail_open_3.wav:7279203676453cf1d44d7fa4477a140e17aa32d389cf7023a963698a42f929e4"
+  "footstep_hard_1.wav:2b9c0d8a85914502bedc62a05168c2c32f439787806e815cef55df1a4014794d"
+  "footstep_hard_2.wav:71b90b18a6ceb6fe3cbac900d6b69179e137bd6335dc60ae5616040ff01a2deb"
+  "footstep_water_1.wav:6e4f45708cb00f384229ebdd0ccae67f94fedb8bb069f78d49c88dffc68bb71a"
+  "footstep_water_2.wav:15a9b7c0ab808b6cd4a4e2ea5d3c9d5779d5f4db2d572b5588965708c9746c23"
+  "footstep_metal_1.wav:b4c6effdfde2306c15adfc78fe9ef01d931bf7e7b6bbf0b4de8d4d7173085d9e"
+  "footstep_metal_2.wav:5a78c3ac9880bc9cfb593ebdf94a8375087510d24a22d2b52d4f8ec9cba05e45"
 )
 
 for record in "${expected[@]}"; do

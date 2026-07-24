@@ -120,7 +120,9 @@ runtime {
                 def macImageOptions = ["--icon", file("./src/main/assets/icons/mac.icns"),
                                        "--java-options", "-XstartOnFirstThread",
                                        "--java-options", "-XX:+IgnoreUnrecognizedVMOptions",
-                                       "--mac-package-identifier", appBundleId]
+                                       "--mac-package-identifier", appBundleId,
+                                       "--mac-app-category", "games",
+                                       "--resource-dir", file("./src/main/jpackage")]
                 def signingIdentity = System.getenv('MAC_SIGNING_IDENTITY')
                 if (signingIdentity) {
                     macImageOptions += ["--mac-sign", "--mac-signing-key-user-name", signingIdentity]

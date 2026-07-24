@@ -362,6 +362,111 @@ function synthesizeGunshotTail(space, variant) {
   return finish(out);
 }
 
+function synthesizeFootstep(surface, variant) {
+  const configurations = {
+    hard: {
+      duration: 0.19,
+      seed: 0xd100,
+      lowPass: 0.34,
+      highPass: 0.18,
+      bodyFromHz: 142,
+      bodyToHz: 68,
+      bodyGain: 0.46,
+      contactGain: 0.63,
+    },
+    water: {
+      duration: 0.27,
+      seed: 0xd200,
+      lowPass: 0.12,
+      highPass: 0.03,
+      bodyFromHz: 118,
+      bodyToHz: 48,
+      bodyGain: 0.35,
+      contactGain: 0.52,
+    },
+    metal: {
+      duration: 0.23,
+      seed: 0xd300,
+      lowPass: 0.26,
+      highPass: 0.42,
+      bodyFromHz: 520,
+      bodyToHz: 164,
+      bodyGain: 0.38,
+      contactGain: 0.58,
+    },
+  };
+  const config = configurations[surface];
+  const duration = config.duration + variant * 0.018;
+  const out = buffer(duration);
+  const variantScale = 0.96 + variant * 0.07;
+
+  addNoise(
+    out,
+    0,
+    duration * (surface === "water" ? 0.9 : 0.48),
+    config.contactGain,
+    config.seed + variant,
+    config.lowPass,
+    config.highPass,
+    surface === "water" ? 4.1 : 7.2,
+  );
+  addChirp(
+    out,
+    0.003,
+    duration * 0.62,
+    config.bodyFromHz * variantScale,
+    config.bodyToHz * variantScale,
+    config.bodyGain,
+    surface === "metal" ? 5.2 : 4.2,
+  );
+
+  if (surface === "hard") {
+    addClick(out, 0.008, 0.38 + variant * 0.04, 0.56);
+    addNoise(
+      out,
+      0.032,
+      duration * 0.52,
+      0.21,
+      config.seed + 0x20 + variant,
+      0.08,
+      0.07,
+      5.8,
+    );
+  } else if (surface === "water") {
+    addNoise(
+      out,
+      0.024,
+      duration * 0.78,
+      0.34,
+      config.seed + 0x20 + variant,
+      0.045,
+      0.02,
+      2.7,
+    );
+    addChirp(
+      out,
+      0.018,
+      duration * 0.66,
+      680 * variantScale,
+      210 * variantScale,
+      0.1,
+      3.6,
+    );
+  } else {
+    addClick(out, 0.006, 0.48 + variant * 0.04, 0.82);
+    addChirp(
+      out,
+      0.03,
+      duration * 0.72,
+      1240 * variantScale,
+      390 * variantScale,
+      0.23,
+      4.6,
+    );
+  }
+  return finish(out);
+}
+
 const sounds = {
   gunshot_player() {
     const out = buffer(0.34);
@@ -645,6 +750,12 @@ for (const space of ["indoor", "corridor", "open"]) {
   for (let variant = 0; variant < 3; variant++) {
     sounds[`gunshot_tail_${space}_${variant + 1}`] =
       () => synthesizeGunshotTail(space, variant);
+  }
+}
+for (const surface of ["hard", "water", "metal"]) {
+  for (let variant = 0; variant < 2; variant++) {
+    sounds[`footstep_${surface}_${variant + 1}`] =
+      () => synthesizeFootstep(surface, variant);
   }
 }
 

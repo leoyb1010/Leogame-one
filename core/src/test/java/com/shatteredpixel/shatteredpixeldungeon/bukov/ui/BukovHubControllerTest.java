@@ -121,6 +121,9 @@ public class BukovHubControllerTest {
 
 		hub.cycleFormalRaidMode();
 		assertEquals(BukovRaidMode.EXPEDITION, hub.selectedRaidMode());
+		assertTrue("returning from training must immediately restore a usable kit",
+				hub.viewModel().canDeploy);
+		assertTrue(hub.viewModel().selectedCount >= 2);
 		hub.cycleFormalRaidMode();
 		assertEquals(BukovRaidMode.QUICK_SWEEP, hub.selectedRaidMode());
 		hub.cycleFormalRaidMode();
@@ -129,6 +132,38 @@ public class BukovHubControllerTest {
 		assertEquals(BukovRaidMode.BOSS_CONTRACT, hub.selectedRaidMode());
 		hub.cycleFormalRaidMode();
 		assertEquals(BukovRaidMode.EXPEDITION, hub.selectedRaidMode());
+	}
+
+	@Test
+	public void scavengerToFormalRestoresLoadoutOnSameController()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+
+		hub.selectRaidMode(BukovRaidMode.SCAVENGER);
+		assertEquals(0, hub.viewModel().selectedCount);
+		assertTrue(hub.viewModel().canDeploy);
+
+		hub.selectRaidMode(BukovRaidMode.BOSS_CONTRACT);
+
+		assertTrue(hub.viewModel().canDeploy);
+		assertTrue(hub.viewModel().selectedCount >= 2);
+		hub.confirmDeployment();
+	}
+
+	@Test
+	public void reopeningRiskFreeModeDoesNotSelectFormalLoadout()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.selectRaidMode(BukovRaidMode.TRAINING_GROUND);
+
+		BukovHubController reopened = new BukovHubController(saves);
+
+		assertEquals(BukovRaidMode.TRAINING_GROUND,
+				reopened.selectedRaidMode());
+		assertEquals(0, reopened.viewModel().selectedCount);
+		assertTrue(reopened.viewModel().canDeploy);
 	}
 
 	@Test

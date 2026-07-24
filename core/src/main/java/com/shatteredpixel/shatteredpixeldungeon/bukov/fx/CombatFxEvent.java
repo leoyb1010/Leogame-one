@@ -12,7 +12,10 @@ public final class CombatFxEvent {
 		MUZZLE_FLASH,
 		SHELL,
 		TRACER,
-		IMPACT
+		IMPACT,
+		BLOOD_MIST,
+		BULLET_MARK,
+		EXPLOSION
 	}
 
 	public interface Consumer {

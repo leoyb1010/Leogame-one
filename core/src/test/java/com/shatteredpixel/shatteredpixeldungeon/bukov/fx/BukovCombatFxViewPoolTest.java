@@ -1,6 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import org.junit.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -8,15 +13,31 @@ import static org.junit.Assert.assertTrue;
 public class BukovCombatFxViewPoolTest {
 
 	@Test
-	public void productionCapacitiesAreFiniteAndCoverBurstFire() {
-		assertTrue(BukovCombatFxViewPool.MUZZLE_CAPACITY >= 12);
-		assertTrue(BukovCombatFxViewPool.SHELL_CAPACITY >= 12);
-		assertTrue(BukovCombatFxViewPool.TRACER_CAPACITY >= 16);
-		assertTrue(BukovCombatFxViewPool.IMPACT_CAPACITY >= 16);
-		assertTrue(BukovCombatFxViewPool.MUZZLE_CAPACITY <= 32);
-		assertTrue(BukovCombatFxViewPool.SHELL_CAPACITY <= 32);
-		assertTrue(BukovCombatFxViewPool.TRACER_CAPACITY <= 32);
-		assertTrue(BukovCombatFxViewPool.IMPACT_CAPACITY <= 32);
+	public void productionCapacitiesComeFromAllSevenUiTokens()
+			throws Exception {
+		String json = new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/assets/bukov/content/ui_tokens.json")),
+				StandardCharsets.UTF_8);
+		BukovCombatFxViewPool.Capacities capacities =
+				BukovCombatFxViewPool.Capacities.from(
+						BukovUiTokens.parse(json));
+
+		assertEquals(16, capacities.forType(
+				CombatFxEvent.Type.MUZZLE_FLASH));
+		assertEquals(64, capacities.forType(CombatFxEvent.Type.TRACER));
+		assertEquals(32, capacities.forType(CombatFxEvent.Type.SHELL));
+		assertEquals(48, capacities.forType(CombatFxEvent.Type.IMPACT));
+		assertEquals(32, capacities.forType(
+				CombatFxEvent.Type.BLOOD_MIST));
+		assertEquals(96, capacities.forType(
+				CombatFxEvent.Type.BULLET_MARK));
+		assertEquals(8, capacities.forType(
+				CombatFxEvent.Type.EXPLOSION));
+		for (CombatFxEvent.Type type : CombatFxEvent.Type.values()) {
+			assertTrue(capacities.forType(type) > 0);
+			assertTrue(capacities.forType(type) <= 256);
+		}
 	}
 
 	@Test

@@ -42,6 +42,18 @@ registration, and rejects the old bow/crossbow/click/hit audio references from
 | Mission gate unlocked | `sounds/bukov/gate_unlock.wav` | `3618d9de7dd2b8c405c266fb36f417f788f443366003c60782883a6337c07746` |
 | Extraction transponder starts | `sounds/bukov/extraction_start.wav` | `4b1478710831348c7086f4b13bcc5c5c5111b4678828453ad79c9d594a189712` |
 | Extraction confirmation | `sounds/bukov/extraction_complete.wav` | `b62c7d0ffbe9a367bae62d79a2ec61936a4af440e89183f3b838215e32effd27` |
+| Hard footstep 1 | `sounds/bukov/footstep_hard_1.wav` | `2b9c0d8a85914502bedc62a05168c2c32f439787806e815cef55df1a4014794d` |
+| Hard footstep 2 | `sounds/bukov/footstep_hard_2.wav` | `71b90b18a6ceb6fe3cbac900d6b69179e137bd6335dc60ae5616040ff01a2deb` |
+| Water footstep 1 | `sounds/bukov/footstep_water_1.wav` | `6e4f45708cb00f384229ebdd0ccae67f94fedb8bb069f78d49c88dffc68bb71a` |
+| Water footstep 2 | `sounds/bukov/footstep_water_2.wav` | `15a9b7c0ab808b6cd4a4e2ea5d3c9d5779d5f4db2d572b5588965708c9746c23` |
+| Metal footstep 1 | `sounds/bukov/footstep_metal_1.wav` | `b4c6effdfde2306c15adfc78fe9ef01d931bf7e7b6bbf0b4de8d4d7173085d9e` |
+| Metal footstep 2 | `sounds/bukov/footstep_metal_2.wav` | `5a78c3ac9880bc9cfb593ebdf94a8375087510d24a22d2b52d4f8ec9cba05e45` |
+
+Footsteps are paced by accepted movement distance, not input or render frames.
+Water terrain routes to the water pair; industrial `EMBERS`, `EMPTY_SP` and
+open-door threshold terrain route to the metal pair; other walkable terrain
+uses the hard pair. All three surfaces use the same master/SFX mix as gun and
+interaction cues.
 
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is

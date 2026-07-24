@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "frameWidth": 16,
   "frameHeight": 18,
-  "frameCount": 16,
+  "frameCount": 21,
   "actions": {
     "idle": [
       0,
@@ -12,7 +12,7 @@
       2,
       3
     ],
-    "run": [
+    "walk": [
       4,
       7
     ],
@@ -20,9 +20,17 @@
       8,
       10
     ],
-    "identityOrPhase": [
+    "hit": [
       11,
+      12
+    ],
+    "special": [
+      13,
       15
+    ],
+    "bossEncounterPhase": [
+      16,
+      20
     ]
   },
   "sheets": [
@@ -33,7 +41,8 @@
       ],
       "family": "light-rusher",
       "tier": "normal",
-      "sha256": "eae031f25d6c3e3a214165d519b774038cb41755f7554750b968263d6cf0fa49"
+      "specialAction": "rush",
+      "sha256": "794f033762f10841623dad80761e86c2798a4d510172dd3a350c3e16b9ce9c67"
     },
     {
       "asset": "sprites/bukov/gunner.png",
@@ -42,7 +51,8 @@
       ],
       "family": "rifle-scavenger",
       "tier": "normal",
-      "sha256": "5aa3ad420b3341a2711eff398eed0d02cce0f2625dc29ce470d3f3f12e320cbb"
+      "specialAction": "reload",
+      "sha256": "518f7b26eadc141f372e58b93b18d21957a39bc1283c59f449b723f265199897"
     },
     {
       "asset": "sprites/bukov/armored.png",
@@ -51,7 +61,8 @@
       ],
       "family": "heavy-guard",
       "tier": "elite",
-      "sha256": "1b3719e544bb6cbc9a5ec02a7687867a0cf0d3597f440eda7697ea8399325e0f"
+      "specialAction": "reload",
+      "sha256": "9d154cca01ae166288e7a82521b3c8838d058c97ec92532ad7ccfe4039fbfc0e"
     },
     {
       "asset": "sprites/bukov/captain.png",
@@ -60,7 +71,8 @@
       ],
       "family": "command-elite",
       "tier": "elite",
-      "sha256": "58de6821a1a65257c3507e27c50c5cc9e5b4860bba1dbd28ded908b2a6788c19"
+      "specialAction": "reload",
+      "sha256": "3505d4a767a6aea0f9e8e65f557d006a47f5faa63afa5909e3d4aac121938355"
     },
     {
       "asset": "sprites/bukov/drone.png",
@@ -69,7 +81,8 @@
       ],
       "family": "sensor-drone",
       "tier": "normal",
-      "sha256": "51314233eda0b27e044bcaa5538171272a5bf71a5c9ddda7378af5608b5863d7"
+      "specialAction": "scan",
+      "sha256": "87581718bc6e38612ec265ce75f49492d45e96dad76fa06d6d36b3c2829a76f4"
     },
     {
       "asset": "sprites/bukov/white_line.png",
@@ -78,7 +91,8 @@
       ],
       "family": "white-line-boss",
       "tier": "boss",
-      "sha256": "3a8bcaf35515566d61d378b54d064d0d14cf4bbd08a4b345097e85720bb40394"
+      "specialAction": "phase_cast",
+      "sha256": "471743304f018598b58115173e8ed0d71dc29bf82e997afcedfd785d863f0ae1"
     },
     {
       "asset": "sprites/bukov/alley_scout.png",
@@ -87,7 +101,8 @@
       ],
       "family": "hooded-scout",
       "tier": "normal",
-      "sha256": "80df283cbb0424eacc71c4e902582800c0156e6f3c9ea19c3999af8e7a594aa1"
+      "specialAction": "reload",
+      "sha256": "18ce7755ce508adc725a8ee88602588bce5245b781bd627825e5812215f20320"
     },
     {
       "asset": "sprites/bukov/depot_shotgunner.png",
@@ -96,7 +111,8 @@
       ],
       "family": "orange-heavy-shotgun",
       "tier": "normal",
-      "sha256": "a288ee9bdce732d454bf9e0c5166694155ecf84a18077d1837757ab1dc2331bd"
+      "specialAction": "reload",
+      "sha256": "1cdaa9cc42490de73085c59572fca28e094b495183e17338333e49c141735eb0"
     },
     {
       "asset": "sprites/bukov/line_rifleman.png",
@@ -105,7 +121,8 @@
       ],
       "family": "blue-line-rifle",
       "tier": "normal",
-      "sha256": "101b580f218b5678f69af23069258d92b8ca5b09faf0f0991f677971bb0a9445"
+      "specialAction": "reload",
+      "sha256": "b5bbf4c8b2d686a4edc0bfca0791bc9380aab5a18429808c3dd2b85c0d4f05a6"
     },
     {
       "asset": "sprites/bukov/fog_stalker.png",
@@ -114,7 +131,8 @@
       ],
       "family": "dark-fog-stalker",
       "tier": "normal",
-      "sha256": "b2bdbb3c77348ad68bbc06585101efddc49e86b75da2176fc8e482a11d9d3616"
+      "specialAction": "rush",
+      "sha256": "008d9f0847a65fd65a20e99a841c1923c2cf159b6ff1851c9f133065f335d7c2"
     },
     {
       "asset": "sprites/bukov/signal_operator.png",
@@ -123,7 +141,8 @@
       ],
       "family": "signal-walker",
       "tier": "normal",
-      "sha256": "ec48dd2ba3164d74487e11ecffcd4d0bf21efece2b061e1407ad8f9259a93059"
+      "specialAction": "scan",
+      "sha256": "f41d9c1dd7204ed1d56d66a8c3ad7176a72b9aa9364aa578b1ee1a223b2c2480"
     },
     {
       "asset": "sprites/bukov/iron_clasp_marksman.png",
@@ -132,7 +151,8 @@
       ],
       "family": "long-optic-elite",
       "tier": "elite",
-      "sha256": "631975f9d514e0b59d10a592a9196a341b8144f8697b66eeada5a5a5d1080f4a"
+      "specialAction": "reload",
+      "sha256": "16dffe85d74de8a06039c1a3697ae590c66741dbbd2a2800c6ffd011b042768c"
     },
     {
       "asset": "sprites/bukov/breach_veteran.png",
@@ -141,7 +161,8 @@
       ],
       "family": "red-breach-elite",
       "tier": "elite",
-      "sha256": "dd20ba9fc21085f68894f3daab4f104c4f68a92803288a15b1954709d2ceffd4"
+      "specialAction": "reload",
+      "sha256": "8877b954e833f3a46a411d6d92d7eb157132a631746681e012a2e33507f065dd"
     }
   ]
 }

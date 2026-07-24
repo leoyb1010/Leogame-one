@@ -334,6 +334,7 @@ public class TitleScene extends PixelScene {
 
 		@Override
 		protected void onClick() {
+			Sample.INSTANCE.play(Assets.Sounds.Bukov.UI_CONFIRM);
 			activate();
 		}
 
@@ -341,7 +342,6 @@ public class TitleScene extends PixelScene {
 		protected void onPointerDown() {
 			surface.visible = false;
 			pressed.visible = true;
-			Sample.INSTANCE.play(Assets.Sounds.CLICK);
 		}
 
 		@Override

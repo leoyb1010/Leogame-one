@@ -5,6 +5,7 @@ import com.shatteredpixel.shatteredpixeldungeon.Assets;
 /** Elite commander: black-red command armor and red optic. */
 public final class BukovCaptainSprite extends BukovEnemySprite {
 	public BukovCaptainSprite() {
-		super(Assets.Sprites.BUKOV_CAPTAIN, 0xFF5E211F);
+		super(Assets.Sprites.BUKOV_CAPTAIN, 0xFF5E211F,
+				SpecialAction.RELOAD);
 	}
 }

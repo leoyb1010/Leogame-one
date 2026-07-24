@@ -76,12 +76,31 @@ public class BukovRaidHudWiringGuardTest {
 			throws Exception {
 		String hud = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java");
-		assertTrue(hud.contains(
-				"availableWidth >= WIDE_THRESHOLD ? 38f : 48f"));
+		String layout = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHudLayout.java");
+		assertTrue(hud.contains("BukovRaidHudLayout.preferredHeight("));
+		assertTrue(layout.contains("private static final float WIDE_HEIGHT = 38f"));
+		assertTrue(layout.contains("private static final float COMPACT_HEIGHT = 68f"));
+		assertTrue(layout.contains("compactObjective("));
 		assertTrue(hud.contains("layoutCombatOverlay(actualHeight)"));
 		assertTrue(hud.contains("centerY + aimRadius + 14f"));
 		assertFalse(hud.contains(
 				"availableWidth >= WIDE_THRESHOLD ? 60f : 86f"));
+	}
+
+	@Test
+	public void sceneUsesCommonSafeTopAndReservesHudFromTouchNavigation()
+			throws Exception {
+		String scene = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
+		assertTrue(scene.contains(
+				"float bukovSafeTop = Math.max("));
+		assertTrue(scene.contains(
+				"Math.max(0f, insets.top)"));
+		assertTrue(scene.contains(
+				"bukovTouchControls.hudBottom(bukovHud.bottom() + 2f)"));
+		assertTrue(scene.contains(
+				"bukovSafeTop + 4f"));
 	}
 
 	@Test

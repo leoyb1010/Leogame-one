@@ -16,6 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class BukovUiTokenBoundaryGuardTest {
 
 	private static final String[] SURFACES = {
+			"BukovRaidHud.java",
 			"WndBukovSettings.java",
 			"WndBukovFirstRunCalibration.java",
 			"WndBukovPause.java",
@@ -61,29 +62,36 @@ public class BukovUiTokenBoundaryGuardTest {
 	}
 
 	@Test
-	public void playerUiClassesExceptRenderersAndTokenParserAvoidRgbLiterals()
+	public void playerUiClassesAvoidRgbLiteralsExceptTechnicalMasks()
 			throws Exception {
-		Pattern literalColor = Pattern.compile("0x[0-9A-Fa-f]{6,8}");
+		Pattern literalColor = Pattern.compile(
+				"0x[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\\b");
 		Path directory = Paths.get(
 				"src/main/java/com/shatteredpixel/"
 						+ "shatteredpixeldungeon/bukov/ui");
 		try (Stream<Path> paths = Files.walk(directory)) {
 			for (Path path : (Iterable<Path>) paths
 					.filter(value -> value.toString().endsWith(".java"))
-					.filter(value -> !value.getFileName().toString()
-							.equals("BukovRaidHud.java"))
-					// Combat direction arc is an FX renderer owned by the
-					// presentation pipeline, not a player UI surface.
-					.filter(value -> !value.getFileName().toString()
-							.equals("BukovHitDirectionArc.java"))
-					.filter(value -> !value.getFileName().toString()
-							.equals("BukovUiTokens.java"))::iterator) {
-				String source = new String(
+					::iterator) {
+				String[] lines = new String(
 						Files.readAllBytes(path),
-						StandardCharsets.UTF_8);
-				assertFalse(
-						path.getFileName().toString(),
-						literalColor.matcher(source).find());
+						StandardCharsets.UTF_8).split("\\R");
+				for (int lineNumber = 0;
+						lineNumber < lines.length;
+						lineNumber++) {
+					java.util.regex.Matcher matcher =
+							literalColor.matcher(lines[lineNumber]);
+					while (matcher.find()) {
+						assertTrue(
+								path.getFileName() + ":"
+										+ (lineNumber + 1)
+										+ " embeds RGB outside ui_tokens.json",
+								isTechnicalMask(
+										path.getFileName().toString(),
+										lines[lineNumber],
+										matcher.group()));
+					}
+				}
 			}
 		}
 	}
@@ -115,5 +123,20 @@ public class BukovUiTokenBoundaryGuardTest {
 								+ "shatteredpixeldungeon/scenes/"
 								+ file)),
 				StandardCharsets.UTF_8);
+	}
+
+	private static boolean isTechnicalMask(
+			String file,
+			String line,
+			String literal) {
+		if ("BukovHitDirectionArc.java".equals(file)) {
+			return "0xFFFFFFFF".equals(literal)
+					&& line.contains("TextureCache.createSolid(");
+		}
+		if ("BukovUiTokens.java".equals(file)) {
+			return "0xFFFFFF".equals(literal)
+					&& line.contains("&");
+		}
+		return false;
 	}
 }

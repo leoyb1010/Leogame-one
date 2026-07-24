@@ -1,10 +1,11 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.fx;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Group;
 
 /**
- * Fixed-capacity, scene-owned pool for the four high-frequency firearm views.
+ * Fixed-capacity, scene-owned pool for all seven authored firearm views.
  *
  * Simulation has already committed before an event reaches this class. When a
  * category is saturated, its oldest view slot is restarted for the newest
@@ -13,27 +14,49 @@ import com.watabou.noosa.Group;
  */
 public final class BukovCombatFxViewPool extends Group {
 
-	public static final int MUZZLE_CAPACITY = 16;
-	public static final int SHELL_CAPACITY = 16;
-	public static final int TRACER_CAPACITY = 24;
-	public static final int IMPACT_CAPACITY = 24;
-
-	private final BukovMuzzleFx[] muzzles =
-			new BukovMuzzleFx[MUZZLE_CAPACITY];
-	private final BukovShellFx[] shells =
-			new BukovShellFx[SHELL_CAPACITY];
-	private final BukovTracerFx[] tracers =
-			new BukovTracerFx[TRACER_CAPACITY];
-	private final BukovImpactFx[] impacts =
-			new BukovImpactFx[IMPACT_CAPACITY];
-	private final long[] muzzleStamps = new long[MUZZLE_CAPACITY];
-	private final long[] shellStamps = new long[SHELL_CAPACITY];
-	private final long[] tracerStamps = new long[TRACER_CAPACITY];
-	private final long[] impactStamps = new long[IMPACT_CAPACITY];
+	private final BukovMuzzleFx[] muzzles;
+	private final BukovShellFx[] shells;
+	private final BukovTracerFx[] tracers;
+	private final BukovImpactFx[] impacts;
+	private final BukovBloodMistFx[] bloodMists;
+	private final BukovBulletMarkFx[] bulletMarks;
+	private final BukovExplosionFx[] explosions;
+	private final long[] muzzleStamps;
+	private final long[] shellStamps;
+	private final long[] tracerStamps;
+	private final long[] impactStamps;
+	private final long[] bloodMistStamps;
+	private final long[] bulletMarkStamps;
+	private final long[] explosionStamps;
 	private long activationClock;
 	private long reusedOldest;
 
-	public BukovCombatFxViewPool() {
+	/**
+	 * Loads all capacities once at scene construction. No token file access or
+	 * array allocation occurs while presenting combat events.
+	 */
+	public BukovCombatFxViewPool(BukovUiTokens tokens) {
+		this(Capacities.from(tokens));
+	}
+
+	BukovCombatFxViewPool(Capacities capacities) {
+		if (capacities == null) {
+			throw new IllegalArgumentException("capacities are required");
+		}
+		muzzles = new BukovMuzzleFx[capacities.muzzleFlash];
+		shells = new BukovShellFx[capacities.shell];
+		tracers = new BukovTracerFx[capacities.tracer];
+		impacts = new BukovImpactFx[capacities.impactSpark];
+		bloodMists = new BukovBloodMistFx[capacities.bloodMist];
+		bulletMarks = new BukovBulletMarkFx[capacities.bulletMark];
+		explosions = new BukovExplosionFx[capacities.explosion];
+		muzzleStamps = new long[muzzles.length];
+		shellStamps = new long[shells.length];
+		tracerStamps = new long[tracers.length];
+		impactStamps = new long[impacts.length];
+		bloodMistStamps = new long[bloodMists.length];
+		bulletMarkStamps = new long[bulletMarks.length];
+		explosionStamps = new long[explosions.length];
 		for (int index = 0; index < muzzles.length; index++) {
 			muzzles[index] = new BukovMuzzleFx();
 			add(muzzles[index]);
@@ -49,6 +72,18 @@ public final class BukovCombatFxViewPool extends Group {
 		for (int index = 0; index < impacts.length; index++) {
 			impacts[index] = new BukovImpactFx();
 			add(impacts[index]);
+		}
+		for (int index = 0; index < bloodMists.length; index++) {
+			bloodMists[index] = new BukovBloodMistFx();
+			add(bloodMists[index]);
+		}
+		for (int index = 0; index < bulletMarks.length; index++) {
+			bulletMarks[index] = new BukovBulletMarkFx();
+			add(bulletMarks[index]);
+		}
+		for (int index = 0; index < explosions.length; index++) {
+			explosions[index] = new BukovExplosionFx();
+			add(explosions[index]);
 		}
 	}
 
@@ -118,6 +153,46 @@ public final class BukovCombatFxViewPool extends Group {
 					}
 				}
 				break;
+			case BLOOD_MIST:
+				if (vectorVisible(directionX, directionY)) {
+					int bloodMist = acquire(bloodMists, bloodMistStamps);
+					if (bloodMists[bloodMist].reset(
+							toX,
+							toY,
+							directionX,
+							directionY,
+							event.hostile(),
+							event.intensity())) {
+						stamp(bloodMistStamps, bloodMist);
+					}
+				}
+				break;
+			case BULLET_MARK:
+				if (vectorVisible(directionX, directionY)) {
+					int bulletMark = acquire(bulletMarks, bulletMarkStamps);
+					if (bulletMarks[bulletMark].reset(
+							toX,
+							toY,
+							directionX,
+							directionY,
+							event.hostile(),
+							event.intensity())) {
+						stamp(bulletMarkStamps, bulletMark);
+					}
+				}
+				break;
+			case EXPLOSION:
+				if (finite(toX) && finite(toY)) {
+					int explosion = acquire(explosions, explosionStamps);
+					if (explosions[explosion].reset(
+							toX,
+							toY,
+							event.hostile(),
+							event.intensity())) {
+						stamp(explosionStamps, explosion);
+					}
+				}
+				break;
 			default:
 				break;
 		}
@@ -127,7 +202,10 @@ public final class BukovCombatFxViewPool extends Group {
 		return activeCount(muzzles)
 				+ activeCount(shells)
 				+ activeCount(tracers)
-				+ activeCount(impacts);
+				+ activeCount(impacts)
+				+ activeCount(bloodMists)
+				+ activeCount(bulletMarks)
+				+ activeCount(explosions);
 	}
 
 	public long reusedOldest() {
@@ -183,5 +261,85 @@ public final class BukovCombatFxViewPool extends Group {
 
 	private static boolean finite(float value) {
 		return !Float.isNaN(value) && !Float.isInfinite(value);
+	}
+
+	/**
+	 * Pure capacity snapshot used both by the scene and by validation tests.
+	 */
+	static final class Capacities {
+
+		private static final int MAX_PER_TYPE = 256;
+
+		final int muzzleFlash;
+		final int tracer;
+		final int shell;
+		final int impactSpark;
+		final int bloodMist;
+		final int bulletMark;
+		final int explosion;
+
+		private Capacities(
+				int muzzleFlash,
+				int tracer,
+				int shell,
+				int impactSpark,
+				int bloodMist,
+				int bulletMark,
+				int explosion) {
+			this.muzzleFlash = bounded(muzzleFlash, "muzzleFlash");
+			this.tracer = bounded(tracer, "tracer");
+			this.shell = bounded(shell, "shell");
+			this.impactSpark = bounded(impactSpark, "impactSpark");
+			this.bloodMist = bounded(bloodMist, "bloodMist");
+			this.bulletMark = bounded(bulletMark, "bulletMark");
+			this.explosion = bounded(explosion, "explosion");
+		}
+
+		static Capacities from(BukovUiTokens tokens) {
+			if (tokens == null) {
+				throw new IllegalArgumentException("UI tokens are required");
+			}
+			return new Capacities(
+					tokens.vfxPoolCapacity("muzzleFlash"),
+					tokens.vfxPoolCapacity("tracer"),
+					tokens.vfxPoolCapacity("shell"),
+					tokens.vfxPoolCapacity("impactSpark"),
+					tokens.vfxPoolCapacity("bloodMist"),
+					tokens.vfxPoolCapacity("bulletMark"),
+					tokens.vfxPoolCapacity("explosion"));
+		}
+
+		int forType(CombatFxEvent.Type type) {
+			if (type == null) {
+				throw new IllegalArgumentException("type is required");
+			}
+			switch (type) {
+				case MUZZLE_FLASH:
+					return muzzleFlash;
+				case TRACER:
+					return tracer;
+				case SHELL:
+					return shell;
+				case IMPACT:
+					return impactSpark;
+				case BLOOD_MIST:
+					return bloodMist;
+				case BULLET_MARK:
+					return bulletMark;
+				case EXPLOSION:
+					return explosion;
+				default:
+					throw new AssertionError("all combat FX types are mapped");
+			}
+		}
+
+		private static int bounded(int value, String label) {
+			if (value <= 0 || value > MAX_PER_TYPE) {
+				throw new IllegalArgumentException(
+						label + " capacity must be between 1 and "
+								+ MAX_PER_TYPE);
+			}
+			return value;
+		}
 	}
 }

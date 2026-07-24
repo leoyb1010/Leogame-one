@@ -38,6 +38,29 @@ public class CombatFxEventPoolTest {
 	}
 
 	@Test
+	public void drainsAllSevenAuthoredTypesWithoutAllocatingNewEvents() {
+		CombatFxEventPool pool = new CombatFxEventPool(7);
+		List<CombatFxEvent.Type> types = new ArrayList<>();
+
+		pool.muzzle(3, 9, false, 1f, 2f, 1f, 0f, 1f);
+		pool.shell(3, 9, false, 1f, 2f, 0f, 1f, 1f);
+		pool.tracer(3, 9, false, 1f, 2f, 4f, 2f, 1f);
+		pool.impact(3, 9, false, 4f, 2f, 1f);
+		pool.bloodMist(3, 9, false, 4f, 2f, 1f, 0f, 1f);
+		pool.bulletMark(3, 9, false, 4f, 2f, 1f, 0f, 1f);
+		pool.explosion(3, 9, false, 4f, 2f, 1f);
+
+		assertEquals(7, pool.drain(event -> types.add(event.type())));
+		assertEquals(CombatFxEvent.Type.MUZZLE_FLASH, types.get(0));
+		assertEquals(CombatFxEvent.Type.SHELL, types.get(1));
+		assertEquals(CombatFxEvent.Type.TRACER, types.get(2));
+		assertEquals(CombatFxEvent.Type.IMPACT, types.get(3));
+		assertEquals(CombatFxEvent.Type.BLOOD_MIST, types.get(4));
+		assertEquals(CombatFxEvent.Type.BULLET_MARK, types.get(5));
+		assertEquals(CombatFxEvent.Type.EXPLOSION, types.get(6));
+	}
+
+	@Test
 	public void overflowDropsOldestCosmeticEvent() {
 		CombatFxEventPool pool = new CombatFxEventPool(2);
 		List<Integer> sequences = new ArrayList<>();

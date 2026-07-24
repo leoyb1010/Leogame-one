@@ -46,7 +46,7 @@ public class BukovEnemyVisibilityGuardTest {
 			assertTrue(sheet, Files.isRegularFile(path));
 			BufferedImage image = ImageIO.read(path.toFile());
 			assertNotNull(sheet, image);
-			assertEquals(sheet, 256, image.getWidth());
+			assertEquals(sheet, 336, image.getWidth());
 			assertEquals(sheet, 18, image.getHeight());
 
 			int visiblePixels = 0;
