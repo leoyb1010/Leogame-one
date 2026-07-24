@@ -249,8 +249,8 @@ public final class BukovDeploymentScene extends PixelScene {
 
 	/**
 	 * Resumes only after both documents exist and the loaded host is confirmed
-	 * to be a Bukov map. A non-Bukov or unreadable slot is preserved so this
-	 * recovery path can never delete an unrelated user save.
+	 * to be a Bukov map. A legacy or unreadable reserved slot is moved into a
+	 * recoverable archive before a fresh Bukov host is created.
 	 */
 	private static void resumeMatchedHost(
 			BukovRaidCoordinator checkpoint) throws IOException {
@@ -259,7 +259,9 @@ public final class BukovDeploymentScene extends PixelScene {
 			level = loadVerifiedBukovHost();
 		} catch (IOException | RuntimeException incompatible) {
 			settleInterruptedCheckpoint(incompatible, checkpoint);
-			throw preservedHostFailure(incompatible);
+			archiveUnverifiedReservedHost();
+			createNewRaid();
+			return;
 		}
 		if (checkpoint.session().seed != Dungeon.seed) {
 			IOException mismatch = new IOException(
@@ -304,7 +306,8 @@ public final class BukovDeploymentScene extends PixelScene {
 			loadVerifiedBukovHost();
 		} catch (IOException | RuntimeException incompatible) {
 			ShatteredPixelDungeon.reportException(incompatible);
-			throw preservedHostFailure(incompatible);
+			archiveUnverifiedReservedHost();
+			return;
 		}
 		archiveOrphanBukovHost();
 	}
@@ -315,6 +318,29 @@ public final class BukovDeploymentScene extends PixelScene {
 	 * successfully decoded from the reserved product slot.
 	 */
 	private static String archiveOrphanBukovHost() throws IOException {
+		return archiveReservedHost(
+				"bukov_orphan_archives",
+				"game"
+						+ BukovMode.SAVE_SLOT
+						+ "-seed"
+						+ Dungeon.seed
+						+ "-"
+						+ System.currentTimeMillis());
+	}
+
+	private static String archiveUnverifiedReservedHost()
+			throws IOException {
+		return archiveReservedHost(
+				"bukov_legacy_archives",
+				"game"
+						+ BukovMode.SAVE_SLOT
+						+ "-legacy-"
+						+ System.currentTimeMillis());
+	}
+
+	private static String archiveReservedHost(
+			String archiveDirectory,
+			String baseName) throws IOException {
 		FileHandle source = FileUtils.getFileHandle(
 				GamesInProgress.gameFolder(BukovMode.SAVE_SLOT));
 		if (source == null || !source.exists() || !source.isDirectory()) {
@@ -322,15 +348,9 @@ public final class BukovDeploymentScene extends PixelScene {
 					entryMessage("deployment.archive_missing"));
 		}
 		FileHandle archiveRoot =
-				FileUtils.getFileHandle("bukov_orphan_archives");
+				FileUtils.getFileHandle(archiveDirectory);
 		try {
 			archiveRoot.mkdirs();
-			String baseName = "game"
-					+ BukovMode.SAVE_SLOT
-					+ "-seed"
-					+ Dungeon.seed
-					+ "-"
-					+ System.currentTimeMillis();
 			FileHandle target = archiveRoot.child(baseName);
 			int collision = 0;
 			while (target.exists()) {
@@ -353,12 +373,6 @@ public final class BukovDeploymentScene extends PixelScene {
 					entryMessage("deployment.archive_failed"),
 					failure);
 		}
-	}
-
-	private static IOException preservedHostFailure(Throwable cause) {
-		return new IOException(
-				entryMessage("deployment.host_preserved"),
-				cause);
 	}
 
 	private static void requireBukovLevel(Level level) throws IOException {

@@ -13,7 +13,7 @@ import static org.junit.Assert.assertTrue;
 public class BukovDeploymentRecoveryGuardTest {
 
 	@Test
-	public void deploymentUsesRecoveryMatrixAndArchivesOnlyVerifiedBukovHost()
+	public void deploymentUsesRecoveryMatrixAndArchivesEveryReservedHost()
 			throws Exception {
 		String deployment = new String(
 				Files.readAllBytes(Paths.get(
@@ -32,6 +32,10 @@ public class BukovDeploymentRecoveryGuardTest {
 				"Level level = Dungeon.loadLevel(BukovMode.SAVE_SLOT);"));
 		assertTrue(deployment.contains("requireBukovLevel(level);"));
 		assertTrue(deployment.contains("source.moveTo(target);"));
+		assertTrue(deployment.contains(
+				"archiveUnverifiedReservedHost();"));
+		assertTrue(deployment.contains(
+				"\"bukov_legacy_archives\","));
 		assertTrue(deployment.contains(
 				"GamesInProgress.delete(BukovMode.SAVE_SLOT);"));
 		assertFalse(deployment.contains(
