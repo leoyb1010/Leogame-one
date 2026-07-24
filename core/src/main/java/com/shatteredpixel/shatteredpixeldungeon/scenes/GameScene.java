@@ -60,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMed
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatPresentation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatFxViewPool;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovDeathTransitionModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
@@ -187,6 +188,7 @@ import com.watabou.input.KeyEvent;
 import com.watabou.input.KeyBindings;
 import com.watabou.input.PointerEvent;
 import com.watabou.noosa.Camera;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Gizmo;
 import com.watabou.noosa.Group;
@@ -297,6 +299,11 @@ public class GameScene extends PixelScene {
 	private float nextBukovCheckpoint;
 	private float bukovLifecycleRetryDelay;
 	private boolean bukovSettlementTransition;
+	private BukovDeathTransitionModel bukovDeathTransition;
+	private ColorBlock bukovDeathVeil;
+	private RaidResult pendingBukovDeathResult;
+	private float pendingBukovDeathElapsed;
+	private int pendingBukovDeathKills;
 
 	{
 		inGameScene = true;
@@ -1349,7 +1356,7 @@ public class GameScene extends PixelScene {
 						bukovWorld.finishMedicalRuntime();
 					}
 					RaidResult result = bukovRaid.settleDeath();
-					finishBukovHostSave(result, elapsed, kills);
+					beginBukovDeathTransition(result, elapsed, kills);
 					return;
 				}
 				for (ExtractionState extraction : bukovRaid.extractions()) {
@@ -1440,10 +1447,19 @@ public class GameScene extends PixelScene {
 
 		private void finishBukovHostSave(
 				RaidResult result, float elapsed, int kills) {
+			prepareBukovSettlement();
+			showBukovSettlement(result, elapsed, kills);
+		}
+
+		private void prepareBukovSettlement() {
 			bukovSettlementTransition = true;
 			Dungeon.deleteGame(BukovMode.SAVE_SLOT, true);
 			closeBukovBackpack();
 			resetBukovInputState();
+		}
+
+		private void showBukovSettlement(
+				RaidResult result, float elapsed, int kills) {
 			disposeBukovAudio();
 			if (bukovRealtime != null) {
 				bukovRealtime.dispose();
@@ -1472,6 +1488,46 @@ public class GameScene extends PixelScene {
 							hub.repeatLastLoadout();
 						}
 					}));
+		}
+
+		private void beginBukovDeathTransition(
+				RaidResult result, float elapsed, int kills) {
+			prepareBukovSettlement();
+			pendingBukovDeathResult = result;
+			pendingBukovDeathElapsed = elapsed;
+			pendingBukovDeathKills = kills;
+			bukovDeathTransition = new BukovDeathTransitionModel();
+			bukovDeathVeil = new ColorBlock(
+					uiCamera.width,
+					uiCamera.height,
+					0xFF263238);
+			bukovDeathVeil.camera = uiCamera;
+			bukovDeathVeil.alpha(bukovDeathTransition.veilAlpha(
+					SPDSettings.bukovReduceMotion(),
+					SPDSettings.bukovReduceFlashes()));
+			addToFront(bukovDeathVeil);
+		}
+
+		private void updateBukovDeathTransition() {
+			if (bukovDeathTransition == null) return;
+			bukovDeathTransition.advance(Game.elapsed);
+			if (bukovDeathVeil != null) {
+				bukovDeathVeil.alpha(bukovDeathTransition.veilAlpha(
+						SPDSettings.bukovReduceMotion(),
+						SPDSettings.bukovReduceFlashes()));
+			}
+			if (!bukovDeathTransition.consumeCompletion()) return;
+
+			if (bukovDeathVeil != null) {
+				bukovDeathVeil.killAndErase();
+				bukovDeathVeil = null;
+			}
+			RaidResult result = pendingBukovDeathResult;
+			float elapsed = pendingBukovDeathElapsed;
+			int kills = pendingBukovDeathKills;
+			pendingBukovDeathResult = null;
+			bukovDeathTransition = null;
+			showBukovSettlement(result, elapsed, kills);
 		}
 
 		private void saveBukovAndReturnToHub() {
@@ -1635,7 +1691,8 @@ public class GameScene extends PixelScene {
 
 		super.update();
 		if (bukovTouchControls != null) {
-			bukovTouchControls.inputBlocked(showingWindow());
+			bukovTouchControls.inputBlocked(
+					showingWindow() || bukovDeathTransition != null);
 		}
 
 		if (notifyDelay > 0) notifyDelay -= Game.elapsed;
@@ -1668,6 +1725,9 @@ public class GameScene extends PixelScene {
 					openBukovBackpack();
 				}
 				updateBukovLifecycle();
+			}
+			if (BukovMode.active()) {
+				updateBukovDeathTransition();
 			}
 
 			if (!BukovMode.active() && !Actor.processing() && Dungeon.hero.isAlive()) {

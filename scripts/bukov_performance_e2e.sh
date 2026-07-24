@@ -34,6 +34,24 @@ set +e
   2>&1 | tee -a "$report"
 gate_exit=${pipestatus[1]}
 set -e
+
+result_xml="$(getconf DARWIN_USER_CACHE_DIR)/escape-from-bukov-gradle/core/test-results/test/TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovEndToEndPerformanceSmoke.xml"
+if (( gate_exit == 0 )); then
+  if [[ ! -f "$result_xml" ]]; then
+    print -u2 "performance result XML is missing: $result_xml"
+    gate_exit=1
+  else
+    performance_json=$(python3 -c \
+      'import sys, xml.etree.ElementTree as ET; print((ET.parse(sys.argv[1]).getroot().findtext("system-out") or "").strip())' \
+      "$result_xml")
+    if [[ "$performance_json" != \{*\} ]]; then
+      print -u2 "performance JSON is missing from test output"
+      gate_exit=1
+    else
+      print "performance_json=$performance_json" | tee -a "$report"
+    fi
+  fi
+fi
 {
   print "finished_utc=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   print "exit_code=$gate_exit"
