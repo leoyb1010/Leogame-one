@@ -20,86 +20,49 @@
     "midDistance": 10.0
   },
   "feedback": {
-    "maximumShakePx": 8.0,
     "profiles": [
       {
         "type": "RIFLE_SHOT",
-        "shakeAmplitudePx": 0.8,
-        "shakeDurationMs": 75,
-        "vibrationAmplitude": 0.25,
-        "vibrationDurationMs": 60,
         "hitstopMs": 0,
         "visualIntensity": 1.0
       },
       {
         "type": "PLAYER_HIT",
-        "shakeAmplitudePx": 2.5,
-        "shakeDurationMs": 120,
-        "vibrationAmplitude": 0.7,
-        "vibrationDurationMs": 120,
         "hitstopMs": 0,
         "visualIntensity": 1.2
       },
       {
         "type": "SHOTGUN_NEAR",
-        "shakeAmplitudePx": 2.0,
-        "shakeDurationMs": 100,
-        "vibrationAmplitude": 0.55,
-        "vibrationDurationMs": 100,
         "hitstopMs": 0,
         "visualIntensity": 1.3
       },
       {
         "type": "EXPLOSION",
-        "shakeAmplitudePx": 5.0,
-        "shakeDurationMs": 300,
-        "vibrationAmplitude": 1.0,
-        "vibrationDurationMs": 250,
         "hitstopMs": 0,
         "visualIntensity": 1.5
       },
       {
         "type": "BOSS_SLAM",
-        "shakeAmplitudePx": 4.0,
-        "shakeDurationMs": 240,
-        "vibrationAmplitude": 0.9,
-        "vibrationDurationMs": 220,
         "hitstopMs": 0,
         "visualIntensity": 1.4
       },
       {
         "type": "EXTRACT_STAMP",
-        "shakeAmplitudePx": 1.0,
-        "shakeDurationMs": 80,
-        "vibrationAmplitude": 0.35,
-        "vibrationDurationMs": 80,
         "hitstopMs": 0,
         "visualIntensity": 1.0
       },
       {
         "type": "KILL",
-        "shakeAmplitudePx": 0.0,
-        "shakeDurationMs": 0,
-        "vibrationAmplitude": 0.25,
-        "vibrationDurationMs": 50,
         "hitstopMs": 50,
         "visualIntensity": 1.0
       },
       {
         "type": "WEAKPOINT_KILL",
-        "shakeAmplitudePx": 0.5,
-        "shakeDurationMs": 70,
-        "vibrationAmplitude": 0.45,
-        "vibrationDurationMs": 70,
         "hitstopMs": 70,
         "visualIntensity": 1.3
       },
       {
         "type": "BOSS_PHASE_BREAK",
-        "shakeAmplitudePx": 1.0,
-        "shakeDurationMs": 120,
-        "vibrationAmplitude": 1.0,
-        "vibrationDurationMs": 120,
         "hitstopMs": 120,
         "visualIntensity": 1.8
       }

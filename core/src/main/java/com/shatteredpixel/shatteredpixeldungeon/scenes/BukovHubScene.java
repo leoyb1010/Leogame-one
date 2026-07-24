@@ -10,6 +10,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovHub;
@@ -27,6 +28,7 @@ import com.watabou.input.GameAction;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Image;
+import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.audio.Music;
 import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.Callback;
@@ -93,7 +95,7 @@ public final class BukovHubScene extends PixelScene {
 				wide
 						? "ESCAPE FROM BUKOV  /  OFFLINE OPERATIONS"
 						: "ESCAPE FROM BUKOV  /  OFFLINE",
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.maxWidth(Math.max(1, (int)usableWidth));
 		eyebrow.setPos(left, top);
@@ -101,7 +103,7 @@ public final class BukovHubScene extends PixelScene {
 
 		RenderedTextBlock title = label(
 				"布科夫藏身处",
-				wide ? 15 : 13,
+				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		title.setPos(left, eyebrow.bottom() + 2f);
 		add(title);
@@ -111,7 +113,7 @@ public final class BukovHubScene extends PixelScene {
 				: "READY  ·  " + state.careerSummary;
 		RenderedTextBlock status = label(
 				statusText,
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color(state.activeRaid
 						? "accent.extract" : "text.secondary"));
 		status.maxWidth(Math.max(1, (int)usableWidth));
@@ -245,9 +247,9 @@ public final class BukovHubScene extends PixelScene {
 
 		if (height > 70f) {
 			RenderedTextBlock contract = label(
-					"当前合同  " + state.activeContract
-							+ "\n" + state.activeContractObjective,
-					6,
+						"当前合同  " + state.activeContract
+								+ "\n" + state.activeContractObjective,
+						BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.extract"));
 			contract.maxWidth(Math.max(1, (int) width - 12));
 			contract.setPos(textLeft, textTop + 47f);
@@ -257,9 +259,9 @@ public final class BukovHubScene extends PixelScene {
 					state.activeRaid
 							? "配装与交易在行动结束前锁定"
 							: state.deploymentReadinessHeadline()
-									+ "\n负重 " + state.loadoutSummary()
-									+ "\n已选 " + state.selectedCount + " 件物资",
-					6,
+										+ "\n负重 " + state.loadoutSummary()
+										+ "\n已选 " + state.selectedCount + " 件物资",
+						BukovVisualContract.FONT_CAPTION,
 					tokens.color(state.activeRaid
 							? "text.disabled"
 							: state.canDeploy
@@ -330,7 +332,7 @@ public final class BukovHubScene extends PixelScene {
 						}
 						try {
 							controller.prepareAndConfirmDeployment();
-							deploy();
+							enterDeploymentScene();
 						} catch (IOException | RuntimeException error) {
 							showError("补齐并出击失败", error);
 						}
@@ -375,7 +377,7 @@ public final class BukovHubScene extends PixelScene {
 		if (!state.canDeploy && actionsY + 27f < y + height) {
 			RenderedTextBlock blocked = label(
 					"出击检查  /  " + state.deploymentBlockReason,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.danger"));
 			blocked.maxWidth(Math.max(1, (int) innerWidth));
 			blocked.setPos(innerX, actionsY + 22f);
@@ -395,7 +397,7 @@ public final class BukovHubScene extends PixelScene {
 				!DeviceCompat.isDesktop());
 		RenderedTextBlock mode = label(
 				controller.selectedRaidMode().displayName,
-				12,
+				BukovVisualContract.FONT_SECTION,
 				tokens.color("accent.extract"));
 		mode.setPos(innerX, innerY);
 		add(mode);
@@ -404,7 +406,7 @@ public final class BukovHubScene extends PixelScene {
 				state.activeRaidSummary()
 						+ "\n\n已锁定：行动模式、仓库交易、出战配装"
 						+ "\n可用：继续行动，或确认放弃并结算损失",
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		summary.maxWidth(Math.max(1, (int) width - 12));
 		summary.setPos(innerX, mode.bottom() + 5f);
@@ -557,13 +559,13 @@ public final class BukovHubScene extends PixelScene {
 			String valueToken) {
 		RenderedTextBlock nameBlock = label(
 				name,
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		nameBlock.setPos(x, y);
 		add(nameBlock);
 		RenderedTextBlock valueBlock = label(
 				value,
-				9,
+				BukovVisualContract.FONT_SECTION,
 				tokens.color(valueToken));
 		valueBlock.setPos(x, y + 5f);
 		add(valueBlock);
@@ -598,7 +600,7 @@ public final class BukovHubScene extends PixelScene {
 		add(rule);
 		RenderedTextBlock heading = label(
 				title,
-				7,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		heading.setPos(x + 6f, y + 4f);
 		add(heading);
@@ -624,8 +626,10 @@ public final class BukovHubScene extends PixelScene {
 		add(button);
 	}
 
-	private RenderedTextBlock label(String value, int size, int color) {
-		RenderedTextBlock result = renderTextBlock(value, size);
+	private RenderedTextBlock label(
+			String value, String typography, int color) {
+		RenderedTextBlock result = renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.hardlight(color);
 		return result;
 	}
@@ -634,7 +638,7 @@ public final class BukovHubScene extends PixelScene {
 		addToFront(new WndBukovHub(controller, new Callback() {
 			@Override
 			public void call() {
-				deploy();
+				enterDeploymentScene();
 			}
 		}));
 	}
@@ -674,15 +678,19 @@ public final class BukovHubScene extends PixelScene {
 	private void deploy() {
 		try {
 			controller.confirmDeployment();
-			BukovMode.enter();
-			BukovMode.prepareRaidMode(controller.selectedRaidMode());
-			GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
-			Dungeon.hero = null;
-			Dungeon.daily = Dungeon.dailyReplay = false;
-			ShatteredPixelDungeon.switchScene(BukovDeploymentScene.class);
+			enterDeploymentScene();
 		} catch (IOException | RuntimeException error) {
 			showError("出击确认失败", error);
 		}
+	}
+
+	private void enterDeploymentScene() {
+		BukovMode.enter();
+		BukovMode.prepareRaidMode(controller.selectedRaidMode());
+		GamesInProgress.curSlot = BukovMode.SAVE_SLOT;
+		Dungeon.hero = null;
+		Dungeon.daily = Dungeon.dailyReplay = false;
+		ShatteredPixelDungeon.switchScene(BukovDeploymentScene.class);
 	}
 
 	private void confirmAbandon() {
@@ -741,8 +749,8 @@ public final class BukovHubScene extends PixelScene {
 
 	private abstract class ModeCard extends Button {
 
-		private final ColorBlock surface;
-		private final ColorBlock pressed;
+		private final NinePatch surface;
+		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final ColorBlock selection;
 		private final RenderedTextBlock title;
@@ -753,16 +761,16 @@ public final class BukovHubScene extends PixelScene {
 				String detailText,
 				boolean selected,
 				boolean training) {
-			surface = new ColorBlock(
-					1f,
-					1f,
-					tokens.colorWithAlpha(
-							selected ? "accent.extract" : "panel.surface",
-							selected ? 38 : 244));
+			surface = BukovUiAssets.surface(
+					selected
+							? BukovUiAssets.Surface.BUTTON_FOCUSED
+							: BukovUiAssets.Surface.PANEL_RAISED,
+					tokens.color(selected
+							? "accent.extract" : "panel.surface"));
 			addToBack(surface);
-			pressed = new ColorBlock(
-					1f, 1f, tokens.color("panel.border"));
-			pressed.alpha(0.55f);
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.color("panel.border"));
 			pressed.visible = false;
 			addToBack(pressed);
 			edge = new ColorBlock(
@@ -837,8 +845,8 @@ public final class BukovHubScene extends PixelScene {
 
 	private final class TacticalButton extends Button {
 
-		private final ColorBlock surface;
-		private final ColorBlock pressed;
+		private final NinePatch surface;
+		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final ColorBlock lowerRule;
 		private final RenderedTextBlock text;
@@ -855,11 +863,16 @@ public final class BukovHubScene extends PixelScene {
 			this.enabled = enabled;
 			this.action = action;
 			this.callback = callback;
-			surface = new ColorBlock(1f, 1f, accent);
-			surface.alpha(enabled ? 0.18f : 0.06f);
+			surface = BukovUiAssets.surface(
+					enabled
+							? BukovUiAssets.Surface.BUTTON
+							: BukovUiAssets.Surface.BUTTON_DISABLED,
+					enabled ? accent : tokens.color("panel.deep"));
+			surface.alpha(enabled ? 0.82f : 0.72f);
 			addToBack(surface);
-			pressed = new ColorBlock(
-					1f, 1f, tokens.color("panel.border"));
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.color("panel.border"));
 			pressed.visible = false;
 			addToBack(pressed);
 			edge = new ColorBlock(

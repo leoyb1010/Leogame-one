@@ -26,11 +26,44 @@ public final class BukovUiAssets {
 		PANEL(0),
 		PANEL_RAISED(1),
 		BUTTON(2),
-		BUTTON_PRESSED(3);
+		BUTTON_PRESSED(3),
+		BUTTON_FOCUSED(4),
+		BUTTON_DISABLED(5),
+		ROW_FOCUSED(6);
 
 		private final int column;
 
 		Surface(int column) {
+			this.column = column;
+		}
+	}
+
+	public enum RarityFrame {
+		COMMON(0),
+		UNCOMMON(1),
+		RARE(2),
+		LEGENDARY(3);
+
+		private final int column;
+
+		RarityFrame(int column) {
+			this.column = column;
+		}
+	}
+
+	public enum HudElement {
+		HEALTH(0),
+		ARMOR(1),
+		AMMO(2),
+		INTERACT(3),
+		OBJECTIVE(4),
+		TIMER(5),
+		SOUND(6),
+		HIT(7);
+
+		private final int column;
+
+		HudElement(int column) {
 			this.column = column;
 		}
 	}
@@ -47,6 +80,17 @@ public final class BukovUiAssets {
 		private final int column;
 
 		StatusIcon(int column) {
+			this.column = column;
+		}
+	}
+
+	public enum Stamp {
+		EXTRACTED(8),
+		LOST(11);
+
+		private final int column;
+
+		Stamp(int column) {
 			this.column = column;
 		}
 	}
@@ -82,20 +126,84 @@ public final class BukovUiAssets {
 		if (icon == null) {
 			throw new IllegalArgumentException("icon is required");
 		}
-		if (!atlasAvailable()) {
-			Image fallback =
-					new Image(TextureCache.createSolid(fallbackColor));
-			fallback.texture.filter(
-					SmartTexture.NEAREST, SmartTexture.NEAREST);
-			fallback.scale.set(TILE_SIZE);
-			return fallback;
-		}
-		Image result = new Image(
-				Assets.Interfaces.BUKOV_UI,
+		return image(
 				icon.column * TILE_SIZE,
+				TILE_SIZE * 3,
 				TILE_SIZE,
 				TILE_SIZE,
-				TILE_SIZE);
+				fallbackColor);
+	}
+
+	public static NinePatch rarityFrame(
+			RarityFrame rarity, int fallbackColor) {
+		if (rarity == null) {
+			throw new IllegalArgumentException("rarity is required");
+		}
+		NinePatch result;
+		if (!atlasAvailable()) {
+			result = new NinePatch(
+					TextureCache.createSolid(fallbackColor), 0);
+		} else {
+			result = new NinePatch(
+					Assets.Interfaces.BUKOV_UI,
+					rarity.column * TILE_SIZE,
+					TILE_SIZE,
+					TILE_SIZE,
+					TILE_SIZE,
+					NINE_PATCH_MARGIN);
+		}
+		result.texture.filter(
+				SmartTexture.NEAREST, SmartTexture.NEAREST);
+		return result;
+	}
+
+	public static Image hud(
+			HudElement element, int fallbackColor) {
+		if (element == null) {
+			throw new IllegalArgumentException("HUD element is required");
+		}
+		return image(
+				element.column * TILE_SIZE,
+				TILE_SIZE * 2,
+				TILE_SIZE,
+				TILE_SIZE,
+				fallbackColor);
+	}
+
+	public static Image stamp(Stamp stamp, int fallbackColor) {
+		if (stamp == null) {
+			throw new IllegalArgumentException("stamp is required");
+		}
+		return image(
+				stamp.column * TILE_SIZE,
+				TILE_SIZE * 3,
+				TILE_SIZE * 3,
+				TILE_SIZE,
+				fallbackColor);
+	}
+
+	private static Image image(
+			int x,
+			int y,
+			int width,
+			int height,
+			int fallbackColor) {
+		Image result;
+		if (!atlasAvailable()) {
+			result = new Image(
+					TextureCache.createSolid(fallbackColor),
+					0,
+					0,
+					width,
+					height);
+		} else {
+			result = new Image(
+					Assets.Interfaces.BUKOV_UI,
+					x,
+					y,
+					width,
+					height);
+		}
 		result.texture.filter(
 				SmartTexture.NEAREST, SmartTexture.NEAREST);
 		return result;

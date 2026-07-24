@@ -1,15 +1,15 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "atlas": "interfaces/bukov_ui.png",
   "generator": "scripts/generate_bukov_ui_atlas.mjs",
   "palette": "bukov/content/ui_tokens.json",
   "license": "project original cleared for this repository and personal builds",
-  "width": 112,
-  "height": 32,
+  "width": 256,
+  "height": 64,
   "pixelSampling": "nearest",
-  "uniqueRgbaColors": 12,
-  "transparentPixels": 2417,
-  "sha256": "2218353b6c77d346ed12d638e8723e8c4049c06ff3e84df96a2793286217e8cb",
+  "uniqueRgbaColors": 16,
+  "transparentPixels": 12008,
+  "sha256": "caa273d6141352ea441e28397146950d1e350fce83372226da63a6bd5e7ec0b5",
   "entries": [
     {
       "apiName": "PANEL",
@@ -68,10 +68,172 @@
       ]
     },
     {
+      "apiName": "BUTTON_FOCUSED",
+      "kind": "ninePatch",
+      "x": 64,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "BUTTON_DISABLED",
+      "kind": "ninePatch",
+      "x": 80,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "ROW_FOCUSED",
+      "kind": "ninePatch",
+      "x": 96,
+      "y": 0,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "RARITY_COMMON",
+      "kind": "ninePatch",
+      "x": 0,
+      "y": 16,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "RARITY_UNCOMMON",
+      "kind": "ninePatch",
+      "x": 16,
+      "y": 16,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "RARITY_RARE",
+      "kind": "ninePatch",
+      "x": 32,
+      "y": 16,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "RARITY_LEGENDARY",
+      "kind": "ninePatch",
+      "x": 48,
+      "y": 16,
+      "width": 16,
+      "height": 16,
+      "margins": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    {
+      "apiName": "HUD_HEALTH",
+      "kind": "icon",
+      "x": 0,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_ARMOR",
+      "kind": "icon",
+      "x": 16,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_AMMO",
+      "kind": "icon",
+      "x": 32,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_INTERACT",
+      "kind": "icon",
+      "x": 48,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_OBJECTIVE",
+      "kind": "icon",
+      "x": 64,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_TIMER",
+      "kind": "icon",
+      "x": 80,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_SOUND",
+      "kind": "icon",
+      "x": 96,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUD_HIT",
+      "kind": "icon",
+      "x": 112,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
       "apiName": "STATUS_ACTION",
       "kind": "icon",
       "x": 0,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -79,7 +241,7 @@
       "apiName": "STATUS_LOOT",
       "kind": "icon",
       "x": 16,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -87,7 +249,7 @@
       "apiName": "STATUS_EXTRACT",
       "kind": "icon",
       "x": 32,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -95,7 +257,7 @@
       "apiName": "STATUS_DANGER",
       "kind": "icon",
       "x": 48,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -103,7 +265,7 @@
       "apiName": "STATUS_BLEEDING",
       "kind": "icon",
       "x": 64,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -111,7 +273,7 @@
       "apiName": "STATUS_FRACTURE",
       "kind": "icon",
       "x": 80,
-      "y": 16,
+      "y": 48,
       "width": 16,
       "height": 16
     },
@@ -119,8 +281,24 @@
       "apiName": "STATUS_CONCUSSION",
       "kind": "icon",
       "x": 96,
-      "y": 16,
+      "y": 48,
       "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "STAMP_EXTRACTED",
+      "kind": "image",
+      "x": 128,
+      "y": 48,
+      "width": 48,
+      "height": 16
+    },
+    {
+      "apiName": "STAMP_LOST",
+      "kind": "image",
+      "x": 176,
+      "y": 48,
+      "width": 48,
       "height": 16
     }
   ]

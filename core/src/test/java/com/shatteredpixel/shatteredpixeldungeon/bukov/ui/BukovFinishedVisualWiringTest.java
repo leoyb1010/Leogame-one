@@ -33,7 +33,7 @@ public class BukovFinishedVisualWiringTest {
 	public void hudUsesSafeFontSizesAndExposesBackpackEntry()
 			throws Exception {
 		String hud = readBukovUi("BukovRaidHud.java");
-		assertTrue(hud.contains("textSize(size, SPDSettings.bukovUiScale())"));
+		assertTrue(hud.contains("tokens.typographyPx(typography)"));
 		assertTrue(hud.contains("TAB 背包"));
 		assertTrue(hud.contains("背包键"));
 		assertFalse(hud.contains(".zoom("));

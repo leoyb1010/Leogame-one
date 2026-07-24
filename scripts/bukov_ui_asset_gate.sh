@@ -17,18 +17,38 @@ node "$root/scripts/generate_bukov_ui_atlas.mjs" \
 cmp "$atlas" "$temporary/bukov_ui.png"
 cmp "$manifest" "$temporary/bukov_ui_manifest.json"
 
-node - "$manifest" "$atlas" "$provenance" <<'NODE'
+ffmpeg -y -hide_banner -loglevel error \
+  -i "$atlas" -f rawvideo -pix_fmt rgba "$temporary/bukov_ui.rgba"
+
+node - "$manifest" "$atlas" "$provenance" \
+  "$temporary/bukov_ui.rgba" <<'NODE'
 const { createHash } = require("node:crypto");
 const { readFileSync } = require("node:fs");
 
 const manifest = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const png = readFileSync(process.argv[3]);
 const provenance = readFileSync(process.argv[4], "utf8");
+const rgba = readFileSync(process.argv[5]);
 const expected = [
   "PANEL",
   "PANEL_RAISED",
   "BUTTON",
   "BUTTON_PRESSED",
+  "BUTTON_FOCUSED",
+  "BUTTON_DISABLED",
+  "ROW_FOCUSED",
+  "RARITY_COMMON",
+  "RARITY_UNCOMMON",
+  "RARITY_RARE",
+  "RARITY_LEGENDARY",
+  "HUD_HEALTH",
+  "HUD_ARMOR",
+  "HUD_AMMO",
+  "HUD_INTERACT",
+  "HUD_OBJECTIVE",
+  "HUD_TIMER",
+  "HUD_SOUND",
+  "HUD_HIT",
   "STATUS_ACTION",
   "STATUS_LOOT",
   "STATUS_EXTRACT",
@@ -36,11 +56,13 @@ const expected = [
   "STATUS_BLEEDING",
   "STATUS_FRACTURE",
   "STATUS_CONCUSSION",
+  "STAMP_EXTRACTED",
+  "STAMP_LOST",
 ];
 const actual = manifest.entries.map((entry) => entry.apiName);
-if (manifest.schemaVersion !== 1
-    || manifest.width !== 112
-    || manifest.height !== 32
+if (manifest.schemaVersion !== 2
+    || manifest.width !== 256
+    || manifest.height !== 64
     || manifest.pixelSampling !== "nearest"
     || actual.join(",") !== expected.join(",")) {
   throw new Error("Bukov UI atlas manifest contract drift");
@@ -51,6 +73,43 @@ if (hash !== manifest.sha256
     || !provenance.includes(hash)) {
   throw new Error("Bukov UI atlas provenance/hash closure is incomplete");
 }
+
+const entryPixels = (entry) => {
+  const out = [];
+  for (let y = entry.y; y < entry.y + entry.height; y += 1) {
+    const start = (y * manifest.width + entry.x) * 4;
+    out.push(rgba.subarray(start, start + entry.width * 4));
+  }
+  return Buffer.concat(out);
+};
+const requireDistinct = (names) => {
+  const hashes = names.map((name) => {
+    const entry = manifest.entries.find((candidate) =>
+      candidate.apiName === name);
+    if (!entry) throw new Error(`missing UI entry ${name}`);
+    const pixels = entryPixels(entry);
+    const visible = Array.from(
+      { length: pixels.length / 4 },
+      (_, index) => pixels[index * 4 + 3],
+    ).filter((alpha) => alpha > 0).length;
+    if (visible < 12) throw new Error(`${name} is visually empty`);
+    return createHash("sha256").update(pixels).digest("hex");
+  });
+  if (new Set(hashes).size !== names.length) {
+    throw new Error(`UI entries are not shape-distinct: ${names.join(",")}`);
+  }
+};
+requireDistinct([
+  "BUTTON", "BUTTON_PRESSED", "BUTTON_FOCUSED", "BUTTON_DISABLED",
+]);
+requireDistinct([
+  "RARITY_COMMON", "RARITY_UNCOMMON", "RARITY_RARE", "RARITY_LEGENDARY",
+]);
+requireDistinct([
+  "HUD_HEALTH", "HUD_ARMOR", "HUD_AMMO", "HUD_INTERACT",
+  "HUD_OBJECTIVE", "HUD_TIMER", "HUD_SOUND", "HUD_HIT",
+]);
+requireDistinct(["STAMP_EXTRACTED", "STAMP_LOST"]);
 NODE
 
 for scene in TitleScene.java WelcomeScene.java BukovDeploymentScene.java; do
@@ -65,5 +124,17 @@ done
 loader="$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovUiAssets.java"
 rg -q 'TextureCache\.createSolid\(fallbackColor\)' "$loader"
 rg -q 'Assets\.Interfaces\.BUKOV_UI' "$loader"
+rg -q 'Surface\.BUTTON_DISABLED' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovHub.java"
+rg -q 'Surface\.BUTTON_DISABLED' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/BukovHubScene.java"
+rg -q 'BukovUiAssets\.rarityFrame\(' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovHub.java"
+rg -q 'BukovUiAssets\.HudElement\.HEALTH' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java"
+rg -q 'BukovUiAssets\.Stamp\.EXTRACTED' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java"
+rg -q 'BukovUiAssets\.Stamp\.LOST' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java"
 
-echo "PASS: deterministic Bukov UI atlas, provenance, fallback, and wiring"
+echo "PASS: deterministic complete Bukov UI atlas, provenance, fallback, and wiring"

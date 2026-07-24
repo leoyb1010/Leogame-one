@@ -142,7 +142,7 @@ public class TitleScene extends PixelScene {
 
 		title = label(
 				"逃离布科夫",
-				wide ? 16 : BukovVisualContract.FONT_TITLE,
+				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		title.setPos(identityLeft + 7f, eyebrow.bottom() + 3f);
 		add(title);
@@ -169,7 +169,7 @@ public class TitleScene extends PixelScene {
 				activeRaid
 						? "ACTIVE RAID  /  CHECKPOINT READY"
 						: "HIDEOUT  /  LOADOUT READY",
-				5,
+				BukovVisualContract.FONT_CAPTION,
 				activeRaid
 						? tokens.color("accent.extract")
 						: tokens.color("text.secondary"));
@@ -274,8 +274,10 @@ public class TitleScene extends PixelScene {
 		return result;
 	}
 
-	private RenderedTextBlock label(String value, int size, int color) {
-		RenderedTextBlock block = renderTextBlock(value, size);
+	private RenderedTextBlock label(
+			String value, String typography, int color) {
+		RenderedTextBlock block = renderTextBlock(
+				value, tokens.typographyPx(typography));
 		block.hardlight(color);
 		return block;
 	}

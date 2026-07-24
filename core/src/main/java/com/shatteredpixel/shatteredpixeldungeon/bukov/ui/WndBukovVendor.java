@@ -124,21 +124,21 @@ public final class WndBukovVendor extends Window {
 
 		RenderedTextBlock eyebrow = text(
 				"TRADING POST / " + tab.name(),
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 
 		RenderedTextBlock cash = text(
 				"现金余额  " + viewModel.currency,
-				8,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		cash.setPos(windowWidth - MARGIN - cash.width(), 3);
 		add(cash);
 
 		RenderedTextBlock title = text(
 				tab == Tab.BUY ? "购买补给" : "出售仓库物资",
-				11,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, 14);
 		add(title);
@@ -149,7 +149,7 @@ public final class WndBukovVendor extends Window {
 						: tab == Tab.BUY
 						? "选择物资，再确认购买"
 						: "仅可出售未配装的仓库物资",
-				7,
+				BukovVisualContract.FONT_BODY,
 				viewModel.tradingLocked
 						? tokens.color("accent.danger")
 						: tokens.color("text.secondary"));
@@ -174,7 +174,7 @@ public final class WndBukovVendor extends Window {
 
 		RenderedTextBlock feedback = text(
 				notice == null ? selectionSummary() : notice,
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				notice == null
 						? tokens.color("text.secondary")
 						: tokens.color("accent.extract"));
@@ -290,8 +290,10 @@ public final class WndBukovVendor extends Window {
 		add(button);
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.maxWidth(Math.max(1, (int) width - MARGIN * 2));
 		result.hardlight(color);
 		return result;
@@ -473,11 +475,11 @@ public final class WndBukovVendor extends Window {
 					tokens.color("panel.surface"));
 			addToBack(surface);
 			if (rowCount() == 0) {
-				RenderedTextBlock empty = text(
+					RenderedTextBlock empty = text(
 						tab == Tab.BUY
 								? "库存正在整理"
 								: "未配装仓库为空",
-						7,
+							BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 5, listWidth - 8, ROW_HEIGHT - 4);
 				add(empty);
@@ -557,7 +559,7 @@ public final class WndBukovVendor extends Window {
 			name = text(
 					compact(rowName, PixelScene.landscape() ? 18 : 12)
 							+ " ×" + quantity,
-					7,
+					BukovVisualContract.FONT_BODY,
 					tradeable
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
@@ -565,12 +567,12 @@ public final class WndBukovVendor extends Window {
 			metrics = text(
 					BukovHubViewModel.formatWeight(weight)
 							+ "kg · 价值" + value,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(metrics);
 			price = text(
 					priceText,
-					7,
+					BukovVisualContract.FONT_BODY,
 					tradeable
 							? tokens.color("accent.valuable")
 							: tokens.color("text.disabled"));
@@ -657,7 +659,7 @@ public final class WndBukovVendor extends Window {
 			add(focusEdge);
 			label = text(
 					value,
-					7,
+					BukovVisualContract.FONT_BODY,
 					enabled
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));

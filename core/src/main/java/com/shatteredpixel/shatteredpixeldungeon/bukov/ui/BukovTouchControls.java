@@ -269,7 +269,10 @@ public final class BukovTouchControls extends Component {
 			knob = new ColorBlock(1, 1, accentColor);
 			knob.alpha(0.80f);
 			add(knob);
-			label = PixelScene.renderTextBlock(text, 6);
+			label = PixelScene.renderTextBlock(
+					text,
+					tokens.typographyPx(
+							BukovVisualContract.FONT_CAPTION));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
@@ -430,7 +433,10 @@ public final class BukovTouchControls extends Component {
 			add(background);
 			edge = new ColorBlock(1, 1, accentColor);
 			add(edge);
-			label = PixelScene.renderTextBlock(text, 6);
+			label = PixelScene.renderTextBlock(
+					text,
+					tokens.typographyPx(
+							BukovVisualContract.FONT_CAPTION));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			label.hardlight(tokens.color("text.primary"));
 			add(label);

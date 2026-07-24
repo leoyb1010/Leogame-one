@@ -72,7 +72,10 @@ public class Messages {
 			Assets.Messages.PLANTS,
 			Assets.Messages.SCENES,
 			Assets.Messages.UI,
-			Assets.Messages.WINDOWS
+			Assets.Messages.WINDOWS,
+			Assets.Messages.BUKOV_ENTRY,
+			Assets.Messages.BUKOV_RAID,
+			Assets.Messages.BUKOV_ECONOMY
 	};
 
 	static{

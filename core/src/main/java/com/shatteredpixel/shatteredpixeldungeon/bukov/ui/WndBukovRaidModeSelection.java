@@ -95,19 +95,19 @@ public final class WndBukovRaidModeSelection extends Window {
 
 		RenderedTextBlock eyebrow = text(
 				"OPERATION PROFILE / FIVE MODES",
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 		RenderedTextBlock title = text(
 				"选择行动模式",
-				11,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, 13);
 		add(title);
 		RenderedTextBlock state = text(
 				viewModel.stateMessage,
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color(
 						viewModel.locked
 								? "accent.danger"
@@ -143,8 +143,10 @@ public final class WndBukovRaidModeSelection extends Window {
 				"panel.border");
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.maxWidth(Math.max(1, (int) width - MARGIN * 2));
 		result.hardlight(color);
 		return result;
@@ -368,22 +370,22 @@ public final class WndBukovRaidModeSelection extends Window {
 			add(divider);
 			heading = text(
 					card.code + "  " + card.name,
-					7,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			add(heading);
 			economy = text(
 					card.equipmentSource + " · " + card.deathLoss,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(economy);
 			timing = text(
 					card.durationAndExtraction,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(timing);
 			reward = text(
 					card.rewardAndBoss,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("accent.valuable"));
 			add(reward);
 		}
@@ -477,7 +479,9 @@ public final class WndBukovRaidModeSelection extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			label = text("", 7, tokens.color("text.primary"));
+			label = text(
+					"", BukovVisualContract.FONT_BODY,
+					tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
 		}

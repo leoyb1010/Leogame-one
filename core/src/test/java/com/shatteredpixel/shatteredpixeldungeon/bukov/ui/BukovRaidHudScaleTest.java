@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 public class BukovRaidHudScaleTest {
 
 	@Test
-	public void settingsLevelsScaleCompactGeometryAndAllText() {
+	public void settingsLevelsScaleCompactGeometryWithoutInventingFontSizes() {
 		assertEquals(1f, BukovRaidHud.scaleMultiplier(0), 0f);
 		assertEquals(1.25f, BukovRaidHud.scaleMultiplier(1), 0f);
 		assertEquals(1.5f, BukovRaidHud.scaleMultiplier(2), 0f);
@@ -29,9 +29,6 @@ public class BukovRaidHudScaleTest {
 				wideNormal,
 				BukovRaidHud.preferredHeight(320f, 2),
 				0f);
-		assertEquals(7, BukovRaidHud.textSize(7, 0));
-		assertEquals(8, BukovRaidHud.textSize(7, 1));
-		assertEquals(9, BukovRaidHud.textSize(7, 2));
 		assertTrue(BukovRaidHud.controlHint(true).contains("TAB"));
 		assertTrue(BukovRaidHud.controlHint(true).contains("暂停"));
 		assertTrue(BukovRaidHud.controlHint(false).contains("背包"));

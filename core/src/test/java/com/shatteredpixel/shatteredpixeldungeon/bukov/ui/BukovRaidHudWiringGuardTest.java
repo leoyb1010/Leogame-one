@@ -66,6 +66,14 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovUiAssets.StatusIcon.BLEEDING"));
 		assertTrue(hud.contains("BukovUiAssets.StatusIcon.FRACTURE"));
 		assertTrue(hud.contains("BukovUiAssets.StatusIcon.CONCUSSION"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.HEALTH"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.ARMOR"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.AMMO"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.INTERACT"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.OBJECTIVE"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.TIMER"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.SOUND"));
+		assertTrue(hud.contains("BukovUiAssets.HudElement.HIT"));
 		assertTrue(hud.contains("BukovHudFormat.injuryRemaining("));
 		assertTrue(hud.contains("BukovRaidHudLayout.RELOAD_RING_SIZE"));
 		assertTrue(hud.contains("BukovRaidHudLayout.compactReloadRing("));

@@ -137,7 +137,7 @@ public final class WndBukovHub extends Window {
 				viewModel.activeRaid
 						? "HIDEOUT / ACTIVE RAID"
 						: "HIDEOUT / LOADOUT",
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(windowWidth - MARGIN - eyebrow.width(), y);
 		// The bilingual eyebrow and 11px Chinese title cannot share a 127px
@@ -149,7 +149,7 @@ public final class WndBukovHub extends Window {
 				viewModel.activeRaid
 						? "继续布科夫行动"
 						: "布科夫行动整备",
-				11,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, y);
 		add(title);
@@ -215,7 +215,7 @@ public final class WndBukovHub extends Window {
 					compact(
 							viewModel.raidModeSummary,
 							landscape ? 42 : 27),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			modeSummary.setRect(
 					MARGIN,
@@ -278,7 +278,7 @@ public final class WndBukovHub extends Window {
 		if (!compactLandscape) {
 			RenderedTextBlock settlement = text(
 					settlementText(),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					settlementColor());
 			settlement.setRect(
 					MARGIN,
@@ -379,8 +379,10 @@ public final class WndBukovHub extends Window {
 				windowHeight);
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.maxWidth(width - MARGIN * 2);
 		result.hardlight(color);
 		return result;
@@ -773,21 +775,24 @@ public final class WndBukovHub extends Window {
 			dividerA = statusDivider();
 			dividerB = statusDivider();
 			dividerC = statusDivider();
-			cash = text("现金\n" + viewModel.currency, 7,
+			cash = text("现金\n" + viewModel.currency,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("accent.valuable"));
 			add(cash);
-			stash = text("仓库价值\n" + viewModel.stashValue, 7,
+			stash = text("仓库价值\n" + viewModel.stashValue,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("text.secondary"));
 			add(stash);
 			risk = text(
 					(viewModel.activeRaid ? "行动携带\n" : "本次风险\n")
 							+ viewModel.riskValue,
-					7,
+					BukovVisualContract.FONT_BODY,
 					viewModel.riskValue > 0
 							? tokens.color("accent.valuable")
 							: tokens.color("text.secondary"));
 			add(risk);
-			weight = text("负重\n" + viewModel.loadoutSummary(), 7,
+			weight = text("负重\n" + viewModel.loadoutSummary(),
+					BukovVisualContract.FONT_BODY,
 					viewModel.overweight
 							? tokens.color("accent.danger")
 							: tokens.color("text.primary"));
@@ -858,10 +863,12 @@ public final class WndBukovHub extends Window {
 							? tokens.color("panel.border")
 							: tokens.color("accent.interact"));
 			add(edge);
-			code = text(slot.code + "  " + slot.label, 6,
+			code = text(slot.code + "  " + slot.label,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(code);
-			value = text(viewModel.slotSummary(slot), 7,
+			value = text(viewModel.slotSummary(slot),
+					BukovVisualContract.FONT_BODY,
 					"未配置".equals(viewModel.slotSummary(slot))
 							? tokens.color("text.disabled")
 							: tokens.color("text.primary"));
@@ -906,7 +913,7 @@ public final class WndBukovHub extends Window {
 										+ compact(inventoryQuery, 12)
 										+ "”的物资"
 								: inventoryFilter.label + "分类暂无物资",
-						7,
+						BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 4, listWidth - 8, ROW_HEIGHT - 4);
 				add(empty);
@@ -940,7 +947,7 @@ public final class WndBukovHub extends Window {
 			label = text(
 					"筛选 " + inventoryFilter.label
 							+ " " + inventoryItems.size(),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
@@ -990,7 +997,7 @@ public final class WndBukovHub extends Window {
 			add(edge);
 			label = text(
 					"排序 " + inventorySort.label,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
@@ -1042,7 +1049,7 @@ public final class WndBukovHub extends Window {
 					inventoryQuery.isEmpty()
 							? "搜索"
 							: "搜索 " + compact(inventoryQuery, 5),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color(
 							inventoryQuery.isEmpty()
 									? "text.secondary"
@@ -1107,7 +1114,7 @@ public final class WndBukovHub extends Window {
 							+ (viewModel.canEditLoadout
 									? "  [选择]"
 									: "  [查看/锁定]"),
-					7,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			add(label);
 		}
@@ -1143,7 +1150,8 @@ public final class WndBukovHub extends Window {
 	private final class LoadoutRow extends Button {
 
 		private final BukovHubViewModel.ItemRow item;
-		private final ColorBlock background;
+		private final NinePatch background;
+		private final NinePatch focusSurface;
 		private final ColorBlock selectedSurface;
 		private final ColorBlock selected;
 		private final ColorBlock focusEdge;
@@ -1155,11 +1163,15 @@ public final class WndBukovHub extends Window {
 
 		private LoadoutRow(BukovHubViewModel.ItemRow item) {
 			this.item = item;
-			background = new ColorBlock(
-					1,
-					1,
-					tokens.colorWithAlpha("panel.surface", 220));
+			background = BukovUiAssets.rarityFrame(
+					rarityFrame(item.rarity),
+					tokens.color(item.rarity.colorToken));
 			addToBack(background);
+			focusSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.ROW_FOCUSED,
+					tokens.color("accent.interact"));
+			focusSurface.visible = false;
+			addToBack(focusSurface);
 			selectedSurface = new ColorBlock(
 					1,
 					1,
@@ -1187,12 +1199,12 @@ public final class WndBukovHub extends Window {
 			add(divider);
 			category = text(
 					item.slot.label + "/" + item.rarity.label,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color(item.rarity.colorToken));
 			add(category);
 			name = text(
 					compact(item.label, 15) + " ×" + item.quantity,
-					7,
+					BukovVisualContract.FONT_BODY,
 					!item.deployable
 							? tokens.color("text.disabled")
 							: item.selected
@@ -1203,7 +1215,7 @@ public final class WndBukovHub extends Window {
 					compact(
 							item.value + " · " + item.comparisonLabel(),
 							PixelScene.landscape() ? 20 : 13),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					!item.deployable
 							? tokens.color("text.disabled")
 							: item.selected
@@ -1214,6 +1226,8 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
+			background.visible = !focused;
+			focusSurface.visible = focused;
 			focusEdge.visible = focused;
 			selectedSurface.visible = item.selected || focused;
 			selectedSurface.hardlight(focused
@@ -1241,6 +1255,9 @@ public final class WndBukovHub extends Window {
 			background.x = x;
 			background.y = y;
 			background.size(width, height);
+			focusSurface.x = x;
+			focusSurface.y = y;
+			focusSurface.size(width, height);
 			selectedSurface.x = x;
 			selectedSurface.y = y;
 			selectedSurface.size(width, height);
@@ -1264,13 +1281,30 @@ public final class WndBukovHub extends Window {
 			name.setPos(x + 43, y + 3);
 			metrics.setPos(metricsX, y + 4);
 		}
+
+		private BukovUiAssets.RarityFrame rarityFrame(
+				BukovHubViewModel.ItemRarity rarity) {
+			switch (rarity) {
+				case UNCOMMON:
+					return BukovUiAssets.RarityFrame.UNCOMMON;
+				case RARE:
+					return BukovUiAssets.RarityFrame.RARE;
+				case LEGENDARY:
+					return BukovUiAssets.RarityFrame.LEGENDARY;
+				case COMMON:
+				default:
+					return BukovUiAssets.RarityFrame.COMMON;
+			}
+		}
 	}
 
 	private class TacticalButton extends Button {
 
 		private final int action;
 		private final boolean enabled;
-		private final ColorBlock surface;
+		private final NinePatch surface;
+		private final NinePatch pressed;
+		private final NinePatch focusSurface;
 		private final ColorBlock edge;
 		private final ColorBlock focusEdge;
 		private final RenderedTextBlock label;
@@ -1282,12 +1316,27 @@ public final class WndBukovHub extends Window {
 				boolean enabled) {
 			this.action = action;
 			this.enabled = enabled;
-			surface = new ColorBlock(1, 1, tokens.color("panel.surface"));
+			surface = BukovUiAssets.surface(
+					enabled
+							? BukovUiAssets.Surface.BUTTON
+							: BukovUiAssets.Surface.BUTTON_DISABLED,
+					tokens.color(enabled
+							? "panel.surface" : "panel.deep"));
 			if (action == BukovHubFocusModel.ACTION_DEPLOY && enabled) {
 				surface.hardlight(tokens.color("accent.extract"));
 				surface.alpha(0.20f);
 			}
 			addToBack(surface);
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.color("panel.deep"));
+			pressed.visible = false;
+			addToBack(pressed);
+			focusSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_FOCUSED,
+					tokens.color("accent.interact"));
+			focusSurface.visible = false;
+			addToBack(focusSurface);
 			edge = new ColorBlock(1, 1,
 					enabled ? accent : tokens.color("text.disabled"));
 			add(edge);
@@ -1295,7 +1344,7 @@ public final class WndBukovHub extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			label = text(value, 8,
+			label = text(value, BukovVisualContract.FONT_BODY,
 					enabled
 							? tokens.color("text.primary")
 							: tokens.color("text.disabled"));
@@ -1304,6 +1353,9 @@ public final class WndBukovHub extends Window {
 		}
 
 		private void setFocused(boolean focused) {
+			boolean showFocus = focused && enabled;
+			surface.visible = !showFocus;
+			focusSurface.visible = showFocus;
 			focusEdge.visible = focused;
 			label.hardlight(!enabled
 					? tokens.color("text.disabled")
@@ -1320,11 +1372,34 @@ public final class WndBukovHub extends Window {
 		}
 
 		@Override
+		protected void onPointerDown() {
+			if (!enabled) return;
+			surface.visible = false;
+			focusSurface.visible = false;
+			pressed.visible = true;
+		}
+
+		@Override
+		protected void onPointerUp() {
+			if (!enabled) return;
+			pressed.visible = false;
+			boolean focused = focus.actionIndex() == action;
+			surface.visible = !focused;
+			focusSurface.visible = focused;
+		}
+
+		@Override
 		protected void layout() {
 			super.layout();
 			surface.x = x;
 			surface.y = y;
 			surface.size(width, height);
+			pressed.x = x;
+			pressed.y = y;
+			pressed.size(width, height);
+			focusSurface.x = x;
+			focusSurface.y = y;
+			focusSurface.size(width, height);
 			edge.x = x;
 			edge.y = y;
 			edge.size(2, height);
@@ -1351,7 +1426,7 @@ public final class WndBukovHub extends Window {
 
 			RenderedTextBlock eyebrow = text(
 					"DEPLOYMENT AUTHORIZATION",
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			eyebrow.align(RenderedTextBlock.CENTER_ALIGN);
 			center(eyebrow, 5, 5, confirmWidth - 10, 8);
@@ -1359,7 +1434,7 @@ public final class WndBukovHub extends Window {
 
 			RenderedTextBlock heading = text(
 					"确认进入封锁区",
-					11,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("accent.extract"));
 			heading.align(RenderedTextBlock.CENTER_ALIGN);
 			center(heading, 5, 15, confirmWidth - 10, 14);
@@ -1369,7 +1444,7 @@ public final class WndBukovHub extends Window {
 					"带入物资将承担损失风险\n"
 							+ "风险价值 " + viewModel.riskValue
 							+ "  ·  负重 " + viewModel.loadoutSummary(),
-					7,
+					BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			warning.maxWidth(confirmWidth - 14);
 			warning.align(RenderedTextBlock.CENTER_ALIGN);
@@ -1431,7 +1506,8 @@ public final class WndBukovHub extends Window {
 				addToBack(surface);
 				edge = new ColorBlock(1, 1, accent);
 				add(edge);
-				label = text(value, 8,
+				label = text(
+						value, BukovVisualContract.FONT_BODY,
 						accepts
 								? tokens.color("text.primary")
 								: tokens.color("text.secondary"));

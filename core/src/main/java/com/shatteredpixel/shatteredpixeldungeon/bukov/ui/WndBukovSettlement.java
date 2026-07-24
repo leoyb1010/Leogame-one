@@ -9,11 +9,11 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
-import com.watabou.gltextures.TextureCache;
 import com.watabou.input.KeyEvent;
 import com.watabou.input.ControllerHandler;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
+import com.watabou.noosa.Image;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.ui.Component;
 
@@ -52,6 +52,7 @@ public final class WndBukovSettlement extends Window {
 	private final BukovSettlementRevealModel reveal;
 	private RenderedTextBlock animatedTotals;
 	private RenderedTextBlock outcomeStamp;
+	private Image outcomeStampArt;
 	private Manifest manifest;
 	private boolean returning;
 
@@ -94,10 +95,13 @@ public final class WndBukovSettlement extends Window {
 			BukovSettlementViewModel viewModel,
 			ReturnToHideout returnToHideout,
 			RepeatLastLoadout repeatLastLoadout) {
-		super(0, 0, new NinePatch(
-				TextureCache.createSolid(
+		super(
+				0,
+				0,
+				BukovUiAssets.surface(
+						BukovUiAssets.Surface.PANEL,
 						BukovUiTokens.loadDefault().colorWithAlpha(
-								"panel.result", 255)), 0));
+								"panel.result", 255)));
 		if (viewModel == null) {
 			throw new IllegalArgumentException("viewModel is required");
 		}
@@ -134,20 +138,32 @@ public final class WndBukovSettlement extends Window {
 
 		RenderedTextBlock eyebrow = text(
 				"行动结算 · 确认可跳过",
-				7,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setRect(5, y, width - 10, 9);
 		eyebrow.align(RenderedTextBlock.CENTER_ALIGN);
 		add(eyebrow);
 		y += 11;
 
-		RenderedTextBlock headline = text(viewModel.headline, 15, accent);
+		RenderedTextBlock headline = text(
+				viewModel.headline,
+				BukovVisualContract.FONT_TITLE,
+				accent);
 		headline.setRect(5, y, width - 10, 18);
 		headline.align(RenderedTextBlock.CENTER_ALIGN);
 		add(headline);
+		outcomeStampArt = BukovUiAssets.stamp(
+				success
+						? BukovUiAssets.Stamp.EXTRACTED
+						: BukovUiAssets.Stamp.LOST,
+				accent);
+		outcomeStampArt.x = width - 54;
+		outcomeStampArt.y = y + 3;
+		outcomeStampArt.alpha(0.48f);
+		add(outcomeStampArt);
 		outcomeStamp = text(
 				success ? "[ 撤离确认 ]" : "[ 行动损失 ]",
-				7,
+				BukovVisualContract.FONT_BODY,
 				accent);
 		outcomeStamp.setRect(5, y + 11, width - 10, 8);
 		outcomeStamp.align(RenderedTextBlock.RIGHT_ALIGN);
@@ -162,7 +178,7 @@ public final class WndBukovSettlement extends Window {
 
 		animatedTotals = text(
 				viewModel.totals(0L),
-				8,
+				BukovVisualContract.FONT_DISPLAY,
 				tokens.color("text.primary"));
 		animatedTotals.setRect(5, y, width - 10, 10);
 		animatedTotals.align(RenderedTextBlock.CENTER_ALIGN);
@@ -171,7 +187,7 @@ public final class WndBukovSettlement extends Window {
 
 		RenderedTextBlock stats = text(
 				viewModel.stats(),
-				7,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.secondary"));
 		stats.setRect(5, y, width - 10, 9);
 		stats.align(RenderedTextBlock.CENTER_ALIGN);
@@ -180,7 +196,7 @@ public final class WndBukovSettlement extends Window {
 
 		RenderedTextBlock mission = text(
 				viewModel.mission(),
-				7,
+				BukovVisualContract.FONT_BODY,
 				viewModel.missionCompleted
 						? tokens.color("accent.extract")
 						: tokens.color("text.secondary"));
@@ -191,7 +207,7 @@ public final class WndBukovSettlement extends Window {
 
 		RenderedTextBlock listTitle = text(
 				viewModel.manifestTitle,
-				8,
+				BukovVisualContract.FONT_SECTION,
 				accent);
 		listTitle.setRect(5, y, width - 10, 10);
 		add(listTitle);
@@ -233,8 +249,10 @@ public final class WndBukovSettlement extends Window {
 		updateReveal();
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.hardlight(color);
 		result.maxWidth(width - 10);
 		return result;
@@ -304,6 +322,9 @@ public final class WndBukovSettlement extends Window {
 		}
 		if (outcomeStamp != null) {
 			outcomeStamp.visible = reveal.stampVisible();
+		}
+		if (outcomeStampArt != null) {
+			outcomeStampArt.visible = reveal.stampVisible();
 		}
 		if (manifest != null) {
 			manifest.reveal(reveal.visibleRows());
@@ -378,7 +399,8 @@ public final class WndBukovSettlement extends Window {
 		}
 
 		private void addRow(String value, int index, int color) {
-			RenderedTextBlock row = text(value, 7, color);
+			RenderedTextBlock row = text(
+					value, BukovVisualContract.FONT_BODY, color);
 			row.setRect(3, index * ROW_HEIGHT + 3,
 					width() - 6, ROW_HEIGHT - 3);
 			add(row);
@@ -396,27 +418,34 @@ public final class WndBukovSettlement extends Window {
 
 	private final class ActionButton extends Button {
 
-		private final ColorBlock background;
+		private final NinePatch background;
+		private final NinePatch pressed;
 		private final ColorBlock edge;
-		private final ColorBlock focusEdge;
+		private final NinePatch focusSurface;
 		private final RenderedTextBlock label;
 
 		private final boolean repeat;
 
 		private ActionButton(String labelText, int accent, boolean repeat) {
 			this.repeat = repeat;
-			background = new ColorBlock(1, 1,
+			background = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON,
 					tokens.color("panel.surface"));
 			addToBack(background);
+			pressed = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_PRESSED,
+					tokens.color("panel.deep"));
+			pressed.visible = false;
+			addToBack(pressed);
 			edge = new ColorBlock(1, 1, accent);
 			add(edge);
-			focusEdge = new ColorBlock(
-					1,
-					1,
+			focusSurface = BukovUiAssets.surface(
+					BukovUiAssets.Surface.BUTTON_FOCUSED,
 					tokens.color("accent.interact"));
-			focusEdge.visible = false;
-			add(focusEdge);
-			label = text(labelText, 8,
+			focusSurface.visible = false;
+			addToBack(focusSurface);
+			label = text(
+					labelText, BukovVisualContract.FONT_BODY,
 					tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
@@ -435,10 +464,27 @@ public final class WndBukovSettlement extends Window {
 		}
 
 		private void setFocused(boolean focused) {
-			focusEdge.visible = focused;
+			background.visible = !focused;
+			focusSurface.visible = focused;
 			label.hardlight(focused
 					? tokens.color("accent.interact")
 					: tokens.color("text.primary"));
+		}
+
+		@Override
+		protected void onPointerDown() {
+			background.visible = false;
+			focusSurface.visible = false;
+			pressed.visible = true;
+		}
+
+		@Override
+		protected void onPointerUp() {
+			pressed.visible = false;
+			boolean focused =
+					focus.index() == (repeat ? 0 : actionButtons.length - 1);
+			background.visible = !focused;
+			focusSurface.visible = focused;
 		}
 
 		@Override
@@ -447,12 +493,15 @@ public final class WndBukovSettlement extends Window {
 			background.x = x;
 			background.y = y;
 			background.size(width, height);
+			pressed.x = x;
+			pressed.y = y;
+			pressed.size(width, height);
 			edge.x = x;
 			edge.y = y;
 			edge.size(2, height);
-			focusEdge.x = x;
-			focusEdge.y = y;
-			focusEdge.size(width, 1);
+			focusSurface.x = x;
+			focusSurface.y = y;
+			focusSurface.size(width, height);
 			label.setRect(x + 4, y + (height - 10) / 2f,
 					width - 8, 10);
 		}

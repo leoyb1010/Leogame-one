@@ -124,7 +124,8 @@ public final class BukovDeploymentScene extends PixelScene {
 
 		RenderedTextBlock eyebrow = renderTextBlock(
 				"ACTION CHECK  /  行动检查",
-				BukovVisualContract.FONT_CAPTION);
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(
 				panelX + BukovVisualContract.CARD_PADDING,
@@ -133,7 +134,8 @@ public final class BukovDeploymentScene extends PixelScene {
 
 		RenderedTextBlock title = renderTextBlock(
 				"逃离布科夫",
-				BukovVisualContract.FONT_TITLE);
+				tokens.typographyPx(
+						BukovVisualContract.FONT_TITLE));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(
 				panelX + BukovVisualContract.CARD_PADDING,
@@ -143,7 +145,8 @@ public final class BukovDeploymentScene extends PixelScene {
 
 		status = renderTextBlock(
 				"行动部署中",
-				BukovVisualContract.FONT_SECTION);
+				tokens.typographyPx(
+						BukovVisualContract.FONT_SECTION));
 		status.hardlight(tokens.color("accent.extract"));
 		status.setPos(
 				panelX + BukovVisualContract.CARD_PADDING,
@@ -152,7 +155,8 @@ public final class BukovDeploymentScene extends PixelScene {
 
 		RenderedTextBlock detail = renderTextBlock(
 				"正在校验：配装 · 行动员 · 地图种子 · 检查点",
-				BukovVisualContract.FONT_CAPTION);
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		detail.hardlight(tokens.color("text.secondary"));
 		detail.maxWidth(Math.max(
 				1,

@@ -47,20 +47,26 @@ public final class WndBukovInventorySearch extends Window {
 				BukovWindowLayout.safeHeight(HEIGHT));
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"仓库搜索 / STASH SEARCH", 9);
+				"仓库搜索 / STASH SEARCH",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_SECTION));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 4);
 		add(title);
 
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
-				"名称、类别、稀有度或物品代号", 6);
+				"名称、类别、稀有度或物品代号",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
 		hint.setPos(MARGIN, 16);
 		add(hint);
 
+		int baseTextSize = tokens.typographyPx(
+				BukovVisualContract.FONT_BODY);
 		int textSize = Math.max(
-				9,
-				(int)PixelScene.uiCamera.zoom * 9);
+				baseTextSize,
+				(int)PixelScene.uiCamera.zoom * baseTextSize);
 		textBox = new TextInput(
 				new NinePatch(
 						TextureCache.createSolid(
@@ -179,7 +185,10 @@ public final class WndBukovInventorySearch extends Window {
 					1,
 					tokens.color(token));
 			add(edge);
-			label = PixelScene.renderTextBlock(value, 7);
+			label = PixelScene.renderTextBlock(
+					value,
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);

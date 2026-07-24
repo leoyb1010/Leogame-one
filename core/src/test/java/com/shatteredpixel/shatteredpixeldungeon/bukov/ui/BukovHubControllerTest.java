@@ -139,6 +139,77 @@ public class BukovHubControllerTest {
 	}
 
 	@Test
+	public void fullInvalidLoadoutStillOpensAndOneClickRepairsIt()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		for (int index = 0; index < 12; index++) {
+			RaidItem filler = new RaidItem(
+					"filler-" + index,
+					"medical:filler_" + index,
+					1,
+					0.1f,
+					1,
+					false,
+					false,
+					1f);
+			profile.stash().deposit(filler);
+			profile.loadout().select(
+					filler.itemUid(), profile.stash());
+		}
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		assertFalse(hub.viewModel().canDeploy);
+
+		hub.prepareAndConfirmDeployment();
+
+		assertTrue(hub.viewModel().canDeploy);
+		assertTrue(hub.viewModel().selectedCount >= 2);
+	}
+
+	@Test
+	public void oversizedAmmoStackGetsBoundedRecoveryAmmo()
+			throws IOException {
+		BukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		RaidItem weapon = new RaidItem(
+				"retained-needle",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				850,
+				false,
+				false,
+				1f);
+		RaidItem oversizedAmmo = new RaidItem(
+				"oversized-nine",
+				"ammo:ammo_9_standard",
+				4_000,
+				0.012f,
+				12,
+				false,
+				false,
+				1f);
+		profile.stash().deposit(weapon);
+		profile.stash().deposit(oversizedAmmo);
+		saves.saveProfile(profile);
+
+		BukovHubController hub = new BukovHubController(saves);
+		hub.prepareAndConfirmDeployment();
+
+		BukovProfile repaired = saves.loadProfile();
+		assertTrue(hub.viewModel().canDeploy);
+		assertFalse(repaired.loadout().contains(
+				oversizedAmmo.itemUid()));
+		assertEquals(3, repaired.stash().distinctItemCount());
+
+		new BukovHubController(saves);
+		assertEquals(3,
+				saves.loadProfile().stash().distinctItemCount());
+	}
+
+	@Test
 	public void modeCycleReachesRiskFreeTrainingGround() throws IOException {
 		BukovSaveService saves = new InMemoryBukovSaveService();
 		BukovHubController hub = new BukovHubController(saves);

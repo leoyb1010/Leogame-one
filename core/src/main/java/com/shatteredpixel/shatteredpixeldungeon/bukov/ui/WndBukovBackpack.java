@@ -141,14 +141,14 @@ public final class WndBukovBackpack extends Window {
 		add(headerRule);
 		RenderedTextBlock title = text(
 				"行动背包",
-				11,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 3);
 		add(title);
 
 		RenderedTextBlock code = text(
 				"行动已暂停 · TAB关闭",
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		code.setPos(windowWidth - MARGIN - code.width(), 5);
 		add(code);
@@ -160,7 +160,9 @@ public final class WndBukovBackpack extends Window {
 		totalsSurface.x = MARGIN;
 		totalsSurface.y = 18;
 		add(totalsSurface);
-		totals = text("", 7, tokens.color("accent.valuable"));
+		totals = text(
+				"", BukovVisualContract.FONT_BODY,
+				tokens.color("accent.valuable"));
 		totals.setRect(MARGIN + 3, 20, windowWidth - MARGIN * 2 - 6, 8);
 		add(totals);
 		updateTotals();
@@ -185,12 +187,16 @@ public final class WndBukovBackpack extends Window {
 		detailEdge.x = MARGIN;
 		detailEdge.y = footerY;
 		add(detailEdge);
-		detail = text("", 7, tokens.color("text.secondary"));
+		detail = text(
+				"", BukovVisualContract.FONT_BODY,
+				tokens.color("text.secondary"));
 		detail.setRect(MARGIN + 5, footerY + 3,
 				windowWidth - MARGIN * 2 - 9, 18);
 		add(detail);
 
-		feedback = text("", 6, tokens.color("accent.interact"));
+		feedback = text(
+				"", BukovVisualContract.FONT_CAPTION,
+				tokens.color("accent.interact"));
 		feedback.setRect(MARGIN + 5, footerY + 21,
 				windowWidth - MARGIN * 2 - 9, 8);
 		add(feedback);
@@ -349,8 +355,10 @@ public final class WndBukovBackpack extends Window {
 		}
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.maxWidth(width - MARGIN * 2);
 		result.hardlight(color);
 		return result;
@@ -507,9 +515,9 @@ public final class WndBukovBackpack extends Window {
 					tokens.color("panel.surface"));
 			addToBack(surface);
 			if (viewModel.items.isEmpty()) {
-				RenderedTextBlock empty = text(
-						"背包为空 · 靠近物资后交互拾取",
-						7,
+			RenderedTextBlock empty = text(
+					"背包为空 · 靠近物资后交互拾取",
+					BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 8, listWidth - 8, 12);
 				add(empty);
@@ -571,7 +579,7 @@ public final class WndBukovBackpack extends Window {
 			add(divider);
 			category = text(
 					item.category.code,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(category);
 			icon = new BukovItemSprite();
@@ -579,14 +587,14 @@ public final class WndBukovBackpack extends Window {
 			add(icon);
 			title = text(
 					item.title(),
-					7,
+					BukovVisualContract.FONT_BODY,
 					item.equipped
 							? tokens.color("accent.extract")
 							: tokens.color("text.primary"));
 			add(title);
 			metrics = text(
 					item.rowEconomySummary(),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.disabled"));
 			add(metrics);
 		}
@@ -681,7 +689,9 @@ public final class WndBukovBackpack extends Window {
 					tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			label = text(value, 7, tokens.color("text.primary"));
+			label = text(
+					value, BukovVisualContract.FONT_BODY,
+					tokens.color("text.primary"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
 			add(label);
 		}

@@ -19,7 +19,30 @@ public class BukovUiTokensTest {
 		assertEquals(0x02090C, tokens.color("ink.shadow"));
 		assertEquals(0x101C20, tokens.color("panel.deep"));
 		assertEquals(0xE05A3A, tokens.color("accent.danger"));
+		assertEquals(9, tokens.typographyPx("hud"));
+		assertEquals(11, tokens.typographyPx("body"));
+		assertEquals(14, tokens.typographyPx("section"));
+		assertEquals(18, tokens.typographyPx("title"));
+		assertEquals(24, tokens.typographyPx("display"));
 		assertEquals(120, tokens.motionMs("fast"));
+		assertEquals(8f, tokens.maximumShakePx(), 0f);
+		assertEquals(
+				2.5f,
+				tokens.haptic("PLAYER_HIT").shakeAmplitudePx(),
+				0f);
+		assertEquals(
+				120,
+				tokens.haptic("PLAYER_HIT").shakeDurationMs());
+		assertEquals(
+				0.7f,
+				tokens.haptic("PLAYER_HIT").vibrationAmplitude(),
+				0f);
+		assertEquals(
+				120,
+				tokens.haptic("PLAYER_HIT").vibrationDurationMs());
+		assertEquals(
+				"medium",
+				tokens.haptic("PLAYER_HIT").frequency());
 		assertEquals(64, tokens.vfxPoolCapacity("tracer"));
 	}
 
@@ -34,16 +57,32 @@ public class BukovUiTokensTest {
 				authoredJson().replace("#10242D", "#12GG2D"));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void rejectsTypographyOutsideAuthoredScale()
+			throws IOException {
+		BukovUiTokens.parse(
+				authoredJson().replace("\"hud\": 9", "\"hud\": 8"));
+	}
+
 	private static String minimalJson(String colors) {
 		return "{"
 				+ "\"uiTokensVersion\":1,"
 				+ "\"colors\":{" + colors + "},"
-				+ "\"typographyPx\":[9,11,14,18,24],"
+				+ "\"typographyPx\":{\"hud\":9,\"body\":11,"
+				+ "\"section\":14,\"title\":18,\"display\":24},"
 				+ "\"motionMs\":{\"instant\":70,\"fast\":120,\"base\":180,"
 				+ "\"slow\":320,\"ritual\":900},"
+				+ "\"hapticMaximumShakePx\":8,"
 				+ "\"haptics\":{"
-				+ haptic("a") + "," + haptic("b") + "," + haptic("c") + ","
-				+ haptic("d") + "," + haptic("e") + "," + haptic("f")
+				+ haptic("RIFLE_SHOT") + ","
+				+ haptic("PLAYER_HIT") + ","
+				+ haptic("SHOTGUN_NEAR") + ","
+				+ haptic("EXPLOSION") + ","
+				+ haptic("BOSS_SLAM") + ","
+				+ haptic("EXTRACT_STAMP") + ","
+				+ haptic("KILL") + ","
+				+ haptic("WEAKPOINT_KILL") + ","
+				+ haptic("BOSS_PHASE_BREAK")
 				+ "},"
 				+ "\"vfxPoolCapacity\":{\"muzzleFlash\":16,\"tracer\":64,"
 				+ "\"shell\":32,\"impactSpark\":48,\"bloodMist\":32,"
@@ -60,6 +99,8 @@ public class BukovUiTokensTest {
 
 	private static String haptic(String name) {
 		return "\"" + name + "\":{"
-				+ "\"amplitudePx\":1,\"durationMs\":80,\"frequency\":\"high\"}";
+				+ "\"shakeAmplitudePx\":1,\"shakeDurationMs\":80,"
+				+ "\"vibrationAmplitude\":1,"
+				+ "\"vibrationDurationMs\":80,\"frequency\":\"high\"}";
 	}
 }

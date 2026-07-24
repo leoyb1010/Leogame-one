@@ -126,25 +126,25 @@ public final class WndBukovServices extends Window {
 
 		RenderedTextBlock eyebrow = text(
 				"LONG-TERM SERVICES / " + tab.name(),
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 3);
 		add(eyebrow);
 		RenderedTextBlock cash = text(
 				"现金 " + model.currency,
-				7,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		cash.setPos(windowWidth - MARGIN - cash.width(), 3);
 		add(cash);
 		RenderedTextBlock title = text(
 				title(),
-				11,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		title.setPos(MARGIN, 14);
 		add(title);
 		RenderedTextBlock subtitle = text(
 				subtitle(),
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color(model.locked
 						? "accent.danger" : "text.secondary"));
 		subtitle.setRect(MARGIN, 28, windowWidth - MARGIN * 2, 8);
@@ -166,7 +166,7 @@ public final class WndBukovServices extends Window {
 
 		RenderedTextBlock feedback = text(
 				notice == null ? selectionSummary() : notice,
-				6,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color(notice == null
 						? "text.secondary" : "accent.extract"));
 		feedback.setRect(
@@ -476,8 +476,10 @@ public final class WndBukovServices extends Window {
 		}
 	}
 
-	private RenderedTextBlock text(String value, int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(value, size);
+	private RenderedTextBlock text(
+			String value, String typography, int color) {
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				value, tokens.typographyPx(typography));
 		result.maxWidth(Math.max(1, (int) width - MARGIN * 2));
 		result.hardlight(color);
 		return result;
@@ -493,7 +495,7 @@ public final class WndBukovServices extends Window {
 			if (rowCount() == 0) {
 				RenderedTextBlock empty = text(
 						selectionSummary(),
-						7,
+						BukovVisualContract.FONT_BODY,
 						tokens.color("text.disabled"));
 				empty.setRect(4, 8, listWidth - 8, ROW_HEIGHT);
 				add(empty);
@@ -527,11 +529,13 @@ public final class WndBukovServices extends Window {
 			edge = new ColorBlock(
 					1, 1, tokens.color("panel.border"));
 			add(edge);
-			name = text(rowName(rowIndex), 7, tokens.color("text.primary"));
+			name = text(
+					rowName(rowIndex), BukovVisualContract.FONT_BODY,
+					tokens.color("text.primary"));
 			add(name);
 			detail = text(
 					rowDetail(rowIndex),
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(detail);
 		}
@@ -613,7 +617,7 @@ public final class WndBukovServices extends Window {
 			add(edge);
 			label = text(
 					value,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color(enabled
 							? "text.primary" : "text.disabled"));
 			label.align(RenderedTextBlock.CENTER_ALIGN);

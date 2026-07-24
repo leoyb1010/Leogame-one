@@ -33,6 +33,8 @@ public class BukovSettlementWiringGuardTest {
 		assertTrue(settlement.contains("reveal.advance(Game.elapsed)"));
 		assertTrue(settlement.contains("[ 撤离确认 ]"));
 		assertTrue(settlement.contains("[ 行动损失 ]"));
+		assertTrue(settlement.contains("BukovUiAssets.Stamp.EXTRACTED"));
+		assertTrue(settlement.contains("BukovUiAssets.Stamp.LOST"));
 		assertTrue(settlement.contains("if (skipReveal()) return;"));
 		assertTrue(settlement.contains(
 				"SPDSettings.bukovReduceMotion()"));

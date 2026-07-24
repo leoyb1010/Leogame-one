@@ -12,6 +12,7 @@ public final class ExperienceContract {
 		public int shakeDurationMs;
 		public float vibrationAmplitude;
 		public int vibrationDurationMs;
+		public String frequency;
 		public int hitstopMs;
 		public float visualIntensity;
 
@@ -28,6 +29,10 @@ public final class ExperienceContract {
 					"invalid vibration amplitude: " + type);
 			require(vibrationDurationMs >= 0 && vibrationDurationMs <= 1000,
 					"invalid vibration duration: " + type);
+			require("low".equals(frequency)
+							|| "medium".equals(frequency)
+							|| "high".equals(frequency),
+					"invalid haptic frequency: " + type);
 			require(hitstopMs >= 0 && hitstopMs <= 120,
 					"invalid hitstop: " + type);
 			require(com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers.isFinite(visualIntensity)

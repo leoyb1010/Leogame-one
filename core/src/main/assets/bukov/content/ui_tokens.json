@@ -52,7 +52,13 @@
     "rarity.rare": "#B89BE0",
     "rarity.legendary": "#E3B94E"
   },
-  "typographyPx": [9, 11, 14, 18, 24],
+  "typographyPx": {
+    "hud": 9,
+    "body": 11,
+    "section": 14,
+    "title": 18,
+    "display": 24
+  },
   "motionMs": {
     "instant": 70,
     "fast": 120,
@@ -60,13 +66,71 @@
     "slow": 320,
     "ritual": 900
   },
+  "hapticMaximumShakePx": 8.0,
   "haptics": {
-    "rifleShot": {"amplitudePx": 0.8, "durationMs": 75, "frequency": "high"},
-    "playerHit": {"amplitudePx": 2.5, "durationMs": 120, "frequency": "medium"},
-    "shotgunNear": {"amplitudePx": 2.0, "durationMs": 100, "frequency": "medium"},
-    "explosion": {"amplitudePx": 5.0, "durationMs": 300, "frequency": "low"},
-    "bossSlam": {"amplitudePx": 4.0, "durationMs": 240, "frequency": "low"},
-    "extractStamp": {"amplitudePx": 1.0, "durationMs": 80, "frequency": "high"}
+    "RIFLE_SHOT": {
+      "shakeAmplitudePx": 0.8,
+      "shakeDurationMs": 75,
+      "vibrationAmplitude": 0.25,
+      "vibrationDurationMs": 60,
+      "frequency": "high"
+    },
+    "PLAYER_HIT": {
+      "shakeAmplitudePx": 2.5,
+      "shakeDurationMs": 120,
+      "vibrationAmplitude": 0.7,
+      "vibrationDurationMs": 120,
+      "frequency": "medium"
+    },
+    "SHOTGUN_NEAR": {
+      "shakeAmplitudePx": 2.0,
+      "shakeDurationMs": 100,
+      "vibrationAmplitude": 0.55,
+      "vibrationDurationMs": 100,
+      "frequency": "medium"
+    },
+    "EXPLOSION": {
+      "shakeAmplitudePx": 5.0,
+      "shakeDurationMs": 300,
+      "vibrationAmplitude": 1.0,
+      "vibrationDurationMs": 250,
+      "frequency": "low"
+    },
+    "BOSS_SLAM": {
+      "shakeAmplitudePx": 4.0,
+      "shakeDurationMs": 240,
+      "vibrationAmplitude": 0.9,
+      "vibrationDurationMs": 220,
+      "frequency": "low"
+    },
+    "EXTRACT_STAMP": {
+      "shakeAmplitudePx": 1.0,
+      "shakeDurationMs": 80,
+      "vibrationAmplitude": 0.35,
+      "vibrationDurationMs": 80,
+      "frequency": "high"
+    },
+    "KILL": {
+      "shakeAmplitudePx": 0.0,
+      "shakeDurationMs": 0,
+      "vibrationAmplitude": 0.25,
+      "vibrationDurationMs": 50,
+      "frequency": "high"
+    },
+    "WEAKPOINT_KILL": {
+      "shakeAmplitudePx": 0.5,
+      "shakeDurationMs": 70,
+      "vibrationAmplitude": 0.45,
+      "vibrationDurationMs": 70,
+      "frequency": "high"
+    },
+    "BOSS_PHASE_BREAK": {
+      "shakeAmplitudePx": 1.0,
+      "shakeDurationMs": 120,
+      "vibrationAmplitude": 1.0,
+      "vibrationDurationMs": 120,
+      "frequency": "low"
+    }
   },
   "vfxPoolCapacity": {
     "muzzleFlash": 16,

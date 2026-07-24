@@ -11,10 +11,11 @@ public final class BukovVisualContract {
 	public static final float GAP = 4f;
 	public static final float CARD_PADDING = 6f;
 	public static final float MAX_CONTENT_WIDTH = 420f;
-	public static final int FONT_CAPTION = 6;
-	public static final int FONT_BODY = 7;
-	public static final int FONT_SECTION = 9;
-	public static final int FONT_TITLE = 15;
+	public static final String FONT_CAPTION = "hud";
+	public static final String FONT_BODY = "body";
+	public static final String FONT_SECTION = "section";
+	public static final String FONT_TITLE = "title";
+	public static final String FONT_DISPLAY = "display";
 
 	public static float controlHeight(boolean touch) {
 		return touch ? 22f : 18f;

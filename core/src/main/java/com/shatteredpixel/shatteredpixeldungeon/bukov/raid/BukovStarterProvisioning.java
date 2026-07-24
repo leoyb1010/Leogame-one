@@ -43,9 +43,11 @@ public final class BukovStarterProvisioning {
 			BukovVendorCatalog.Offer ammunition =
 					BukovVendorCatalog.require(ammunitionOfferId);
 			RaidItem compatibleAmmunition =
-					findDefinition(
+					findDeployableDefinition(
 							profile,
-							ammunition.definitionId);
+							ammunition.definitionId,
+							BukovGearRules.BASE_WEIGHT_CAPACITY_KG
+									- retainedFirearm.totalWeight());
 			boolean changed = false;
 			if (compatibleAmmunition == null) {
 				String ammunitionUid = uniqueUid(
@@ -60,20 +62,10 @@ public final class BukovStarterProvisioning {
 						profile.stash().item(ammunitionUid);
 				changed = true;
 			}
-			if (!profile.loadout().contains(
-					retainedFirearm.itemUid())) {
-				profile.loadout().select(
-						retainedFirearm.itemUid(),
-						profile.stash());
-				changed = true;
-			}
-			if (!profile.loadout().contains(
-					compatibleAmmunition.itemUid())) {
-				profile.loadout().select(
-						compatibleAmmunition.itemUid(),
-						profile.stash());
-				changed = true;
-			}
+			changed |= selectIfRoom(
+					profile, retainedFirearm.itemUid());
+			changed |= selectIfRoom(
+					profile, compatibleAmmunition.itemUid());
 			return changed;
 		}
 		boolean firstKit = profile.stash().distinctItemCount() == 0
@@ -89,8 +81,15 @@ public final class BukovStarterProvisioning {
 		String medicalUid = firstKit ? MEDICAL_UID : prefix + "bandage";
 		int ammunition = firstKit ? 36 : 24;
 		int medical = firstKit ? 3 : 1;
-		RaidItem weapon = findDefinition(profile, "firearm:needle_9");
-		RaidItem ammo = findDefinition(profile, "ammo:ammo_9_standard");
+		RaidItem weapon = findDeployableDefinition(
+				profile,
+				"firearm:needle_9",
+				BukovGearRules.BASE_WEIGHT_CAPACITY_KG);
+		RaidItem ammo = findDeployableDefinition(
+				profile,
+				"ammo:ammo_9_standard",
+				BukovGearRules.BASE_WEIGHT_CAPACITY_KG
+						- (weapon == null ? 0.90f : weapon.totalWeight()));
 		RaidItem bandage = findDefinition(profile, "bandage");
 		boolean changed = false;
 		if (weapon == null) {
@@ -135,18 +134,9 @@ public final class BukovStarterProvisioning {
 			bandage = profile.stash().item(medicalUid);
 			changed = true;
 		}
-		if (!profile.loadout().contains(weapon.itemUid())) {
-			profile.loadout().select(weapon.itemUid(), profile.stash());
-			changed = true;
-		}
-		if (!profile.loadout().contains(ammo.itemUid())) {
-			profile.loadout().select(ammo.itemUid(), profile.stash());
-			changed = true;
-		}
-		if (!profile.loadout().contains(bandage.itemUid())) {
-			profile.loadout().select(bandage.itemUid(), profile.stash());
-			changed = true;
-		}
+		changed |= selectIfRoom(profile, weapon.itemUid());
+		changed |= selectIfRoom(profile, ammo.itemUid());
+		changed |= selectIfRoom(profile, bandage.itemUid());
 		return changed;
 	}
 
@@ -164,6 +154,8 @@ public final class BukovStarterProvisioning {
 
 	private static boolean supportedFirearm(RaidItem item) {
 		return item != null
+				&& item.totalWeight()
+						< BukovGearRules.BASE_WEIGHT_CAPACITY_KG
 				&& recoveryAmmunitionOffer(
 						item.definitionId()) != null;
 	}
@@ -176,6 +168,43 @@ public final class BukovStarterProvisioning {
 			}
 		}
 		return null;
+	}
+
+	private static RaidItem findDeployableDefinition(
+			BukovProfile profile,
+			String definitionId,
+			float maximumTotalWeight) {
+		RaidItem lightest = null;
+		for (RaidItem item : profile.stash().items()) {
+			if (!definitionId.equals(item.definitionId())
+					|| item.totalWeight() > maximumTotalWeight) {
+				continue;
+			}
+			if (lightest == null
+					|| item.totalWeight() < lightest.totalWeight()
+					|| item.totalWeight() == lightest.totalWeight()
+							&& item.itemUid().compareTo(
+									lightest.itemUid()) < 0) {
+				lightest = item;
+			}
+		}
+		return lightest;
+	}
+
+	private static boolean selectIfRoom(
+			BukovProfile profile,
+			String itemUid) {
+		if (profile.loadout().contains(itemUid)) {
+			return false;
+		}
+		if (profile.loadout().distinctItemCount()
+				>= BukovLoadout.MAX_DISTINCT_ITEMS) {
+			// A malformed full loadout must still reach the hideout, where the
+			// atomic one-click repair clears it before provisioning.
+			return false;
+		}
+		profile.loadout().select(itemUid, profile.stash());
+		return true;
 	}
 
 	private static String uniqueUid(

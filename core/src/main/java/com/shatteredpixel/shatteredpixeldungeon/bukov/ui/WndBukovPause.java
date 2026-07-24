@@ -63,12 +63,17 @@ public final class WndBukovPause extends Window {
 		add(headerEdge);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"RAID CONTROL  /  LOCAL SESSION", 6);
+				"RAID CONTROL  /  LOCAL SESSION",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN, 4);
 		add(eyebrow);
 
-		RenderedTextBlock title = PixelScene.renderTextBlock("行动暂停", 11);
+		RenderedTextBlock title = PixelScene.renderTextBlock(
+				"行动暂停",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN, 13);
 		add(title);
@@ -82,7 +87,9 @@ public final class WndBukovPause extends Window {
 		statusSurface.y = y;
 		add(statusSurface);
 		RenderedTextBlock status = PixelScene.renderTextBlock(
-				"检查点已保护\n离开行动前会再次写入本地存档", 6);
+				"检查点已保护\n离开行动前会再次写入本地存档",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		status.hardlight(tokens.color("text.secondary"));
 		status.setRect(MARGIN + 5, y + 4, windowWidth - MARGIN * 2 - 10, 16);
 		add(status);
@@ -177,12 +184,18 @@ public final class WndBukovPause extends Window {
 					1, 1, tokens.color("accent.interact"));
 			focusEdge.visible = false;
 			add(focusEdge);
-			text = PixelScene.renderTextBlock(label, 8);
+			text = PixelScene.renderTextBlock(
+					label,
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			text.hardlight(action == SAVE_AND_RETURN
 					? tokens.color("accent.danger")
 					: tokens.color("text.primary"));
 			add(text);
-			code = PixelScene.renderTextBlock(codeLabel, 5);
+			code = PixelScene.renderTextBlock(
+					codeLabel,
+					tokens.typographyPx(
+							BukovVisualContract.FONT_CAPTION));
 			code.hardlight(action == SAVE_AND_RETURN
 					? tokens.color("accent.danger")
 					: tokens.color("text.secondary"));

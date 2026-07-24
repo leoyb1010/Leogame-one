@@ -77,7 +77,7 @@ public class BukovAccessibilitySettingsGuardTest {
 		assertTrue(gameScene.contains("BukovRaidHud.preferredHeight("));
 		assertTrue(hud.contains("scaleMultiplier"));
 		assertTrue(hud.contains(
-				"textSize(size, SPDSettings.bukovUiScale())"));
+				"tokens.typographyPx(typography)"));
 		assertTrue(!hud.contains(".zoom("));
 	}
 

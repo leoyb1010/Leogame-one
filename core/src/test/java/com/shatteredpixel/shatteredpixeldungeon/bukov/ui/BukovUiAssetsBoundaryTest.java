@@ -17,7 +17,7 @@ public class BukovUiAssetsBoundaryTest {
 
 	private static final Path ASSETS = Paths.get("src/main/assets");
 	private static final String EXPECTED_SHA256 =
-			"2218353b6c77d346ed12d638e8723e8c4049c06ff3e84df96a2793286217e8cb";
+			"caa273d6141352ea441e28397146950d1e350fce83372226da63a6bd5e7ec0b5";
 
 	@Test
 	public void atlasHasSealedRgbaPixelContract() throws Exception {
@@ -30,24 +30,39 @@ public class BukovUiAssetsBoundaryTest {
 						&& png[1] == 'P'
 						&& png[2] == 'N'
 						&& png[3] == 'G');
-		assertEquals(112, bigEndianInt(png, 16));
-		assertEquals(32, bigEndianInt(png, 20));
+		assertEquals(256, bigEndianInt(png, 16));
+		assertEquals(64, bigEndianInt(png, 20));
 		assertEquals("atlas must stay RGBA", 6, png[25] & 0xFF);
 		assertEquals(EXPECTED_SHA256, sha256(png));
 		assertTrue(BukovUiAssets.atlasAvailable());
 	}
 
 	@Test
-	public void manifestCoversPanelsButtonsIconsAndLicense() throws Exception {
+	public void manifestCoversAllV2UiStatesAndLicense() throws Exception {
 		String manifest = text(
 				ASSETS.resolve("interfaces/bukov_ui_manifest.json"));
 
-		assertTrue(manifest.contains("\"schemaVersion\": 1"));
+		assertTrue(manifest.contains("\"schemaVersion\": 2"));
 		assertTrue(manifest.contains("\"pixelSampling\": \"nearest\""));
 		assertTrue(manifest.contains("\"apiName\": \"PANEL\""));
 		assertTrue(manifest.contains("\"apiName\": \"PANEL_RAISED\""));
 		assertTrue(manifest.contains("\"apiName\": \"BUTTON\""));
 		assertTrue(manifest.contains("\"apiName\": \"BUTTON_PRESSED\""));
+		assertTrue(manifest.contains("\"apiName\": \"BUTTON_FOCUSED\""));
+		assertTrue(manifest.contains("\"apiName\": \"BUTTON_DISABLED\""));
+		assertTrue(manifest.contains("\"apiName\": \"ROW_FOCUSED\""));
+		assertTrue(manifest.contains("\"apiName\": \"RARITY_COMMON\""));
+		assertTrue(manifest.contains("\"apiName\": \"RARITY_UNCOMMON\""));
+		assertTrue(manifest.contains("\"apiName\": \"RARITY_RARE\""));
+		assertTrue(manifest.contains("\"apiName\": \"RARITY_LEGENDARY\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_HEALTH\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_ARMOR\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_AMMO\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_INTERACT\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_OBJECTIVE\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_TIMER\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_SOUND\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUD_HIT\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_ACTION\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_LOOT\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_EXTRACT\""));
@@ -55,6 +70,8 @@ public class BukovUiAssetsBoundaryTest {
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_BLEEDING\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_FRACTURE\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_CONCUSSION\""));
+		assertTrue(manifest.contains("\"apiName\": \"STAMP_EXTRACTED\""));
+		assertTrue(manifest.contains("\"apiName\": \"STAMP_LOST\""));
 		assertTrue(manifest.contains("\"sha256\": \"" + EXPECTED_SHA256));
 		assertTrue(manifest.contains("project original cleared"));
 	}
@@ -79,6 +96,30 @@ public class BukovUiAssetsBoundaryTest {
 			assertFalse(scene + " must not revive the old Leo UI skin",
 					source.contains("Assets.Interfaces.LEO_"));
 		}
+
+		String hub = javaSource("bukov/ui/WndBukovHub.java");
+		assertTrue(hub.contains("BukovUiAssets.rarityFrame("));
+		assertTrue(hub.contains("Surface.BUTTON_FOCUSED"));
+		assertTrue(hub.contains("Surface.BUTTON_DISABLED"));
+		assertTrue(hub.contains("Surface.ROW_FOCUSED"));
+		String hubScene = javaSource("scenes/BukovHubScene.java");
+		assertTrue(hubScene.contains("Surface.BUTTON_FOCUSED"));
+		assertTrue(hubScene.contains("Surface.BUTTON_DISABLED"));
+		assertTrue(hubScene.contains("Surface.BUTTON_PRESSED"));
+
+		String hud = javaSource("bukov/ui/BukovRaidHud.java");
+		for (String element : new String[] {
+				"HEALTH", "ARMOR", "AMMO", "INTERACT",
+				"OBJECTIVE", "TIMER", "SOUND", "HIT"
+		}) {
+			assertTrue(element, hud.contains(
+					"BukovUiAssets.HudElement." + element));
+		}
+
+		String settlement =
+				javaSource("bukov/ui/WndBukovSettlement.java");
+		assertTrue(settlement.contains("BukovUiAssets.Stamp.EXTRACTED"));
+		assertTrue(settlement.contains("BukovUiAssets.Stamp.LOST"));
 	}
 
 	private static String javaSource(String relative) throws Exception {

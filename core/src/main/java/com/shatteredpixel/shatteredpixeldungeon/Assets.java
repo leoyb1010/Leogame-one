@@ -122,6 +122,9 @@ public class Assets {
 		public static final String SCENES   = "messages/scenes/scenes";
 		public static final String UI       = "messages/ui/ui";
 		public static final String WINDOWS  = "messages/windows/windows";
+		public static final String BUKOV_ENTRY   = "messages/bukov_entry/bukov_entry";
+		public static final String BUKOV_RAID    = "messages/bukov_raid/bukov_raid";
+		public static final String BUKOV_ECONOMY = "messages/bukov_economy/bukov_economy";
 	}
 
 	public static class Music {

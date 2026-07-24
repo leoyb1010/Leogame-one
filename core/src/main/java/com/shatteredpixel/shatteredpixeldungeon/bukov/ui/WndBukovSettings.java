@@ -86,18 +86,24 @@ public final class WndBukovSettings extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"SYSTEM / ACCESSIBILITY / AUDIO", 5);
+				"SYSTEM / ACCESSIBILITY / AUDIO",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN + 2, 4);
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"行动体验设置", 10);
+				"行动体验设置",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN + 2, 14);
 		add(title);
 		RenderedTextBlock saved = PixelScene.renderTextBlock(
-				"即时生效 · 本地保存", 6);
+				"即时生效 · 本地保存",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		saved.hardlight(tokens.color("accent.extract"));
 		saved.setPos(windowWidth - MARGIN - saved.width() - 2, 17);
 		add(saved);
@@ -271,10 +277,14 @@ public final class WndBukovSettings extends Window {
 									: "ink.background",
 							setting == Setting.CLOSE ? 44 : 190));
 			add(valueSurface);
-			label = PixelScene.renderTextBlock(7);
+			label = PixelScene.renderTextBlock(
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
-			value = PixelScene.renderTextBlock(7);
+			value = PixelScene.renderTextBlock(
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			value.hardlight(tokens.color(
 					setting == Setting.CLOSE
 							? "accent.extract"

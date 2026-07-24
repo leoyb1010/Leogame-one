@@ -28,7 +28,10 @@ public final class BukovPauseButton extends Button {
 		addToBack(background);
 		edge = new ColorBlock(1, 1, tokens.color("accent.interact"));
 		add(edge);
-		label = PixelScene.renderTextBlock("暂停", 7);
+		label = PixelScene.renderTextBlock(
+				"暂停",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_BODY));
 		label.hardlight(tokens.color("text.primary"));
 		label.align(RenderedTextBlock.CENTER_ALIGN);
 		add(label);

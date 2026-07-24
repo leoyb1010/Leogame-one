@@ -116,7 +116,7 @@ public class WelcomeScene extends PixelScene {
 				tokens.color("text.secondary"));
 		RenderedTextBlock title = label(
 				Messages.get(this, "bukov_title"),
-				wide ? 16 : BukovVisualContract.FONT_TITLE,
+				BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		RenderedTextBlock englishTitle = label(
 				Messages.get(this, "bukov_english_title"),
@@ -128,7 +128,8 @@ public class WelcomeScene extends PixelScene {
 				tokens.color("accent.extract"));
 		RenderedTextBlock message = renderTextBlock(
 				Messages.get(this, "bukov_intro"),
-				BukovVisualContract.FONT_BODY);
+				tokens.typographyPx(
+						BukovVisualContract.FONT_BODY));
 		message.maxWidth(Math.max(1, (int)contentWidth));
 		message.hardlight(tokens.color("text.secondary"));
 
@@ -242,8 +243,10 @@ public class WelcomeScene extends PixelScene {
 		add(atmosphere);
 	}
 
-	private RenderedTextBlock label(String value, int size, int color) {
-		RenderedTextBlock block = renderTextBlock(value, size);
+	private RenderedTextBlock label(
+			String value, String typography, int color) {
+		RenderedTextBlock block = renderTextBlock(
+				value, tokens.typographyPx(typography));
 		block.hardlight(color);
 		return block;
 	}

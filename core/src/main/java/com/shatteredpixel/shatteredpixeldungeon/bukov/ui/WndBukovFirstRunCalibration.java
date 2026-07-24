@@ -62,19 +62,25 @@ public final class WndBukovFirstRunCalibration extends Window {
 		add(headerRule);
 
 		RenderedTextBlock eyebrow = PixelScene.renderTextBlock(
-				"FIRST RUN / QUICK TUNING", 5);
+				"FIRST RUN / QUICK TUNING",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		eyebrow.hardlight(tokens.color("text.secondary"));
 		eyebrow.setPos(MARGIN + 1, 3);
 		add(eyebrow);
 
 		RenderedTextBlock title = PixelScene.renderTextBlock(
-				"首次体验校准", 10);
+				"首次体验校准",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_BODY));
 		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(MARGIN + 1, 12);
 		add(title);
 
 		RenderedTextBlock hint = PixelScene.renderTextBlock(
-				"点击切换 · 即时保存 · 设置中可再改", 6);
+				"点击切换 · 即时保存 · 设置中可再改",
+				tokens.typographyPx(
+						BukovVisualContract.FONT_CAPTION));
 		hint.hardlight(tokens.color("text.secondary"));
 		hint.setPos(MARGIN + 1, 33);
 		add(hint);
@@ -174,10 +180,14 @@ public final class WndBukovFirstRunCalibration extends Window {
 					1, 1, tokens.color("accent.valuable"));
 			focusRule.visible = false;
 			add(focusRule);
-			label = PixelScene.renderTextBlock(7);
+			label = PixelScene.renderTextBlock(
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			label.hardlight(tokens.color("text.primary"));
 			add(label);
-			value = PixelScene.renderTextBlock(7);
+			value = PixelScene.renderTextBlock(
+					tokens.typographyPx(
+							BukovVisualContract.FONT_BODY));
 			value.align(RenderedTextBlock.RIGHT_ALIGN);
 			value.hardlight(tokens.color(
 					done ? "accent.extract" : "accent.interact"));
