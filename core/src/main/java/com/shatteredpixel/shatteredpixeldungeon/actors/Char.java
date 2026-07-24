@@ -816,6 +816,7 @@ public abstract class Char extends Actor {
 	//used so that buffs(Shieldbuff.class) isn't called every time unnecessarily
 	private int cachedShield = 0;
 	public boolean needsShieldUpdate = true;
+	private int damageFloatingTextSuppressionDepth;
 	
 	public int shielding(){
 		if (!needsShieldUpdate){
@@ -1000,7 +1001,7 @@ public abstract class Char extends Actor {
 			}
 		}
 		
-		if (sprite != null) {
+		if (sprite != null && damageFloatingTextEnabled()) {
 			//defaults to normal damage icon if no other ones apply
 			int                                                         icon = FloatingText.PHYS_DMG;
 			if (NO_ARMOR_PHYSICAL_SOURCES.contains(src.getClass()))     icon = FloatingText.PHYS_DMG_NO_BLOCK;
@@ -1052,6 +1053,24 @@ public abstract class Char extends Actor {
 		} else if (HP == 0 && buff(DeathMark.DeathMarkTracker.class) != null){
 			DeathMark.processFearTheReaper(this);
 		}
+	}
+
+	/**
+	 * Applies authoritative damage while leaving floating-text ownership to
+	 * the caller. Bukov's realtime combat uses this because its presentation
+	 * layer applies the damage-number setting after armor has resolved.
+	 */
+	public final void damageWithoutFloatingText(int dmg, Object src) {
+		damageFloatingTextSuppressionDepth++;
+		try {
+			damage(dmg, src);
+		} finally {
+			damageFloatingTextSuppressionDepth--;
+		}
+	}
+
+	final boolean damageFloatingTextEnabled() {
+		return damageFloatingTextSuppressionDepth == 0;
 	}
 
 	//these are misc. sources of physical damage which do not apply armor, they get a different icon

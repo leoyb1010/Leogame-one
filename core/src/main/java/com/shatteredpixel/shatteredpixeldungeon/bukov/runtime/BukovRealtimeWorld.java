@@ -1100,7 +1100,7 @@ public final class BukovRealtimeWorld
 			// Keep Mob.damage/die authoritative so XP, loot rolls, death VFX, and
 			// Dungeon.level.mobs removal stay in the host implementation.
 			boolean wasAlive = target.isAlive();
-			target.damage(damage, hero);
+			target.damageWithoutFloatingText(damage, hero);
 			emitEnemyHitOutcome(target, wasAlive, damage);
 			if (wasAlive && !target.isAlive() && target instanceof Mob) {
 				EnemyRuntime defeated =
@@ -1154,7 +1154,7 @@ public final class BukovRealtimeWorld
 						nextAudioPitch(1f, 0.04f)
 				);
 				boolean wasAlive = hero.isAlive();
-				hero.damage(damage, event.attacker);
+				hero.damageWithoutFloatingText(damage, event.attacker);
 				emitPlayerHitOutcome(event.attacker, wasAlive, damage);
 			} else if (hero.sprite != null) {
 				hero.sprite.showStatus(
@@ -3196,7 +3196,7 @@ public final class BukovRealtimeWorld
 					nextAudioPitch(1f, 0.06f)
 			);
 			boolean wasAlive = hero.isAlive();
-			hero.damage(damage, attacker);
+			hero.damageWithoutFloatingText(damage, attacker);
 			emitPlayerHitOutcome(attacker, wasAlive, damage);
 		} else if (hero.sprite != null) {
 			hero.sprite.showStatus(
@@ -4126,7 +4126,7 @@ public final class BukovRealtimeWorld
 			clearBossMechanismMarkers();
 			resolveWhiteLineLevel();
 			int cell = enemy.mob.pos;
-			enemy.mob.damage(enemy.mob.HP, hero);
+			enemy.mob.damageWithoutFloatingText(enemy.mob.HP, hero);
 			recordEnemyKill();
 			releaseWhiteLineLoot(cell);
 		}
