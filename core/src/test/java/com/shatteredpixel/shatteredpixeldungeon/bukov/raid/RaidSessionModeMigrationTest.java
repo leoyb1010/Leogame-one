@@ -26,5 +26,6 @@ public class RaidSessionModeMigrationTest {
 		assertEquals(BukovRaidMode.EXPEDITION, restored.raidMode());
 		assertEquals(1, restored.raidOrdinal());
 		assertTrue(restored.firstRaidProtectionActive());
+		assertTrue(restored.keyDoors().unlockedDoorIds().isEmpty());
 	}
 }

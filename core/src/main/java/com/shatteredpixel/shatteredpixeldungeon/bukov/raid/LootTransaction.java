@@ -77,8 +77,58 @@ public final class LootTransaction implements Bundlable {
 		return removed == null ? null : removed.copy();
 	}
 
+	/**
+	 * Consumes exactly one matching item, choosing the lowest UID so checkpoint
+	 * replay cannot consume a different key stack.
+	 */
+	public RaidItem consumeOneDefinition(String definitionId) {
+		if (definitionId == null || definitionId.trim().isEmpty()) {
+			throw new IllegalArgumentException("definitionId is required");
+		}
+		RaidItem selected = null;
+		for (RaidItem item : itemsByUid.values()) {
+			if (!definitionId.equals(item.definitionId())) continue;
+			if (selected == null
+					|| item.itemUid().compareTo(selected.itemUid()) < 0) {
+				selected = item;
+			}
+		}
+		if (selected == null) return null;
+		RaidItem consumed = selected.withRuntimeState(
+				1, selected.durability());
+		if (selected.quantity() == 1) {
+			itemsByUid.remove(selected.itemUid());
+		} else {
+			itemsByUid.put(
+					selected.itemUid(),
+					selected.withRuntimeState(
+							selected.quantity() - 1,
+							selected.durability()));
+		}
+		return consumed;
+	}
+
 	public boolean contains(String itemUid) {
 		return itemsByUid.containsKey(itemUid);
+	}
+
+	public boolean containsDefinition(String definitionId) {
+		return firstItemUidForDefinition(definitionId) != null;
+	}
+
+	public String firstItemUidForDefinition(String definitionId) {
+		if (definitionId == null || definitionId.trim().isEmpty()) {
+			throw new IllegalArgumentException("definitionId is required");
+		}
+		String selectedUid = null;
+		for (RaidItem item : itemsByUid.values()) {
+			if (definitionId.equals(item.definitionId())
+					&& (selectedUid == null
+							|| item.itemUid().compareTo(selectedUid) < 0)) {
+				selectedUid = item.itemUid();
+			}
+		}
+		return selectedUid;
 	}
 
 	public RaidItem item(String itemUid) {

@@ -32,6 +32,7 @@ public class BukovFirstRaidLootTablesTest {
 						BukovFirstRaidLootTables.MEDICAL,
 						BukovFirstRaidLootTables.INDUSTRIAL,
 						BukovFirstRaidLootTables.HIGH_VALUE,
+						BukovFirstRaidLootTables.MAINTENANCE_CACHE,
 						BukovFirstRaidLootTables.BOSS,
 						BukovFirstRaidLootTables.MISSION_ARCHIVE)),
 				tables.keySet());

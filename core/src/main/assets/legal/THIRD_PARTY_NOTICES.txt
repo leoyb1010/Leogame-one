@@ -1,0 +1,22 @@
+ESCAPE FROM BUKOV / 逃离布科夫
+THIRD-PARTY NOTICES
+
+This program is derived from Leogame-one, Shattered Pixel Dungeon and Pixel
+Dungeon. It is distributed under the GNU General Public License version 3 or
+later. The complete license is included beside this file as LICENSE.txt.
+
+Project source:
+https://github.com/leoyb1010/Leogame-one
+
+Upstream source:
+https://github.com/00-Evan/shattered-pixel-dungeon
+
+Existing upstream source files retain their copyright headers and in-game
+credits. Bukov-specific Java, JSON, validation scripts and procedural asset
+generators are distributed with the same corresponding source repository.
+
+gdx-ai, Delver Engine, Mindustry and Seventh were design-research references
+only. Their source and game assets are not copied into this build.
+
+The per-file provenance ledger for new runtime artwork, audio and icons is:
+artwork/licenses/ASSET_PROVENANCE.csv in the corresponding source tree.

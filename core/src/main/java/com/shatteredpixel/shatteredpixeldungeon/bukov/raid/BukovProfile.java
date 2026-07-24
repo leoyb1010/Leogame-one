@@ -19,7 +19,7 @@ import java.util.Set;
  */
 public final class BukovProfile implements Bundlable {
 
-	public static final int CURRENT_VERSION = 6;
+	public static final int CURRENT_VERSION = 7;
 
 	private static final String PROFILE_VERSION = "profile_version";
 	private static final String CURRENCY = "currency";
@@ -35,6 +35,9 @@ public final class BukovProfile implements Bundlable {
 	private static final String SEEN_TUTORIAL_EVENTS = "seen_tutorial_events";
 	private static final String ECONOMY_RECEIPTS = "economy_receipts";
 	private static final String SELECTED_MAP = "selected_map";
+	private static final String INSURANCE = "insurance";
+	private static final String LONG_TERM_CONTRACTS = "long_term_contracts";
+	private static final String FIREARM_BUILDS = "firearm_builds";
 
 	private int profileVersion = CURRENT_VERSION;
 	private long currency;
@@ -52,6 +55,12 @@ public final class BukovProfile implements Bundlable {
 	private final Map<String, BukovEconomyReceipt> economyReceipts =
 			new LinkedHashMap<>();
 	private String selectedMap = BukovCareerProgression.STARTING_MAP;
+	private final BukovInsuranceLedger insurance =
+			new BukovInsuranceLedger();
+	private final BukovLongTermContractLedger longTermContracts =
+			new BukovLongTermContractLedger();
+	private final BukovFirearmBuilds firearmBuilds =
+			new BukovFirearmBuilds();
 
 	public BukovProfile() {
 	}
@@ -81,6 +90,18 @@ public final class BukovProfile implements Bundlable {
 
 	public BukovStatistics statistics() {
 		return statistics;
+	}
+
+	public BukovInsuranceLedger insurance() {
+		return insurance;
+	}
+
+	public BukovLongTermContractLedger longTermContracts() {
+		return longTermContracts;
+	}
+
+	public BukovFirearmBuilds firearmBuilds() {
+		return firearmBuilds;
 	}
 
 	public BukovRaidMode selectedRaidMode() {
@@ -222,7 +243,8 @@ public final class BukovProfile implements Bundlable {
 		lastLoadoutDefinitions.addAll(validated);
 	}
 
-	BukovProfile copy() {
+	/** Detached snapshot for atomic application-layer mutations. */
+	public BukovProfile copy() {
 		BukovProfile result = new BukovProfile();
 		result.profileVersion = profileVersion;
 		result.currency = currency;
@@ -235,6 +257,9 @@ public final class BukovProfile implements Bundlable {
 		result.selectedRaidMode = selectedRaidMode;
 		result.raidsStarted = raidsStarted;
 		result.selectedMap = selectedMap;
+		result.insurance.replaceWith(insurance.copy());
+		result.longTermContracts.replaceWith(longTermContracts.copy());
+		result.firearmBuilds.replaceWith(firearmBuilds.copy());
 		result.seenTutorialEvents.addAll(seenTutorialEvents);
 		for (BukovEconomyReceipt receipt : economyReceipts.values()) {
 			result.economyReceipts.put(
@@ -269,6 +294,9 @@ public final class BukovProfile implements Bundlable {
 		selectedRaidMode = replacement.selectedRaidMode;
 		raidsStarted = replacement.raidsStarted;
 		selectedMap = replacement.selectedMap;
+		insurance.replaceWith(replacement.insurance);
+		longTermContracts.replaceWith(replacement.longTermContracts);
+		firearmBuilds.replaceWith(replacement.firearmBuilds);
 		seenTutorialEvents.clear();
 		seenTutorialEvents.addAll(replacement.seenTutorialEvents);
 		economyReceipts.clear();
@@ -305,6 +333,9 @@ public final class BukovProfile implements Bundlable {
 		bundle.put(SEEN_TUTORIAL_EVENTS, tutorialEvents);
 		bundle.put(ECONOMY_RECEIPTS, economyReceipts.values());
 		bundle.put(SELECTED_MAP, selectedMap);
+		bundle.put(INSURANCE, insurance);
+		bundle.put(LONG_TERM_CONTRACTS, longTermContracts);
+		bundle.put(FIREARM_BUILDS, firearmBuilds);
 	}
 
 	@Override
@@ -395,6 +426,25 @@ public final class BukovProfile implements Bundlable {
 				restored.selectedMap = restoredMap;
 			}
 		}
+		if (restoredVersion >= 7) {
+			Bundlable restoredInsurance = bundle.get(INSURANCE);
+			Bundlable restoredContracts = bundle.get(LONG_TERM_CONTRACTS);
+			Bundlable restoredFirearmBuilds = bundle.get(FIREARM_BUILDS);
+			if (!(restoredInsurance instanceof BukovInsuranceLedger)
+					|| !(restoredContracts
+							instanceof BukovLongTermContractLedger)
+					|| !(restoredFirearmBuilds
+							instanceof BukovFirearmBuilds)) {
+				throw new IllegalStateException(
+						"Incomplete Bukov long-term progression profile");
+			}
+			restored.insurance.replaceWith(
+					(BukovInsuranceLedger) restoredInsurance);
+			restored.longTermContracts.replaceWith(
+					(BukovLongTermContractLedger) restoredContracts);
+			restored.firearmBuilds.replaceWith(
+					(BukovFirearmBuilds) restoredFirearmBuilds);
+		}
 		Collection<Bundlable> storedSettlements = bundle.getCollection(SETTLEMENTS);
 		for (Bundlable stored : storedSettlements) {
 			if (!(stored instanceof SettlementReceipt)) {
@@ -406,6 +456,8 @@ public final class BukovProfile implements Bundlable {
 		// v1-v3 default to expedition and have no tutorial ledger.
 		// v1-v4 have no durable vendor transaction receipts; v1-v5 select
 		// the starting region until the player explicitly changes it.
+		// v1-v6 safely begin with empty insurance/build ledgers and fresh
+		// long-term contracts; existing completed career contracts are kept.
 		restored.profileVersion = CURRENT_VERSION;
 		replaceWith(restored);
 	}

@@ -218,7 +218,26 @@ public final class RealtimeMedicalSystem {
 			boolean moved,
 			boolean tookDamage,
 			boolean firedShot) {
+		return fixedStep(
+				deltaSeconds,
+				moved,
+				tookDamage,
+				firedShot,
+				1f);
+	}
+
+	public StepResult fixedStep(
+			float deltaSeconds,
+			boolean moved,
+			boolean tookDamage,
+			boolean firedShot,
+			float treatmentDurationMultiplier) {
 		requireDelta(deltaSeconds);
+		if (!BukovNumbers.isFinite(treatmentDurationMultiplier)
+				|| treatmentDurationMultiplier <= 0f) {
+			throw new IllegalArgumentException(
+					"treatmentDurationMultiplier must be finite and positive");
+		}
 		if (closed) {
 			return StepResult.CLOSED;
 		}
@@ -244,7 +263,7 @@ public final class RealtimeMedicalSystem {
 			cancelActive(0.15f);
 			return StepResult.INTERRUPTED_MOVE;
 		}
-		activeElapsed += deltaSeconds;
+		activeElapsed += deltaSeconds / treatmentDurationMultiplier;
 		if (activeElapsed + 0.00001f < active.definition.useSeconds) {
 			return StepResult.IN_PROGRESS;
 		}

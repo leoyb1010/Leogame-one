@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
+import com.watabou.utils.DeviceCompat;
 
 /**
  * Compact realtime raid HUD. Persistent information stays in a shallow safe-
@@ -38,9 +39,9 @@ public final class BukovRaidHud extends Component {
 
 	private static final float PADDING = 4f;
 	private static final float WIDE_THRESHOLD = 220f;
-	private static final int BACKGROUND = 0xE0182522;
-	private static final int TRACK = 0xFF283634;
-	private static final int BORDER = 0xFF3D514E;
+	private static final int BACKGROUND = 0xE010242D;
+	private static final int TRACK = 0xFF1A3644;
+	private static final int BORDER = 0xFF3A5A66;
 	private static final int PRIMARY = 0xE8F1F0;
 	private static final int SECONDARY = 0x9FB8B4;
 	private static final int INTERACT = 0x4FA7A0;
@@ -245,10 +246,10 @@ public final class BukovRaidHud extends Component {
 		if (clamped == uiScaleLevel) return;
 		uiScaleLevel = clamped;
 		uiScale = scaleMultiplier(clamped);
-		// RenderedTextBlock.zoom compounds with the 3x iOS UI camera and can
-		// explode glyphs across the whole viewport. UI scaling therefore grows
-		// safe geometry, reticle, badges and touch affordances while keeping
-		// authored text at its verified readable size.
+		// Never use RenderedTextBlock.zoom here. It compounds with the 3x iOS
+		// UI camera and can explode glyphs across the whole viewport. Font size
+		// is selected once during construction; live setting changes only grow
+		// safe geometry, reticle, badges and touch affordances.
 		if (width > 0f) {
 			height = preferredHeight(width, clamped);
 		}
@@ -359,7 +360,10 @@ public final class BukovRaidHud extends Component {
 		int clockSecond = Math.max(0, (int)Math.floor(elapsed));
 		if (clockSecond != lastClockSecond) {
 			lastClockSecond = clockSecond;
-			timerText.text("行动 " + BukovHudFormat.clock(elapsed));
+			timerText.text(
+					"行动 "
+							+ BukovHudFormat.clock(elapsed)
+							+ controlHint(DeviceCompat.isDesktop()));
 		}
 
 		int extractionKey = extractionKey();
@@ -738,10 +742,22 @@ public final class BukovRaidHud extends Component {
 	}
 
 	private RenderedTextBlock text(int size, int color) {
-		RenderedTextBlock result = PixelScene.renderTextBlock(size);
+		RenderedTextBlock result = PixelScene.renderTextBlock(
+				textSize(size, SPDSettings.bukovUiScale()));
 		result.hardlight(color);
 		add(result);
 		return result;
+	}
+
+	public static int textSize(int baseSize, int scaleLevel) {
+		if (baseSize <= 0) {
+			throw new IllegalArgumentException("baseSize must be positive");
+		}
+		return baseSize + Math.max(0, Math.min(2, scaleLevel));
+	}
+
+	public static String controlHint(boolean desktop) {
+		return desktop ? " · TAB 背包" : " · 背包键";
 	}
 
 	private Firearm equippedFirearm() {

@@ -46,6 +46,8 @@ public final class ThemeDefinition {
 	public final int wallDecoModulo;
 	/** Number of safe two-cell cover clusters attempted per authored room. */
 	public final int coverClusters;
+	/** Fixed-step runtime tradeoff; never owns topology or direct damage. */
+	public final ThemeEnvironmentRules environmentRules;
 	private final Map<BukovRaidLayout.Zone, Float> roomWeights;
 	private final Map<String, Float> lootWeights;
 	private final Map<String, Float> enemyWeights;
@@ -60,6 +62,7 @@ public final class ThemeDefinition {
 			String floorPattern,
 			int wallDecoModulo,
 			int coverClusters,
+			ThemeEnvironmentRules environmentRules,
 			Map<BukovRaidLayout.Zone, Float> roomWeights,
 			Map<String, Float> lootWeights,
 			Map<String, Float> enemyWeights,
@@ -72,6 +75,7 @@ public final class ThemeDefinition {
 		this.floorPattern = floorPattern;
 		this.wallDecoModulo = wallDecoModulo;
 		this.coverClusters = coverClusters;
+		this.environmentRules = environmentRules;
 		this.roomWeights = immutableCopy(roomWeights);
 		this.lootWeights = immutableCopy(lootWeights);
 		this.enemyWeights = immutableCopy(enemyWeights);
@@ -111,13 +115,14 @@ public final class ThemeDefinition {
 		return coverCombination;
 	}
 
-	/** Higher-risk themes shorten the same mode's reinforcement cadence. */
+	/** Tunes the same mode's reinforcement cadence without a second loop. */
 	public float pressureAdjustedSeconds(float baselineSeconds) {
 		if (!finite(baselineSeconds) || baselineSeconds <= 0f) {
 			throw new IllegalArgumentException(
 					"baselineSeconds must be finite and positive");
 		}
-		return baselineSeconds / riskMultiplier;
+		return baselineSeconds / riskMultiplier
+				* environmentRules.reinforcementIntervalMultiplier;
 	}
 
 	/** Converts an authored base spawn weight into this theme's live weight. */
@@ -227,6 +232,8 @@ public final class ThemeDefinition {
 				"theme wallDecoModulo out of range: " + id);
 		require(coverClusters >= 1 && coverClusters <= 3,
 				"theme coverClusters out of range: " + id);
+		require(environmentRules != null,
+				"theme environmentRules are required: " + id);
 
 		require(roomWeights.size() == 5
 				&& roomWeights.containsKey(BukovRaidLayout.Zone.LOW_LOOT)

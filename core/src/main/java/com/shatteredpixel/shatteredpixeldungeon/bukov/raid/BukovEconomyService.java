@@ -139,6 +139,11 @@ public final class BukovEconomyService {
 			throw new IllegalStateException(
 					"Stash changed during sale staging");
 		}
+		// A build belongs to this physical UID, not to the firearm
+		// definition. Selling the gun permanently removes that UID, so retain
+		// neither an unreachable build nor attachments that could leak onto a
+		// future item reusing the same identifier.
+		staged.firearmBuilds().remove(itemUid);
 		staged.setCurrency(BukovNumbers.addExact(
 				staged.currency(),
 				proceeds));

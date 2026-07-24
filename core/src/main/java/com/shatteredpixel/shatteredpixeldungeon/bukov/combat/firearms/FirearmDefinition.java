@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FirearmAudioProfile;
+
 public final class FirearmDefinition {
 
 	public String id;
@@ -27,6 +29,9 @@ public final class FirearmDefinition {
 	/** Per-weapon mix controls. The same authored sample no longer means the same sound. */
 	public float soundPitch = 1f;
 	public float soundGain = 1f;
+	/** Distinct shot body and normalized three-stage reload cue timings. */
+	public FirearmAudioProfile audioProfile =
+			FirearmAudioProfile.defaultFor(FirearmClass.PISTOL);
 	/** Per-weapon presentation controls consumed by the live firing path. */
 	public float muzzleIntensity = 1f;
 	public float tracerIntensity = 1f;
@@ -72,6 +77,8 @@ public final class FirearmDefinition {
 				"soundPitch out of range: " + id);
 		require(finite(soundGain) && soundGain >= 0.35f && soundGain <= 1.5f,
 				"soundGain out of range: " + id);
+		require(audioProfile != null, "missing audioProfile: " + id);
+		audioProfile.validate();
 		require(unitPresentation(muzzleIntensity),
 				"muzzleIntensity out of range: " + id);
 		require(unitPresentation(tracerIntensity),

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotSoundFamily;
+
 import org.junit.Test;
 
 import java.io.IOException;
@@ -57,6 +59,23 @@ public class FirearmRegistryTest {
 		assertEquals(
 				1.42f,
 				registry.require("rainstorm_12").soundGain,
+				0.0001f);
+		assertEquals(
+				GunshotSoundFamily.PISTOL,
+				registry.require("needle_9")
+						.audioProfile.gunshotFamily);
+		assertEquals(
+				GunshotSoundFamily.CARBINE,
+				registry.require("carbine_556")
+						.audioProfile.gunshotFamily);
+		assertEquals(
+				GunshotSoundFamily.HEAVY,
+				registry.require("rainstorm_12")
+						.audioProfile.gunshotFamily);
+		assertEquals(
+				0.93f,
+				registry.require("rainstorm_12")
+						.audioProfile.chargeFraction,
 				0.0001f);
 	}
 

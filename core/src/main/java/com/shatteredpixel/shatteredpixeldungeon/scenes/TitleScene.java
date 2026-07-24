@@ -20,6 +20,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
@@ -94,24 +95,32 @@ public class TitleScene extends PixelScene {
 		float usableHeight =
 				screenHeight - insets.top - insets.bottom;
 
-		float panelWidth = Math.min(
-				wide ? 108f : 116f,
-				usableWidth - 12f);
+		float panelWidth = BukovVisualContract.panelWidth(
+				usableWidth, wide);
 		final boolean activeRaid = hasActiveRaid();
-		float identityHeight = 45f;
-		float menuHeight = activeRaid ? 76f : 54f;
+		boolean touch = !DeviceCompat.isDesktop();
+		float primaryHeight = BukovVisualContract.controlHeight(touch);
+		float secondaryHeight =
+				BukovVisualContract.compactControlHeight(touch);
+		float identityHeight = 49f;
+		float menuHeight = 21f
+				+ (activeRaid ? primaryHeight + 3f : 0f)
+				+ primaryHeight + 3f + secondaryHeight + 6f;
 		float identityLeft = wide
-				? usableLeft + 9f
+				? usableLeft + BukovVisualContract.OUTER_MARGIN
 				: usableLeft + (usableWidth - panelWidth) / 2f;
 		float menuLeft = wide
-				? usableLeft + usableWidth - panelWidth - 9f
+				? usableLeft + usableWidth - panelWidth
+						- BukovVisualContract.OUTER_MARGIN
 				: identityLeft;
 		float identityTop = wide
-				? usableTop + 9f
-				: usableTop + 15f;
+				? BukovVisualContract.safeTop(usableTop)
+				: BukovVisualContract.safeTop(usableTop) + 7f;
 		float menuTop = wide
-				? usableTop + usableHeight - menuHeight - 10f
-				: identityTop + identityHeight + 10f;
+				? BukovVisualContract.safeBottom(
+						screenHeight, insets.bottom) - menuHeight
+				: identityTop + identityHeight
+						+ BukovVisualContract.OUTER_MARGIN;
 
 		identityPanel = panel(
 				identityLeft,
@@ -123,21 +132,21 @@ public class TitleScene extends PixelScene {
 
 		eyebrow = label(
 				"OFFLINE EXTRACTION / 单机搜打撤",
-				wide ? 6 : 5,
+				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		eyebrow.setPos(identityLeft + 7f, identityTop + 5f);
 		add(eyebrow);
 
 		title = label(
 				"逃离布科夫",
-				wide ? 16 : 14,
+				wide ? 16 : BukovVisualContract.FONT_TITLE,
 				tokens.color("accent.valuable"));
 		title.setPos(identityLeft + 7f, eyebrow.bottom() + 3f);
 		add(title);
 
 		englishTitle = label(
 				"ESCAPE FROM BUKOV",
-				wide ? 7 : 6,
+				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
 		englishTitle.setPos(
 				identityLeft + 7f,
@@ -178,7 +187,7 @@ public class TitleScene extends PixelScene {
 				}
 			};
 			btnContinue.setRect(
-					buttonLeft, buttonTop, buttonWidth, 18f);
+					buttonLeft, buttonTop, buttonWidth, primaryHeight);
 			add(btnContinue);
 			buttonTop = btnContinue.bottom() + 3f;
 		}
@@ -194,7 +203,8 @@ public class TitleScene extends PixelScene {
 				openBukovMode();
 			}
 		};
-		btnBukov.setRect(buttonLeft, buttonTop, buttonWidth, 18f);
+		btnBukov.setRect(
+				buttonLeft, buttonTop, buttonWidth, primaryHeight);
 		add(btnBukov);
 
 		float secondaryTop = btnBukov.bottom() + 3f;
@@ -210,7 +220,7 @@ public class TitleScene extends PixelScene {
 			}
 		};
 		btnSettings.setRect(
-				buttonLeft, secondaryTop, secondaryWidth, 16f);
+				buttonLeft, secondaryTop, secondaryWidth, secondaryHeight);
 		add(btnSettings);
 
 		btnAbout = new TacticalTitleButton(
@@ -226,7 +236,7 @@ public class TitleScene extends PixelScene {
 				btnSettings.right() + 3f,
 				secondaryTop,
 				secondaryWidth,
-				16f);
+				secondaryHeight);
 		add(btnAbout);
 
 		version = new BitmapText("v" + Game.version, pixelFont);
@@ -341,7 +351,10 @@ public class TitleScene extends PixelScene {
 			lowerRule = new ColorBlock(1f, 1f, accent);
 			lowerRule.alpha(0.65f);
 			add(lowerRule);
-			text = label(value, 7, tokens.color("text.primary"));
+			text = label(
+					value,
+					BukovVisualContract.FONT_BODY,
+					tokens.color("text.primary"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
 		}

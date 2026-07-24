@@ -65,6 +65,27 @@ public final class CombatFxEventPool {
 		);
 	}
 
+	public void shell(int sourceId,
+					  int sequence,
+					  boolean hostile,
+					  float x,
+					  float y,
+					  float directionX,
+					  float directionY,
+					  float intensity) {
+		emit(
+				CombatFxEvent.Type.SHELL,
+				sourceId,
+				sequence,
+				hostile,
+				x,
+				y,
+				x + directionX,
+				y + directionY,
+				intensity
+		);
+	}
+
 	public void impact(int sourceId,
 					   int sequence,
 					   boolean hostile,

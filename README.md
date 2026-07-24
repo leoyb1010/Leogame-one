@@ -17,15 +17,15 @@
 - 6 个程序化地图主题、不同风险路线、搜刮容器与多种撤离条件
 - 18 把枪械、8 种具体弹药，配装按注册表口径校验
 - 13 种敌人：9 普通、3 精英、1 Boss
-- 远征、快速清扫、拾荒者、Boss 合同 4 种 Raid 模式
+- 远征、快速清扫、拾荒者、Boss 合同、演练场 5 种 Raid 模式
 - 基地商店买入/出售、长期仓库、配装与行动中交易锁定
-- 72 帧物品/交互图标和 19 个项目原创 PCM 音效
+- 72 帧物品/交互图标和 28 个项目原创 PCM 音效
 - 物品 UID、Raid 检查点、成功/死亡幂等结算与长期仓库
 - macOS 与 iOS 共用核心逻辑，固定模拟 120 Hz，并提供高刷新配置
 
 ## 当前开发状态
 
-当前分支正在执行《完整开发执行计划书 v2.0》。标题、基地、商店、行动部署、实时战斗、任务物品、封锁门、搜刮、撤离、结算与长期仓库已进入同一条布科夫玩家路径；内容规模已达到 6 主题、18 枪、13 敌人与 4 模式。
+当前分支正在执行《完整开发执行计划书 v2.0》。标题、基地、商店、行动部署、实时战斗、任务物品、封锁门、搜刮、撤离、结算与长期仓库已进入同一条布科夫玩家路径；内容规模已达到 6 主题、18 枪、13 敌人与 5 模式。
 
 这仍是“待最终平台证据”的候选状态，不等于已经发行验收：最终 SHA 的统一 Gradle、macOS 打包全流程、iOS AOT/模拟器/真机、60/120/144 Hz 帧 pacing、30 分钟稳定性和恢复测试必须按 [最终 QA 模板](docs/bukov/FINAL_QA_REPORT_TEMPLATE.md) 留证。机器可读状态见 [发行清单](docs/bukov/RELEASE_MANIFEST.json)。
 
@@ -64,6 +64,9 @@ python3 ./scripts/bukov_release_manifest_check.py
 python3 ./scripts/bukov_content_scale_gate.py
 ./scripts/bukov_audio_gate.sh
 ./scripts/bukov_item_atlas_gate.sh
+./scripts/bukov_legal_bundle_gate.sh
+# 构建后：
+# ./scripts/bukov_packaged_legal_gate.sh /path/to/逃离布科夫.app /path/to/IOSLauncher.app
 ./scripts/bukov_seed_sweep.sh 10000
 ./scripts/bukov_save_stress.sh 100
 ./scripts/bukov_performance_smoke.sh 1800

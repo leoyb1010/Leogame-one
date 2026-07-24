@@ -27,6 +27,8 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioResolver
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationSource;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCue;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SpatialAudioModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
@@ -43,6 +45,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.MedicalCata
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeStatusState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovEconomicItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovEnemyFirearmDropPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovMissionArchive;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
@@ -57,6 +60,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEquippedGear;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovKeyDoorState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCheckpoint;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
@@ -221,6 +225,7 @@ public final class BukovRealtimeWorld
 	private float playerSoundY;
 	private float playerSoundRadius;
 	private float playerSoundRemaining;
+	private float environmentStepNoiseRemaining;
 	private ExtractionState.Interaction extractionInteraction =
 			ExtractionState.Interaction.NONE;
 	private BukovTutorialEvent tutorialEvent;
@@ -577,11 +582,17 @@ public final class BukovRealtimeWorld
 		if (nearby != null) {
 			boolean locked = nearby.state
 					== BukovSearchableContainer.State.LOCKED;
+			boolean maintenanceLock =
+					locked && isMaintenanceCache(nearby);
 			target.interaction(
 					locked
 							? BukovRaidHudState.Interaction.LOCKED
 							: BukovRaidHudState.Interaction.SEARCH,
-					locked ? "容器已锁定" : "搜索容器",
+					maintenanceLock
+							? hasMaintenanceKey()
+									? "按E解锁 · 维修钥匙"
+									: "需要维修钥匙"
+							: locked ? "容器已锁定" : "搜索容器",
 					0f,
 					nearby.searchSeconds);
 			return;
@@ -693,6 +704,10 @@ public final class BukovRealtimeWorld
 		if (equippedGear != null) {
 			movementMultiplier *= equippedGear.movementMultiplier();
 		}
+		if (raidTheme != null) {
+			movementMultiplier *= raidTheme.environmentRules
+					.movementMultiplier(heroTerrain());
+		}
 		float deltaX = inputFrame.movement.x
 				* PLAYER_SPEED_TILES_PER_SECOND * movementMultiplier * dt;
 		float deltaY = inputFrame.movement.y
@@ -718,6 +733,18 @@ public final class BukovRealtimeWorld
 
 		int previousCell = hero.pos;
 		hero.pos = heroBody.cell(Dungeon.level.width());
+		environmentStepNoiseRemaining = Math.max(
+				0f,
+				environmentStepNoiseRemaining - dt);
+		if (raidTheme != null && moving
+				&& environmentStepNoiseRemaining <= 0f) {
+			float movementNoise = raidTheme.environmentRules
+					.movementNoiseRadius(heroTerrain());
+			if (movementNoise > 0f) {
+				emitPlayerSound(movementNoise);
+				environmentStepNoiseRemaining = 0.28f;
+			}
+		}
 		if (hero.pos != previousCell) {
 			Dungeon.level.updateFieldOfView(hero, Dungeon.level.heroFOV);
 			GameScene.updateFog();
@@ -746,6 +773,10 @@ public final class BukovRealtimeWorld
 				inputFrame.reloadPressed,
 				equippedFirearm,
 				equippedDefinition,
+				raidTheme == null
+						? 1f
+						: raidTheme.environmentRules
+								.reloadDurationMultiplier(heroTerrain()),
 				this
 		);
 		fireAimReadyLastStep = aimReady;
@@ -819,6 +850,14 @@ public final class BukovRealtimeWorld
 		if (playerSoundRemaining <= 0f || playerSoundRadius <= 0f) {
 			return;
 		}
+		float themedSoundRadius = playerSoundRadius
+				* (raidTheme == null
+						? 1f
+						: raidTheme.environmentRules
+								.enemyHearingMultiplier(
+										terrainAt(
+												playerSoundX,
+												playerSoundY)));
 		for (EnemyRuntime enemy : enemies) {
 			if (!enemy.mob.isAlive()
 					|| enemy.heardSoundSequence == playerSoundSequence) {
@@ -827,7 +866,8 @@ public final class BukovRealtimeWorld
 			float dx = playerSoundX - enemy.body.x;
 			float dy = playerSoundY - enemy.body.y;
 			float distanceSquared = dx * dx + dy * dy;
-			if (distanceSquared > playerSoundRadius * playerSoundRadius) {
+			if (distanceSquared
+					> themedSoundRadius * themedSoundRadius) {
 				continue;
 			}
 			float wallOcclusion = blockedCellsOnLine(
@@ -867,7 +907,12 @@ public final class BukovRealtimeWorld
 						enemy.body.y,
 						heroBody.x,
 						heroBody.y,
-						enemy.perceptionRange(),
+						enemy.perceptionRange()
+								* (raidTheme == null
+										? 1f
+										: raidTheme.environmentRules
+												.enemySightMultiplier(
+														heroTerrain())),
 						collisionMap
 				);
 				enemy.brain.recordPlayer(
@@ -902,6 +947,22 @@ public final class BukovRealtimeWorld
 					heroBody.y,
 					enemy.engagementRange()
 			);
+			float navigationTargetX = enemy.brain.seesPlayer()
+					? heroBody.x : enemy.brain.lastSeenX();
+			float navigationTargetY = enemy.brain.seesPlayer()
+					? heroBody.y : enemy.brain.lastSeenY();
+			enemy.navigator.step(
+					dt,
+					enemy.body.x,
+					enemy.body.y,
+					navigationTargetX,
+					navigationTargetY,
+					enemy.brain.seesPlayer(),
+					enemy.brain.desiredX(),
+					enemy.brain.desiredY(),
+					collisionMap,
+					enemy.navigationIntent
+			);
 			enemy.tactics.step(
 					dt,
 					enemy.brain.seesPlayer(),
@@ -910,8 +971,8 @@ public final class BukovRealtimeWorld
 					heroBody.x,
 					heroBody.y,
 					enemy.engagementRange(),
-					enemy.brain.desiredX(),
-					enemy.brain.desiredY(),
+					enemy.navigationIntent.desiredX(),
+					enemy.navigationIntent.desiredY(),
 					enemy.tacticalIntent
 			);
 			if (enemy.bossState != null) {
@@ -1111,7 +1172,11 @@ public final class BukovRealtimeWorld
 				dt,
 				moving,
 				tookDamage,
-				firedShotThisStep);
+				firedShotThisStep,
+				raidTheme == null
+						? 1f
+						: raidTheme.environmentRules
+								.medicalDurationMultiplier(heroTerrain()));
 		hero.HP = Math.max(
 				0,
 				Math.min(
@@ -1253,7 +1318,11 @@ public final class BukovRealtimeWorld
 					&& !container.contentsReleased) {
 				releaseCompletedContainer(container.containerId);
 			} else if (container.state == BukovSearchableContainer.State.LOCKED) {
-				showHeroStatus("容器已锁定");
+				if (isMaintenanceCache(container)) {
+					unlockMaintenanceCache(container);
+				} else {
+					showHeroStatus("容器已锁定");
+				}
 			} else if (raid.beginContainerSearch(container.containerId)) {
 				activeContainerId = container.containerId;
 				lastContainerCountdown = Integer.MIN_VALUE;
@@ -1432,6 +1501,63 @@ public final class BukovRealtimeWorld
 			if (FirstRaidMission.isArchive(item)) return true;
 		}
 		return false;
+	}
+
+	private boolean hasMaintenanceKey() {
+		return raid != null && raid.loot().containsDefinition(
+				BukovFirstRaidLootTables.MAINTENANCE_KEY_DEFINITION_ID);
+	}
+
+	private static boolean isMaintenanceCache(
+			BukovRaidCoordinator.ContainerSnapshot container) {
+		return container != null
+				&& BukovFirstRaidLootTables.MAINTENANCE_CACHE_CONTAINER_ID
+						.equals(container.containerId)
+				&& BukovFirstRaidLootTables.MAINTENANCE_CACHE
+						.equals(container.lootTableId);
+	}
+
+	private boolean unlockMaintenanceCache(
+			BukovRaidCoordinator.ContainerSnapshot container) {
+		if (!isMaintenanceCache(container)
+				|| container.state
+						!= BukovSearchableContainer.State.LOCKED) {
+			return false;
+		}
+		String consumedKeyUid = raid.loot().firstItemUidForDefinition(
+				BukovFirstRaidLootTables.MAINTENANCE_KEY_DEFINITION_ID);
+		BukovKeyDoorState.UnlockResult result =
+				raid.session().keyDoors().unlock(
+						BukovFirstRaidLootTables
+								.MAINTENANCE_CACHE_DOOR_ID,
+						BukovFirstRaidLootTables
+								.MAINTENANCE_KEY_DEFINITION_ID,
+						raid.loot());
+		if (result == BukovKeyDoorState.UnlockResult.KEY_MISSING) {
+			showHeroStatus("需要维修钥匙");
+			return false;
+		}
+		if (result == BukovKeyDoorState.UnlockResult.UNLOCKED
+				&& lootAdapter != null) {
+			lootAdapter.reconcileConsumedRuntimeItem(
+					consumedKeyUid,
+					hero);
+		}
+		boolean containerChanged = raid.unlockContainer(
+				container.containerId);
+		BukovRaidCoordinator.ContainerSnapshot current =
+				raid.container(container.containerId);
+		if (current == null || current.state
+				== BukovSearchableContainer.State.LOCKED) {
+			throw new IllegalStateException(
+					"Maintenance key ledger unlocked without its container");
+		}
+		if (result == BukovKeyDoorState.UnlockResult.UNLOCKED
+				|| containerChanged) {
+			checkpointLootChange();
+		}
+		showHeroStatus("维修柜已解锁，按E搜索");
+		return true;
 	}
 
 	private boolean unlockMissionGateIfCarried() {
@@ -1931,6 +2057,7 @@ public final class BukovRealtimeWorld
 	public void disposeRealtimeObjects() {
 		input.stop();
 		inputFrame = null;
+		fireControl.resetForWeaponSwap();
 		targetBodies.clear();
 		enemyShotTargetBodies.clear();
 		charsByBody.clear();
@@ -1964,6 +2091,7 @@ public final class BukovRealtimeWorld
 										? 1f
 										: equippedGear.noiseMultiplier())));
 		playPlayerGunshot(
+				definition,
 				Math.max(
 						0.22f,
 						Math.min(
@@ -1994,6 +2122,16 @@ public final class BukovRealtimeWorld
 				heroBody.y,
 				inputFrame.aim.x,
 				inputFrame.aim.y,
+				definition.muzzleIntensity
+		);
+		combatFx.shell(
+				hero.id(),
+				fxSequence,
+				false,
+				heroBody.x,
+				heroBody.y,
+				-inputFrame.aim.y,
+				inputFrame.aim.x,
 				definition.muzzleIntensity
 		);
 		float spread = moving
@@ -2117,21 +2255,38 @@ public final class BukovRealtimeWorld
 				playerAimCell(),
 				null,
 				1f);
-		playSfx(
-				Assets.Sounds.Bukov.RELOAD_START,
-				0.62f,
-				0.96f
-		);
 		showHeroStatus("换弹");
 	}
 
 	@Override
+	public void reloadAudioCues(
+			FirearmDefinition definition,
+			int cueMask) {
+		float baseGain = Math.max(
+				0.30f,
+				Math.min(0.78f, 0.54f * definition.soundGain));
+		float basePitch = Math.max(
+				0.72f,
+				Math.min(1.28f, definition.soundPitch));
+		for (ReloadAudioCue cue : ReloadAudioCue.values()) {
+			if (!ReloadAudioCueResolver.contains(cueMask, cue)) {
+				continue;
+			}
+			float cueGain = cue == ReloadAudioCue.MAG_OUT
+					? 0.88f
+					: cue == ReloadAudioCue.MAG_IN ? 1f : 1.08f;
+			float cuePitch = cue == ReloadAudioCue.MAG_OUT
+					? 0.96f
+					: cue == ReloadAudioCue.MAG_IN ? 1f : 1.03f;
+			playSfx(
+					cue.asset(),
+					baseGain * cueGain,
+					basePitch * cuePitch);
+		}
+	}
+
+	@Override
 	public void reloadFinished() {
-		playSfx(
-				Assets.Sounds.Bukov.RELOAD_FINISH,
-				0.68f,
-				1f
-		);
 		if (equippedFirearm != null) {
 			if (equippedFirearm.magazineAmmo() == 0) {
 				showHeroStatus("没有备用弹药");
@@ -2146,10 +2301,14 @@ public final class BukovRealtimeWorld
 		if (weapon instanceof Firearm) {
 			Firearm firearm = (Firearm)weapon;
 			if (firearm != equippedFirearm) {
+				fireControl.resetForWeaponSwap();
 				equippedFirearm = firearm;
 				equippedDefinition = firearm.definition(firearmRegistry);
 			}
 		} else {
+			if (equippedFirearm != null) {
+				fireControl.resetForWeaponSwap();
+			}
 			equippedFirearm = null;
 			equippedDefinition = null;
 		}
@@ -2438,7 +2597,9 @@ public final class BukovRealtimeWorld
 						definition,
 						raid == null
 								? null
-								: raid.enemyRuntime(mob.id()));
+								: raid.enemyRuntime(mob.id()),
+						collisionMap.width(),
+						collisionMap.height());
 				enemiesByMob.put(mob, enemy);
 				enemies.add(enemy);
 				announceEnemyIdentity(enemy);
@@ -2491,10 +2652,29 @@ public final class BukovRealtimeWorld
 		}
 
 		announceEnemyManeuver(enemy);
+		enemy.avoidance.begin(
+				enemy.tacticalIntent.desiredX(),
+				enemy.tacticalIntent.desiredY());
+		for (EnemyRuntime other : enemies) {
+			if (other == enemy || !other.body.active
+					|| !other.mob.isAlive()) {
+				continue;
+			}
+			enemy.avoidance.avoid(
+					enemy.body.x,
+					enemy.body.y,
+					other.body.x,
+					other.body.y,
+					other.stableId,
+					Math.max(
+							RealtimeLocalAvoidance.DEFAULT_CLEARANCE_TILES,
+							enemy.body.radius + other.body.radius
+									+ BODY_SEPARATION_TILES));
+		}
 		float speed = enemy.movementSpeed()
 				* enemy.tacticalIntent.speedMultiplier();
-		float deltaX = enemy.tacticalIntent.desiredX() * speed * dt;
-		float deltaY = enemy.tacticalIntent.desiredY() * speed * dt;
+		float deltaX = enemy.avoidance.desiredX() * speed * dt;
+		float deltaY = enemy.avoidance.desiredY() * speed * dt;
 		float originalX = enemy.body.x;
 		float originalY = enemy.body.y;
 		enemy.body.velocityX = dt > 0f ? deltaX / dt : 0f;
@@ -2504,13 +2684,29 @@ public final class BukovRealtimeWorld
 		if (overlapsAnotherBody(enemy)) {
 			enemy.body.x = originalX;
 			enemy.body.y = originalY;
-			enemy.body.velocityX = 0f;
-			enemy.body.velocityY = 0f;
+			collision.move(enemy.body, deltaX, 0f);
+			if (overlapsAnotherBody(enemy)) {
+				enemy.body.x = originalX;
+				enemy.body.y = originalY;
+				collision.move(enemy.body, 0f, deltaY);
+				if (overlapsAnotherBody(enemy)) {
+					enemy.body.x = originalX;
+					enemy.body.y = originalY;
+				}
+			}
 		}
 
 		enemy.moving =
 				Math.abs(enemy.body.x - originalX) > 0.00001f
 				|| Math.abs(enemy.body.y - originalY) > 0.00001f;
+		enemy.body.velocityX = dt > 0f
+				? (enemy.body.x - originalX) / dt : 0f;
+		enemy.body.velocityY = dt > 0f
+				? (enemy.body.y - originalY) / dt : 0f;
+		enemy.navigator.observePosition(
+				dt,
+				enemy.body.x,
+				enemy.body.y);
 		int nextCell = enemy.body.cell(Dungeon.level.width());
 		if (nextCell != enemy.mob.pos) {
 			enemy.mob.pos = nextCell;
@@ -2607,6 +2803,16 @@ public final class BukovRealtimeWorld
 				enemy.rangedIntent.directionX(),
 				enemy.rangedIntent.directionY(),
 				0.9f
+		);
+		combatFx.shell(
+				enemy.stableId,
+				enemy.rangedIntent.shotSequence(),
+				true,
+				enemy.body.x,
+				enemy.body.y,
+				-enemy.rangedIntent.directionY(),
+				enemy.rangedIntent.directionX(),
+				0.75f
 		);
 
 		HitscanResolver.cast(
@@ -2799,6 +3005,21 @@ public final class BukovRealtimeWorld
 				< minimum * minimum;
 	}
 
+	private int heroTerrain() {
+		return terrainAt(heroBody.x, heroBody.y);
+	}
+
+	private int terrainAt(float x, float y) {
+		int cellX = Math.max(
+				0,
+				Math.min(Dungeon.level.width() - 1, (int)Math.floor(x)));
+		int cellY = Math.max(
+				0,
+				Math.min(Dungeon.level.height() - 1, (int)Math.floor(y)));
+		return Dungeon.level.map[
+				cellX + cellY * Dungeon.level.width()];
+	}
+
 	private void emitPlayerSound(float radius) {
 		playerSoundSequence++;
 		if (playerSoundSequence == 0) {
@@ -2840,7 +3061,10 @@ public final class BukovRealtimeWorld
 		target.set(tense, combat);
 	}
 
-	private void playPlayerGunshot(float gainScale, float pitchScale) {
+	private void playPlayerGunshot(
+			FirearmDefinition definition,
+			float gainScale,
+			float pitchScale) {
 		SpatialAudioModel.resolve(
 				audioContract,
 				1f,
@@ -2856,7 +3080,7 @@ public final class BukovRealtimeWorld
 				playbackSpatial,
 				gunshotAudio);
 		playGunshotLayers(
-				Assets.Sounds.Bukov.GUNSHOT_PLAYER,
+				definition.audioProfile.gunshotFamily.asset(),
 				gainScale,
 				pitchScale);
 	}
@@ -3769,11 +3993,18 @@ public final class BukovRealtimeWorld
 
 	private void releaseEnemyLoot(EnemyRuntime enemy, int cell) {
 		if (enemy.definition == null
-				|| enemy.definition.tier == EnemyTier.BOSS
-				|| !enemyDropsLoot(
+				|| enemy.definition.tier == EnemyTier.BOSS) {
+			return;
+		}
+		boolean normalDrop = enemyDropsLoot(
+				Dungeon.seed,
+				enemy.stableId,
+				enemy.definition.tier);
+		boolean maintenanceKeyDrop =
+				BukovFirstRaidLootTables.maintenanceKeyDrops(
 						Dungeon.seed,
-						enemy.stableId,
-						enemy.definition.tier)) {
+						enemy.stableId);
+		if (!normalDrop && !maintenanceKeyDrop) {
 			return;
 		}
 		String table = enemy.definition.tier == EnemyTier.ELITE
@@ -3789,12 +4020,29 @@ public final class BukovRealtimeWorld
 		} else if (heap.type != Heap.Type.HEAP) {
 			return;
 		}
-		int rolls = enemy.definition.tier == EnemyTier.ELITE ? 2 : 1;
-		for (Item item : BukovFirstRaidLootTables.require(table).roll(
-				Dungeon.seed,
-				"enemy:" + enemy.stableId,
-				rolls)) {
-			heap.items.addLast(item);
+		if (normalDrop) {
+			int rolls = enemy.definition.tier == EnemyTier.ELITE ? 2 : 1;
+			for (Item item : BukovFirstRaidLootTables.require(table).roll(
+					Dungeon.seed,
+					"enemy:" + enemy.stableId,
+					rolls)) {
+				heap.items.addLast(item);
+			}
+		}
+		if (maintenanceKeyDrop
+				&& !heapContainsDefinition(
+						heap,
+						BukovFirstRaidLootTables
+								.MAINTENANCE_KEY_DEFINITION_ID)) {
+			Item key = BukovFirstRaidLootTables
+					.createByEconomicDefinitionId(
+							BukovFirstRaidLootTables
+									.MAINTENANCE_KEY_DEFINITION_ID);
+			if (key == null) {
+				throw new IllegalStateException(
+						"Maintenance key loot definition is missing");
+			}
+			heap.items.addLast(key);
 		}
 		if (created) {
 			Dungeon.level.heaps.put(cell, heap);
@@ -3803,6 +4051,20 @@ public final class BukovRealtimeWorld
 			heap.sprite.link();
 			heap.sprite.drop();
 		}
+	}
+
+	private static boolean heapContainsDefinition(
+			Heap heap,
+			String definitionId) {
+		for (Item item : heap.items) {
+			if (item instanceof BukovEconomicItem
+					&& definitionId.equals(
+							((BukovEconomicItem)item)
+									.bukovDefinitionId())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	static boolean enemyDropsLoot(
@@ -4143,8 +4405,11 @@ public final class BukovRealtimeWorld
 		private final Mob mob;
 		private final RealtimeBody body;
 		private final RealtimeEnemyBrain brain;
+		private final RealtimeEnemyNavigator navigator;
+		private final RealtimeEnemyNavigator.Intent navigationIntent;
 		private final RealtimeEnemyTactics tactics;
 		private final RealtimeEnemyTactics.Intent tacticalIntent;
+		private final RealtimeLocalAvoidance avoidance;
 		private final int stableId;
 		private final EnemyArchetypeDefinition definition;
 		private final EnemyRangedCombatController.Config rangedConfig;
@@ -4164,16 +4429,24 @@ public final class BukovRealtimeWorld
 		private EnemyRuntime(
 				Mob mob,
 				EnemyArchetypeDefinition definition,
-				BukovRaidCheckpoint.EnemyRuntimeState restoredState) {
+				BukovRaidCheckpoint.EnemyRuntimeState restoredState,
+				int mapWidth,
+				int mapHeight) {
 			this.mob = mob;
 			this.definition = definition;
 			body = mob.ensureRealtimeBody();
 			stableId = mob.id();
 			brain = new RealtimeEnemyBrain(stableId);
+			navigator = new RealtimeEnemyNavigator(
+					stableId,
+					mapWidth,
+					mapHeight);
+			navigationIntent = new RealtimeEnemyNavigator.Intent();
 			tactics = new RealtimeEnemyTactics(
 					RealtimeEnemyTactics.profileFor(definition),
 					stableId);
 			tacticalIntent = new RealtimeEnemyTactics.Intent();
+			avoidance = new RealtimeLocalAvoidance(stableId);
 			String definitionId =
 					definition == null ? "" : definition.id;
 			boolean matchingSnapshot = restoredState != null

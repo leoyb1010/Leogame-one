@@ -55,8 +55,10 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovImpactFx;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovMuzzleFx;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovShellFx;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovTracerFx;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatPresentation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
@@ -1183,6 +1185,20 @@ public class GameScene extends PixelScene {
 							anchor.searchSeconds,
 							false));
 				}
+				int maintenanceCell = ((BukovLevel)Dungeon.level)
+						.semanticCell("scrap_compactor");
+				if (maintenanceCell < 0) {
+					throw new IllegalStateException(
+							"Bukov raid is missing the optional maintenance cache anchor");
+				}
+				result.add(new BukovContainerDefinition(
+						BukovFirstRaidLootTables
+								.MAINTENANCE_CACHE_CONTAINER_ID,
+						maintenanceCell,
+						BukovFirstRaidLootTables.MAINTENANCE_CACHE,
+						3,
+						3.2f,
+						true));
 				BukovRaidLayout.MissionGate missionGate =
 						((BukovLevel)Dungeon.level).missionGate();
 				if (missionGate == null || missionGate.archiveCell < 0) {
@@ -1220,6 +1236,15 @@ public class GameScene extends PixelScene {
 				switch (event.type()) {
 					case MUZZLE_FLASH:
 						overFogEffects.add(new BukovMuzzleFx(
+								from,
+								new PointF(
+										event.toX() - event.fromX(),
+										event.toY() - event.fromY()),
+								event.hostile(),
+								event.intensity()));
+						break;
+					case SHELL:
+						overFogEffects.add(new BukovShellFx(
 								from,
 								new PointF(
 										event.toX() - event.fromX(),

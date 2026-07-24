@@ -36,6 +36,16 @@ public final class BukovStash implements Bundlable {
 		return removed == null ? null : removed.copy();
 	}
 
+	/** Replaces runtime flags on the same physical item without changing UID order. */
+	public void replace(RaidItem item) {
+		if (item == null) throw new IllegalArgumentException("item is required");
+		if (!itemsByUid.containsKey(item.itemUid())) {
+			throw new IllegalArgumentException(
+					"Stash item does not exist: " + item.itemUid());
+		}
+		itemsByUid.put(item.itemUid(), item.copy());
+	}
+
 	public boolean contains(String itemUid) {
 		return itemsByUid.containsKey(itemUid);
 	}

@@ -196,8 +196,8 @@ def main() -> None:
     check_license_and_evidence(manifest)
     print(
         "Bukov release manifest: PASS "
-        "(6 themes, 18 firearms, 13 enemies, 4 modes, "
-        "72 icon frames, 19 SFX; macOS + iOS simulator evidence verified)"
+        "(6 themes, 18 firearms, 13 enemies, 5 modes, "
+        "72 icon frames, 28 SFX; macOS + iOS simulator evidence verified)"
     )
 
 

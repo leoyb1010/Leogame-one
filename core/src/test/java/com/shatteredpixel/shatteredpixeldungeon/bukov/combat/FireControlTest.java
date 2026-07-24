@@ -1,5 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FirearmAudioProfile;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotSoundFamily;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCue;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FireMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
@@ -97,6 +101,103 @@ public class FireControlTest {
 	}
 
 	@Test
+	public void longReloadFrameEmitsEveryMechanicalCueBeforeFinish() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		definition.magazineSize = 5;
+		definition.reloadSeconds = 2f;
+		definition.audioProfile = new FirearmAudioProfile(
+				GunshotSoundFamily.PISTOL,
+				0.10f,
+				0.55f,
+				0.86f);
+		Firearm firearm = new Firearm().configure("test", "uid", 1);
+		RecordingSink sink = new RecordingSink();
+		FireControl control = new FireControl();
+
+		control.update(0f, false, false, true, firearm, definition, sink);
+		control.update(2f, false, false, false, firearm, definition, sink);
+
+		assertEquals(
+				ReloadAudioCue.MAG_OUT.mask
+						| ReloadAudioCue.MAG_IN.mask
+						| ReloadAudioCue.CHARGE.mask,
+				sink.reloadCueMask);
+		assertEquals(1, sink.reloadCueCallbacks);
+		assertEquals(1, sink.reloadFinishes);
+		assertFalse(control.isReloading());
+	}
+
+	@Test
+	public void reloadCuesUseEffectiveDurationAndNeverDuplicate() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		definition.magazineSize = 5;
+		definition.reloadSeconds = 2f;
+		definition.audioProfile = new FirearmAudioProfile(
+				GunshotSoundFamily.PISTOL,
+				0.10f,
+				0.55f,
+				0.86f);
+		Firearm firearm = new Firearm().configure("test", "uid", 1);
+		RecordingSink sink = new RecordingSink();
+		FireControl control = new FireControl();
+
+		control.update(
+				0f, false, false, true,
+				firearm, definition, 1.5f, sink);
+		assertEquals(3f, control.reloadDuration(), 0.0001f);
+
+		control.update(
+				0.31f, false, false, false,
+				firearm, definition, 1.5f, sink);
+		assertEquals(ReloadAudioCue.MAG_OUT.mask, sink.reloadCueMask);
+		assertEquals(1, sink.reloadCueCallbacks);
+
+		control.update(
+				1.40f, false, false, false,
+				firearm, definition, 1.5f, sink);
+		assertEquals(
+				ReloadAudioCue.MAG_OUT.mask | ReloadAudioCue.MAG_IN.mask,
+				sink.reloadCueMask);
+		assertEquals(2, sink.reloadCueCallbacks);
+
+		control.update(
+				0.10f, false, false, false,
+				firearm, definition, 1.5f, sink);
+		assertEquals(2, sink.reloadCueCallbacks);
+
+		control.update(
+				1.30f, false, false, false,
+				firearm, definition, 1.5f, sink);
+		assertEquals(
+				ReloadAudioCue.MAG_OUT.mask
+						| ReloadAudioCue.MAG_IN.mask
+						| ReloadAudioCue.CHARGE.mask,
+				sink.reloadCueMask);
+		assertEquals(3, sink.reloadCueCallbacks);
+		assertEquals(1, sink.reloadFinishes);
+	}
+
+	@Test
+	public void weaponSwapClearsPendingReloadCues() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		definition.magazineSize = 5;
+		definition.reloadSeconds = 2f;
+		Firearm firearm = new Firearm().configure("test", "uid", 1);
+		RecordingSink sink = new RecordingSink();
+		FireControl control = new FireControl();
+
+		control.update(0f, false, false, true, firearm, definition, sink);
+		control.resetForWeaponSwap();
+		control.update(2f, false, false, false, firearm, definition, sink);
+
+		assertEquals(0, sink.reloadCueMask);
+		assertEquals(0, sink.reloadCueCallbacks);
+		assertEquals(0, sink.reloadFinishes);
+		assertEquals(0f, control.reloadDuration(), 0f);
+		assertFalse(control.isReloading());
+	}
+
+	@Test
 	public void emptyMagazineEmitsDryFire() {
 		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
 		Firearm firearm = new Firearm().configure("test", "uid", 0);
@@ -141,6 +242,8 @@ public class FireControlTest {
 		int dryFires;
 		int reloadStarts;
 		int reloadFinishes;
+		int reloadCueMask;
+		int reloadCueCallbacks;
 		int availableAmmo;
 		int lastRequestedMaximum;
 		String suppliedDefinitionId;
@@ -183,6 +286,22 @@ public class FireControlTest {
 		@Override
 		public void reloadStarted(float seconds) {
 			reloadStarts++;
+		}
+
+		@Override
+		public void reloadAudioCues(
+				FirearmDefinition definition,
+				int cueMask) {
+			for (ReloadAudioCue cue : ReloadAudioCue.values()) {
+				if (ReloadAudioCueResolver.contains(cueMask, cue)) {
+					assertEquals(
+							"cue must not be emitted twice",
+							0,
+							reloadCueMask & cue.mask);
+				}
+			}
+			reloadCueMask |= cueMask;
+			reloadCueCallbacks++;
 		}
 
 		@Override

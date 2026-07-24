@@ -25,6 +25,10 @@
       "feedbackProfile": "SIDEARM_LIGHT",
       "soundPitch": 1.08,
       "soundGain": 0.72,
+      "audio": {
+        "gunshotFamily": "PISTOL",
+        "reloadCueFractions": {"magOut": 0.10, "magIn": 0.55, "charge": 0.86}
+      },
       "muzzleIntensity": 0.65,
       "tracerIntensity": 0.75,
       "impactIntensity": 0.65,
@@ -54,6 +58,10 @@
       "feedbackProfile": "SMG_FAST",
       "soundPitch": 1.04,
       "soundGain": 0.78,
+      "audio": {
+        "gunshotFamily": "SMG",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.60, "charge": 0.88}
+      },
       "muzzleIntensity": 0.72,
       "tracerIntensity": 0.78,
       "impactIntensity": 0.68,
@@ -83,6 +91,10 @@
       "feedbackProfile": "RIFLE_CONTROLLED",
       "soundPitch": 0.98,
       "soundGain": 0.95,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.14, "magIn": 0.64, "charge": 0.90}
+      },
       "muzzleIntensity": 0.96,
       "tracerIntensity": 1.00,
       "impactIntensity": 0.92,
@@ -112,6 +124,10 @@
       "feedbackProfile": "RIFLE_HEAVY",
       "soundPitch": 0.91,
       "soundGain": 1.12,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.14, "magIn": 0.64, "charge": 0.90}
+      },
       "muzzleIntensity": 1.18,
       "tracerIntensity": 1.12,
       "impactIntensity": 1.16,
@@ -141,6 +157,10 @@
       "feedbackProfile": "SHOTGUN_PUMP",
       "soundPitch": 0.84,
       "soundGain": 1.24,
+      "audio": {
+        "gunshotFamily": "SHOTGUN",
+        "reloadCueFractions": {"magOut": 0.08, "magIn": 0.55, "charge": 0.92}
+      },
       "muzzleIntensity": 1.38,
       "tracerIntensity": 1.22,
       "impactIntensity": 1.38,
@@ -170,6 +190,10 @@
       "feedbackProfile": "MARKSMAN_SEMI",
       "soundPitch": 0.88,
       "soundGain": 1.18,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.62, "charge": 0.90}
+      },
       "muzzleIntensity": 1.14,
       "tracerIntensity": 1.20,
       "impactIntensity": 1.26,
@@ -199,6 +223,10 @@
       "feedbackProfile": "SIDEARM_DUTY",
       "soundPitch": 1.03,
       "soundGain": 0.80,
+      "audio": {
+        "gunshotFamily": "PISTOL",
+        "reloadCueFractions": {"magOut": 0.10, "magIn": 0.55, "charge": 0.86}
+      },
       "muzzleIntensity": 0.72,
       "tracerIntensity": 0.80,
       "impactIntensity": 0.72,
@@ -228,6 +256,10 @@
       "feedbackProfile": "SIDEARM_SUPPRESSED",
       "soundPitch": 1.14,
       "soundGain": 0.55,
+      "audio": {
+        "gunshotFamily": "PISTOL",
+        "reloadCueFractions": {"magOut": 0.10, "magIn": 0.55, "charge": 0.86}
+      },
       "muzzleIntensity": 0.50,
       "tracerIntensity": 0.62,
       "impactIntensity": 0.55,
@@ -257,6 +289,10 @@
       "feedbackProfile": "SMG_BULLET_HOSE",
       "soundPitch": 1.09,
       "soundGain": 0.75,
+      "audio": {
+        "gunshotFamily": "SMG",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.60, "charge": 0.88}
+      },
       "muzzleIntensity": 0.68,
       "tracerIntensity": 0.72,
       "impactIntensity": 0.62,
@@ -286,6 +322,10 @@
       "feedbackProfile": "SMG_SUPPRESSED",
       "soundPitch": 1.12,
       "soundGain": 0.60,
+      "audio": {
+        "gunshotFamily": "SMG",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.60, "charge": 0.88}
+      },
       "muzzleIntensity": 0.55,
       "tracerIntensity": 0.70,
       "impactIntensity": 0.60,
@@ -315,6 +355,10 @@
       "feedbackProfile": "SMG_HEAVY",
       "soundPitch": 0.99,
       "soundGain": 0.88,
+      "audio": {
+        "gunshotFamily": "SMG",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.60, "charge": 0.88}
+      },
       "muzzleIntensity": 0.82,
       "tracerIntensity": 0.88,
       "impactIntensity": 0.82,
@@ -344,6 +388,10 @@
       "feedbackProfile": "RIFLE_FAST",
       "soundPitch": 1.02,
       "soundGain": 0.93,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.14, "magIn": 0.64, "charge": 0.90}
+      },
       "muzzleIntensity": 0.90,
       "tracerIntensity": 0.95,
       "impactIntensity": 0.88,
@@ -373,6 +421,10 @@
       "feedbackProfile": "RIFLE_BRUTAL",
       "soundPitch": 0.86,
       "soundGain": 1.20,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.14, "magIn": 0.64, "charge": 0.90}
+      },
       "muzzleIntensity": 1.24,
       "tracerIntensity": 1.18,
       "impactIntensity": 1.25,
@@ -402,6 +454,10 @@
       "feedbackProfile": "CARBINE_SCOUT",
       "soundPitch": 1.00,
       "soundGain": 0.90,
+      "audio": {
+        "gunshotFamily": "CARBINE",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.60, "charge": 0.88}
+      },
       "muzzleIntensity": 0.84,
       "tracerIntensity": 0.92,
       "impactIntensity": 0.84,
@@ -431,6 +487,10 @@
       "feedbackProfile": "SHOTGUN_SEMI",
       "soundPitch": 0.88,
       "soundGain": 1.18,
+      "audio": {
+        "gunshotFamily": "SHOTGUN",
+        "reloadCueFractions": {"magOut": 0.08, "magIn": 0.55, "charge": 0.92}
+      },
       "muzzleIntensity": 1.28,
       "tracerIntensity": 1.14,
       "impactIntensity": 1.30,
@@ -460,6 +520,10 @@
       "feedbackProfile": "HEAVY_AUTOSHOTGUN",
       "soundPitch": 0.80,
       "soundGain": 1.42,
+      "audio": {
+        "gunshotFamily": "HEAVY",
+        "reloadCueFractions": {"magOut": 0.15, "magIn": 0.70, "charge": 0.93}
+      },
       "muzzleIntensity": 1.50,
       "tracerIntensity": 1.30,
       "impactIntensity": 1.48,
@@ -489,6 +553,10 @@
       "feedbackProfile": "MARKSMAN_AP",
       "soundPitch": 0.94,
       "soundGain": 1.05,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.62, "charge": 0.90}
+      },
       "muzzleIntensity": 1.02,
       "tracerIntensity": 1.15,
       "impactIntensity": 1.14,
@@ -518,6 +586,10 @@
       "feedbackProfile": "MARKSMAN_HEAVY",
       "soundPitch": 0.82,
       "soundGain": 1.32,
+      "audio": {
+        "gunshotFamily": "RIFLE",
+        "reloadCueFractions": {"magOut": 0.12, "magIn": 0.62, "charge": 0.90}
+      },
       "muzzleIntensity": 1.36,
       "tracerIntensity": 1.28,
       "impactIntensity": 1.42,

@@ -204,6 +204,69 @@ const sounds = {
     return finish(out);
   },
 
+  // Six authored weapon-body families. They intentionally differ in
+  // transient length, low-frequency body, mechanical brightness and tail;
+  // per-weapon pitch/gain still provides variation inside each family.
+  gunshot_pistol() {
+    const out = buffer(0.24);
+    addNoise(out, 0, 0.032, 1.1, 0x211, 0.91, 0.62, 10.5);
+    addChirp(out, 0, 0.085, 178, 72, 0.62, 5.4);
+    addChirp(out, 0.002, 0.048, 1480, 430, 0.34, 6.2);
+    addNoise(out, 0.014, 0.19, 0.23, 0x212, 0.2, 0.2, 6.4);
+    addClick(out, 0.052, 0.24, 0.74);
+    return finish(out);
+  },
+
+  gunshot_smg() {
+    const out = buffer(0.19);
+    addNoise(out, 0, 0.026, 0.98, 0x221, 0.94, 0.7, 12);
+    addChirp(out, 0, 0.064, 216, 91, 0.48, 6.2);
+    addChirp(out, 0.001, 0.034, 1860, 610, 0.38, 7.1);
+    addNoise(out, 0.011, 0.14, 0.18, 0x222, 0.24, 0.28, 7.4);
+    addClick(out, 0.038, 0.3, 0.8);
+    return finish(out);
+  },
+
+  gunshot_carbine() {
+    const out = buffer(0.30);
+    addNoise(out, 0, 0.041, 1.14, 0x231, 0.88, 0.52, 9.4);
+    addChirp(out, 0, 0.105, 142, 57, 0.75, 4.8);
+    addChirp(out, 0.002, 0.05, 1260, 360, 0.31, 5.6);
+    addNoise(out, 0.018, 0.25, 0.32, 0x232, 0.15, 0.14, 5.2);
+    addClick(out, 0.061, 0.18, 0.68);
+    return finish(out);
+  },
+
+  gunshot_rifle() {
+    const out = buffer(0.39);
+    addNoise(out, 0, 0.052, 1.22, 0x241, 0.84, 0.43, 8.4);
+    addChirp(out, 0, 0.145, 108, 41, 0.94, 4.0);
+    addChirp(out, 0.003, 0.062, 970, 245, 0.3, 4.8);
+    addNoise(out, 0.021, 0.34, 0.43, 0x242, 0.11, 0.09, 4.5);
+    addClick(out, 0.083, 0.2, 0.63);
+    return finish(out);
+  },
+
+  gunshot_shotgun() {
+    const out = buffer(0.49);
+    addNoise(out, 0, 0.075, 1.38, 0x251, 0.74, 0.28, 6.9);
+    addChirp(out, 0, 0.19, 82, 30, 1.08, 3.5);
+    addNoise(out, 0.016, 0.43, 0.58, 0x252, 0.08, 0.05, 3.8);
+    addChirp(out, 0.004, 0.075, 610, 138, 0.29, 4.2);
+    addClick(out, 0.118, 0.22, 0.54);
+    return finish(out);
+  },
+
+  gunshot_heavy() {
+    const out = buffer(0.58);
+    addNoise(out, 0, 0.09, 1.48, 0x261, 0.68, 0.22, 6.1);
+    addChirp(out, 0, 0.23, 64, 24, 1.22, 3.0);
+    addNoise(out, 0.018, 0.53, 0.67, 0x262, 0.065, 0.035, 3.25);
+    addChirp(out, 0.002, 0.095, 470, 104, 0.33, 3.8);
+    addClick(out, 0.145, 0.26, 0.48);
+    return finish(out);
+  },
+
   bullet_hit() {
 		const out = buffer(0.19);
     addClick(out, 0.002, 1.05, 0.82);
@@ -245,6 +308,35 @@ const sounds = {
     addClick(out, 0.105, 0.8, 0.76);
     addChirp(out, 0.106, 0.085, 620, 255, 0.28, 4.5);
     addClick(out, 0.178, 0.34, 0.55);
+    return finish(out);
+  },
+
+  reload_mag_out() {
+    const out = buffer(0.23);
+    addClick(out, 0.01, 0.74, 0.7);
+    addChirp(out, 0.012, 0.065, 410, 175, 0.22, 4.4);
+    addNoise(out, 0.045, 0.12, 0.19, 0x411, 0.09, 0.19, 3.5);
+    addClick(out, 0.145, 0.52, 0.62);
+    return finish(out);
+  },
+
+  reload_mag_in() {
+    const out = buffer(0.28);
+    addNoise(out, 0, 0.1, 0.2, 0x421, 0.07, 0.12, 3.2);
+    addChirp(out, 0.025, 0.09, 172, 286, 0.25, 3.8);
+    addClick(out, 0.104, 0.88, 0.76);
+    addChirp(out, 0.11, 0.09, 690, 270, 0.18, 5.2);
+    addClick(out, 0.205, 0.28, 0.55);
+    return finish(out);
+  },
+
+  reload_charge() {
+    const out = buffer(0.33);
+    addClick(out, 0.008, 0.55, 0.72);
+    addNoise(out, 0.015, 0.18, 0.24, 0x431, 0.11, 0.24, 2.7);
+    addChirp(out, 0.02, 0.17, 520, 205, 0.27, 2.8);
+    addClick(out, 0.205, 0.92, 0.82);
+    addChirp(out, 0.208, 0.08, 880, 310, 0.23, 5.5);
     return finish(out);
   },
 

@@ -11,12 +11,14 @@ public class Firearm extends Weapon {
 	private static final String MAG = "magazine_ammo";
 	private static final String LOADED_AMMO = "loaded_ammo_definition_id";
 	private static final String DURABILITY = "durability";
+	private static final String ATTACHMENT_BUILD = "attachment_build";
 
 	private String definitionId;
 	private String itemUid;
 	private int magazineAmmo;
 	private String loadedAmmoDefinitionId;
 	private float durability = 1f;
+	private FirearmBuild attachmentBuild;
 
 	{
 		// ponytail: Reuse the host crossbow icon until dedicated firearm art lands.
@@ -38,6 +40,9 @@ public class Firearm extends Weapon {
 		if (itemUid == null || itemUid.isEmpty()) {
 			throw new IllegalArgumentException("itemUid is required");
 		}
+		if (this.itemUid != null && !this.itemUid.equals(itemUid)) {
+			attachmentBuild = null;
+		}
 		this.definitionId = definitionId;
 		this.itemUid = itemUid;
 		this.magazineAmmo = Math.max(0, magazineAmmo);
@@ -49,7 +54,43 @@ public class Firearm extends Weapon {
 		if (registry == null) {
 			throw new IllegalArgumentException("registry is required");
 		}
-		return registry.require(definitionId);
+		FirearmDefinition base = registry.require(definitionId);
+		if (attachmentBuild == null) return base;
+		EffectiveFirearmStats effective =
+				attachmentBuild.effectiveStats(base);
+		FirearmDefinition result = copyDefinition(base);
+		result.damage = effective.damage;
+		result.penetration = effective.penetration;
+		result.rpm = effective.rpm;
+		result.magazineSize = effective.magazineSize;
+		result.reloadSeconds = effective.reloadSeconds;
+		result.effectiveRangeTiles = effective.effectiveRangeTiles;
+		result.baseSpreadDeg = effective.baseSpreadDeg;
+		result.movingSpreadDeg = effective.movingSpreadDeg;
+		result.recoilPerShot = effective.recoilPerShot;
+		result.noiseRadiusTiles = effective.noiseRadiusTiles;
+		result.weightKg = effective.weightKg;
+		// Validate the fully materialized definition, not only the registry
+		// base. This keeps future attachment data from publishing impossible
+		// magazine, reload, presentation or audio values into live combat.
+		result.validate();
+		return result;
+	}
+
+	public void applyBuild(FirearmBuild build) {
+		if (build == null) {
+			attachmentBuild = null;
+			return;
+		}
+		if (itemUid == null || !itemUid.equals(build.firearmUid())) {
+			throw new IllegalArgumentException(
+					"firearm build UID does not match runtime firearm");
+		}
+		attachmentBuild = build.copy();
+	}
+
+	public FirearmBuild attachmentBuild() {
+		return attachmentBuild == null ? null : attachmentBuild.copy();
 	}
 
 	public String definitionId() {
@@ -159,6 +200,9 @@ public class Firearm extends Weapon {
 		bundle.put(MAG, magazineAmmo);
 		bundle.put(LOADED_AMMO, loadedAmmoDefinitionId);
 		bundle.put(DURABILITY, durability);
+		if (attachmentBuild != null) {
+			bundle.put(ATTACHMENT_BUILD, attachmentBuild);
+		}
 	}
 
 	@Override
@@ -171,5 +215,52 @@ public class Firearm extends Weapon {
 		durability = bundle.contains(DURABILITY)
 				? Math.max(0f, Math.min(1f, bundle.getFloat(DURABILITY)))
 				: 1f;
+		if (bundle.contains(ATTACHMENT_BUILD)) {
+			com.watabou.utils.Bundlable restoredBuild =
+					bundle.get(ATTACHMENT_BUILD);
+			if (!(restoredBuild instanceof FirearmBuild)) {
+				throw new IllegalStateException(
+						"Invalid firearm attachment build");
+			}
+			applyBuild((FirearmBuild) restoredBuild);
+		} else {
+			attachmentBuild = null;
+		}
+	}
+
+	private static FirearmDefinition copyDefinition(FirearmDefinition source) {
+		FirearmDefinition result = new FirearmDefinition();
+		result.id = source.id;
+		result.name = source.name;
+		result.weaponClass = source.weaponClass;
+		result.caliber = source.caliber;
+		result.defaultAmmo = source.defaultAmmo;
+		result.fireMode = source.fireMode;
+		result.damage = source.damage;
+		result.penetration = source.penetration;
+		result.rpm = source.rpm;
+		result.magazineSize = source.magazineSize;
+		result.reloadSeconds = source.reloadSeconds;
+		result.effectiveRangeTiles = source.effectiveRangeTiles;
+		result.baseSpreadDeg = source.baseSpreadDeg;
+		result.movingSpreadDeg = source.movingSpreadDeg;
+		result.recoilPerShot = source.recoilPerShot;
+		result.recoilRecovery = source.recoilRecovery;
+		result.pellets = source.pellets;
+		result.noiseRadiusTiles = source.noiseRadiusTiles;
+		result.weightKg = source.weightKg;
+		result.value = source.value;
+		result.feedbackProfile = source.feedbackProfile;
+		result.soundPitch = source.soundPitch;
+		result.soundGain = source.soundGain;
+		// Attachments alter ballistics, not the authored weapon timbre or
+		// reload cue timeline. Preserve the registry profile on the effective
+		// definition so a suppressed rifle cannot silently become a pistol.
+		result.audioProfile = source.audioProfile;
+		result.muzzleIntensity = source.muzzleIntensity;
+		result.tracerIntensity = source.tracerIntensity;
+		result.impactIntensity = source.impactIntensity;
+		result.feedbackIntensity = source.feedbackIntensity;
+		return result;
 	}
 }

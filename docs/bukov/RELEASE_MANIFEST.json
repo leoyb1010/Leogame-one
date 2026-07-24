@@ -25,13 +25,14 @@
       "boss": 1
     },
     "raidModes": {
-      "expected": 4,
+      "expected": 5,
       "source": "core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/raid/BukovRaidMode.java",
       "ids": [
         "EXPEDITION",
         "QUICK_SWEEP",
         "SCAVENGER",
-        "BOSS_CONTRACT"
+        "BOSS_CONTRACT",
+        "TRAINING_GROUND"
       ]
     },
     "vendor": {
@@ -48,7 +49,7 @@
       "manifest": "core/src/main/assets/sprites/bukov/items_interactions_manifest.json"
     },
     "soundEffects": {
-      "expected": 19,
+      "expected": 28,
       "directory": "core/src/main/assets/sounds/bukov",
       "format": "mono 48 kHz PCM16 WAV"
     },

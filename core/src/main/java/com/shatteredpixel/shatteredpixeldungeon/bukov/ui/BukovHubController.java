@@ -8,6 +8,10 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovEconomyService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovCareerProgression;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovStarterProvisioning;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovVendorCatalog;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovInsuranceService;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovLongTermContractService;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmAttachmentSlot;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmBuild;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidItem;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
@@ -92,6 +96,89 @@ public final class BukovHubController {
 				profile,
 				vendorOffers(),
 				activeCheckpoint != null);
+	}
+
+	public BukovServicesViewModel servicesViewModel() {
+		return BukovServicesViewModel.from(
+				profile,
+				activeCheckpoint != null);
+	}
+
+	public BukovLongTermContractService.ClaimResult claimContract(
+			String contractId) throws IOException {
+		requireEditableLoadout();
+		BukovProfile working = profile.copy();
+		BukovLongTermContractService.ClaimResult result =
+				new BukovLongTermContractService().claim(
+						working, contractId);
+		if (result.status
+				== BukovLongTermContractService.ClaimStatus.CLAIMED) {
+			commitProfile(working);
+		}
+		return result;
+	}
+
+	public BukovInsuranceService.ClaimResult claimInsuranceReturns()
+			throws IOException {
+		requireEditableLoadout();
+		BukovProfile working = profile.copy();
+		BukovInsuranceService.ClaimResult result =
+				new BukovInsuranceService().claimAvailable(working);
+		if (!result.returnedItemUids.isEmpty()) {
+			commitProfile(working);
+		}
+		return result;
+	}
+
+	public boolean toggleInsurance(String itemUid) throws IOException {
+		requireEditableLoadout();
+		BukovProfile working = profile.copy();
+		if (!working.loadout().contains(itemUid)) {
+			throw new IllegalArgumentException(
+					"只能为已选带入物资投保");
+		}
+		RaidItem item = working.stash().item(itemUid);
+		if (item == null) {
+			throw new IllegalArgumentException("仓库物资不存在");
+		}
+		RaidItem updated = item.withInsured(!item.insured());
+		working.stash().replace(updated);
+		commitProfile(working);
+		return updated.insured();
+	}
+
+	public boolean toggleAttachment(
+			String firearmUid,
+			FirearmAttachmentSlot slot) throws IOException {
+		requireEditableLoadout();
+		if (slot == null) throw new IllegalArgumentException("slot is required");
+		BukovProfile working = profile.copy();
+		RaidItem item = working.stash().item(firearmUid);
+		if (item == null || !item.definitionId().startsWith("firearm:")) {
+			throw new IllegalArgumentException("仓库枪械不存在");
+		}
+		if (!BukovServicesViewModel.supportsFirearm(
+				item.definitionId())) {
+			throw new IllegalArgumentException(
+					"该旧版枪械型号暂不支持改装");
+		}
+		FirearmBuild build = working.firearmBuilds().build(firearmUid);
+		if (build == null) build = new FirearmBuild(firearmUid);
+		boolean installed;
+		if (build.attachment(slot) == null) {
+			build.install(BukovServicesViewModel.attachmentFor(slot));
+			installed = true;
+		} else {
+			build.remove(slot);
+			installed = false;
+		}
+		if (build.attachments().isEmpty()) {
+			working.firearmBuilds().remove(firearmUid);
+		} else {
+			working.firearmBuilds().save(build);
+		}
+		commitProfile(working);
+		return installed;
 	}
 
 	public void clearLoadout() throws IOException {
@@ -316,6 +403,14 @@ public final class BukovHubController {
 			throw new IllegalStateException(
 					"行动进行中，当前配装由行动检查点锁定");
 		}
+	}
+
+	private void commitProfile(BukovProfile working) throws IOException {
+		// The controller keeps the old detached snapshot until durable storage
+		// accepts the new document. A failed write therefore changes neither
+		// the visible UI model nor the authoritative save.
+		saves.saveProfile(working);
+		profile = working;
 	}
 
 	private static String formatWeight(float value) {

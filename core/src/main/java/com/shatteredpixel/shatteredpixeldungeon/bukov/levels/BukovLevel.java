@@ -458,8 +458,12 @@ public class BukovLevel extends RegularLevel {
 		}
 		if (target == null) return -1;
 
+		BukovRaidLayout.MissionGate gate = raidLayout.missionGate();
+		int gateCellCount = gate == null ? 0 : 1 + gate.gateCells.length;
 		int[] forbidden = new int[
-				2 + raidLayout.extractions.size() + raidLayout.lootAnchors.size()];
+				2 + raidLayout.extractions.size()
+						+ raidLayout.lootAnchors.size()
+						+ gateCellCount];
 		int index = 0;
 		forbidden[index++] = entrance();
 		forbidden[index++] = exit();
@@ -468,6 +472,12 @@ public class BukovLevel extends RegularLevel {
 		}
 		for (BukovRaidLayout.LootAnchor anchor : raidLayout.lootAnchors) {
 			forbidden[index++] = anchor.cell;
+		}
+		if (gate != null) {
+			forbidden[index++] = gate.archiveCell;
+			for (int gateCell : gate.gateCells) {
+				forbidden[index++] = gateCell;
+			}
 		}
 		return ExtractionCellSelector.select(
 				width(), height(), map, target, forbidden);

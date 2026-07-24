@@ -22,9 +22,17 @@ public final class BukovFirstRaidLootTables {
 	public static final String MEDICAL = "medical";
 	public static final String INDUSTRIAL = "industrial";
 	public static final String HIGH_VALUE = "high_value";
+	public static final String MAINTENANCE_CACHE = "maintenance_cache";
 	public static final String BOSS = "boss";
 	public static final String MISSION_ARCHIVE =
 			FirstRaidMission.ARCHIVE_LOOT_TABLE_ID;
+	public static final String MAINTENANCE_KEY_DEFINITION_ID =
+			"key:maintenance";
+	public static final String MAINTENANCE_CACHE_CONTAINER_ID =
+			"side:maintenance_cache";
+	public static final String MAINTENANCE_CACHE_DOOR_ID =
+			"lock:maintenance_cache";
+	private static final int MAINTENANCE_KEY_DROP_PERCENT = 8;
 
 	private static final Map<String, BukovLootTable> TABLES = createTables();
 
@@ -60,6 +68,24 @@ public final class BukovFirstRaidLootTables {
 		return null;
 	}
 
+	/**
+	 * Stable per-enemy rare key roll. It never consumes the global RNG, so
+	 * checkpoint resume cannot reroll a key into or out of existence.
+	 */
+	public static boolean maintenanceKeyDrops(
+			long raidSeed,
+			int stableSourceId) {
+		long mixed = raidSeed
+				^ stableSourceId * 0x9E3779B97F4A7C15L
+				^ MAINTENANCE_KEY_DEFINITION_ID.hashCode();
+		mixed ^= mixed >>> 33;
+		mixed *= 0xff51afd7ed558ccdl;
+		mixed ^= mixed >>> 33;
+		return com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+				.remainderUnsigned(mixed, 100L)
+				< MAINTENANCE_KEY_DROP_PERCENT;
+	}
+
 	private static Map<String, BukovLootTable> createTables() {
 		Map<String, BukovLootTable> tables = new LinkedHashMap<>();
 
@@ -86,6 +112,8 @@ public final class BukovFirstRaidLootTables {
 						BukovLootItem.Category.LOOT, 0.25f, 260),
 				loot("lighter", 14, 1, 1, "打火机",
 						BukovLootItem.Category.TOOL, 0.08f, 100),
+				loot(MAINTENANCE_KEY_DEFINITION_ID, 1, 1, 1, "维修钥匙",
+						BukovLootItem.Category.TOOL, 0.03f, 460),
 				firearm("needle_9", 2, "针蜂-9", 0.90f, 850),
 				firearm("sentinel_9", 2, "哨兵-9", 1.05f, 1450),
 				firearm("sparrow_9", 2, "雀翎-9", 0.78f, 1750),
@@ -167,6 +195,16 @@ public final class BukovFirstRaidLootTables {
 				firearm("frontier_762", 1, "边界-762", 4.60f, 11200),
 				ammo("ammo_762_standard", 7, 4, 12, 0.024f, 24),
 				ammo("ammo_762_expanding", 4, 3, 9, 0.025f, 48)));
+
+		register(tables, table(MAINTENANCE_CACHE,
+				loot("maintenance_optic", 10, 1, 1, "校准光学组件",
+						BukovLootItem.Category.HIGH_VALUE, 0.22f, 2100),
+				loot("maintenance_servo", 9, 1, 1, "精密伺服器",
+						BukovLootItem.Category.HIGH_VALUE, 0.65f, 2450),
+				loot("maintenance_controller", 7, 1, 1, "密封控制器",
+						BukovLootItem.Category.HIGH_VALUE, 0.28f, 2900),
+				loot("maintenance_bearing_case", 8, 1, 2, "军规轴承盒",
+						BukovLootItem.Category.HIGH_VALUE, 0.50f, 1750)));
 
 		register(tables, table(BOSS,
 				loot("officer_badge", 12, 1, 1, "军官徽章",

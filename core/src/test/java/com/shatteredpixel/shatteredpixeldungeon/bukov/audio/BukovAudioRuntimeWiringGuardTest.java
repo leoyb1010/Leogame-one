@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BukovAudioRuntimeWiringGuardTest {
@@ -24,8 +25,18 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("GunshotAudioResolver.resolve("));
 		assertTrue(world.contains("playGunshotLayers("));
 		assertTrue(world.contains("Assets.Sounds.Bukov.DRY_FIRE"));
-		assertTrue(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
+		assertTrue(world.contains(
+				"definition.audioProfile.gunshotFamily.asset()"));
+		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
 		assertTrue(world.contains("Assets.Sounds.Bukov.GUNSHOT_ENEMY"));
+		assertTrue(world.contains("void reloadAudioCues("));
+		assertTrue(world.contains("ReloadAudioCue.values()"));
+		assertTrue(world.contains("cue.asset()"));
+		assertEquals(
+				"Only the enemy compatibility path may use the legacy reload cue",
+				1,
+				occurrences(world, "Assets.Sounds.Bukov.RELOAD_START"));
+		assertFalse(world.contains("Assets.Sounds.Bukov.RELOAD_FINISH"));
 		assertTrue(world.contains("KEY_SOUND_LIFETIME_SECONDS = 0.9f"));
 		assertTrue(world.contains("SPDSettings.bukovMasterVolume()"));
 		assertTrue(world.contains("SPDSettings.bukovSfxVolume()"));

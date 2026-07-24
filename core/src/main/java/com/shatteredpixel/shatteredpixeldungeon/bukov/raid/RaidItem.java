@@ -150,6 +150,19 @@ public final class RaidItem implements Bundlable {
 				durability);
 	}
 
+	/** Insurance is consumed when an item is returned and must be repurchased. */
+	public RaidItem withInsured(boolean updatedInsured) {
+		return new RaidItem(
+				itemUid,
+				definitionId,
+				quantity,
+				unitWeight,
+				unitValue,
+				foundInRaid,
+				updatedInsured,
+				durability);
+	}
+
 	public RaidItem withUnitValue(int updatedUnitValue) {
 		if (updatedUnitValue < 0) {
 			throw new IllegalArgumentException(

@@ -239,6 +239,18 @@ public class Assets {
 					"sounds/bukov/gunshot_player.wav";
 			public static final String GUNSHOT_ENEMY =
 					"sounds/bukov/gunshot_enemy.wav";
+			public static final String GUNSHOT_PISTOL =
+					"sounds/bukov/gunshot_pistol.wav";
+			public static final String GUNSHOT_SMG =
+					"sounds/bukov/gunshot_smg.wav";
+			public static final String GUNSHOT_CARBINE =
+					"sounds/bukov/gunshot_carbine.wav";
+			public static final String GUNSHOT_RIFLE =
+					"sounds/bukov/gunshot_rifle.wav";
+			public static final String GUNSHOT_SHOTGUN =
+					"sounds/bukov/gunshot_shotgun.wav";
+			public static final String GUNSHOT_HEAVY =
+					"sounds/bukov/gunshot_heavy.wav";
 			public static final String BULLET_HIT =
 					"sounds/bukov/bullet_hit.wav";
 			public static final String CONTACT_HIT =
@@ -249,6 +261,12 @@ public class Assets {
 					"sounds/bukov/reload_start.wav";
 			public static final String RELOAD_FINISH =
 					"sounds/bukov/reload_finish.wav";
+			public static final String RELOAD_MAG_OUT =
+					"sounds/bukov/reload_mag_out.wav";
+			public static final String RELOAD_MAG_IN =
+					"sounds/bukov/reload_mag_in.wav";
+			public static final String RELOAD_CHARGE =
+					"sounds/bukov/reload_charge.wav";
 			public static final String LOOT_PICKUP =
 					"sounds/bukov/loot_pickup.wav";
 			public static final String SEARCH_COMPLETE =
@@ -291,9 +309,15 @@ public class Assets {
 				TELEPORT, CHARMS, MASTERY, PUFF, ROCKS, BURNING, FALLING, GHOST, SECRET, BONES,
 				BEE, DEGRADE, MIMIC, DEBUFF, CHARGEUP, GAS, CHAINS, SCAN, SHEEP, MINE,
 
-				Bukov.GUNSHOT_PLAYER, Bukov.GUNSHOT_ENEMY, Bukov.BULLET_HIT,
+				Bukov.GUNSHOT_PLAYER, Bukov.GUNSHOT_ENEMY,
+				Bukov.GUNSHOT_PISTOL, Bukov.GUNSHOT_SMG,
+				Bukov.GUNSHOT_CARBINE, Bukov.GUNSHOT_RIFLE,
+				Bukov.GUNSHOT_SHOTGUN, Bukov.GUNSHOT_HEAVY,
+				Bukov.BULLET_HIT,
 				Bukov.CONTACT_HIT,
 				Bukov.DRY_FIRE, Bukov.RELOAD_START, Bukov.RELOAD_FINISH,
+				Bukov.RELOAD_MAG_OUT, Bukov.RELOAD_MAG_IN,
+				Bukov.RELOAD_CHARGE,
 				Bukov.LOOT_PICKUP, Bukov.SEARCH_COMPLETE, Bukov.GATE_UNLOCK,
 				Bukov.EXTRACTION_START, Bukov.EXTRACTION_COMPLETE,
 				Bukov.UI_FOCUS, Bukov.UI_CONFIRM, Bukov.UI_CANCEL,

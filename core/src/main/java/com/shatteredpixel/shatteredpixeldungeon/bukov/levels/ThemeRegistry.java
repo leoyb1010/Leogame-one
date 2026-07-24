@@ -8,9 +8,11 @@ import com.badlogic.gdx.utils.JsonValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Loads and validates the six data-driven abstract raid themes. */
 public final class ThemeRegistry {
@@ -56,6 +58,21 @@ public final class ThemeRegistry {
 		if (parsed.size() != REQUIRED_THEME_COUNT) {
 			throw new IllegalStateException(
 					"Raid content requires exactly six themes");
+		}
+		Set<String> environmentIds = new HashSet<>();
+		Set<String> environmentFingerprints = new HashSet<>();
+		for (ThemeDefinition definition : parsed.values()) {
+			if (!environmentIds.add(definition.environmentRules.id)) {
+				throw new IllegalArgumentException(
+						"Duplicate environment rule id: "
+								+ definition.environmentRules.id);
+			}
+			if (!environmentFingerprints.add(
+					definition.environmentRules.fingerprint())) {
+				throw new IllegalArgumentException(
+						"Duplicate environment rule tuning: "
+								+ definition.environmentRules.id);
+			}
 		}
 		definitions.clear();
 		definitions.putAll(parsed);
@@ -124,10 +141,36 @@ public final class ThemeRegistry {
 				node.getString("floorPattern"),
 				node.getInt("wallDecoModulo"),
 				node.getInt("coverClusters"),
+				parseEnvironmentRules(node.get("environmentRules")),
 				parseRoomWeights(node.get("roomWeights")),
 				parseStringWeights(node.get("lootWeights"), "lootWeights"),
 				parseStringWeights(node.get("enemyWeights"), "enemyWeights"),
 				parseStringList(node.get("coverCombination"), "coverCombination"));
+	}
+
+	private static ThemeEnvironmentRules parseEnvironmentRules(
+			JsonValue node) {
+		requireObject(node, "environmentRules");
+		ThemeEnvironmentRules.Surface surface;
+		try {
+			surface = ThemeEnvironmentRules.Surface.valueOf(
+					node.getString("surface"));
+		} catch (IllegalArgumentException error) {
+			throw new IllegalArgumentException(
+					"Unknown environment surface: "
+							+ node.getString("surface", ""),
+					error);
+		}
+		return new ThemeEnvironmentRules(
+				node.getString("id"),
+				surface,
+				node.getFloat("surfaceMovementMultiplier"),
+				node.getFloat("surfaceEnemySightMultiplier"),
+				node.getFloat("surfaceEnemyHearingMultiplier"),
+				node.getFloat("surfaceReloadMultiplier"),
+				node.getFloat("surfaceMedicalMultiplier"),
+				node.getFloat("movementNoiseRadius"),
+				node.getFloat("reinforcementIntervalMultiplier"));
 	}
 
 	private static Map<BukovRaidLayout.Zone, Float> parseRoomWeights(

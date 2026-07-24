@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FirearmAudioProfile;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotSoundFamily;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -127,6 +129,23 @@ public final class FirearmRegistry {
 				defaultFeedbackProfile(out.weaponClass));
 		out.soundPitch = node.getFloat("soundPitch", 1f);
 		out.soundGain = node.getFloat("soundGain", 1f);
+		JsonValue audio = node.get("audio");
+		if (audio == null) {
+			out.audioProfile = FirearmAudioProfile.defaultFor(
+					out.weaponClass);
+		} else {
+			JsonValue reload = audio.get("reloadCueFractions");
+			if (reload == null || !reload.isObject()) {
+				throw new IllegalArgumentException(
+						"reloadCueFractions object is required: " + out.id);
+			}
+			out.audioProfile = new FirearmAudioProfile(
+					GunshotSoundFamily.valueOf(
+							audio.getString("gunshotFamily")),
+					reload.getFloat("magOut"),
+					reload.getFloat("magIn"),
+					reload.getFloat("charge"));
+		}
 		out.muzzleIntensity = node.getFloat("muzzleIntensity", 1f);
 		out.tracerIntensity = node.getFloat("tracerIntensity", 1f);
 		out.impactIntensity = node.getFloat("impactIntensity", 1f);

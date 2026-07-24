@@ -11,8 +11,10 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovHub;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovSettings;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovServices;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.WndBukovVendor;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Button;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ExitButton;
@@ -41,8 +43,8 @@ import java.io.IOException;
  */
 public final class BukovHubScene extends PixelScene {
 
-	private static final float MARGIN = 7f;
-	private static final float GAP = 4f;
+	private static final float MARGIN = BukovVisualContract.OUTER_MARGIN;
+	private static final float GAP = BukovVisualContract.GAP;
 
 	private BukovUiTokens tokens;
 	private BukovHubController controller;
@@ -74,13 +76,12 @@ public final class BukovHubScene extends PixelScene {
 		final int screenHeight = Camera.main.height;
 		final boolean wide = landscape();
 		final RectF insets = getCommonInsets();
-		final float rawUsableWidth =
-				screenWidth - insets.left - insets.right - MARGIN * 2;
-		final float usableWidth = Math.min(
-				rawUsableWidth,
-				wide ? 360f : rawUsableWidth);
-		final float left = insets.left + MARGIN
-				+ Math.max(0f, (rawUsableWidth - usableWidth) / 2f);
+		final float safeWidth =
+				screenWidth - insets.left - insets.right;
+		final float usableWidth = BukovVisualContract.contentWidth(
+				safeWidth, wide);
+		final float left = BukovVisualContract.centeredLeft(
+				insets.left, safeWidth, usableWidth);
 		final float top = insets.top + MARGIN;
 		final float usableHeight =
 				screenHeight - insets.top - insets.bottom - MARGIN * 2;
@@ -113,7 +114,9 @@ public final class BukovHubScene extends PixelScene {
 		add(status);
 
 		float contentTop = status.bottom() + 5f;
-		float footerHeight = wide ? 21f : 42f;
+		float footerButtonHeight = BukovVisualContract.controlHeight(
+				!DeviceCompat.isDesktop());
+		float footerHeight = footerButtonHeight * 2f + 3f;
 		float availableContentHeight = Math.max(
 				58f,
 				top + usableHeight - contentTop - footerHeight);
@@ -266,6 +269,8 @@ public final class BukovHubScene extends PixelScene {
 			float height) {
 		addPanel(x, y, width, height, "行动选择 / DEPLOYMENT");
 		boolean wide = landscape();
+		float actionHeight = BukovVisualContract.controlHeight(
+				!DeviceCompat.isDesktop());
 		float innerX = x + 5f;
 		float innerY = y + 18f;
 		float innerWidth = width - 10f;
@@ -274,8 +279,11 @@ public final class BukovHubScene extends PixelScene {
 				? (innerWidth - cardGap) / 2f
 				: innerWidth;
 		float cardHeight = wide
-				? Math.max(25f, Math.min(44f, height - 42f))
-				: Math.max(21f, Math.min(30f, (height - 48f) / 2f));
+				? Math.max(27f,
+						Math.min(46f, height - actionHeight - 25f))
+				: Math.max(23f,
+						Math.min(32f,
+								(height - actionHeight - 31f) / 2f));
 
 		boolean training = controller.selectedRaidMode().trainingGround();
 		BukovRaidMode formal = training
@@ -338,7 +346,7 @@ public final class BukovHubScene extends PixelScene {
 				innerX,
 				actionsY,
 				third,
-				18f,
+				actionHeight,
 				state.canDeploy ? "accent.extract" : "accent.danger",
 				state.canDeploy,
 				SPDAction.TAG_ATTACK,
@@ -353,7 +361,7 @@ public final class BukovHubScene extends PixelScene {
 				innerX + third + GAP,
 				actionsY,
 				third,
-				18f,
+				actionHeight,
 				"accent.interact",
 				!training,
 				SPDAction.TAG_RESUME,
@@ -373,7 +381,7 @@ public final class BukovHubScene extends PixelScene {
 				innerX + (third + GAP) * 2f,
 				actionsY,
 				third,
-				18f,
+				actionHeight,
 				"accent.interact",
 				!training,
 				SPDAction.TAG_LOOT,
@@ -403,6 +411,8 @@ public final class BukovHubScene extends PixelScene {
 		addPanel(x, y, width, height, "行动检查点 / ACTIVE RAID");
 		float innerX = x + 6f;
 		float innerY = y + 20f;
+		float actionHeight = BukovVisualContract.controlHeight(
+				!DeviceCompat.isDesktop());
 		RenderedTextBlock mode = label(
 				controller.selectedRaidMode().displayName,
 				12,
@@ -420,14 +430,14 @@ public final class BukovHubScene extends PixelScene {
 		summary.setPos(innerX, mode.bottom() + 5f);
 		add(summary);
 
-		float actionY = y + height - 25f;
+		float actionY = y + height - actionHeight - 6f;
 		float half = (width - 12f - GAP) / 2f;
 		addButton(
 				"继续行动",
 				innerX,
 				actionY,
 				half,
-				19f,
+				actionHeight,
 				"accent.extract",
 				true,
 				SPDAction.TAG_ATTACK,
@@ -442,7 +452,7 @@ public final class BukovHubScene extends PixelScene {
 				innerX + half + GAP,
 				actionY,
 				half,
-				19f,
+				actionHeight,
 				"accent.danger",
 				true,
 				SPDAction.WAIT,
@@ -461,14 +471,60 @@ public final class BukovHubScene extends PixelScene {
 			float height,
 			boolean wide) {
 		float gap = 3f;
-		float buttonWidth = wide
-				? (width - gap * 3f) / 4f
-				: (width - gap) / 2f;
-		float buttonHeight = wide ? height : (height - gap) / 2f;
+		float buttonWidth = (width - gap * 2f) / 3f;
+		float buttonHeight = (height - gap) / 2f;
+		addButton(
+				"合同",
+				x,
+				y,
+				buttonWidth,
+				buttonHeight,
+				"accent.extract",
+				true,
+				SPDAction.TAG_LOOT,
+				new Callback() {
+					@Override
+					public void call() {
+						openServices(
+								WndBukovServices.Tab.CONTRACTS);
+					}
+				});
+		addButton(
+				"保险",
+				x + buttonWidth + gap,
+				y,
+				buttonWidth,
+				buttonHeight,
+				"accent.valuable",
+				true,
+				SPDAction.TAG_RESUME,
+				new Callback() {
+					@Override
+					public void call() {
+						openServices(
+								WndBukovServices.Tab.INSURANCE);
+					}
+				});
+		addButton(
+				"改枪",
+				x + (buttonWidth + gap) * 2f,
+				y,
+				buttonWidth,
+				buttonHeight,
+				"accent.interact",
+				true,
+				SPDAction.JOURNAL,
+				new Callback() {
+					@Override
+					public void call() {
+						openServices(
+								WndBukovServices.Tab.FIREARMS);
+					}
+				});
 		addButton(
 				state.activeRaid ? "交易锁定" : "补给商店",
 				x,
-				y,
+				y + buttonHeight + gap,
 				buttonWidth,
 				buttonHeight,
 				state.activeRaid ? "panel.border" : "accent.valuable",
@@ -483,7 +539,7 @@ public final class BukovHubScene extends PixelScene {
 		addButton(
 				"设置",
 				x + buttonWidth + gap,
-				y,
+				y + buttonHeight + gap,
 				buttonWidth,
 				buttonHeight,
 				"panel.border",
@@ -495,28 +551,10 @@ public final class BukovHubScene extends PixelScene {
 						addToFront(new WndBukovSettings());
 					}
 				});
-		float thirdX = wide ? x + (buttonWidth + gap) * 2f : x;
-		float thirdY = wide ? y : y + buttonHeight + gap;
-		addButton(
-				"关于游戏",
-				thirdX,
-				thirdY,
-				buttonWidth,
-				buttonHeight,
-				"panel.border",
-				true,
-				SPDAction.JOURNAL,
-				new Callback() {
-					@Override
-					public void call() {
-						BukovMode.requestHub();
-						ShatteredPixelDungeon.switchScene(AboutScene.class);
-					}
-				});
 		addButton(
 				"返回标题",
-				thirdX + buttonWidth + gap,
-				thirdY,
+				x + (buttonWidth + gap) * 2f,
+				y + buttonHeight + gap,
 				buttonWidth,
 				buttonHeight,
 				"panel.border",
@@ -630,6 +668,18 @@ public final class BukovHubScene extends PixelScene {
 		}));
 	}
 
+	private void openServices(WndBukovServices.Tab tab) {
+		addToFront(new WndBukovServices(
+				controller,
+				new Callback() {
+					@Override
+					public void call() {
+						reload();
+					}
+				},
+				tab));
+	}
+
 	private void deploy() {
 		try {
 			controller.confirmDeployment();
@@ -700,6 +750,7 @@ public final class BukovHubScene extends PixelScene {
 	private abstract class ModeCard extends Button {
 
 		private final ColorBlock surface;
+		private final ColorBlock pressed;
 		private final ColorBlock edge;
 		private final ColorBlock selection;
 		private final RenderedTextBlock title;
@@ -717,6 +768,11 @@ public final class BukovHubScene extends PixelScene {
 							selected ? "accent.extract" : "panel.surface",
 							selected ? 38 : 244));
 			addToBack(surface);
+			pressed = new ColorBlock(
+					1f, 1f, tokens.color("panel.border"));
+			pressed.alpha(0.55f);
+			pressed.visible = false;
+			addToBack(pressed);
 			edge = new ColorBlock(
 					1f,
 					1f,
@@ -734,13 +790,13 @@ public final class BukovHubScene extends PixelScene {
 			add(selection);
 			title = label(
 					titleText + (selected ? "  ·  已选择" : ""),
-					7,
+					BukovVisualContract.FONT_BODY,
 					tokens.color(selected
 							? "accent.extract" : "text.primary"));
 			add(title);
 			detail = label(
 					detailText,
-					6,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(detail);
 		}
@@ -753,11 +809,27 @@ public final class BukovHubScene extends PixelScene {
 		}
 
 		@Override
+		protected void onPointerDown() {
+			surface.visible = false;
+			pressed.visible = true;
+			Sample.INSTANCE.play(Assets.Sounds.CLICK);
+		}
+
+		@Override
+		protected void onPointerUp() {
+			surface.visible = true;
+			pressed.visible = false;
+		}
+
+		@Override
 		protected void layout() {
 			super.layout();
 			surface.x = x;
 			surface.y = y;
 			surface.size(width, height);
+			pressed.x = x;
+			pressed.y = y;
+			pressed.size(width, height);
 			edge.x = x;
 			edge.y = y;
 			edge.size(2f, height);
@@ -776,6 +848,7 @@ public final class BukovHubScene extends PixelScene {
 		private final ColorBlock surface;
 		private final ColorBlock pressed;
 		private final ColorBlock edge;
+		private final ColorBlock lowerRule;
 		private final RenderedTextBlock text;
 		private final boolean enabled;
 		private final GameAction action;
@@ -802,9 +875,15 @@ public final class BukovHubScene extends PixelScene {
 					1f,
 					enabled ? accent : tokens.color("text.disabled"));
 			add(edge);
+			lowerRule = new ColorBlock(
+					1f,
+					1f,
+					enabled ? accent : tokens.color("text.disabled"));
+			lowerRule.alpha(enabled ? 0.65f : 0.25f);
+			add(lowerRule);
 			text = label(
 					value,
-					7,
+					BukovVisualContract.FONT_BODY,
 					tokens.color(enabled
 							? "text.primary" : "text.disabled"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
@@ -850,7 +929,10 @@ public final class BukovHubScene extends PixelScene {
 			pressed.size(width, height);
 			edge.x = x;
 			edge.y = y;
-			edge.size(2f, height);
+			edge.size(3f, height);
+			lowerRule.x = x;
+			lowerRule.y = y + height - 1f;
+			lowerRule.size(width, 1f);
 			text.maxWidth(Math.max(1, (int) width - 8));
 			text.setPos(
 					x + (width - text.width()) / 2f,

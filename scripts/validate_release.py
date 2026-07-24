@@ -197,6 +197,22 @@ def check_offline_adapters() -> None:
         require(":services:updates:debugUpdates" not in text, f"debug update adapter shipped by {relative}")
 
 
+def check_packaged_legal_notices() -> None:
+    repository_license = ROOT / "LICENSE.txt"
+    packaged_license = ROOT / "core/src/main/assets/legal/LICENSE.txt"
+    notices = ROOT / "core/src/main/assets/legal/THIRD_PARTY_NOTICES.txt"
+    root_notices = ROOT / "THIRD_PARTY_NOTICES.md"
+    require(repository_license.read_bytes() == packaged_license.read_bytes(),
+            "packaged GPL license is missing or differs from LICENSE.txt")
+    notice_text = notices.read_text(encoding="utf-8")
+    require("GNU General Public License" in notice_text,
+            "packaged notices must name the project license")
+    require("https://github.com/leoyb1010/Leogame-one" in notice_text,
+            "packaged notices must include corresponding source")
+    require("Shattered Pixel Dungeon" in root_notices.read_text(encoding="utf-8"),
+            "root third-party notices lost upstream attribution")
+
+
 def check_artwork_ledger() -> None:
     ledger_path = ROOT / "artwork/licenses/ASSET_PROVENANCE.csv"
     with ledger_path.open(encoding="utf-8", newline="") as handle:
@@ -252,6 +268,7 @@ def main() -> None:
     check_localization()
     check_player_visible_branding()
     check_offline_adapters()
+    check_packaged_legal_notices()
     check_artwork_ledger()
     check_ci_gates()
     check_bukov_release_manifest()

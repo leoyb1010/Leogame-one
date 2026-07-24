@@ -16,6 +16,7 @@ public final class RaidSession implements Bundlable {
 	private static final String KILL_COUNT = "kill_count";
 	private static final String RAID_MODE = "raid_mode";
 	private static final String RAID_ORDINAL = "raid_ordinal";
+	private static final String KEY_DOORS = "key_doors";
 
 	public long seed;
 	public String raidId;
@@ -27,6 +28,7 @@ public final class RaidSession implements Bundlable {
 	private int killCount;
 	private BukovRaidMode raidMode = BukovRaidMode.EXPEDITION;
 	private int raidOrdinal = 1;
+	private BukovKeyDoorState keyDoors = new BukovKeyDoorState();
 
 	public static RaidSession create(long seed, String raidId) {
 		return create(seed, raidId, BukovRaidMode.EXPEDITION, 1);
@@ -60,6 +62,10 @@ public final class RaidSession implements Bundlable {
 
 	public int raidOrdinal() {
 		return raidOrdinal;
+	}
+
+	public BukovKeyDoorState keyDoors() {
+		return keyDoors;
 	}
 
 	public boolean firstRaidProtectionActive() {
@@ -128,6 +134,7 @@ public final class RaidSession implements Bundlable {
 		bundle.put(KILL_COUNT, killCount);
 		bundle.put(RAID_MODE, raidMode);
 		bundle.put(RAID_ORDINAL, raidOrdinal);
+		bundle.put(KEY_DOORS, keyDoors);
 	}
 
 	@Override
@@ -149,6 +156,17 @@ public final class RaidSession implements Bundlable {
 		int restoredOrdinal = bundle.contains(RAID_ORDINAL)
 				? bundle.getInt(RAID_ORDINAL) : 1;
 		raidOrdinal = restoredOrdinal <= 0 ? 1 : restoredOrdinal;
+		if (bundle.contains(KEY_DOORS)) {
+			Bundlable restoredKeyDoors = bundle.get(KEY_DOORS);
+			if (!(restoredKeyDoors instanceof BukovKeyDoorState)) {
+				throw new IllegalStateException(
+						"Invalid persisted key door state");
+			}
+			keyDoors = (BukovKeyDoorState) restoredKeyDoors;
+		} else {
+			// Safe migration for checkpoints created before key doors existed.
+			keyDoors = new BukovKeyDoorState();
+		}
 		if (enemySpawnEpoch < 0L || killCount < 0) {
 			throw new IllegalStateException("Invalid realtime raid progress");
 		}

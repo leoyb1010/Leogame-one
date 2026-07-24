@@ -19,5 +19,10 @@ public class BukovRaidHudScaleTest {
 		assertEquals(normal * 1.5f,
 				BukovRaidHud.preferredHeight(320f, 2),
 				0.0001f);
+		assertEquals(7, BukovRaidHud.textSize(7, 0));
+		assertEquals(8, BukovRaidHud.textSize(7, 1));
+		assertEquals(9, BukovRaidHud.textSize(7, 2));
+		assertTrue(BukovRaidHud.controlHint(true).contains("TAB"));
+		assertTrue(BukovRaidHud.controlHint(false).contains("背包"));
 	}
 }

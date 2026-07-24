@@ -195,6 +195,20 @@ public final class RaidSettlement {
 				lostItems.add(SettlementItemSnapshot.from(item));
 				lostQuantity += item.quantity();
 				lostValue += item.totalValue();
+				if (item.insured() && !item.foundInRaid()) {
+					// Returns become claimable only after one additional formal
+					// raid is settled. The lost receipt remains truthful.
+					working.insurance().schedule(
+							carriedLoot.raidId(),
+							item,
+							working.statistics().successfulRaids()
+									+ working.statistics().deaths()
+									+ 2);
+				} else {
+					// UID-bound attachment builds only survive when the
+					// physical weapon can still return through insurance.
+					working.firearmBuilds().remove(item.itemUid());
+				}
 			}
 			Collections.sort(lostUids);
 			Collections.sort(transferredUids);
@@ -217,6 +231,11 @@ public final class RaidSettlement {
 				kills,
 				missionCompleted);
 		working.recordSettlement(receipt);
+		working.longTermContracts().recordSettlement(
+				carriedLoot.raidId(),
+				outcome,
+				outcome == RaidOutcome.SUCCESS ? transferredValue : 0L,
+				kills);
 		working.statistics().record(
 				outcome,
 				outcome == RaidOutcome.SUCCESS

@@ -10,6 +10,7 @@ public final class CombatFxEvent {
 
 	public enum Type {
 		MUZZLE_FLASH,
+		SHELL,
 		TRACER,
 		IMPACT
 	}

@@ -31,7 +31,7 @@
 | `generate_bukov_item_visuals.mjs` | 72 帧物品/交互图集与 manifest |
 | `generate_bukov_landmarks.mjs` | 首关工业地标图集 |
 | `generate_bukov_operator_sprite.mjs` | 行动员动画图集 |
-| `generate_bukov_sfx.mjs` | 19 个单声道 48 kHz PCM16 WAV |
+| `generate_bukov_sfx.mjs` | 28 个单声道 48 kHz PCM16 WAV |
 
 ## 最终发行前仍需完成
 

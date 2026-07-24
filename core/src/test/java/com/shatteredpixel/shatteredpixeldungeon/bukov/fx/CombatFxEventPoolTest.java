@@ -13,25 +13,27 @@ import static org.junit.Assert.assertTrue;
 public class CombatFxEventPoolTest {
 
 	@Test
-	public void drainsMuzzleTracerAndImpactInEmissionOrder() {
-		CombatFxEventPool pool = new CombatFxEventPool(4);
+	public void drainsCompleteGunshotPacketInEmissionOrder() {
+		CombatFxEventPool pool = new CombatFxEventPool(5);
 		List<CombatFxEvent.Type> types = new ArrayList<>();
 		List<Integer> sequences = new ArrayList<>();
 
 		pool.muzzle(7, 10, false, 1f, 2f, 1f, 0f, 1f);
+		pool.shell(7, 10, false, 1f, 2f, 0f, -1f, 0.9f);
 		pool.tracer(7, 10, false, 1f, 2f, 5f, 2f, 0.8f);
 		pool.impact(7, 10, false, 5f, 2f, 0.6f);
 
-		assertEquals(3, pool.drain(event -> {
+		assertEquals(4, pool.drain(event -> {
 			types.add(event.type());
 			sequences.add(event.sequence());
 			assertEquals(7, event.sourceId());
 			assertFalse(event.hostile());
 		}));
 		assertEquals(CombatFxEvent.Type.MUZZLE_FLASH, types.get(0));
-		assertEquals(CombatFxEvent.Type.TRACER, types.get(1));
-		assertEquals(CombatFxEvent.Type.IMPACT, types.get(2));
-		assertEquals(Integer.valueOf(10), sequences.get(2));
+		assertEquals(CombatFxEvent.Type.SHELL, types.get(1));
+		assertEquals(CombatFxEvent.Type.TRACER, types.get(2));
+		assertEquals(CombatFxEvent.Type.IMPACT, types.get(3));
+		assertEquals(Integer.valueOf(10), sequences.get(3));
 		assertEquals(0, pool.size());
 	}
 

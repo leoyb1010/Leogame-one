@@ -23,11 +23,20 @@ registration, and rejects the old bow/crossbow/click/hit audio references from
 |---|---|---|
 | Player gunshot | `sounds/bukov/gunshot_player.wav` | `8939860ecd0ac24507fd320289eebaa57ec1c3c0a7975e6fbfd10efa3127cf83` |
 | Enemy gunshot | `sounds/bukov/gunshot_enemy.wav` | `0364d57714ed8c690f8321b236facadca6d7525a041e2de2d3fc130e3636dfd9` |
+| Pistol family | `sounds/bukov/gunshot_pistol.wav` | `1289f58ab56f28b4d430d2a5ac9633d93acad948eca1da87493a4b556a12781d` |
+| SMG family | `sounds/bukov/gunshot_smg.wav` | `84d29254d42511c370b24255db083797e613c4d6aced18dbd33f3007e8fab20d` |
+| Carbine family | `sounds/bukov/gunshot_carbine.wav` | `801c79050fee1fe890ee8a8bd9863da44f1d09abbf695bcce89474909059730b` |
+| Rifle family | `sounds/bukov/gunshot_rifle.wav` | `d0800cb6e86912751cf68b44d04bfd5c1e9d5fa067a3119ce7c368ddd0374b88` |
+| Shotgun family | `sounds/bukov/gunshot_shotgun.wav` | `d46ca3991fe642a4ade34770ff19701ccaf2f4770949482f06d8fe4ab7100ecf` |
+| Heavy family | `sounds/bukov/gunshot_heavy.wav` | `f1002ebdf2275d975638814810a49d7b9eea1d407cb67e6a049f33e4fae99dc4` |
 | Bullet impact | `sounds/bukov/bullet_hit.wav` | `4d938255e0d1030e880953885b4b51d56135d4392cc539a8dd26512a4e53e600` |
 | Contact impact | `sounds/bukov/contact_hit.wav` | `9207d4a2a5114c71c53f6160fd5f25f57b4d68d39b6f27fdfca17da202221a43` |
 | Empty chamber | `sounds/bukov/dry_fire.wav` | `4286d982c4eaa3f6455a02958c5b17de24b08734287fc7a7a71bdd4f1151a1aa` |
 | Reload start | `sounds/bukov/reload_start.wav` | `ab6d41ec0fc70786b4d7675b0b01da111e17379a5442eacaf161581666e2468d` |
 | Reload finish | `sounds/bukov/reload_finish.wav` | `9f10892b735ed68d058f48307d51ccd0c26289e73ddce81850b4597747a917eb` |
+| Magazine out | `sounds/bukov/reload_mag_out.wav` | `d8b6bbeba084577ff80436248a9f357fa72cfade0bd26cc0fdbb09a5f02decef` |
+| Magazine in | `sounds/bukov/reload_mag_in.wav` | `0a39a4555d0e791a2fc2cdc5cd2f991f430c648533a07cd092e08a92c2100699` |
+| Charge / chamber | `sounds/bukov/reload_charge.wav` | `21c5fc326c6b8881ad7c0533b274b3a78c5b1143ed020642352534ecdf9d337e` |
 | Loot pickup | `sounds/bukov/loot_pickup.wav` | `c65c545a8cf8012af4e39067168e328bcd3fc89adcd08c3b34fcf67a6eb54081` |
 | Container searched | `sounds/bukov/search_complete.wav` | `e5d4a2de429741685fa21965797a1ec0dab40a3d9d994a790486ef3e4d759705` |
 | Mission gate unlocked | `sounds/bukov/gate_unlock.wav` | `3618d9de7dd2b8c405c266fb36f417f788f443366003c60782883a6337c07746` |
@@ -37,3 +46,10 @@ registration, and rejects the old bow/crossbow/click/hit audio references from
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is
 still in the raid.
+
+The original `gunshot_player.wav` and `gunshot_enemy.wav` remain registered
+only as compatibility fallbacks while production call sites migrate. New
+firearm content declares an explicit `audio.gunshotFamily` and ordered
+`reloadCueFractions` in `firearms.json`. The fractions are relative to total
+reload time, so attachment-based duration changes keep magazine-out,
+magazine-in and charge cues synchronized.

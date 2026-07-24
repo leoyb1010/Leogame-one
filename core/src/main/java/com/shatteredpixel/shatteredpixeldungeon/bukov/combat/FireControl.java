@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FireMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
@@ -33,11 +34,13 @@ public final class FireControl {
 				boolean allowAlternative);
 		void dryFire();
 		void reloadStarted(float seconds);
+		void reloadAudioCues(FirearmDefinition definition, int cueMask);
 		void reloadFinished();
 	}
 
 	private float shotCooldown;
 	private float reloadRemaining;
+	private float reloadDuration;
 	private float recoilSpreadDeg;
 	private boolean previousHeld;
 
@@ -48,11 +51,36 @@ public final class FireControl {
 					   Firearm firearm,
 					   FirearmDefinition definition,
 					   Sink sink) {
+		update(
+				dt,
+				fireHeld,
+				firePressed,
+				reloadPressed,
+				firearm,
+				definition,
+				1f,
+				sink);
+	}
+
+	public void update(float dt,
+					   boolean fireHeld,
+					   boolean firePressed,
+					   boolean reloadPressed,
+					   Firearm firearm,
+					   FirearmDefinition definition,
+					   float reloadDurationMultiplier,
+					   Sink sink) {
 		if (dt < 0f) {
 			throw new IllegalArgumentException("dt must not be negative");
 		}
 		if (firearm == null || definition == null || sink == null) {
 			throw new IllegalArgumentException("firearm, definition, and sink are required");
+		}
+		if (reloadDurationMultiplier <= 0f
+				|| Float.isNaN(reloadDurationMultiplier)
+				|| Float.isInfinite(reloadDurationMultiplier)) {
+			throw new IllegalArgumentException(
+					"reloadDurationMultiplier must be finite and positive");
 		}
 
 		shotCooldown = Math.max(0f, shotCooldown - dt);
@@ -61,9 +89,18 @@ public final class FireControl {
 				recoilSpreadDeg - definition.recoilRecovery * dt);
 
 		if (reloadRemaining > 0f) {
-			reloadRemaining -= dt;
+			float previousElapsed = reloadDuration - reloadRemaining;
+			reloadRemaining = Math.max(0f, reloadRemaining - dt);
+			float currentElapsed = reloadDuration - reloadRemaining;
+			int cueMask = ReloadAudioCueResolver.crossed(
+					definition.audioProfile,
+					previousElapsed,
+					currentElapsed,
+					reloadDuration);
+			if (cueMask != 0) {
+				sink.reloadAudioCues(definition, cueMask);
+			}
 			if (reloadRemaining <= 0f) {
-				reloadRemaining = 0f;
 				int missing = definition.magazineSize - firearm.magazineAmmo();
 				AmmoSelection selection = sink.requestAmmo(
 						definition.caliber,
@@ -79,6 +116,7 @@ public final class FireControl {
 							selection.quantity,
 							definition);
 				}
+				reloadDuration = 0f;
 				sink.reloadFinished();
 			}
 			previousHeld = fireHeld;
@@ -86,8 +124,10 @@ public final class FireControl {
 		}
 
 		if (reloadPressed && firearm.magazineAmmo() < definition.magazineSize) {
-			reloadRemaining = definition.reloadSeconds;
-			sink.reloadStarted(reloadRemaining);
+			reloadDuration =
+					definition.reloadSeconds * reloadDurationMultiplier;
+			reloadRemaining = reloadDuration;
+			sink.reloadStarted(reloadDuration);
 			previousHeld = fireHeld;
 			return;
 		}
@@ -123,6 +163,10 @@ public final class FireControl {
 		return reloadRemaining;
 	}
 
+	public float reloadDuration() {
+		return reloadDuration;
+	}
+
 	/**
 	 * Accumulated bloom from the previously fired rounds. The live hitscan
 	 * path adds this to authored base/moving spread, making recoil stats real
@@ -132,10 +176,16 @@ public final class FireControl {
 		return recoilSpreadDeg;
 	}
 
+	/** Cancels a reload without leaking its remaining audio cues. */
+	public void cancelReload() {
+		reloadRemaining = 0f;
+		reloadDuration = 0f;
+	}
+
 	/** Cancels transient trigger/reload state when the equipped firearm changes. */
 	public void resetForWeaponSwap() {
 		shotCooldown = 0f;
-		reloadRemaining = 0f;
+		cancelReload();
 		recoilSpreadDeg = 0f;
 		previousHeld = false;
 	}

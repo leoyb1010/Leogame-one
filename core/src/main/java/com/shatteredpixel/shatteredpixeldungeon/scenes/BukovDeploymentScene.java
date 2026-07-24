@@ -14,6 +14,8 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ActionIndicator;
 import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
@@ -51,6 +53,7 @@ public final class BukovDeploymentScene extends PixelScene {
 	@Override
 	public void create() {
 		super.create();
+		BukovUiTokens tokens = BukovUiTokens.loadDefault();
 
 		ColorBlock background =
 				new ColorBlock(Camera.main.width, Camera.main.height, 0xFF07100E);
@@ -74,29 +77,78 @@ public final class BukovDeploymentScene extends PixelScene {
 		add(readability);
 
 		RectF insets = getCommonInsets();
-		float usableTop = insets.top;
-		float usableHeight = Camera.main.height - insets.top - insets.bottom;
+		float safeWidth = Camera.main.width
+				- insets.left - insets.right;
+		float safeHeight = Camera.main.height
+				- insets.top - insets.bottom;
+		float panelWidth = Math.min(
+				280f,
+				BukovVisualContract.contentWidth(
+						safeWidth, landscape()));
+		float panelHeight = 84f;
+		float panelX = BukovVisualContract.centeredLeft(
+				insets.left, safeWidth, panelWidth);
+		float panelY = insets.top
+				+ Math.max(BukovVisualContract.OUTER_MARGIN,
+						(safeHeight - panelHeight) * 0.48f);
 
-		RenderedTextBlock title = renderTextBlock("逃离布科夫", 15);
-		title.hardlight(0xFFD6AF58);
+		ColorBlock panel = new ColorBlock(
+				panelWidth,
+				panelHeight,
+				tokens.colorWithAlpha("ink.background", 228));
+		panel.x = panelX;
+		panel.y = panelY;
+		add(panel);
+		ColorBlock edge = new ColorBlock(
+				2f, panelHeight, tokens.color("accent.interact"));
+		edge.x = panelX;
+		edge.y = panelY;
+		add(edge);
+		ColorBlock rule = new ColorBlock(
+				panelWidth, 1f, tokens.color("panel.border"));
+		rule.x = panelX;
+		rule.y = panelY + 21f;
+		add(rule);
+
+		RenderedTextBlock eyebrow = renderTextBlock(
+				"ACTION CHECK  /  行动检查",
+				BukovVisualContract.FONT_CAPTION);
+		eyebrow.hardlight(tokens.color("text.secondary"));
+		eyebrow.setPos(
+				panelX + BukovVisualContract.CARD_PADDING,
+				panelY + 5f);
+		add(eyebrow);
+
+		RenderedTextBlock title = renderTextBlock(
+				"逃离布科夫",
+				BukovVisualContract.FONT_TITLE);
+		title.hardlight(tokens.color("accent.valuable"));
 		title.setPos(
-				(Camera.main.width - title.width()) / 2f,
-				usableTop + usableHeight * 0.42f);
+				panelX + BukovVisualContract.CARD_PADDING,
+				rule.y + 6f);
 		align(title);
 		add(title);
 
-		status = renderTextBlock("行动部署中", 8);
-		status.hardlight(0xFF47C99A);
-		centerStatus(title.bottom() + 10f);
+		status = renderTextBlock(
+				"行动部署中",
+				BukovVisualContract.FONT_SECTION);
+		status.hardlight(tokens.color("accent.extract"));
+		status.setPos(
+				panelX + BukovVisualContract.CARD_PADDING,
+				title.bottom() + 5f);
 		add(status);
 
-		RenderedTextBlock detail =
-				renderTextBlock("正在校验配装、行动员与地图状态", 6);
-		detail.hardlight(0xFF9CB4AC);
+		RenderedTextBlock detail = renderTextBlock(
+				"正在校验：配装 · 行动员 · 地图种子 · 检查点",
+				BukovVisualContract.FONT_CAPTION);
+		detail.hardlight(tokens.color("text.secondary"));
+		detail.maxWidth(Math.max(
+				1,
+				(int)(panelWidth
+						- BukovVisualContract.CARD_PADDING * 2f)));
 		detail.setPos(
-				(Camera.main.width - detail.width()) / 2f,
-				status.bottom() + 6f);
-		align(detail);
+				panelX + BukovVisualContract.CARD_PADDING,
+				status.bottom() + 5f);
 		add(detail);
 
 		Thread loader = new Thread(new Runnable() {
@@ -245,7 +297,9 @@ public final class BukovDeploymentScene extends PixelScene {
 	}
 
 	private void centerStatus(float y) {
-		status.setPos((Camera.main.width - status.width()) / 2f, y);
+		// Keep the loading label aligned to the shared card grid while its
+		// animated ellipsis changes width.
+		status.setPos(status.left(), y);
 		align(status);
 	}
 }

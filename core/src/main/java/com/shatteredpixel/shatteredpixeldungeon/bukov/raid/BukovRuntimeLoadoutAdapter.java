@@ -188,7 +188,7 @@ public final class BukovRuntimeLoadoutAdapter {
 	}
 
 	public RuntimeLoadout materialize(LootTransaction ledger) {
-		return materialize(ledger, null);
+		return materialize(ledger, null, null);
 	}
 
 	/**
@@ -203,12 +203,16 @@ public final class BukovRuntimeLoadoutAdapter {
 		if (raid == null) {
 			throw new IllegalArgumentException("raid is required");
 		}
-		return materialize(raid.loot(), raid.checkpoint());
+		return materialize(
+				raid.loot(),
+				raid.checkpoint(),
+				raid.profile().firearmBuilds());
 	}
 
 	private RuntimeLoadout materialize(
 			LootTransaction ledger,
-			BukovRaidCheckpoint checkpoint) {
+			BukovRaidCheckpoint checkpoint,
+			BukovFirearmBuilds firearmBuilds) {
 		if (ledger == null) {
 			throw new IllegalArgumentException("ledger is required");
 		}
@@ -250,10 +254,16 @@ public final class BukovRuntimeLoadoutAdapter {
 					firearm.setDurability(item.durability());
 					registerHost(checkpoint, item, firearm);
 				}
+				if (firearmBuilds != null) {
+					com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms
+							.FirearmBuild build =
+							firearmBuilds.build(item.itemUid());
+					if (build != null) firearm.applyBuild(build);
+				}
 				bind(item, firearm, bindings);
 				if (primary == null) {
 					primary = firearm;
-					primaryDefinition = firearms.require(firearmId);
+					primaryDefinition = firearm.definition(firearms);
 					primaryRestored = restoredFromCheckpoint;
 				} else {
 					secondary.add(firearm);

@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmAttachmentCatalog;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmBuild;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveService;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveService;
@@ -132,6 +134,34 @@ public class BukovEconomyServiceTest {
 		assertEquals(first.balanceAfter, retry.balanceAfter);
 		assertEquals(768L, saves.loadProfile().currency());
 		assertFalse(saves.loadProfile().stash().contains("loot-retry"));
+	}
+
+	@Test
+	public void sellingPhysicalFirearmRemovesItsAttachmentBuild()
+			throws IOException {
+		InMemoryBukovSaveService saves = new InMemoryBukovSaveService();
+		BukovProfile profile = new BukovProfile();
+		RaidItem firearm = new RaidItem(
+				"sellable-firearm",
+				"firearm:needle_9",
+				1,
+				2.1f,
+				850,
+				false,
+				false,
+				1f);
+		profile.stash().deposit(firearm);
+		FirearmBuild build = new FirearmBuild(firearm.itemUid());
+		build.install(FirearmAttachmentCatalog.RED_DOT);
+		profile.firearmBuilds().save(build);
+		saves.saveProfile(profile);
+
+		new BukovEconomyService(saves).sell(
+				"sell-built-firearm", firearm.itemUid());
+
+		BukovProfile persisted = saves.loadProfile();
+		assertFalse(persisted.stash().contains(firearm.itemUid()));
+		assertEquals(0, persisted.firearmBuilds().size());
 	}
 
 	@Test

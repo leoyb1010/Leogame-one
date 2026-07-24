@@ -20,7 +20,7 @@
 | 敌人 | 13 个：9 普通、3 精英、1 Boss | `PENDING EVIDENCE` |
 | Raid 模式 | 4 个：远征、快速清扫、拾荒者、Boss 合同 | `PENDING EVIDENCE` |
 | 局外循环 | 仓库、配装、商店买卖与幂等交易已接入 | `PENDING EVIDENCE` |
-| 原创资产 | 72 帧物品/交互图标，19 个 PCM WAV | 台账静态通过；最终包复核待证据 |
+| 原创资产 | 72 帧物品/交互图标，28 个 PCM WAV | 台账静态通过；最终包复核待证据 |
 | 平台 | macOS 与 iOS 源码/构建入口存在；120 Hz 固定模拟与高刷新配置存在 | 最终 SHA 的 macOS/iOS 实机结果待证据 |
 | 存档/性能 | checkpoint、幂等结算、seed/save/performance 门禁存在 | 10k/100 次/30 分钟最终运行待证据 |
 
