@@ -190,6 +190,12 @@ public class PixelScene extends Scene {
 				@Override
 				public boolean onSignal(KeyEvent keyEvent) {
 
+					if (keyEvent.code == Input.Keys.F11
+							&& keyEvent.pressed) {
+						SPDSettings.fullscreen(!SPDSettings.fullscreen());
+						return true;
+					}
+
 					//we don't use keybindings for these as we want the user to be able to
 					// bind these keys to other actions when pressed individually
 					if (keyEvent.code == Input.Keys.ALT_RIGHT){

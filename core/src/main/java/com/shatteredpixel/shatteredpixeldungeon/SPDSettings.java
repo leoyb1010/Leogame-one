@@ -72,7 +72,9 @@ public class SPDSettings extends GameSettings {
 	}
 	
 	public static boolean fullscreen() {
-		return getBoolean( KEY_FULLSCREEN, true );
+		// Desktop launches must remain usable beside the user's other apps.
+		// Mobile system-bar behavior still has its own platform-side handling.
+		return getBoolean( KEY_FULLSCREEN, !DeviceCompat.isDesktop() );
 	}
 
 	public static void landscape( boolean value ){
@@ -691,8 +693,8 @@ public class SPDSettings extends GameSettings {
 	
 	public static Point windowResolution(){
 		return new Point(
-				getInt( KEY_WINDOW_WIDTH, 800, 720, Integer.MAX_VALUE ),
-				getInt( KEY_WINDOW_HEIGHT, 600, 400, Integer.MAX_VALUE )
+				getInt( KEY_WINDOW_WIDTH, 1100, 720, Integer.MAX_VALUE ),
+				getInt( KEY_WINDOW_HEIGHT, 680, 400, Integer.MAX_VALUE )
 		);
 	}
 	
