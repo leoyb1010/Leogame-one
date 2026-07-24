@@ -8,8 +8,8 @@
   "height": 64,
   "pixelSampling": "nearest",
   "uniqueRgbaColors": 16,
-  "transparentPixels": 12008,
-  "sha256": "caa273d6141352ea441e28397146950d1e350fce83372226da63a6bd5e7ec0b5",
+  "transparentPixels": 11349,
+  "sha256": "a5d98fd0f27d5717e9bf2e58aecb009b511d3b757260fb320c1f4f72dcf68403",
   "entries": [
     {
       "apiName": "PANEL",
@@ -230,6 +230,70 @@
       "height": 16
     },
     {
+      "apiName": "TOUCH_MOVEMENT",
+      "kind": "icon",
+      "x": 128,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_AIM_FIRE",
+      "kind": "icon",
+      "x": 144,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_INTERACT",
+      "kind": "icon",
+      "x": 160,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_RELOAD",
+      "kind": "icon",
+      "x": 176,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_MEDICAL",
+      "kind": "icon",
+      "x": 192,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_DROP",
+      "kind": "icon",
+      "x": 208,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_BACKPACK",
+      "kind": "icon",
+      "x": 224,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_PAUSE",
+      "kind": "icon",
+      "x": 240,
+      "y": 32,
+      "width": 16,
+      "height": 16
+    },
+    {
       "apiName": "STATUS_ACTION",
       "kind": "icon",
       "x": 0,
@@ -299,6 +363,14 @@
       "x": 176,
       "y": 48,
       "width": 48,
+      "height": 16
+    },
+    {
+      "apiName": "TOUCH_DISABLED_STRIKE",
+      "kind": "icon",
+      "x": 224,
+      "y": 48,
+      "width": 16,
       "height": 16
     }
   ]

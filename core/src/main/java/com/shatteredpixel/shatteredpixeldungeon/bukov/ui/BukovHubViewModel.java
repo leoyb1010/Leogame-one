@@ -682,24 +682,37 @@ public final class BukovHubViewModel {
 				.contains(normalizedQuery);
 	}
 
-	private static Comparator<ItemRow> comparator(InventorySort sort) {
-		switch (sort) {
-			case VALUE_DESC:
-				return Comparator
-						.comparingLong((ItemRow row) -> row.value)
-						.reversed()
-						.thenComparing(row -> row.itemUid);
-			case WEIGHT_ASC:
-				return Comparator
-						.comparingDouble((ItemRow row) -> row.weight)
-						.thenComparing(row -> row.itemUid);
-			case NAME_ASC:
-				return Comparator
-						.comparing((ItemRow row) -> row.label)
-						.thenComparing(row -> row.itemUid);
-			default:
-				return null;
+	private static Comparator<ItemRow> comparator(
+			final InventorySort sort) {
+		if (sort == InventorySort.STASH_ORDER) {
+			return null;
 		}
+		return new Comparator<ItemRow>() {
+			@Override
+			public int compare(ItemRow left, ItemRow right) {
+				int primary;
+				switch (sort) {
+					case VALUE_DESC:
+						primary = left.value < right.value
+								? 1
+								: left.value > right.value ? -1 : 0;
+						break;
+					case WEIGHT_ASC:
+						primary = left.weight < right.weight
+								? -1
+								: left.weight > right.weight ? 1 : 0;
+						break;
+					case NAME_ASC:
+						primary = left.label.compareTo(right.label);
+						break;
+					default:
+						primary = 0;
+				}
+				return primary != 0
+						? primary
+						: left.itemUid.compareTo(right.itemUid);
+			}
+		};
 	}
 
 	public String inventoryFilterSummary(InventoryFilter filter) {

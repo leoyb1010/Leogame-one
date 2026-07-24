@@ -16,14 +16,14 @@ import static org.junit.Assert.assertTrue;
 public class BukovTouchIconTest {
 
 	@Test
-	public void everyTouchRoleOwnsADistinctProgrammaticGlyph() {
-		Set<String> fingerprints = new HashSet<>();
+	public void everyTouchRoleOwnsADistinctAtlasGlyph() {
+		Set<Integer> atlasColumns = new HashSet<>();
 		for (BukovTouchIcon.Glyph glyph : BukovTouchIcon.Glyph.values()) {
-			assertTrue(BukovTouchIcon.strokeCount(glyph) >= 6);
-			assertTrue(fingerprints.add(BukovTouchIcon.fingerprint(glyph)));
+			int column = BukovTouchIcon.atlasColumn(glyph);
+			assertTrue(column >= 8 && column <= 15);
+			assertTrue(atlasColumns.add(column));
 		}
-		assertEquals(8, fingerprints.size());
-		assertTrue(BukovTouchIcon.disabledStrikeCount() >= 4);
+		assertEquals(8, atlasColumns.size());
 	}
 
 	@Test
@@ -69,8 +69,14 @@ public class BukovTouchIconTest {
 		assertTrue(controls.contains("listener.onActionPressed(action);"));
 		assertTrue(controls.contains("icon.visualState("));
 		assertTrue(controls.contains("setDisabled(blocked)"));
+		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.60f"));
+		assertTrue(controls.contains("ACTION_LABEL_HEIGHT_PX = 5f"));
+		assertTrue(controls.contains("iconPlate = new ColorBlock("));
+		assertTrue(controls.contains("labelDivider = new ColorBlock("));
 		assertTrue(icon.contains("(pressed ? 1f : 0f)"));
-		assertTrue(icon.contains("DISABLED_STRIKE"));
+		assertTrue(icon.contains("touchDisabledStrike("));
+		assertTrue(icon.contains("TouchGlyph.valueOf(glyph.name())"));
+		assertFalse(icon.contains("ColorBlock"));
 		assertFalse(icon.contains("Icons.get("));
 		assertFalse(icon.contains("new Image("));
 	}

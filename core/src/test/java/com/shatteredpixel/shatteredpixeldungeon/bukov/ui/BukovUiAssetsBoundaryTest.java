@@ -17,7 +17,7 @@ public class BukovUiAssetsBoundaryTest {
 
 	private static final Path ASSETS = Paths.get("src/main/assets");
 	private static final String EXPECTED_SHA256 =
-			"caa273d6141352ea441e28397146950d1e350fce83372226da63a6bd5e7ec0b5";
+			"a5d98fd0f27d5717e9bf2e58aecb009b511d3b757260fb320c1f4f72dcf68403";
 
 	@Test
 	public void atlasHasSealedRgbaPixelContract() throws Exception {
@@ -63,6 +63,16 @@ public class BukovUiAssetsBoundaryTest {
 		assertTrue(manifest.contains("\"apiName\": \"HUD_TIMER\""));
 		assertTrue(manifest.contains("\"apiName\": \"HUD_SOUND\""));
 		assertTrue(manifest.contains("\"apiName\": \"HUD_HIT\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_MOVEMENT\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_AIM_FIRE\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_INTERACT\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_RELOAD\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_MEDICAL\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_DROP\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_BACKPACK\""));
+		assertTrue(manifest.contains("\"apiName\": \"TOUCH_PAUSE\""));
+		assertTrue(manifest.contains(
+				"\"apiName\": \"TOUCH_DISABLED_STRIKE\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_ACTION\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_LOOT\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_EXTRACT\""));

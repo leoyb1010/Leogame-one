@@ -49,6 +49,14 @@ const expected = [
   "HUD_TIMER",
   "HUD_SOUND",
   "HUD_HIT",
+  "TOUCH_MOVEMENT",
+  "TOUCH_AIM_FIRE",
+  "TOUCH_INTERACT",
+  "TOUCH_RELOAD",
+  "TOUCH_MEDICAL",
+  "TOUCH_DROP",
+  "TOUCH_BACKPACK",
+  "TOUCH_PAUSE",
   "STATUS_ACTION",
   "STATUS_LOOT",
   "STATUS_EXTRACT",
@@ -58,6 +66,7 @@ const expected = [
   "STATUS_CONCUSSION",
   "STAMP_EXTRACTED",
   "STAMP_LOST",
+  "TOUCH_DISABLED_STRIKE",
 ];
 const actual = manifest.entries.map((entry) => entry.apiName);
 if (manifest.schemaVersion !== 2
@@ -109,6 +118,10 @@ requireDistinct([
   "HUD_HEALTH", "HUD_ARMOR", "HUD_AMMO", "HUD_INTERACT",
   "HUD_OBJECTIVE", "HUD_TIMER", "HUD_SOUND", "HUD_HIT",
 ]);
+requireDistinct([
+  "TOUCH_MOVEMENT", "TOUCH_AIM_FIRE", "TOUCH_INTERACT", "TOUCH_RELOAD",
+  "TOUCH_MEDICAL", "TOUCH_DROP", "TOUCH_BACKPACK", "TOUCH_PAUSE",
+]);
 requireDistinct(["STAMP_EXTRACTED", "STAMP_LOST"]);
 NODE
 
@@ -136,5 +149,9 @@ rg -q 'BukovUiAssets\.Stamp\.EXTRACTED' \
   "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java"
 rg -q 'BukovUiAssets\.Stamp\.LOST' \
   "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/WndBukovSettlement.java"
+rg -q 'BukovUiAssets\.touchGlyph\(' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovTouchIcon.java"
+rg -q 'BukovUiAssets\.touchDisabledStrike\(' \
+  "$root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovTouchIcon.java"
 
 echo "PASS: deterministic complete Bukov UI atlas, provenance, fallback, and wiring"

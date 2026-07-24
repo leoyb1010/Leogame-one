@@ -19,7 +19,10 @@ import com.watabou.utils.PointF;
  */
 public final class BukovTouchControls extends Component {
 
-	private static final int COMPACT_LABEL_REDUCTION_PX = 2;
+	private static final int COMPACT_LABEL_REDUCTION_PX = 3;
+	private static final float ACTION_ICON_MAX_PX = 16f;
+	private static final float ACTION_ICON_HEIGHT_RATIO = 0.60f;
+	private static final float ACTION_LABEL_HEIGHT_PX = 5f;
 
 	public interface Listener {
 		void onActionPressed(BukovTouchState.Action action);
@@ -504,6 +507,8 @@ public final class BukovTouchControls extends Component {
 		private ColorBlock shadow;
 		private ColorBlock background;
 		private ColorBlock edge;
+		private ColorBlock iconPlate;
+		private ColorBlock labelDivider;
 		private BukovTouchIcon icon;
 		private RenderedTextBlock label;
 		private PointerArea pointerArea;
@@ -537,6 +542,14 @@ public final class BukovTouchControls extends Component {
 			edge = new ColorBlock(
 					1, 1, BukovTouchIcon.withFullAlpha(accentColor));
 			add(edge);
+			iconPlate = new ColorBlock(
+					1, 1,
+					tokens.colorWithAlpha("ink.shadow", 0x78));
+			add(iconPlate);
+			labelDivider = new ColorBlock(
+					1, 1,
+					tokens.colorWithAlpha("text.secondary", 0x52));
+			add(labelDivider);
 			icon = new BukovTouchIcon(
 					iconFor(action),
 					tokens.color("text.primary"),
@@ -606,20 +619,33 @@ public final class BukovTouchControls extends Component {
 			edge.y = y + pressedOffset;
 			edge.size(width, pointerId != -1 && !disabled ? 2f : 1.5f);
 			float iconSize = Math.max(
-					8f,
+					9f,
 					Math.min(
-							13f,
-							Math.min(width - 4f, height * 0.50f)));
+							ACTION_ICON_MAX_PX,
+							Math.min(
+									width - 5f,
+									height * ACTION_ICON_HEIGHT_RATIO)));
+			float iconTop = y + 1.5f + pressedOffset;
+			float plateSize = Math.min(
+					Math.max(1f, width - 3f),
+					iconSize + 3f);
+			iconPlate.x = centerX() - plateSize * 0.5f;
+			iconPlate.y = iconTop - 1f;
+			iconPlate.size(plateSize, iconSize + 2f);
+			float dividerY = bottom() - ACTION_LABEL_HEIGHT_PX - 1f;
+			labelDivider.x = x + 3f;
+			labelDivider.y = dividerY;
+			labelDivider.size(Math.max(1f, width - 6f), 0.75f);
 			icon.setRect(
 					centerX() - iconSize * 0.5f,
-					y + 2f,
+					iconTop,
 					iconSize,
 					iconSize);
 			label.setRect(
 					x + 1f,
-					bottom() - 7f,
+					bottom() - ACTION_LABEL_HEIGHT_PX,
 					Math.max(1f, width - 2f),
-					6f);
+					ACTION_LABEL_HEIGHT_PX);
 			pointerArea.x = x;
 			pointerArea.y = y;
 			pointerArea.width = width;
@@ -637,6 +663,20 @@ public final class BukovTouchControls extends Component {
 			edge.hardlight(disabled
 					? tokens.color("text.disabled")
 					: accentColor);
+			iconPlate.hardlight(disabled
+					? tokens.color("ink.shadow")
+					: visiblyPressed
+							? accentColor
+							: tokens.color("panel.surface"));
+			iconPlate.alpha(disabled
+					? 0.24f
+					: visiblyPressed ? 0.34f : 0.46f);
+			labelDivider.hardlight(disabled
+					? tokens.color("text.disabled")
+					: visiblyPressed
+							? accentColor
+							: tokens.color("text.secondary"));
+			labelDivider.alpha(disabled ? 0.28f : visiblyPressed ? 0.90f : 0.55f);
 			label.hardlight(disabled
 					? tokens.color("text.disabled")
 					: visiblyPressed

@@ -68,6 +68,23 @@ public final class BukovUiAssets {
 		}
 	}
 
+	public enum TouchGlyph {
+		MOVEMENT(8),
+		AIM_FIRE(9),
+		INTERACT(10),
+		RELOAD(11),
+		MEDICAL(12),
+		DROP(13),
+		BACKPACK(14),
+		PAUSE(15);
+
+		private final int column;
+
+		TouchGlyph(int column) {
+			this.column = column;
+		}
+	}
+
 	public enum StatusIcon {
 		ACTION(0),
 		LOOT(1),
@@ -165,6 +182,28 @@ public final class BukovUiAssets {
 		return image(
 				element.column * TILE_SIZE,
 				TILE_SIZE * 2,
+				TILE_SIZE,
+				TILE_SIZE,
+				fallbackColor);
+	}
+
+	public static Image touchGlyph(
+			TouchGlyph glyph, int fallbackColor) {
+		if (glyph == null) {
+			throw new IllegalArgumentException("touch glyph is required");
+		}
+		return image(
+				glyph.column * TILE_SIZE,
+				TILE_SIZE * 2,
+				TILE_SIZE,
+				TILE_SIZE,
+				fallbackColor);
+	}
+
+	public static Image touchDisabledStrike(int fallbackColor) {
+		return image(
+				TILE_SIZE * 14,
+				TILE_SIZE * 3,
 				TILE_SIZE,
 				TILE_SIZE,
 				fallbackColor);

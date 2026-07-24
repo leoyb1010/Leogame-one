@@ -161,6 +161,23 @@ const entries = [
     width: TILE,
     height: TILE,
   })),
+  ...[
+    ["TOUCH_MOVEMENT", 8],
+    ["TOUCH_AIM_FIRE", 9],
+    ["TOUCH_INTERACT", 10],
+    ["TOUCH_RELOAD", 11],
+    ["TOUCH_MEDICAL", 12],
+    ["TOUCH_DROP", 13],
+    ["TOUCH_BACKPACK", 14],
+    ["TOUCH_PAUSE", 15],
+  ].map(([apiName, column]) => ({
+    apiName,
+    kind: "icon",
+    x: TILE * column,
+    y: TILE * 2,
+    width: TILE,
+    height: TILE,
+  })),
   {
     apiName: "STATUS_ACTION",
     kind: "icon",
@@ -231,6 +248,14 @@ const entries = [
     x: TILE * 11,
     y: TILE * 3,
     width: TILE * 3,
+    height: TILE,
+  },
+  {
+    apiName: "TOUCH_DISABLED_STRIKE",
+    kind: "icon",
+    x: TILE * 14,
+    y: TILE * 3,
+    width: TILE,
     height: TILE,
   },
 ];
@@ -368,6 +393,51 @@ for (let y = 2; y <= 13; y += 1) {
 localRect(7, HUD_ROW, 7, 6, 2, 5, colors.deep);
 localRect(7, HUD_ROW, 7, 12, 2, 1, colors.text);
 
+const touchBlueprints = [
+  // Movement d-pad.
+  [[7, 1, 2, 10], [5, 3, 2, 2], [9, 3, 2, 2],
+    [7, 5, 2, 10], [5, 11, 2, 2], [9, 11, 2, 2],
+    [1, 7, 10, 2], [3, 5, 2, 2], [3, 9, 2, 2],
+    [5, 7, 10, 2], [11, 5, 2, 2], [11, 9, 2, 2]],
+  // Aim/fire reticle with a centre point and broken corners.
+  [[7, 1, 2, 4], [7, 11, 2, 4], [1, 7, 4, 2],
+    [11, 7, 4, 2], [7, 7, 2, 2], [4, 4, 3, 1],
+    [4, 5, 1, 2], [9, 4, 3, 1], [11, 5, 1, 2],
+    [4, 11, 3, 1], [4, 9, 1, 2], [9, 11, 3, 1],
+    [11, 9, 1, 2]],
+  // Interaction tap target with response marks.
+  [[6, 6, 4, 4], [7, 2, 2, 3], [2, 7, 3, 2],
+    [11, 7, 3, 2], [4, 4, 2, 1], [3, 3, 1, 1],
+    [10, 4, 2, 1], [12, 3, 1, 1], [7, 11, 2, 3]],
+  // Reload arrow wrapped around a magazine.
+  [[4, 2, 7, 2], [2, 4, 2, 6], [4, 10, 3, 2],
+    [10, 4, 2, 3], [9, 2, 4, 2], [11, 1, 2, 5],
+    [12, 4, 2, 2], [7, 7, 3, 6], [8, 8, 1, 3],
+    [7, 12, 3, 2]],
+  // Medical first-aid cross.
+  [[6, 2, 4, 12], [2, 6, 12, 4], [4, 4, 2, 2],
+    [10, 4, 2, 2], [4, 10, 2, 2], [10, 10, 2, 2]],
+  // Drop arrow entering an open container.
+  [[7, 1, 2, 7], [4, 6, 3, 2], [9, 6, 3, 2],
+    [6, 8, 4, 2], [2, 10, 2, 4], [12, 10, 2, 4],
+    [2, 13, 12, 2], [4, 10, 2, 1], [10, 10, 2, 1]],
+  // Backpack with lid, pocket and shoulder straps.
+  [[5, 1, 6, 2], [3, 3, 10, 2], [2, 5, 2, 9],
+    [12, 5, 2, 9], [3, 13, 10, 2], [5, 7, 6, 1],
+    [5, 10, 6, 3], [6, 11, 4, 1], [1, 6, 1, 5],
+    [14, 6, 1, 5]],
+  // Pause bars inside a persistent bracket.
+  [[4, 3, 3, 10], [9, 3, 3, 10], [2, 1, 12, 1],
+    [2, 14, 12, 1], [1, 2, 1, 3], [14, 2, 1, 3]],
+];
+
+for (let glyph = 0; glyph < touchBlueprints.length; glyph += 1) {
+  const column = 8 + glyph;
+  for (const [x, y, width, height] of touchBlueprints[glyph]) {
+    localRect(column, HUD_ROW, x, y, width, height, colors.text);
+  }
+}
+
 // Crosshair/action state.
 localRect(0, STATUS_ROW, 7, 2, 2, 12, colors.interact);
 localRect(0, STATUS_ROW, 2, 7, 12, 2, colors.interact);
@@ -463,6 +533,10 @@ function stamp(startColumn, edge, slash) {
 
 stamp(8, colors.extract, false);
 stamp(11, colors.danger, true);
+
+for (let offset = 2; offset <= 12; offset += 2) {
+  localRect(14, STATUS_ROW, offset, offset, 2, 2, colors.text);
+}
 
 const temp = mkdtempSync(join(tmpdir(), "bukov-ui-atlas-"));
 try {
