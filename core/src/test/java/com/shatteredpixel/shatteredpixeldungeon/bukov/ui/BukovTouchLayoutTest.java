@@ -21,6 +21,7 @@ public class BukovTouchLayoutTest {
 		assertTrue(layout.landscape);
 		assertContained(layout);
 		assertCoreControlsDoNotOverlap(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
 		assertTrue(layout.movement.centerX() < layout.safeBounds.centerX());
 		assertTrue(layout.aimFire.centerX() > layout.safeBounds.centerX());
 	}
@@ -40,6 +41,11 @@ public class BukovTouchLayoutTest {
 		assertFalse(layout.landscape);
 		assertContained(layout);
 		assertCoreControlsDoNotOverlap(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
+		assertTrue(layout.interact.width >= 22f);
+		assertTrue(layout.reload.width >= 22f);
+		assertTrue(layout.medical.width >= 22f);
+		assertTrue(layout.drop.width >= 22f);
 		assertTrue(layout.backpack.y >= 42f);
 		assertTrue(layout.pause.y >= 42f);
 		assertTrue(layout.movement.bottom() <= layout.safeBounds.bottom());
@@ -61,6 +67,7 @@ public class BukovTouchLayoutTest {
 		assertTrue(layout.landscape);
 		assertContained(layout);
 		assertCoreControlsDoNotOverlap(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
 		assertTrue(layout.backpack.y >= 36f);
 		assertTrue(layout.pause.y >= 36f);
 	}
@@ -81,6 +88,7 @@ public class BukovTouchLayoutTest {
 		assertTrue(layout.landscape);
 		assertContained(layout);
 		assertCoreControlsDoNotOverlap(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
 		assertTrue(layout.movement.y >= hudBottom);
 		assertTrue(layout.aimFire.y >= hudBottom);
 		assertTrue(layout.interact.y >= hudBottom);
@@ -104,6 +112,7 @@ public class BukovTouchLayoutTest {
 
 		assertContained(layout);
 		assertFalse(layout.movement.overlaps(layout.aimFire));
+		assertExpandedHitTargetsDoNotOverlap(layout);
 		assertTrue(layout.movement.width >= 36f);
 		assertTrue(layout.aimFire.width >= 36f);
 	}
@@ -127,6 +136,7 @@ public class BukovTouchLayoutTest {
 		assertFalse(layout.landscape);
 		assertContained(layout);
 		assertEveryControlPairSeparated(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
 		assertTrue(layout.backpack.y >= reservedBottom);
 		assertTrue(layout.pause.y >= reservedBottom);
 	}
@@ -145,6 +155,7 @@ public class BukovTouchLayoutTest {
 		assertTrue(layout.landscape);
 		assertContained(layout);
 		assertEveryControlPairSeparated(layout);
+		assertExpandedHitTargetsDoNotOverlap(layout);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -199,5 +210,40 @@ public class BukovTouchLayoutTest {
 				assertFalse(controls[first].overlaps(controls[second]));
 			}
 		}
+	}
+
+	private static void assertExpandedHitTargetsDoNotOverlap(
+			BukovTouchLayout layout) {
+		BukovTouchLayout.Rect[] controls = {
+				layout.movement,
+				layout.aimFire,
+				expandedHitRect(layout.interact),
+				expandedHitRect(layout.reload),
+				expandedHitRect(layout.medical),
+				expandedHitRect(layout.drop),
+				expandedHitRect(layout.backpack),
+				expandedHitRect(layout.pause)
+		};
+		for (int first = 0; first < controls.length; first++) {
+			for (int second = first + 1;
+					second < controls.length;
+					second++) {
+				assertFalse(
+						"expanded hit targets overlap: "
+								+ first + " and " + second,
+						controls[first].overlaps(controls[second]));
+			}
+		}
+	}
+
+	private static BukovTouchLayout.Rect expandedHitRect(
+			BukovTouchLayout.Rect visual) {
+		float hitWidth = BukovTouchControls.actionHitSize(visual.width);
+		float hitHeight = BukovTouchControls.actionHitSize(visual.height);
+		return new BukovTouchLayout.Rect(
+				visual.x - (hitWidth - visual.width) * 0.5f,
+				visual.y - (hitHeight - visual.height) * 0.5f,
+				hitWidth,
+				hitHeight);
 	}
 }

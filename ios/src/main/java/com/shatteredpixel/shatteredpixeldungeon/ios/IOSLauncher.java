@@ -48,7 +48,6 @@ import org.robovm.apple.foundation.NSObject;
 import org.robovm.apple.foundation.NSString;
 import org.robovm.apple.uikit.UIApplication;
 import org.robovm.apple.uikit.UIInterfaceOrientation;
-import org.robovm.apple.uikit.UITextField;
 
 import java.io.File;
 
@@ -121,9 +120,10 @@ public class IOSLauncher extends IOSApplication.Delegate {
 
 		config.hideHomeIndicator = true;
 		config.overrideRingerSwitch = SPDSettings.ignoreSilentMode();
-		// iOS 26 simulators can abort inside AURemoteIO/OpenAL during app startup.
-		// Keep full audio on real devices and use a crash-safe simulator fallback.
-		config.useAudio = !simulator;
+		// The simulator should exercise the same ObjectAL audio path as a device.
+		// IOSAudioStartupPolicy keeps the old no-op backend only as an explicit
+		// recovery path when Java-visible native initialization fails.
+		config.useAudio = true;
 
 		config.useHaptics = true;
 		config.useAccelerometer = false;
@@ -210,24 +210,36 @@ public class IOSLauncher extends IOSApplication.Delegate {
 		config.addIosDevice("SIMULATOR_ARM64",  "arm64", 460);
 
 		return new IOSApplication(new ShatteredPixelDungeon(new IOSPlatformSupport()), config){
+			private IOSAudio createNativeAudio(
+					IOSApplicationConfiguration configuration) {
+				return super.createAudio(configuration);
+			}
+
 			@Override
 			protected IOSAudio createAudio(IOSApplicationConfiguration configuration) {
-				return simulator ? new SilentIOSAudio() : super.createAudio(configuration);
+				if (!simulator) {
+					// Real devices retain the backend's normal initialization and
+					// error behavior; simulator recovery must not hide device bugs.
+					return createNativeAudio(configuration);
+				}
+				return IOSAudioStartupPolicy.createForSimulator(
+						new IOSAudioStartupPolicy.Factory() {
+							@Override
+							public IOSAudio create() {
+								return createNativeAudio(configuration);
+							}
+						},
+						IOSAudioStartupPolicy.SYSTEM_ERROR_LOGGER);
 			}
 
 			@Override
 			protected IOSInput createInput() {
-				//FIXME essentially a backport of a fix to text fields from libGDX ios backend 1.13.5
-				return new DefaultIOSInput(this){
-					@Override
-					public void setOnscreenKeyboardVisible(boolean visible, OnscreenKeyboardType type) {
-						super.setOnscreenKeyboardVisible(visible, type);
-						if (visible){
-							((UITextField)getActiveKeyboardTextField()).setText("x");
-						}
-					}
-				};
-
+				/*
+				 * Do not seed the native UITextField with a sentinel
+				 * character. That workaround can leak a literal "x" into
+				 * Bukov inventory search when iOS starts composition.
+				 */
+				return new DefaultIOSInput(this);
 			}
 		};
 	}

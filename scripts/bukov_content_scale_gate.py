@@ -3,6 +3,7 @@
 
 import json
 import math
+import re
 from pathlib import Path
 
 
@@ -93,6 +94,12 @@ assert {
 } == representative_six
 
 ammo_by_id = {item["id"]: item for item in ammunition}
+vendor_firearm_ids = set(
+    re.findall(
+        r'firearm\(\s*"[^"]+"\s*,\s*"([^"]+)"',
+        VENDOR_SOURCE,
+    )
+)
 for ammo_id in ammo_by_id:
     assert ammo_id in VENDOR_SOURCE, f"not obtainable from vendor: {ammo_id}"
 for firearm in firearms:
@@ -146,7 +153,7 @@ for firearm in firearms:
     assert f'firearm("{firearm["id"]}"' in LOOT_SOURCE, (
         f"not obtainable as raid loot: {firearm['id']}"
     )
-    assert f'firearm("{firearm["id"]}"' in VENDOR_SOURCE, (
+    assert firearm["id"] in vendor_firearm_ids, (
         f"not obtainable from vendor: {firearm['id']}"
     )
 

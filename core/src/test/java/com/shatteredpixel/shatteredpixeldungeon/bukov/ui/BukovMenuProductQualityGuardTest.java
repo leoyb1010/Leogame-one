@@ -61,9 +61,9 @@ public class BukovMenuProductQualityGuardTest {
 		assertTrue(pause.contains(
 				"extends BukovIconLabelButton"));
 		assertTrue(pause.contains(
-				"BukovTouchIcon.Glyph.MOVEMENT"));
+				"BukovTouchIcon.Glyph.RESUME"));
 		assertTrue(pause.contains(
-				"BukovTouchIcon.Glyph.MODE"));
+				"BukovTouchIcon.Glyph.SETTINGS"));
 		assertTrue(pause.contains(
 				"BukovTouchIcon.Glyph.BACK"));
 		assertTrue(pause.contains("BukovWindowLayout.safeWidth"));
@@ -114,9 +114,12 @@ public class BukovMenuProductQualityGuardTest {
 				source("WndBukovFirstRunCalibration.java");
 		assertTrue(calibration.contains(
 				"BukovTouchIcon.Glyph.DEPLOY"));
-		assertTrue(calibration.contains("actionIcon = done"));
+		assertTrue(calibration.contains(
+				"boolean done = calibration == Calibration.DONE"));
+		assertTrue(calibration.contains(
+				"actionIcon = new BukovTouchIcon("));
 		String settings = source("WndBukovSettings.java");
-		assertTrue(settings.contains("BukovTouchIcon.Glyph.SEARCH"));
+		assertTrue(settings.contains("BukovTouchIcon.Glyph.DOCUMENT"));
 		assertTrue(settings.contains("BukovTouchIcon.Glyph.BACK"));
 		assertTrue(settings.contains(
 				"navigationIcon = navigationGlyph == null"));
@@ -139,6 +142,50 @@ public class BukovMenuProductQualityGuardTest {
 				"if (!condensedTouch)"));
 	}
 
+	@Test
+	public void titleAndWelcomeMapEveryPrimaryActionToExplicitGlyphs()
+			throws Exception {
+		String title = sceneSource("TitleScene.java");
+		String continueAction = between(
+				title,
+				"btnContinue = new TacticalTitleButton(",
+				"btnContinue.setRect(");
+		assertTrue(continueAction.contains(
+				"BukovTouchIcon.Glyph.RESUME"));
+
+		String entryAction = between(
+				title,
+				"btnBukov = new TacticalTitleButton(",
+				"btnBukov.setRect(");
+		assertTrue(entryAction.contains(
+				"BukovTouchIcon.Glyph.MODE"));
+		assertTrue(entryAction.contains(
+				"BukovTouchIcon.Glyph.DEPLOY"));
+
+		String settingsAction = between(
+				title,
+				"btnSettings = new TacticalTitleButton(",
+				"btnSettings.setRect(");
+		assertTrue(settingsAction.contains(
+				"BukovTouchIcon.Glyph.SETTINGS"));
+		assertTrue(title.contains(
+				"private final BukovTouchIcon icon;"));
+		assertTrue(title.contains(
+				"BukovVisualContract.FONT_CAPTION"));
+
+		String welcome = sceneSource("WelcomeScene.java");
+		String welcomeAction = between(
+				welcome,
+				"WelcomeActionButton enter = new WelcomeActionButton(",
+				"enter.setRect(");
+		assertTrue(welcomeAction.contains(
+				"BukovTouchIcon.Glyph.DEPLOY"));
+		assertTrue(welcome.contains(
+				"private final BukovTouchIcon icon;"));
+		assertTrue(welcome.contains(
+				"BukovVisualContract.FONT_CAPTION"));
+	}
+
 	private static String source(String file) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(
@@ -155,5 +202,14 @@ public class BukovMenuProductQualityGuardTest {
 								+ "shatteredpixeldungeon/scenes/"
 								+ file)),
 				StandardCharsets.UTF_8);
+	}
+
+	private static String between(
+			String source, String start, String end) {
+		int from = source.indexOf(start);
+		int to = source.indexOf(end, from + start.length());
+		assertTrue("missing start marker: " + start, from >= 0);
+		assertTrue("missing end marker: " + end, to > from);
+		return source.substring(from, to);
 	}
 }

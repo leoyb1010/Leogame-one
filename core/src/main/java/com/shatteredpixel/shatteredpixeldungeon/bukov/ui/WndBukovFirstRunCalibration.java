@@ -183,16 +183,14 @@ public final class WndBukovFirstRunCalibration extends Window {
 					1, 1, tokens.color("accent.valuable"));
 			focusRule.visible = false;
 			add(focusRule);
-			actionIcon = done
-					? new BukovTouchIcon(
-							BukovTouchIcon.Glyph.DEPLOY,
-							tokens.color("accent.extract"),
-							tokens.color("text.primary"),
-							tokens.color("text.disabled"))
-					: null;
-			if (actionIcon != null) {
-				add(actionIcon);
-			}
+			actionIcon = new BukovTouchIcon(
+					calibrationGlyph(calibration),
+					tokens.color(done
+							? "accent.extract" : "text.secondary"),
+					tokens.color(done
+							? "text.primary" : "accent.interact"),
+					tokens.color("text.disabled"));
+			add(actionIcon);
 			label = PixelScene.renderTextBlock(
 					tokens.scaledTypographyPx(
 							done
@@ -210,6 +208,21 @@ public final class WndBukovFirstRunCalibration extends Window {
 					done ? "accent.extract" : "accent.interact"));
 			add(value);
 			refresh();
+		}
+
+		private BukovTouchIcon.Glyph calibrationGlyph(
+				Calibration calibration) {
+			switch (calibration) {
+				case UI_SCALE:
+					return BukovTouchIcon.Glyph.MODE;
+				case VIBRATION:
+					return BukovTouchIcon.Glyph.RECOMMEND;
+				case AIM_ASSIST:
+					return BukovTouchIcon.Glyph.AIM_FIRE;
+				case DONE:
+				default:
+					return BukovTouchIcon.Glyph.DEPLOY;
+			}
 		}
 
 		@Override

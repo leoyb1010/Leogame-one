@@ -65,6 +65,9 @@ const expected = [
   "HUB_RECOMMEND",
   "HUB_DEPLOY",
   "HUB_BACK",
+  "HUB_SETTINGS",
+  "HUB_DOCUMENT",
+  "HUB_RESUME",
   "STATUS_ACTION",
   "STATUS_LOOT",
   "STATUS_EXTRACT",
@@ -133,6 +136,7 @@ requireDistinct([
 requireDistinct([
   "HUB_MODE", "HUB_VENDOR", "HUB_FILTER", "HUB_SORT",
   "HUB_SEARCH", "HUB_RECOMMEND", "HUB_DEPLOY", "HUB_BACK",
+  "HUB_SETTINGS", "HUB_DOCUMENT", "HUB_RESUME",
 ]);
 requireDistinct(["STAMP_EXTRACTED", "STAMP_LOST"]);
 NODE

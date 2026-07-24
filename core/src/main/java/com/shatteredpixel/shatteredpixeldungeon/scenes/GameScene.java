@@ -1728,6 +1728,12 @@ public class GameScene extends PixelScene {
 				if (bukovWorld.consumeBackpackRequested()) {
 					openBukovBackpack();
 				}
+				if (bukovTouchControls != null && bukovHud != null) {
+					bukovTouchControls.liveActionAvailability(
+							bukovHud.interactionActionAvailable(),
+							bukovWorld.reloadActionAvailable(),
+							bukovWorld.medicalActionAvailable());
+				}
 				updateBukovLifecycle();
 			}
 			if (BukovMode.active()) {

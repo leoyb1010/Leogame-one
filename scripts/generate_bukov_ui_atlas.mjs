@@ -187,6 +187,9 @@ const entries = [
     ["HUB_RECOMMEND", 5],
     ["HUB_DEPLOY", 6],
     ["HUB_BACK", 7],
+    ["HUB_SETTINGS", 8],
+    ["HUB_DOCUMENT", 9],
+    ["HUB_RESUME", 10],
   ].map(([apiName, column]) => ({
     apiName,
     kind: "icon",
@@ -486,6 +489,18 @@ const hubBlueprints = [
   // Back: return arrow with a strong horizontal baseline.
   [[3, 7, 11, 2], [3, 5, 2, 6], [5, 3, 2, 3],
     [5, 10, 2, 3], [7, 2, 2, 2], [7, 12, 2, 2]],
+  // Settings: six-tooth field gear with a square axle.
+  [[7, 1, 2, 3], [7, 12, 2, 3], [1, 7, 3, 2],
+    [12, 7, 3, 2], [3, 3, 3, 2], [10, 3, 3, 2],
+    [3, 11, 3, 2], [10, 11, 3, 2], [4, 5, 8, 6],
+    [5, 4, 6, 8], [7, 7, 2, 2]],
+  // Document: clipped field dossier with three readable data rules.
+  [[3, 2, 8, 12], [11, 5, 2, 9], [9, 2, 2, 4],
+    [10, 4, 3, 2], [5, 6, 5, 1], [5, 9, 6, 1],
+    [5, 12, 4, 1]],
+  // Resume: right-facing play wedge inside a persistent bracket.
+  [[3, 2, 2, 12], [12, 2, 2, 12], [5, 4, 2, 8],
+    [7, 5, 2, 6], [9, 6, 2, 4], [11, 7, 2, 2]],
 ];
 
 for (let glyph = 0; glyph < hubBlueprints.length; glyph += 1) {

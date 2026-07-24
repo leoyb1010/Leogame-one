@@ -118,12 +118,12 @@ public final class WndBukovPause extends Window {
 		y += statusHeight + 3;
 
 		addButton(new ActionButton(
-				BukovTouchIcon.Glyph.MOVEMENT,
+				BukovTouchIcon.Glyph.RESUME,
 				BukovMessages.get("bukov.raid.pause.resume_label"),
 				BukovMessages.get("bukov.raid.pause.resume_code"),
 				CONTINUE), windowWidth, buttonGap);
 		addButton(new ActionButton(
-				BukovTouchIcon.Glyph.MODE,
+				BukovTouchIcon.Glyph.SETTINGS,
 				BukovMessages.get("bukov.raid.pause.settings_label"),
 				BukovMessages.get("bukov.raid.pause.settings_code"),
 				SETTINGS), windowWidth, buttonGap);

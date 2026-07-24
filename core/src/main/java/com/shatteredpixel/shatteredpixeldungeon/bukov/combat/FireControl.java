@@ -155,6 +155,23 @@ public final class FireControl {
 		return reloadRemaining > 0f;
 	}
 
+	/**
+	 * Shared preflight for UI availability and the live reload edge. Reserve
+	 * ammunition is owned by the raid inventory, so it must be checked before
+	 * this controller starts an animation.
+	 */
+	public static boolean canStartReload(
+			int magazineAmmo,
+			int magazineCapacity,
+			int reserveAmmo,
+			boolean reloading) {
+		return !reloading
+				&& magazineCapacity > 0
+				&& magazineAmmo >= 0
+				&& magazineAmmo < magazineCapacity
+				&& reserveAmmo > 0;
+	}
+
 	public float shotCooldown() {
 		return shotCooldown;
 	}

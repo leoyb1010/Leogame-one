@@ -440,6 +440,21 @@ public final class BukovRealtimeWorld
 		return equippedFirearm;
 	}
 
+	public boolean reloadActionAvailable() {
+		resolveEquippedFirearm();
+		return equippedFirearm != null
+				&& equippedDefinition != null
+				&& FireControl.canStartReload(
+						equippedFirearm.magazineAmmo(),
+						equippedDefinition.magazineSize,
+						reserveAmmo(equippedDefinition.caliber),
+						fireControl.isReloading());
+	}
+
+	public boolean medicalActionAvailable() {
+		return medicalSystem != null && medicalSystem.canBeginAny();
+	}
+
 	/**
 	 * Installs the loadout-owned equipment projection before the first frame.
 	 * Armor durability remains owned by RuntimeLoadout.writeBack().
@@ -959,11 +974,21 @@ public final class BukovRealtimeWorld
 		boolean aimedPress = aimReady
 				&& (inputFrame.firePressed
 						|| inputFrame.fireHeld && !fireAimReadyLastStep);
+		boolean reloadAvailable = reloadActionAvailable();
+		if (inputFrame.reloadPressed
+				&& !reloadAvailable
+				&& !fireControl.isReloading()
+				&& equippedFirearm.magazineAmmo()
+						< equippedDefinition.magazineSize
+				&& reserveAmmo(equippedDefinition.caliber) <= 0) {
+			showHeroStatus(BukovMessages.get(
+					"bukov.raid.runtime.no_reserve_ammo"));
+		}
 		fireControl.update(
 				dt,
 				aimReady && inputFrame.fireHeld,
 				aimedPress,
-				inputFrame.reloadPressed,
+				inputFrame.reloadPressed && reloadAvailable,
 				equippedFirearm,
 				equippedDefinition,
 				raidTheme == null

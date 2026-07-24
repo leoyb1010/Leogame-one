@@ -22,6 +22,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.save.BukovSaveServices;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchIcon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
@@ -184,6 +185,7 @@ public class TitleScene extends PixelScene {
 		if (activeRaid) {
 			btnContinue = new TacticalTitleButton(
 					entryMessage("title.continue"),
+					BukovTouchIcon.Glyph.RESUME,
 					tokens.color("accent.extract"),
 					SPDAction.TAG_ATTACK) {
 				@Override
@@ -201,6 +203,9 @@ public class TitleScene extends PixelScene {
 				activeRaid
 						? entryMessage("title.enter_hideout")
 						: entryMessage("title.start"),
+				activeRaid
+						? BukovTouchIcon.Glyph.MODE
+						: BukovTouchIcon.Glyph.DEPLOY,
 				tokens.color("accent.interact"),
 				activeRaid ? SPDAction.TAG_LOOT : SPDAction.TAG_ATTACK) {
 			@Override
@@ -215,6 +220,7 @@ public class TitleScene extends PixelScene {
 		float secondaryTop = btnBukov.bottom() + 3f;
 		btnSettings = new TacticalTitleButton(
 				entryMessage("title.settings"),
+				BukovTouchIcon.Glyph.SETTINGS,
 				tokens.color("panel.border"),
 				SPDAction.TAG_RESUME) {
 			@Override
@@ -313,11 +319,13 @@ public class TitleScene extends PixelScene {
 		private final NinePatch pressed;
 		private final ColorBlock edge;
 		private final ColorBlock lowerRule;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock text;
 		private final GameAction keyAction;
 
 		private TacticalTitleButton(
 				String value,
+				BukovTouchIcon.Glyph glyph,
 				int accent,
 				GameAction keyAction) {
 			this.keyAction = keyAction;
@@ -336,9 +344,15 @@ public class TitleScene extends PixelScene {
 			lowerRule = new ColorBlock(1f, 1f, accent);
 			lowerRule.alpha(0.65f);
 			add(lowerRule);
+			icon = new BukovTouchIcon(
+					glyph,
+					tokens.color("text.primary"),
+					accent,
+					tokens.color("text.disabled"));
+			add(icon);
 			text = label(
 					value,
-					BukovVisualContract.FONT_BODY,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
@@ -357,12 +371,16 @@ public class TitleScene extends PixelScene {
 		protected void onPointerDown() {
 			surface.visible = false;
 			pressed.visible = true;
+			icon.visualState(true, false);
+			layout();
 		}
 
 		@Override
 		protected void onPointerUp() {
 			surface.visible = true;
 			pressed.visible = false;
+			icon.visualState(false, false);
+			layout();
 		}
 
 		@Override
@@ -381,10 +399,20 @@ public class TitleScene extends PixelScene {
 			lowerRule.x = x;
 			lowerRule.y = y + height - 1f;
 			lowerRule.size(width, 1f);
-			text.maxWidth(Math.max(1, (int)width - 8));
+			float iconSize = Math.max(10f, Math.min(15f, height - 7f));
+			float textWidth = Math.max(1f, width - iconSize - 15f);
+			text.maxWidth(Math.max(1, (int)textWidth));
+			float contentWidth = iconSize + 4f + text.width();
+			float contentLeft = x + (width - contentWidth) * 0.5f;
+			icon.setRect(
+					contentLeft,
+					y + (height - iconSize) * 0.5f,
+					iconSize,
+					iconSize);
 			text.setPos(
-					x + (width - text.width()) / 2f,
-					y + (height - text.height()) / 2f);
+					contentLeft + iconSize + 4f,
+					y + (height - text.height()) / 2f
+							+ (pressed.visible ? 1f : 0f));
 		}
 
 		private void fit(NinePatch block) {

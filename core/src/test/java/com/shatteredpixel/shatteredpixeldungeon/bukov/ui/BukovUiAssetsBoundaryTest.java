@@ -17,7 +17,7 @@ public class BukovUiAssetsBoundaryTest {
 
 	private static final Path ASSETS = Paths.get("src/main/assets");
 	private static final String EXPECTED_SHA256 =
-			"616845a221b2b234df58d22baa2fdb5b91d873f7619890421673890b6c09b8db";
+			"3d6da151240f0eaf4d272211237fb9962ec3cf395545977ccb40d89b1952179e";
 
 	@Test
 	public void atlasHasSealedRgbaPixelContract() throws Exception {
@@ -79,6 +79,9 @@ public class BukovUiAssetsBoundaryTest {
 		assertTrue(manifest.contains("\"apiName\": \"HUB_RECOMMEND\""));
 		assertTrue(manifest.contains("\"apiName\": \"HUB_DEPLOY\""));
 		assertTrue(manifest.contains("\"apiName\": \"HUB_BACK\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_SETTINGS\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_DOCUMENT\""));
+		assertTrue(manifest.contains("\"apiName\": \"HUB_RESUME\""));
 		assertTrue(manifest.contains(
 				"\"apiName\": \"TOUCH_DISABLED_STRIKE\""));
 		assertTrue(manifest.contains("\"apiName\": \"STATUS_ACTION\""));
@@ -126,6 +129,11 @@ public class BukovUiAssetsBoundaryTest {
 		}) {
 			assertTrue(glyph, hub.contains(
 					"BukovTouchIcon.Glyph." + glyph));
+		}
+		for (String glyph : new String[] {
+				"SETTINGS", "DOCUMENT", "RESUME"
+		}) {
+			assertTrue(glyph, loader.contains(glyph + "("));
 		}
 		String hubScene = javaSource("scenes/BukovHubScene.java");
 		assertTrue(hubScene.contains("Surface.BUTTON_FOCUSED"));

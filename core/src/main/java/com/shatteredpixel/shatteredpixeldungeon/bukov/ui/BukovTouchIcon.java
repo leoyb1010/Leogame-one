@@ -7,9 +7,9 @@ import com.watabou.noosa.ui.Component;
 /**
  * Atlas-backed semantic icons for the raid touch overlay.
  *
- * <p>The eight glyphs are project-original 16x16 pixel art generated into the
- * shared Bukov UI atlas. One image replaces the previous per-stroke draw-node
- * tree, while pressed and disabled states remain shape-distinct.</p>
+ * <p>The semantic glyphs are project-original 16x16 pixel art generated into
+ * the shared Bukov UI atlas. One image replaces the previous per-stroke
+ * draw-node tree, while pressed and disabled states remain shape-distinct.</p>
  */
 public final class BukovTouchIcon extends Component {
 
@@ -29,7 +29,10 @@ public final class BukovTouchIcon extends Component {
 		SEARCH,
 		RECOMMEND,
 		DEPLOY,
-		BACK
+		BACK,
+		SETTINGS,
+		DOCUMENT,
+		RESUME
 	}
 
 	private final int restingColor;
@@ -110,7 +113,16 @@ public final class BukovTouchIcon extends Component {
 		if (glyph == null) {
 			throw new IllegalArgumentException("glyph is required");
 		}
-		return 8 + glyph.ordinal();
+		return BukovUiAssets.touchGlyphColumn(
+				BukovUiAssets.TouchGlyph.valueOf(glyph.name()));
+	}
+
+	static int atlasRow(Glyph glyph) {
+		if (glyph == null) {
+			throw new IllegalArgumentException("glyph is required");
+		}
+		return BukovUiAssets.touchGlyphRow(
+				BukovUiAssets.TouchGlyph.valueOf(glyph.name()));
 	}
 
 	static int withFullAlpha(int color) {

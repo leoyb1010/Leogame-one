@@ -22,6 +22,7 @@ grep -Fq 'case "bandage":' "$visual"
 grep -Fq 'return Frame.MEDICAL_BANDAGE;' "$visual"
 grep -Fq 'return Frame.SALVAGE;' "$visual"
 grep -Fq 'selectVisibleLootHeap(' "$runtime"
-grep -Fq 'everyFirstRaidAuthorsFiveVisibleGroundPickupsOutsideSpawn' "$test_source"
+grep -Fq 'unarmedFirstRaidAuthorsVisibleCombatPairInsideSpawnRoom' "$test_source"
+grep -Fq 'trainingGroundKeepsAllSuppliesAndLiveTargetsNearDeployment' "$test_source"
 
 echo "Bukov loot discoverability gate passed"

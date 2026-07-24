@@ -101,6 +101,14 @@ public class FireControlTest {
 	}
 
 	@Test
+	public void reloadPreflightRejectsMissingReserveImmediately() {
+		assertFalse(FireControl.canStartReload(0, 5, 0, false));
+		assertFalse(FireControl.canStartReload(5, 5, 20, false));
+		assertFalse(FireControl.canStartReload(2, 5, 20, true));
+		assertTrue(FireControl.canStartReload(2, 5, 1, false));
+	}
+
+	@Test
 	public void longReloadFrameEmitsEveryMechanicalCueBeforeFinish() {
 		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
 		definition.magazineSize = 5;

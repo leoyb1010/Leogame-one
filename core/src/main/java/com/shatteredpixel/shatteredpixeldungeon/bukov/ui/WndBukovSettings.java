@@ -340,7 +340,7 @@ public final class WndBukovSettings extends Window {
 
 		private BukovTouchIcon.Glyph navigationGlyph(Setting setting) {
 			if (setting == Setting.LEGAL) {
-				return BukovTouchIcon.Glyph.SEARCH;
+				return BukovTouchIcon.Glyph.DOCUMENT;
 			}
 			if (setting == Setting.CLOSE) {
 				return BukovTouchIcon.Glyph.BACK;

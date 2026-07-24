@@ -219,10 +219,11 @@ public final class BukovRaidHudLayout {
 	}
 
 	/**
-	 * Keeps the single high-priority mobile interaction prompt in the empty
-	 * left rail below the HUD. Backpack/pause own the right side of this row;
-	 * directional sound and damage remain represented by their world-space
-	 * arcs instead of additional text slabs.
+	 * Keeps the single high-priority mobile interaction prompt below the HUD.
+	 * Portrait centres it between split navigation buttons; landscape keeps it
+	 * in the left rail and narrows it enough to clear stacked navigation.
+	 * Directional sound and damage remain represented by their world-space arcs
+	 * instead of additional text slabs.
 	 */
 	public static Rect mobileFeedback(
 			float viewportWidth,
@@ -233,15 +234,19 @@ public final class BukovRaidHudLayout {
 			throw new IllegalArgumentException(
 					"viewport dimensions must be positive");
 		}
+		boolean portrait = viewportHeight > viewportWidth;
 		float width = Math.min(
 				96f,
 				Math.max(1f,
-						viewportWidth * 0.34f));
-		float x = Math.min(
-				Math.max(
-						MOBILE_FEEDBACK_SIDE_MARGIN,
-						Math.max(0f, hudLeft)),
-				Math.max(0f, viewportWidth - width));
+						viewportWidth
+								* (portrait ? 0.34f : 0.32f)));
+		float x = portrait
+				? Math.max(0f, (viewportWidth - width) * 0.5f)
+				: Math.min(
+						Math.max(
+								MOBILE_FEEDBACK_SIDE_MARGIN,
+								Math.max(0f, hudLeft)),
+						Math.max(0f, viewportWidth - width));
 		float y = Math.max(
 				0f,
 				Math.min(

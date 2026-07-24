@@ -17,13 +17,15 @@ public class BukovTouchIconTest {
 
 	@Test
 	public void everyTouchRoleOwnsADistinctAtlasGlyph() {
-		Set<Integer> atlasColumns = new HashSet<>();
+		Set<String> atlasCells = new HashSet<>();
 		for (BukovTouchIcon.Glyph glyph : BukovTouchIcon.Glyph.values()) {
 			int column = BukovTouchIcon.atlasColumn(glyph);
-			assertTrue(column >= 8 && column <= 23);
-			assertTrue(atlasColumns.add(column));
+			int row = BukovTouchIcon.atlasRow(glyph);
+			assertTrue(column >= 0 && column <= 15);
+			assertTrue(row == 2 || row == 4);
+			assertTrue(atlasCells.add(column + ":" + row));
 		}
-		assertEquals(16, atlasColumns.size());
+		assertEquals(19, atlasCells.size());
 	}
 
 	@Test
@@ -130,6 +132,39 @@ public class BukovTouchIconTest {
 		assertFalse(BukovTouchControls.actionDisabled(false, true));
 		assertTrue(BukovTouchControls.actionDisabled(false, false));
 		assertTrue(BukovTouchControls.actionDisabled(true, true));
+	}
+
+	@Test
+	public void interactionAvailabilityMatchesActionableHudPrompts()
+			throws Exception {
+		assertTrue(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.SEARCH));
+		assertTrue(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.PICKUP));
+		assertTrue(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.EXTRACT));
+		assertTrue(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.PUMP));
+		assertTrue(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.UNLOCK));
+		assertFalse(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.NONE));
+		assertFalse(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.MEDICAL));
+		assertFalse(BukovRaidHud.interactionActionAvailable(
+				BukovRaidHudState.Interaction.LOCKED));
+
+		String scene = new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/java/com/shatteredpixel/"
+								+ "shatteredpixeldungeon/scenes/GameScene.java")),
+				StandardCharsets.UTF_8);
+		assertTrue(scene.contains(
+				"bukovTouchControls.liveActionAvailability("));
+		assertTrue(scene.contains(
+				"bukovWorld.reloadActionAvailable()"));
+		assertTrue(scene.contains(
+				"bukovWorld.medicalActionAvailable()"));
 	}
 
 	@Test

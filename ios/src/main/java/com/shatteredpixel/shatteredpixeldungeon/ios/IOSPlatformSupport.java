@@ -157,9 +157,10 @@ public class IOSPlatformSupport extends PlatformSupport {
 
 	@Override
 	public void setHonorSilentSwitch( boolean value ) {
-		// Simulator audio uses a no-op backend to avoid the iOS 26 AURemoteIO
-		// startup deadlock, so it must never initialize ObjectAL from settings.
-		if (!IOSRuntimeEnvironment.isSimulator(System.getenv())) {
+		// A simulator with successfully initialized native audio follows the
+		// same setting as a device. Only the explicit silent recovery backend
+		// must avoid touching ObjectAL again.
+		if (!IOSAudioStartupPolicy.usingSilentFallback()) {
 			OALSimpleAudio.sharedInstance().setHonorSilentSwitch(value);
 		}
 	}

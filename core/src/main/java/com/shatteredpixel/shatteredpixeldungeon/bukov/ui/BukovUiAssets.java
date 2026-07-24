@@ -84,7 +84,10 @@ public final class BukovUiAssets {
 		SEARCH(4, 4),
 		RECOMMEND(5, 4),
 		DEPLOY(6, 4),
-		BACK(7, 4);
+		BACK(7, 4),
+		SETTINGS(8, 4),
+		DOCUMENT(9, 4),
+		RESUME(10, 4);
 
 		private final int column;
 		private final int row;
@@ -208,6 +211,20 @@ public final class BukovUiAssets {
 				TILE_SIZE,
 				TILE_SIZE,
 				fallbackColor);
+	}
+
+	static int touchGlyphColumn(TouchGlyph glyph) {
+		if (glyph == null) {
+			throw new IllegalArgumentException("touch glyph is required");
+		}
+		return glyph.column;
+	}
+
+	static int touchGlyphRow(TouchGlyph glyph) {
+		if (glyph == null) {
+			throw new IllegalArgumentException("touch glyph is required");
+		}
+		return glyph.row;
 	}
 
 	public static Image touchDisabledStrike(int fallbackColor) {

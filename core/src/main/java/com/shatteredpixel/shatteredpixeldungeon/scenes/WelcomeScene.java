@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundPlayer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchIcon;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiAssets;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovVisualContract;
@@ -195,6 +196,7 @@ public class WelcomeScene extends PixelScene {
 
 		WelcomeActionButton enter = new WelcomeActionButton(
 				entryMessage("welcome.enter"),
+				BukovTouchIcon.Glyph.DEPLOY,
 				previousVersion == 0);
 		enter.setRect(
 				contentLeft,
@@ -269,11 +271,14 @@ public class WelcomeScene extends PixelScene {
 		private final NinePatch surface;
 		private final NinePatch pressed;
 		private final ColorBlock edge;
+		private final BukovTouchIcon icon;
 		private final RenderedTextBlock text;
 		private final boolean brandNewProfile;
 
 		private WelcomeActionButton(
-				String value, boolean brandNewProfile) {
+				String value,
+				BukovTouchIcon.Glyph glyph,
+				boolean brandNewProfile) {
 			this.brandNewProfile = brandNewProfile;
 			surface = BukovUiAssets.surface(
 					BukovUiAssets.Surface.BUTTON,
@@ -290,9 +295,15 @@ public class WelcomeScene extends PixelScene {
 					1f,
 					tokens.color("accent.interact"));
 			add(edge);
+			icon = new BukovTouchIcon(
+					glyph,
+					tokens.color("text.primary"),
+					tokens.color("accent.interact"),
+					tokens.color("text.disabled"));
+			add(icon);
 			text = label(
 					value,
-					BukovVisualContract.FONT_BODY,
+					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.primary"));
 			text.align(RenderedTextBlock.CENTER_ALIGN);
 			add(text);
@@ -309,12 +320,16 @@ public class WelcomeScene extends PixelScene {
 		protected void onPointerDown() {
 			surface.visible = false;
 			pressed.visible = true;
+			icon.visualState(true, false);
+			layout();
 		}
 
 		@Override
 		protected void onPointerUp() {
 			surface.visible = true;
 			pressed.visible = false;
+			icon.visualState(false, false);
+			layout();
 		}
 
 		@Override
@@ -330,10 +345,20 @@ public class WelcomeScene extends PixelScene {
 			edge.x = x;
 			edge.y = y;
 			edge.size(3f, height);
-			text.maxWidth(Math.max(1, (int)width - 8));
+			float iconSize = Math.max(10f, Math.min(15f, height - 7f));
+			float textWidth = Math.max(1f, width - iconSize - 15f);
+			text.maxWidth(Math.max(1, (int)textWidth));
+			float contentWidth = iconSize + 4f + text.width();
+			float contentLeft = x + (width - contentWidth) * 0.5f;
+			icon.setRect(
+					contentLeft,
+					y + (height - iconSize) * 0.5f,
+					iconSize,
+					iconSize);
 			text.setPos(
-					x + (width - text.width()) / 2f,
-					y + (height - text.height()) / 2f);
+					contentLeft + iconSize + 4f,
+					y + (height - text.height()) / 2f
+							+ (pressed.visible ? 1f : 0f));
 		}
 
 		private void fit(NinePatch block) {

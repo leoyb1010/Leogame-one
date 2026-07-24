@@ -136,10 +136,15 @@ public final class BukovTouchLayout {
 		stick = Math.min(stick, (safe.width - margin * 3f) * 0.5f);
 		stick = Math.max(36f, stick);
 
-		float estimatedAction = clamp(stick * 0.38f, 19f, 28f);
+		/*
+		 * TouchAction expands every hit target to at least 22 logical pixels.
+		 * Keep the authored rectangle at that same floor so the expanded target
+		 * can never silently overlap a neighbouring control.
+		 */
+		float estimatedAction = clamp(stick * 0.38f, 22f, 28f);
 		float estimatedGap = clamp(estimatedAction * 0.18f, 3f, 5f);
 		float pauseWidth = clamp(safe.width * 0.15f, 34f, 52f);
-		float pauseHeight = clamp(shortest * 0.10f, 18f, 24f);
+		float pauseHeight = clamp(shortest * 0.10f, 22f, 24f);
 		float navigationY = clamp(
 				Math.max(safe.y, hudBottom),
 				safe.y,
@@ -147,14 +152,19 @@ public final class BukovTouchLayout {
 		);
 
 		/*
-		 * The navigation row is reserved from the HUD's real scaled height.
-		 * On narrow portrait iPhones, UI scale 2 can move that row far enough
-		 * down to intersect the right stick. Preserve two distinct hit regions
-		 * by reducing the stick square to the remaining lower rail.
-		 * The 24 logical-pixel floor is used only when the scaled HUD leaves no
-		 * room for the normal 36-pixel minimum.
+		 * Portrait uses three horizontal zones: side navigation, a centred
+		 * two-column action rail, and the two edge sticks. The maximum stick
+		 * size must satisfy both the space below navigation and the width left
+		 * beside the action rail. This remains valid when the scaled HUD leaves
+		 * only a short lower control band.
 		 */
 		if (!landscape) {
+			float actionGridWidth =
+					estimatedAction * 2f + estimatedGap;
+			float availableBesideActions =
+					(safe.width - actionGridWidth) * 0.5f
+							- margin
+							- estimatedGap;
 			float availableBelowNavigation =
 					safe.bottom()
 							- margin
@@ -163,7 +173,11 @@ public final class BukovTouchLayout {
 							- estimatedGap;
 			stick = Math.min(
 					stick,
-					Math.max(24f, availableBelowNavigation));
+					Math.max(
+							24f,
+							Math.min(
+									availableBesideActions,
+									availableBelowNavigation)));
 		}
 
 		Rect movement = new Rect(
@@ -179,7 +193,7 @@ public final class BukovTouchLayout {
 				stick
 		);
 
-		float action = clamp(stick * 0.38f, 19f, 28f);
+		float action = clamp(stick * 0.38f, 22f, 28f);
 		float gap = clamp(action * 0.18f, 3f, 5f);
 		Rect interact;
 		Rect reload;
@@ -213,24 +227,16 @@ public final class BukovTouchLayout {
 					rightColumnX, bottomRowY, action, action);
 		} else {
 			/*
-			 * Portrait keeps all four actions in the lane between the sticks.
-			 * The former two-above/two-left arrangement intersected the
-			 * backpack/pause row after the scaled HUD reserved more height.
+			 * A 135-pixel portrait viewport cannot fit two 46-pixel sticks and
+			 * two 22-pixel actions in one horizontal row. Put the action grid
+			 * in its own vertical rail between navigation and the two sticks.
 			 */
-			float laneLeft = movement.right() + gap;
-			float laneRight = aim.x - gap;
-			float laneWidth = Math.max(1f, laneRight - laneLeft);
-			action = Math.min(
-					action,
-					Math.max(1f, (laneWidth - gap) * 0.5f));
-			float rightColumnX = laneRight - action;
-			float topRowY = aim.y;
-			float bottomRowY = aim.bottom() - action;
-			if (topRowY + action + gap > bottomRowY) {
-				topRowY = Math.max(
-						navigationY + pauseHeight + gap,
-						bottomRowY - gap - action);
-			}
+			float gridWidth = action * 2f + gap;
+			float laneLeft = safe.centerX() - gridWidth * 0.5f;
+			float rightColumnX = laneLeft + action + gap;
+			float bottomRowY =
+					safe.bottom() - margin - action;
+			float topRowY = bottomRowY - gap - action;
 			drop = new Rect(
 					laneLeft, topRowY, action, action);
 			interact = new Rect(
@@ -241,18 +247,59 @@ public final class BukovTouchLayout {
 					rightColumnX, bottomRowY, action, action);
 		}
 
-		Rect pause = new Rect(
-				safe.right() - pauseWidth,
-				navigationY,
-				pauseWidth,
-				pauseHeight
-		);
-		Rect backpack = new Rect(
-				pause.x - gap - pauseWidth,
-				navigationY,
-				pauseWidth,
-				pauseHeight
-		);
+		Rect pause;
+		Rect backpack;
+		if (landscape
+				&& navigationY + pauseHeight + gap > movement.y) {
+			/*
+			 * On a 240x135 iPhone surface the navigation row and right stick
+			 * share the same vertical band. Stack navigation in the free rail
+			 * immediately left of the action grid instead of placing it over
+			 * the aim stick.
+			 */
+			float navigationX = drop.x - gap - pauseWidth;
+			backpack = new Rect(
+					navigationX,
+					navigationY,
+					pauseWidth,
+					pauseHeight);
+			pause = new Rect(
+					navigationX,
+					navigationY + pauseHeight + gap,
+					pauseWidth,
+					pauseHeight);
+		} else if (!landscape) {
+			/*
+			 * Split portrait navigation across the two upper corners. The
+			 * interaction feedback owns the middle of this row, while the
+			 * bottom-anchored action rail remains clear of both buttons.
+			 */
+			backpack = new Rect(
+					safe.x,
+					navigationY,
+					pauseWidth,
+					pauseHeight
+			);
+			pause = new Rect(
+					safe.right() - pauseWidth,
+					navigationY,
+					pauseWidth,
+					pauseHeight
+			);
+		} else {
+			pause = new Rect(
+					safe.right() - pauseWidth,
+					navigationY,
+					pauseWidth,
+					pauseHeight
+			);
+			backpack = new Rect(
+					pause.x - gap - pauseWidth,
+					navigationY,
+					pauseWidth,
+					pauseHeight
+			);
+		}
 
 		return new BukovTouchLayout(
 				landscape,

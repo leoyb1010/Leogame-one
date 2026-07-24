@@ -87,6 +87,23 @@ public class BukovFirstRunCalibrationGuardTest {
 		assertFalse(window.contains("\"完成校准，继续\""));
 	}
 
+	@Test
+	public void everyCalibrationActionHasASemanticIcon()
+			throws Exception {
+		String window = source(
+				"bukov/ui/WndBukovFirstRunCalibration.java");
+
+		assertTrue(window.contains("actionIcon = new BukovTouchIcon("));
+		assertTrue(window.contains(
+				"return BukovTouchIcon.Glyph.MODE;"));
+		assertTrue(window.contains(
+				"return BukovTouchIcon.Glyph.RECOMMEND;"));
+		assertTrue(window.contains(
+				"return BukovTouchIcon.Glyph.AIM_FIRE;"));
+		assertTrue(window.contains(
+				"return BukovTouchIcon.Glyph.DEPLOY;"));
+	}
+
 	private static String source(String relative) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(

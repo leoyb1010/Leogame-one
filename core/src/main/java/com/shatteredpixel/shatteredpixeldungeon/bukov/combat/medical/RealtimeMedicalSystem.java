@@ -208,6 +208,25 @@ public final class RealtimeMedicalSystem {
 	}
 
 	/**
+	 * Read-only availability used by the mobile HUD. This mirrors beginUse's
+	 * gates without starting, consuming, or otherwise mutating a treatment.
+	 */
+	public boolean canBeginAny() {
+		if (closed
+				|| status.isDead()
+				|| active != null
+				|| cooldownRemaining > 0f) {
+			return false;
+		}
+		for (MedicalStack stack : stacks.values()) {
+			if (stack.quantity > 0 && applicable(stack.definition)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Advances status effects, cooldown and an active treatment.
 	 *
 	 * Damage takes precedence over firing and movement if several interruption

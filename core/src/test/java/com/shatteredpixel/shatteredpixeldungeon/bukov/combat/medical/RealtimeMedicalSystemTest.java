@@ -112,6 +112,29 @@ public class RealtimeMedicalSystemTest {
 	}
 
 	@Test
+	public void mobileAvailabilityIsReadOnlyAndRequiresApplicableMedicine() {
+		LootTransaction ledger = medicalLedger(
+				"raid-availability",
+				"uid-aid",
+				"first_aid",
+				1);
+		RealtimeStatusState status = new RealtimeStatusState(100f, 100f);
+		RealtimeMedicalSystem system =
+				RealtimeMedicalSystem.fromLedger(ledger, status);
+
+		assertFalse(system.canBeginAny());
+		status.applyDamage(20f);
+		assertTrue(system.canBeginAny());
+		assertEquals(1, system.quantity("uid-aid"));
+		assertFalse(system.isUsing());
+
+		assertEquals(
+				RealtimeMedicalSystem.BeginResult.STARTED,
+				system.beginUse("uid-aid"));
+		assertFalse(system.canBeginAny());
+	}
+
+	@Test
 	public void bleedingUsesWallClockDeltaAndTreatmentCannotResurrect() {
 		RealtimeStatusState status = new RealtimeStatusState(10f, 10f);
 		status.addBleeding(2f);

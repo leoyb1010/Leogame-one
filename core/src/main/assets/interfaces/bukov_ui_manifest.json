@@ -8,8 +8,8 @@
   "height": 80,
   "pixelSampling": "nearest",
   "uniqueRgbaColors": 16,
-  "transparentPixels": 14926,
-  "sha256": "616845a221b2b234df58d22baa2fdb5b91d873f7619890421673890b6c09b8db",
+  "transparentPixels": 14620,
+  "sha256": "3d6da151240f0eaf4d272211237fb9962ec3cf395545977ccb40d89b1952179e",
   "entries": [
     {
       "apiName": "PANEL",
@@ -353,6 +353,30 @@
       "apiName": "HUB_BACK",
       "kind": "icon",
       "x": 112,
+      "y": 64,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUB_SETTINGS",
+      "kind": "icon",
+      "x": 128,
+      "y": 64,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUB_DOCUMENT",
+      "kind": "icon",
+      "x": 144,
+      "y": 64,
+      "width": 16,
+      "height": 16
+    },
+    {
+      "apiName": "HUB_RESUME",
+      "kind": "icon",
+      "x": 160,
       "y": 64,
       "width": 16,
       "height": 16

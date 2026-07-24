@@ -390,6 +390,33 @@ public final class BukovRaidHud extends Component {
 		refresh(0f);
 	}
 
+	/**
+	 * The interaction button is actionable only for prompts which the realtime
+	 * world can advance. Informational locked and medical progress prompts do
+	 * not accept the interact action.
+	 */
+	public boolean interactionActionAvailable() {
+		return interactionActionAvailable(live.interaction());
+	}
+
+	static boolean interactionActionAvailable(
+			BukovRaidHudState.Interaction interaction) {
+		if (interaction == null) return false;
+		switch (interaction) {
+			case SEARCH:
+			case PICKUP:
+			case EXTRACT:
+			case PUMP:
+			case UNLOCK:
+				return true;
+			case NONE:
+			case MEDICAL:
+			case LOCKED:
+			default:
+				return false;
+		}
+	}
+
 	private void refresh(float elapsedSeconds) {
 		applyUiScale(SPDSettings.bukovUiScale());
 		if (hudSource != null) {
