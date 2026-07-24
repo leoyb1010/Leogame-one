@@ -13,10 +13,13 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovLineRiflemanS
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovScavengerSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovSignalOperatorSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
+import com.watabou.utils.Bundle;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class BukovHostMobTest {
 
@@ -53,6 +56,24 @@ public class BukovHostMobTest {
 	}
 
 	@Test
+	public void onboardingContactMarkerSurvivesHostSave() {
+		EnemyArchetypeDefinition definition = definition(
+				"scavenger_gunner",
+				"GnollTrickster");
+		BukovHostMob mob = new BukovHostMob().configure(definition);
+		assertFalse(mob.onboardingContact());
+		mob.markOnboardingContact();
+
+		Bundle bundle = new Bundle();
+		mob.storeInBundle(bundle);
+		BukovHostMob restored = new BukovHostMob();
+		restored.restoreFromBundle(bundle);
+
+		assertTrue(restored.onboardingContact());
+		assertEquals(mob.definitionId(), restored.definitionId());
+	}
+
+	@Test
 	public void everyFirstRaidArchetypeHasDedicatedBukovArt() {
 		assertSprite("scavenger_gunner", "GnollTrickster", BukovGunnerSprite.class);
 		assertSprite("melee_rusher", "Rat", BukovScavengerSprite.class);
@@ -73,6 +94,16 @@ public class BukovHostMobTest {
 			String id,
 			String hostHint,
 			Class<?> expectedSprite) {
+		assertSame(
+				expectedSprite,
+				new BukovHostMob()
+						.configure(definition(id, hostHint))
+						.spriteClass);
+	}
+
+	private static EnemyArchetypeDefinition definition(
+			String id,
+			String hostHint) {
 		EnemyArchetypeDefinition definition = new EnemyArchetypeDefinition();
 		definition.id = id;
 		definition.name = id;
@@ -94,7 +125,6 @@ public class BukovHostMobTest {
 		definition.abilities = new String[0];
 		definition.optionalRouteOnly = boss;
 		definition.bossArenaOnly = boss;
-
-		assertSame(expectedSprite, new BukovHostMob().configure(definition).spriteClass);
+		return definition;
 	}
 }

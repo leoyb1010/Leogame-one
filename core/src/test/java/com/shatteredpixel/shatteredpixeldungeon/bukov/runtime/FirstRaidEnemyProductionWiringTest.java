@@ -94,6 +94,15 @@ public class FirstRaidEnemyProductionWiringTest {
 				"attemptVisibleInitialContactSpawn()"));
 		assertTrue(source.contains(
 				"raid.session().markInitialEnemySpawnCompleted();"));
+		assertTrue(source.contains(
+				"mob.markOnboardingContact();"));
+		assertTrue(source.contains(
+				"InitialContactCombatPolicy.openingWarningSeconds("));
+		assertTrue(source.contains(
+				"InitialContactCombatPolicy.maximumDamage("));
+		assertEquals(
+				source.indexOf("SpawnVisibility.ANY_SAFE"),
+				source.lastIndexOf("SpawnVisibility.ANY_SAFE"));
 	}
 
 	private static String label(EnemyRole role) {

@@ -2412,27 +2412,23 @@ public final class BukovRealtimeWorld
 			if (visibleContact) {
 				spawned = attemptEnemySpawn(
 						SpawnVisibility.VISIBLE_REQUIRED,
-						false);
+						false,
+						true);
 				if (!spawned) {
 					spawned = attemptVisibleInitialContactSpawn();
 				}
 				if (!spawned) {
 					spawned = attemptEnemySpawn(
 							SpawnVisibility.ANY_SAFE,
-							false);
+							false,
+							true);
 				}
 				visibleContact = false;
 			} else {
 				spawned = attemptEnemySpawn(
 						SpawnVisibility.OFFSCREEN_ONLY,
+						false,
 						false);
-				if (!spawned) {
-					// Large training/first-raid FOVs can cover every authored
-					// spawn point. Initial population must still exist.
-					spawned = attemptEnemySpawn(
-							SpawnVisibility.ANY_SAFE,
-							false);
-				}
 			}
 			if (!spawned) break;
 			changed = true;
@@ -2475,12 +2471,13 @@ public final class BukovRealtimeWorld
 	}
 
 	private boolean attemptEnemySpawn(SpawnVisibility visibility) {
-		return attemptEnemySpawn(visibility, true);
+		return attemptEnemySpawn(visibility, true, false);
 	}
 
 	private boolean attemptEnemySpawn(
 			SpawnVisibility visibility,
-			boolean allowBoss) {
+			boolean allowBoss,
+			boolean onboardingContact) {
 		if (visibility == null) {
 			throw new IllegalArgumentException(
 					"spawn visibility is required");
@@ -2578,6 +2575,9 @@ public final class BukovRealtimeWorld
 				continue;
 			}
 			BukovHostMob mob = new BukovHostMob().configure(selected);
+			if (onboardingContact) {
+				mob.markOnboardingContact();
+			}
 			mob.pos = point.cell;
 			mob.state = mob.WANDERING;
 			GameScene.add(mob);
@@ -2648,7 +2648,9 @@ public final class BukovRealtimeWorld
 			}
 		}
 		if (bestCell < 0) return false;
-		BukovHostMob mob = new BukovHostMob().configure(contact);
+		BukovHostMob mob = new BukovHostMob()
+				.configure(contact)
+				.markOnboardingContact();
 		mob.pos = bestCell;
 		mob.state = mob.WANDERING;
 		GameScene.add(mob);
@@ -4712,6 +4714,15 @@ public final class BukovRealtimeWorld
 						== RealtimeEnemyTactics.Profile.SUPPRESSOR;
 				boolean flanker = tactics.profile()
 						== RealtimeEnemyTactics.Profile.FLANKER;
+				boolean onboardingFireSafety =
+						InitialContactCombatPolicy.applies(
+								mob instanceof BukovHostMob
+										&& ((BukovHostMob)mob)
+												.onboardingContact(),
+								true);
+				float baselineAimSeconds = suppressor ? 0.22f
+						: definition.tier == EnemyTier.ELITE
+								? 0.3f : 0.45f;
 				rangedConfig = new EnemyRangedCombatController.Config(
 						suppressor ? 8
 								: definition.tier == EnemyTier.ELITE ? 6 : 5,
@@ -4719,11 +4730,18 @@ public final class BukovRealtimeWorld
 								: flanker ? 180f : 150f,
 						suppressor ? 1.85f : 1.6f,
 						definition.engagementRange,
-						suppressor ? 0.22f
-								: definition.tier == EnemyTier.ELITE
-										? 0.3f : 0.45f,
-						definition.minimumDamage,
-						definition.maximumDamage);
+						InitialContactCombatPolicy.aimSeconds(
+								baselineAimSeconds,
+								onboardingFireSafety),
+						InitialContactCombatPolicy.minimumDamage(
+								definition.minimumDamage,
+								onboardingFireSafety),
+						InitialContactCombatPolicy.maximumDamage(
+								definition.minimumDamage,
+								definition.maximumDamage,
+								onboardingFireSafety),
+						InitialContactCombatPolicy.openingWarningSeconds(
+								onboardingFireSafety));
 				enableRangedCombat();
 				if (matchingSnapshot
 						&& restoredState.rangedCombat() != null) {

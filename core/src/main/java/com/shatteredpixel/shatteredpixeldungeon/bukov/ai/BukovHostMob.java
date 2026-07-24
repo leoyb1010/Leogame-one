@@ -31,12 +31,15 @@ public final class BukovHostMob extends Mob {
 	private static final String HOST_CLASS_HINT = "bukov_host_class_hint";
 	private static final String MINIMUM_DAMAGE = "bukov_minimum_damage";
 	private static final String MAXIMUM_DAMAGE = "bukov_maximum_damage";
+	private static final String ONBOARDING_CONTACT =
+			"bukov_onboarding_contact";
 
 	private String definitionId = "";
 	private String displayName = "布科夫敌人";
 	private String hostClassHint = "Rat";
 	private int minimumDamage = 1;
 	private int maximumDamage = 1;
+	private boolean onboardingContact;
 
 	{
 		spriteClass = BukovScavengerSprite.class;
@@ -67,6 +70,15 @@ public final class BukovHostMob extends Mob {
 		return definitionId;
 	}
 
+	public BukovHostMob markOnboardingContact() {
+		onboardingContact = true;
+		return this;
+	}
+
+	public boolean onboardingContact() {
+		return onboardingContact;
+	}
+
 	@Override
 	public String name() {
 		return displayName;
@@ -95,6 +107,7 @@ public final class BukovHostMob extends Mob {
 		bundle.put(HOST_CLASS_HINT, hostClassHint);
 		bundle.put(MINIMUM_DAMAGE, minimumDamage);
 		bundle.put(MAXIMUM_DAMAGE, maximumDamage);
+		bundle.put(ONBOARDING_CONTACT, onboardingContact);
 	}
 
 	@Override
@@ -105,6 +118,7 @@ public final class BukovHostMob extends Mob {
 		hostClassHint = bundle.getString(HOST_CLASS_HINT);
 		minimumDamage = bundle.getInt(MINIMUM_DAMAGE);
 		maximumDamage = bundle.getInt(MAXIMUM_DAMAGE);
+		onboardingContact = bundle.getBoolean(ONBOARDING_CONTACT);
 		applyBukovSprite();
 	}
 

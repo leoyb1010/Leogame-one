@@ -103,6 +103,10 @@ public class BukovRealtimeCombatStatePersistenceTest {
 				enemy.rangedCombat().reserveAmmo());
 		assertEquals(ranged.shotSequence(),
 				enemy.rangedCombat().shotSequence());
+		assertEquals(
+				ranged.openingWarningRemaining(),
+				enemy.rangedCombat().openingWarningRemaining(),
+				0f);
 
 		RealtimeMedicalSystem resumedMedical =
 				RealtimeMedicalSystem.fromLedger(
@@ -150,7 +154,8 @@ public class BukovRealtimeCombatStatePersistenceTest {
 						6f,
 						0.3f,
 						4,
-						7),
+						7,
+						2.25f),
 				magazine,
 				reserve,
 				seed);

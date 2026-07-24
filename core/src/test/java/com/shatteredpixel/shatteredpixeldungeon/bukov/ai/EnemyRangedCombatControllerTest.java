@@ -86,6 +86,56 @@ public class EnemyRangedCombatControllerTest {
 	}
 
 	@Test
+	public void openingWarningSurvivesSnapshotAndDelaysFirstDamage() {
+		EnemyRangedCombatController original =
+				onboardingController(5, 15, 17);
+		EnemyRangedCombatIntent intent = new EnemyRangedCombatIntent();
+
+		original.step(1f, true, 6f, 0f, intent);
+		assertEquals(EnemyRangedCombatIntent.Action.AIM, intent.action());
+		assertFalse(intent.hasDamageEvent());
+		assertEquals(
+				1.25f,
+				original.openingWarningRemaining(),
+				0.0001f);
+
+		EnemyRangedCombatController restored =
+				onboardingController(5, 15, 17);
+		restored.restoreSnapshot(original.snapshot());
+		assertEquals(
+				original.openingWarningRemaining(),
+				restored.openingWarningRemaining(),
+				0f);
+
+		float elapsed = 1f;
+		float firstDamageAt = -1f;
+		for (int i = 0; i < 3000 && firstDamageAt < 0f; i++) {
+			restored.step(1f / 120f, true, 6f, 0f, intent);
+			elapsed += 1f / 120f;
+			if (intent.hasDamageEvent()) {
+				firstDamageAt = elapsed;
+			}
+		}
+		assertTrue(firstDamageAt >= 3f);
+		assertTrue(firstDamageAt < 3.05f);
+	}
+
+	@Test
+	public void openingWarningDoesNotDrainWithoutLineOfSight() {
+		EnemyRangedCombatController controller =
+				onboardingController(5, 15, 17);
+		EnemyRangedCombatIntent intent = new EnemyRangedCombatIntent();
+
+		controller.step(2f, false, 6f, 0f, intent);
+
+		assertEquals(
+				2.25f,
+				controller.openingWarningRemaining(),
+				0f);
+		assertFalse(intent.hasDamageEvent());
+	}
+
+	@Test
 	public void equalSeedsProduceEqualBoundedDamageEvents() {
 		EnemyRangedCombatController first = controller(3, 6, 913);
 		EnemyRangedCombatController second = controller(3, 6, 913);
@@ -176,5 +226,24 @@ public class EnemyRangedCombatControllerTest {
 				reserve,
 				seed
 		);
+	}
+
+	private static EnemyRangedCombatController onboardingController(
+			int magazine,
+			int reserve,
+			int seed) {
+		return new EnemyRangedCombatController(
+				new EnemyRangedCombatController.Config(
+						5,
+						150f,
+						1.6f,
+						6.5f,
+						0.75f,
+						2,
+						3,
+						2.25f),
+				magazine,
+				reserve,
+				seed);
 	}
 }

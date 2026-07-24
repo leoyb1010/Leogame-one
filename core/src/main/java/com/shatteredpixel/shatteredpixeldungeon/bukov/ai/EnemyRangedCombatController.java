@@ -20,6 +20,7 @@ public final class EnemyRangedCombatController {
 		private float shotCooldown;
 		private float reloadRemaining;
 		private float aimRemaining;
+		private float openingWarningRemaining;
 		private boolean targetLocked;
 
 		public Snapshot() {
@@ -33,6 +34,8 @@ public final class EnemyRangedCombatController {
 			shotCooldown = controller.shotCooldown;
 			reloadRemaining = controller.reloadRemaining;
 			aimRemaining = controller.aimRemaining;
+			openingWarningRemaining =
+					controller.openingWarningRemaining;
 			targetLocked = controller.targetLocked;
 		}
 
@@ -44,6 +47,9 @@ public final class EnemyRangedCombatController {
 			bundle.put("shot_cooldown", shotCooldown);
 			bundle.put("reload_remaining", reloadRemaining);
 			bundle.put("aim_remaining", aimRemaining);
+			bundle.put(
+					"opening_warning_remaining",
+					openingWarningRemaining);
 			bundle.put("target_locked", targetLocked);
 		}
 
@@ -62,6 +68,9 @@ public final class EnemyRangedCombatController {
 					"reload_remaining");
 			aimRemaining = finiteNonNegative(
 					bundle.getFloat("aim_remaining"), "aim_remaining");
+			openingWarningRemaining = finiteNonNegative(
+					bundle.getFloat("opening_warning_remaining"),
+					"opening_warning_remaining");
 			targetLocked = bundle.getBoolean("target_locked");
 		}
 
@@ -87,6 +96,10 @@ public final class EnemyRangedCombatController {
 
 		public float aimRemaining() {
 			return aimRemaining;
+		}
+
+		public float openingWarningRemaining() {
+			return openingWarningRemaining;
 		}
 
 		public boolean targetLocked() {
@@ -118,6 +131,7 @@ public final class EnemyRangedCombatController {
 		public final float aimSeconds;
 		public final int minimumDamage;
 		public final int maximumDamage;
+		public final float openingWarningSeconds;
 
 		public Config(int magazineSize,
 					  float roundsPerMinute,
@@ -126,6 +140,25 @@ public final class EnemyRangedCombatController {
 					  float aimSeconds,
 					  int minimumDamage,
 					  int maximumDamage) {
+			this(
+					magazineSize,
+					roundsPerMinute,
+					reloadSeconds,
+					maximumRange,
+					aimSeconds,
+					minimumDamage,
+					maximumDamage,
+					0f);
+		}
+
+		public Config(int magazineSize,
+					  float roundsPerMinute,
+					  float reloadSeconds,
+					  float maximumRange,
+					  float aimSeconds,
+					  int minimumDamage,
+					  int maximumDamage,
+					  float openingWarningSeconds) {
 			if (magazineSize <= 0) {
 				throw new IllegalArgumentException("magazineSize must be positive");
 			}
@@ -133,6 +166,9 @@ public final class EnemyRangedCombatController {
 			requirePositive(reloadSeconds, "reloadSeconds");
 			requirePositive(maximumRange, "maximumRange");
 			requireNonNegative(aimSeconds, "aimSeconds");
+			requireNonNegative(
+					openingWarningSeconds,
+					"openingWarningSeconds");
 			if (minimumDamage < 0 || maximumDamage < minimumDamage) {
 				throw new IllegalArgumentException("invalid damage range");
 			}
@@ -143,6 +179,7 @@ public final class EnemyRangedCombatController {
 			this.aimSeconds = aimSeconds;
 			this.minimumDamage = minimumDamage;
 			this.maximumDamage = maximumDamage;
+			this.openingWarningSeconds = openingWarningSeconds;
 		}
 
 		float secondsPerShot() {
@@ -158,6 +195,7 @@ public final class EnemyRangedCombatController {
 	private float shotCooldown;
 	private float reloadRemaining;
 	private float aimRemaining;
+	private float openingWarningRemaining;
 	private boolean targetLocked;
 
 	public EnemyRangedCombatController(Config config,
@@ -178,6 +216,7 @@ public final class EnemyRangedCombatController {
 		this.reserveAmmo = reserveAmmo;
 		this.stableSeed = stableSeed;
 		aimRemaining = config.aimSeconds;
+		openingWarningRemaining = config.openingWarningSeconds;
 	}
 
 	/**
@@ -238,6 +277,16 @@ public final class EnemyRangedCombatController {
 			return;
 		}
 
+		if (openingWarningRemaining > 0f) {
+			targetLocked = true;
+			aimRemaining = config.aimSeconds;
+			openingWarningRemaining = Math.max(
+					0f,
+					openingWarningRemaining - dt);
+			out.action(EnemyRangedCombatIntent.Action.AIM);
+			return;
+		}
+
 		if (!targetLocked) {
 			targetLocked = true;
 			aimRemaining = config.aimSeconds;
@@ -286,6 +335,10 @@ public final class EnemyRangedCombatController {
 		return aimRemaining;
 	}
 
+	public float openingWarningRemaining() {
+		return openingWarningRemaining;
+	}
+
 	public int shotSequence() {
 		return shotSequence;
 	}
@@ -304,7 +357,9 @@ public final class EnemyRangedCombatController {
 				|| snapshot.reloadRemaining
 						> config.reloadSeconds + 0.00001f
 				|| snapshot.aimRemaining
-						> config.aimSeconds + 0.00001f) {
+						> config.aimSeconds + 0.00001f
+				|| snapshot.openingWarningRemaining
+						> config.openingWarningSeconds + 0.00001f) {
 			throw new IllegalStateException(
 					"Ranged snapshot does not match enemy definition");
 		}
@@ -314,6 +369,8 @@ public final class EnemyRangedCombatController {
 		shotCooldown = snapshot.shotCooldown;
 		reloadRemaining = snapshot.reloadRemaining;
 		aimRemaining = snapshot.aimRemaining;
+		openingWarningRemaining =
+				snapshot.openingWarningRemaining;
 		targetLocked = snapshot.targetLocked;
 	}
 
