@@ -215,7 +215,7 @@ def main() -> None:
     print(
         "Bukov release manifest: PASS "
         "(6 themes, 18 firearms, 13 enemies, 5 modes, "
-        "72 icon frames, 28 SFX; macOS + iOS simulator evidence verified)"
+        "72 icon frames, 73 SFX; macOS + iOS simulator evidence verified)"
     )
 
 

@@ -49,7 +49,7 @@
       "manifest": "core/src/main/assets/sprites/bukov/items_interactions_manifest.json"
     },
     "soundEffects": {
-      "expected": 28,
+      "expected": 73,
       "directory": "core/src/main/assets/sounds/bukov",
       "format": "mono 48 kHz PCM16 WAV"
     },
