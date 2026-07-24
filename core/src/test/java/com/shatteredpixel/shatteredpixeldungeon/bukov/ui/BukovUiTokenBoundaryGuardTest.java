@@ -140,6 +140,24 @@ public class BukovUiTokenBoundaryGuardTest {
 	}
 
 	@Test
+	public void productionTokenGateScansEveryPlayerReachableScene()
+			throws Exception {
+		String gate = new String(
+				Files.readAllBytes(Paths.get(
+						"../scripts/bukov_ui_tokens_check.sh")),
+				StandardCharsets.UTF_8);
+		for (String file : new String[] {
+				"TitleScene.java",
+				"WelcomeScene.java",
+				"BukovHubScene.java",
+				"BukovDeploymentScene.java",
+				"GameScene.java"
+		}) {
+			assertTrue(file, gate.contains(file));
+		}
+	}
+
+	@Test
 	public void combatFxEnemyPresentationAndLevelAvoidEmbeddedRgb()
 			throws Exception {
 		assertDirectoryHasNoRgbLiterals(BUKOV_FX);

@@ -18,6 +18,10 @@ public final class BukovCombatHudTimeline {
 	public static final float FADE_SECONDS = 0.35f;
 	public static final float IDLE_ALPHA = 0.30f;
 	public static final float HIT_LIFETIME_SECONDS = 0.50f;
+	public static final float KILL_TICK_SECONDS = 0.24f;
+	public static final float LONG_KILL_DISTANCE_TILES = 12f;
+	public static final float BALLISTIC_CONFIRM_SPEED_TILES_PER_SECOND = 120f;
+	public static final float MAX_KILL_CONFIRM_DELAY_SECONDS = 0.18f;
 	public static final float SAME_SOURCE_DEDUP_SECONDS = 0.20f;
 	public static final int MAX_HIT_DIRECTIONS = 3;
 
@@ -40,6 +44,9 @@ public final class BukovCombatHudTimeline {
 			new HashMap<>();
 	private float elapsedSeconds;
 	private float idleSeconds;
+	private float killDelaySeconds;
+	private float killTickRemainingSeconds;
+	private boolean killSoundCue;
 
 	public BukovCombatHudTimeline() {
 		for (int index = 0; index < hits.length; index++) {
@@ -56,11 +63,52 @@ public final class BukovCombatHudTimeline {
 			hit.remaining = Math.max(0f, hit.remaining - seconds);
 			if (hit.remaining <= 0f) hit.clear();
 		}
+		killTickRemainingSeconds = Math.max(
+				0f,
+				killTickRemainingSeconds - seconds);
+		if (killDelaySeconds > 0f) {
+			killDelaySeconds = Math.max(0f, killDelaySeconds - seconds);
+			if (killDelaySeconds <= 0f) activateKillConfirmation();
+		}
 	}
 
 	/** Firing and entering a new room both call this directly. */
 	public void activity() {
 		idleSeconds = 0f;
+	}
+
+	/**
+	 * Schedules the compact crosshair/audio confirmation. Long hitscan kills
+	 * wait for the visible tracer travel instead of confirming before impact.
+	 */
+	public void kill(float distanceTiles) {
+		activity();
+		float delay = killConfirmationDelaySeconds(distanceTiles);
+		if (delay <= 0f) {
+			activateKillConfirmation();
+		} else {
+			killDelaySeconds = delay;
+		}
+	}
+
+	public boolean consumeKillSoundCue() {
+		boolean result = killSoundCue;
+		killSoundCue = false;
+		return result;
+	}
+
+	public float killTickRemainingSeconds() {
+		return killTickRemainingSeconds;
+	}
+
+	static float killConfirmationDelaySeconds(float distanceTiles) {
+		if (!BukovNumbers.isFinite(distanceTiles)
+				|| distanceTiles <= LONG_KILL_DISTANCE_TILES) {
+			return 0f;
+		}
+		return Math.min(
+				MAX_KILL_CONFIRM_DELAY_SECONDS,
+				distanceTiles / BALLISTIC_CONFIRM_SPEED_TILES_PER_SECOND);
 	}
 
 	/**
@@ -124,6 +172,7 @@ public final class BukovCombatHudTimeline {
 			throw new IllegalArgumentException("HUD state target is required");
 		}
 		target.combatAwareness(awarenessAlpha());
+		target.killConfirmation(killTickRemainingSeconds);
 		for (Hit hit : hits) {
 			if (hit.remaining > 0f) {
 				target.hit(
@@ -137,5 +186,11 @@ public final class BukovCombatHudTimeline {
 	private static float clamp01(float value) {
 		if (!BukovNumbers.isFinite(value)) return 0f;
 		return Math.max(0f, Math.min(1f, value));
+	}
+
+	private void activateKillConfirmation() {
+		killDelaySeconds = 0f;
+		killTickRemainingSeconds = KILL_TICK_SECONDS;
+		killSoundCue = true;
 	}
 }

@@ -87,6 +87,7 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock tutorialBadge;
 	private ColorBlock tutorialEdge;
 	private ColorBlock[] reticle;
+	private ColorBlock killConfirmationTick;
 	private BukovHitDirectionArc[] hitDirectionArcs;
 	private BukovSoundDirectionArc[] soundDirectionArcs;
 	private Image[] injuryIcons;
@@ -236,6 +237,9 @@ public final class BukovRaidHud extends Component {
 			reticle[index] =
 					block(tokens.colorWithAlpha("accent.interact", 255));
 		}
+		killConfirmationTick =
+				block(tokens.colorWithAlpha("text.primary", 255));
+		killConfirmationTick.visible = false;
 
 		healthIcon = hudIcon(
 				BukovUiAssets.HudElement.HEALTH, extractColor);
@@ -285,6 +289,7 @@ public final class BukovRaidHud extends Component {
 		statusText = text(BukovVisualContract.FONT_CAPTION, secondaryColor);
 		medicalHintText = text(
 				BukovVisualContract.FONT_CAPTION, extractColor);
+		medicalHintText.align(RenderedTextBlock.RIGHT_ALIGN);
 		ammoText = text(BukovVisualContract.FONT_BODY, valuableColor);
 		weaponText = text(BukovVisualContract.FONT_CAPTION, secondaryColor);
 		objectiveText = text(BukovVisualContract.FONT_BODY, primaryColor);
@@ -482,9 +487,15 @@ public final class BukovRaidHud extends Component {
 		boolean controller = ControllerHandler.controllerActive;
 		boolean desktop = DeviceCompat.isDesktop();
 		int inputMode = controller ? 1 : desktop ? 0 : 2;
-		if (inputMode != lastMedicalInputMode) {
+		if (inputMode != lastMedicalInputMode
+				|| hudSource != null) {
 			lastMedicalInputMode = inputMode;
-			medicalHintText.text(medicalHint(desktop, controller));
+			medicalHintText.text(desktop || controller
+					? BukovMessages.get(
+							"bukov.raid.hud.mobility_hint_format",
+							staminaLabel(live),
+							medicalHint(desktop, controller))
+					: staminaLabel(live));
 		}
 		boolean urgent = healthFraction <= 0.7f
 				|| live.bleedingPerSecond() > 0f
@@ -770,6 +781,12 @@ public final class BukovRaidHud extends Component {
 			piece.visible = live.aimVisible();
 			piece.hardlight(reticleColor);
 		}
+		killConfirmationTick.visible =
+				live.aimVisible() && live.killConfirmationVisible();
+		killConfirmationTick.alpha(Math.min(
+				1f,
+				live.killConfirmationRemaining()
+						/ (BukovCombatHudTimeline.KILL_TICK_SECONDS * 0.35f)));
 	}
 
 	private void refreshCombatAwareness() {
@@ -1026,9 +1043,17 @@ public final class BukovRaidHud extends Component {
 				hudLayout.condition.width,
 				hudLayout.condition.height,
 				7f * uiScale);
-		// The labelled medical touch target is directly below the portrait
-		// HUD. Repeating its long hint here forces a third line over status.
-		medicalHintText.visible = false;
+		// The labelled medical touch target is directly below portrait HUD, so
+		// this scarce line is reserved for the live stamina decision.
+		medicalHintText.visible = true;
+		medicalHintText.text(staminaLabel(live));
+		float staminaWidth = Math.max(
+				36f * uiScale,
+				hudLayout.condition.width * 0.42f);
+		medicalHintText.maxWidth((int)staminaWidth);
+		medicalHintText.setPos(
+				x + hudLayout.condition.right() - staminaWidth,
+				y + hudLayout.condition.y);
 		positionHudIcon(
 				timerIcon,
 				x + hudLayout.clock.x,
@@ -1360,6 +1385,10 @@ public final class BukovRaidHud extends Component {
 		reticle[4].x = centerX;
 		reticle[4].y = centerY;
 		reticle[4].size(1f, 1f);
+		killConfirmationTick.x = centerX - 4f * uiScale;
+		killConfirmationTick.y =
+				centerY + gap + length + 3f * uiScale;
+		killConfirmationTick.size(8f * uiScale, 1f);
 	}
 
 	private void positionBadge(
@@ -1588,6 +1617,16 @@ public final class BukovRaidHud extends Component {
 						"bukov.raid.hud.medical_hint_desktop")
 				: BukovMessages.get(
 						"bukov.raid.hud.medical_hint_touch");
+	}
+
+	static String staminaLabel(BukovRaidHudState state) {
+		BukovRaidHudState safe =
+				state == null ? new BukovRaidHudState() : state;
+		return BukovMessages.get(
+				safe.sprinting()
+						? "bukov.raid.hud.sprinting_format"
+						: "bukov.raid.hud.stamina_format",
+				Math.round(safe.staminaFraction() * 100f));
 	}
 
 	private static String objectiveLabel(String objective) {

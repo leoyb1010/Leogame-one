@@ -52,6 +52,9 @@ public final class BukovRaidHudState {
 	private float painSeverity;
 	private float concussionRemaining;
 	private float stimulantRemaining;
+	private float staminaFraction = 1f;
+	private boolean sprinting;
+	private float carriedLoadFraction;
 	private Interaction interaction = Interaction.NONE;
 	private String interactionLabel;
 	private float interactionProgress;
@@ -71,6 +74,7 @@ public final class BukovRaidHudState {
 	private float soundStrength;
 	private float soundRemainingSeconds;
 	private float combatAwarenessAlpha = 1f;
+	private float killConfirmationRemaining;
 	private int hitCount;
 	private final Direction[] hitDirections =
 			new Direction[BukovCombatHudTimeline.MAX_HIT_DIRECTIONS];
@@ -118,6 +122,9 @@ public final class BukovRaidHudState {
 		painSeverity = 0f;
 		concussionRemaining = 0f;
 		stimulantRemaining = 0f;
+		staminaFraction = 1f;
+		sprinting = false;
+		carriedLoadFraction = 0f;
 		interaction = Interaction.NONE;
 		interactionLabel = null;
 		interactionProgress = 0f;
@@ -137,6 +144,7 @@ public final class BukovRaidHudState {
 		soundStrength = 0f;
 		soundRemainingSeconds = 0f;
 		combatAwarenessAlpha = 1f;
+		killConfirmationRemaining = 0f;
 		hitCount = 0;
 		for (int index = 0; index < hitDirections.length; index++) {
 			hitDirections[index] = null;
@@ -274,6 +282,10 @@ public final class BukovRaidHudState {
 				fraction(alpha, 1f));
 	}
 
+	public void killConfirmation(float remainingSeconds) {
+		killConfirmationRemaining = nonNegative(remainingSeconds);
+	}
+
 	public void boss(
 			String name,
 			int phase,
@@ -328,6 +340,15 @@ public final class BukovRaidHudState {
 		this.painSeverity = fraction(painSeverity, 1f);
 		this.concussionRemaining = nonNegative(concussionRemaining);
 		this.stimulantRemaining = nonNegative(stimulantRemaining);
+	}
+
+	public void mobility(
+			float staminaFraction,
+			boolean sprinting,
+			float carriedLoadFraction) {
+		this.staminaFraction = fraction(staminaFraction, 1f);
+		this.sprinting = sprinting && this.staminaFraction > 0f;
+		this.carriedLoadFraction = fraction(carriedLoadFraction, 1f);
 	}
 
 	public void interaction(
@@ -410,6 +431,18 @@ public final class BukovRaidHudState {
 
 	public float stimulantRemaining() {
 		return stimulantRemaining;
+	}
+
+	public float staminaFraction() {
+		return staminaFraction;
+	}
+
+	public boolean sprinting() {
+		return sprinting;
+	}
+
+	public float carriedLoadFraction() {
+		return carriedLoadFraction;
 	}
 
 	public Interaction interaction() {
@@ -519,6 +552,14 @@ public final class BukovRaidHudState {
 
 	public float combatAwarenessAlpha() {
 		return combatAwarenessAlpha;
+	}
+
+	public boolean killConfirmationVisible() {
+		return killConfirmationRemaining > 0f;
+	}
+
+	public float killConfirmationRemaining() {
+		return killConfirmationRemaining;
 	}
 
 	public boolean bossActive() {

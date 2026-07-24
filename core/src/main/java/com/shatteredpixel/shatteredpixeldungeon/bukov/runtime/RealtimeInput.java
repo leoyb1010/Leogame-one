@@ -9,6 +9,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchState;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.GameScene;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.input.ControllerHandler;
+import com.watabou.input.GameAction;
 import com.watabou.input.KeyBindings;
 import com.watabou.input.KeyEvent;
 import com.watabou.input.PointerEvent;
@@ -33,7 +34,8 @@ public final class RealtimeInput {
 	private boolean controllerReloadPressed;
 	private boolean controllerInteractHeld;
 	private boolean controllerInteractPressed;
-	private boolean controllerMedicalPressed;
+	private boolean controllerSprintHeld;
+	private int controllerMedicalSlot;
 	private boolean backpackPressed;
 	private boolean listening;
 	private boolean touchEnabled;
@@ -42,6 +44,16 @@ public final class RealtimeInput {
 	private PointerEvent movementTouch;
 	private PointerEvent fireTouch;
 	private PointerEvent interactTouch;
+	private int[] northKeys = {Input.Keys.W};
+	private int[] southKeys = {Input.Keys.S};
+	private int[] westKeys = {Input.Keys.A};
+	private int[] eastKeys = {Input.Keys.D};
+	private int[] reloadKeys = {Input.Keys.R};
+	private int[] interactKeys = {Input.Keys.E};
+	private int[] medicalOneKeys = {Input.Keys.NUM_1};
+	private int[] medicalTwoKeys = {Input.Keys.NUM_2};
+	private int[] medicalThreeKeys = {Input.Keys.NUM_3};
+	private int[] medicalFourKeys = {Input.Keys.NUM_4};
 
 	private final Signal.Listener<PointerEvent> pointerListener = event -> {
 		if (!touchEnabled) {
@@ -93,8 +105,11 @@ public final class RealtimeInput {
 	};
 
 	private final Signal.Listener<KeyEvent> keyListener = event -> {
+		GameAction action = KeyBindings.getActionForKey(event);
 		if (event.pressed
-				&& (KeyBindings.getActionForKey(event) == SPDAction.INVENTORY
+				&& (action == SPDAction.INVENTORY
+						|| action == SPDAction.INVENTORY_SELECTOR
+						|| action == SPDAction.CYCLE
 						|| event.code == Input.Keys.TAB)) {
 			backpackPressed = true;
 		}
@@ -110,20 +125,22 @@ public final class RealtimeInput {
 				controllerInteractPressed = true;
 			}
 			controllerInteractHeld = event.pressed;
+		} else if (event.code == Input.Keys.BUTTON_THUMBL) {
+			controllerSprintHeld = event.pressed;
 		} else if (event.code == Input.Keys.BUTTON_Y && event.pressed) {
 			backpackPressed = true;
-		} else if (event.code >= Input.Keys.DPAD_UP
-						+ ControllerHandler.DPAD_KEY_OFFSET
-				&& event.code <= Input.Keys.DPAD_RIGHT
-						+ ControllerHandler.DPAD_KEY_OFFSET
-				&& event.pressed) {
-			controllerMedicalPressed = true;
+		} else if (event.pressed) {
+			int medicalSlot = medicalSlotFor(action, event.code);
+			if (medicalSlot > 0) {
+				controllerMedicalSlot = medicalSlot;
+			}
 		}
 		return false;
 	};
 
 	public void start() {
 		if (!listening) {
+			refreshBindings();
 			KeyEvent.addKeyListener(keyListener);
 			touchEnabled = !DeviceCompat.isDesktop();
 			if (touchEnabled && touchControls == null) {
@@ -158,12 +175,14 @@ public final class RealtimeInput {
 		controllerReloadPressed = false;
 		controllerInteractHeld = false;
 		controllerInteractPressed = false;
-		controllerMedicalPressed = false;
+		controllerSprintHeld = false;
+		controllerMedicalSlot = 0;
 		backpackPressed = false;
 		previousFireHeld = false;
 		frame.movement.set(0f, 0f);
 		frame.fireHeld = false;
 		frame.interactHeld = false;
+		frame.sprintHeld = false;
 		frame.clearEdges();
 		cancelTouches();
 		if (touchControls != null) {
@@ -199,10 +218,10 @@ public final class RealtimeInput {
 				SPDSettings.bukovAimAssist());
 		float moveX = 0f;
 		float moveY = 0f;
-		if (Gdx.input.isKeyPressed(Input.Keys.A)) moveX -= 1f;
-		if (Gdx.input.isKeyPressed(Input.Keys.D)) moveX += 1f;
-		if (Gdx.input.isKeyPressed(Input.Keys.W)) moveY -= 1f;
-		if (Gdx.input.isKeyPressed(Input.Keys.S)) moveY += 1f;
+		if (anyKeyPressed(westKeys)) moveX -= 1f;
+		if (anyKeyPressed(eastKeys)) moveX += 1f;
+		if (anyKeyPressed(northKeys)) moveY -= 1f;
+		if (anyKeyPressed(southKeys)) moveY += 1f;
 
 		normalizeInto(moveX, moveY, frame.movement);
 		PointF left = ControllerHandler.leftStickPosition;
@@ -267,33 +286,39 @@ public final class RealtimeInput {
 				fireHeld,
 				previousFireHeld);
 		previousFireHeld = fireHeld;
-		frame.reloadPressed = Gdx.input.isKeyJustPressed(Input.Keys.R)
+		frame.reloadPressed = anyKeyJustPressed(reloadKeys)
 				|| controllerReloadPressed
 				|| touchControls != null
 						&& touchControls.consumePressed(
 								BukovTouchState.Action.RELOAD)
 				|| touchEnabled && touch.consumeReloadPressed();
-		frame.interactHeld = Gdx.input.isKeyPressed(Input.Keys.E)
+		frame.interactHeld = anyKeyPressed(interactKeys)
 				|| controllerInteractHeld
 				|| mobile != null
 						&& mobile.actionHeld(
 								BukovTouchState.Action.INTERACT)
 				|| touchEnabled && touch.interactHeld();
-		frame.interactPressed = Gdx.input.isKeyJustPressed(Input.Keys.E)
+		frame.interactPressed = anyKeyJustPressed(interactKeys)
 				|| controllerInteractPressed
 				|| touchControls != null
 						&& touchControls.consumePressed(
 								BukovTouchState.Action.INTERACT)
 				|| touchEnabled && touch.consumeInteractPressed();
-		frame.medicalPressed = Gdx.input.isKeyJustPressed(Input.Keys.H)
-				|| Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)
-				|| Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)
-				|| Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)
-				|| Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)
-				|| controllerMedicalPressed
+		frame.medicalSlot = firstMedicalSlotPressed();
+		if (frame.medicalSlot == 0) {
+			frame.medicalSlot = controllerMedicalSlot;
+		}
+		boolean automaticMedical =
+				Gdx.input.isKeyJustPressed(Input.Keys.H)
 				|| touchControls != null
 						&& touchControls.consumePressed(
 								BukovTouchState.Action.MEDICAL);
+		frame.medicalPressed =
+				automaticMedical || frame.medicalSlot > 0;
+		frame.sprintHeld =
+				Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT)
+				|| Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT)
+				|| controllerSprintHeld;
 		frame.dropPressed = Gdx.input.isKeyJustPressed(Input.Keys.G)
 				|| touchControls != null
 						&& touchControls.consumePressed(
@@ -305,9 +330,74 @@ public final class RealtimeInput {
 		controllerFirePressed = false;
 		controllerReloadPressed = false;
 		controllerInteractPressed = false;
-		controllerMedicalPressed = false;
+		controllerMedicalSlot = 0;
 		backpackPressed = false;
 		return frame;
+	}
+
+	private int firstMedicalSlotPressed() {
+		if (anyKeyJustPressed(medicalOneKeys)) return 1;
+		if (anyKeyJustPressed(medicalTwoKeys)) return 2;
+		if (anyKeyJustPressed(medicalThreeKeys)) return 3;
+		if (anyKeyJustPressed(medicalFourKeys)) return 4;
+		return 0;
+	}
+
+	private void refreshBindings() {
+		northKeys = boundKeys(SPDAction.N, Input.Keys.W);
+		southKeys = boundKeys(SPDAction.S, Input.Keys.S);
+		westKeys = boundKeys(SPDAction.W, Input.Keys.A);
+		eastKeys = boundKeys(SPDAction.E, Input.Keys.D);
+		reloadKeys = boundKeys(SPDAction.TAG_RESUME, Input.Keys.R);
+		interactKeys = boundKeys(SPDAction.EXAMINE, Input.Keys.E);
+		medicalOneKeys =
+				boundKeys(SPDAction.QUICKSLOT_1, Input.Keys.NUM_1);
+		medicalTwoKeys =
+				boundKeys(SPDAction.QUICKSLOT_2, Input.Keys.NUM_2);
+		medicalThreeKeys =
+				boundKeys(SPDAction.QUICKSLOT_3, Input.Keys.NUM_3);
+		medicalFourKeys =
+				boundKeys(SPDAction.QUICKSLOT_4, Input.Keys.NUM_4);
+	}
+
+	private static int[] boundKeys(GameAction action, int fallback) {
+		java.util.ArrayList<Integer> keys =
+				KeyBindings.getKeyboardKeysForAction(action);
+		if (keys.isEmpty()) {
+			return new int[] {fallback};
+		}
+		int[] result = new int[keys.size()];
+		for (int index = 0; index < keys.size(); index++) {
+			result[index] = keys.get(index);
+		}
+		return result;
+	}
+
+	private static boolean anyKeyPressed(int[] keys) {
+		for (int key : keys) {
+			if (Gdx.input.isKeyPressed(key)) return true;
+		}
+		return false;
+	}
+
+	private static boolean anyKeyJustPressed(int[] keys) {
+		for (int key : keys) {
+			if (Gdx.input.isKeyJustPressed(key)) return true;
+		}
+		return false;
+	}
+
+	static int medicalSlotFor(GameAction action, int keyCode) {
+		if (action == SPDAction.QUICKSLOT_1) return 1;
+		if (action == SPDAction.QUICKSLOT_2) return 2;
+		if (action == SPDAction.QUICKSLOT_3) return 3;
+		if (action == SPDAction.QUICKSLOT_4) return 4;
+		int offset = ControllerHandler.DPAD_KEY_OFFSET;
+		if (keyCode == Input.Keys.DPAD_UP + offset) return 1;
+		if (keyCode == Input.Keys.DPAD_RIGHT + offset) return 2;
+		if (keyCode == Input.Keys.DPAD_DOWN + offset) return 3;
+		if (keyCode == Input.Keys.DPAD_LEFT + offset) return 4;
+		return 0;
 	}
 
 	/**

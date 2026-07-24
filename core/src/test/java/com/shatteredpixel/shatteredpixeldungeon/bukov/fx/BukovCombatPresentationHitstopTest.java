@@ -84,6 +84,32 @@ public class BukovCombatPresentationHitstopTest {
 	}
 
 	@Test
+	public void rollingBudgetCapsHitstopAtSixHundredMillisecondsPerMinute() {
+		HitstopBudget budget = new HitstopBudget();
+
+		assertEquals(120, budget.request(120));
+		assertEquals(
+				"same-frame higher tier only pays its extension",
+				160,
+				budget.request(160));
+		budget.advance(0.2f);
+		for (int index = 0; index < 4; index++) {
+			assertEquals(
+					index < 3 ? 120 : 80,
+					budget.request(120));
+			budget.advance(0.2f);
+		}
+		assertEquals(
+				HitstopBudget.MAXIMUM_PER_MINUTE_MS,
+				budget.rollingTotalMs());
+		assertEquals(0, budget.request(120));
+
+		budget.advance(60f);
+		assertEquals(0, budget.rollingTotalMs());
+		assertEquals(120, budget.request(120));
+	}
+
+	@Test
 	public void presentationCannotPauseOrMutateRealtimeSimulation()
 			throws Exception {
 		String presentation = source(

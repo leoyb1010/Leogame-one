@@ -140,7 +140,9 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(input.contains("Input.Keys.NUM_2"));
 		assertTrue(input.contains("Input.Keys.NUM_3"));
 		assertTrue(input.contains("Input.Keys.NUM_4"));
-		assertTrue(input.contains("controllerMedicalPressed = true"));
+		assertTrue(input.contains("controllerMedicalSlot = medicalSlot"));
+		assertTrue(input.contains("SPDAction.QUICKSLOT_1"));
+		assertTrue(input.contains("Input.Keys.DPAD_UP + offset"));
 		assertTrue(touch.contains("BukovTouchState.Action.MEDICAL"));
 		assertTrue(touch.contains(
 				"\"bukov.raid.touch.medical\""));

@@ -25,6 +25,7 @@ public final class BukovCombatPresentation
 
 	private final ExperienceContract contract;
 	private final CombatFeedbackPlan feedbackPlan = new CombatFeedbackPlan();
+	private final HitstopBudget hitstopBudget = new HitstopBudget();
 	private final IdentityHashMap<CharSprite, SpriteHitstop> spriteHitstops =
 			new IdentityHashMap<>();
 
@@ -112,9 +113,11 @@ public final class BukovCombatPresentation
 	 * world state and input remain completely untouched.
 	 */
 	public void update(float elapsedSeconds) {
-		if (!(elapsedSeconds > 0f) || spriteHitstops.isEmpty()) {
+		if (!(elapsedSeconds > 0f)) {
 			return;
 		}
+		hitstopBudget.advance(elapsedSeconds);
+		if (spriteHitstops.isEmpty()) return;
 		Iterator<Map.Entry<CharSprite, SpriteHitstop>> iterator =
 				spriteHitstops.entrySet().iterator();
 		while (iterator.hasNext()) {
@@ -138,6 +141,7 @@ public final class BukovCombatPresentation
 			entry.getKey().paused = entry.getValue().originalPaused;
 		}
 		spriteHitstops.clear();
+		hitstopBudget.clear();
 	}
 
 	private void applyFeedback(
@@ -170,6 +174,7 @@ public final class BukovCombatPresentation
 		if (isHitOutcome(event.type()) && feedbackPlan.hitstopMs() > 0) {
 			int hitstopMs = scaledHitstopMs(
 					feedbackPlan.hitstopMs(), combatFeedback);
+			hitstopMs = hitstopBudget.request(hitstopMs);
 			applySpriteHitstop(
 					source == null ? null : source.sprite,
 					target == null ? null : target.sprite,
@@ -209,6 +214,10 @@ public final class BukovCombatPresentation
 
 	int activeHitstopCount() {
 		return spriteHitstops.size();
+	}
+
+	int rollingHitstopMs() {
+		return hitstopBudget.rollingTotalMs();
 	}
 
 	private void freeze(CharSprite sprite, float durationSeconds) {

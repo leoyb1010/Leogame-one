@@ -14,15 +14,28 @@ scan_targets=(
   "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx"
   "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/bukov"
   "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/BukovLevel.java"
+  "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/TitleScene.java"
+  "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/WelcomeScene.java"
+  "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/BukovHubScene.java"
+  "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/BukovDeploymentScene.java"
+  "$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java"
 )
 
 # UI colors belong in ui_tokens.json. The single allowed hexadecimal value is
 # the RGB bit mask used by BukovUiTokens.colorWithAlpha(), not a rendered color.
+# GameScene is shared with the classic host game, so its known legacy-only
+# visuals are explicitly exempted while every new literal remains gate-visible.
 hardcoded_colors="$(
   rg -n --glob '*.java' \
     '0x[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?\b' \
     "${scan_targets[@]}" \
     | grep -v 'BukovUiTokens.java:.*color(token) & 0xFFFFFF' \
+    | grep -v 'GameScene.java:.*TextureCache.createSolid(0x88000000)' \
+    | grep -v 'GameScene.java:.*new Flare.*0xFFFF00' \
+    | grep -v 'GameScene.java:.*color < 0x01000000' \
+    | grep -v 'GameScene.java:.*0xFF000000 | color' \
+    | grep -v 'GameScene.java:.*gameOver.show( 0x000000' \
+    | grep -v 'GameScene.java:.*bossSlain.show( 0xFFFFFF' \
     || true
 )"
 

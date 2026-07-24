@@ -43,6 +43,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoDefini
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmClass;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FireMode;
@@ -133,6 +134,7 @@ public final class BukovRealtimeWorld
 	private static final float CAMERA_HALF_DEAD_ZONE_Y = 8f;
 	private static final float CAMERA_RESPONSIVENESS = 8f;
 	private static final float KEY_SOUND_LIFETIME_SECONDS = 0.9f;
+	private static final float KILL_CONFIRM_PITCH = 0.25f;
 	private static final PointF ZERO_CAMERA_SHIFT = new PointF();
 
 	private enum SpawnVisibility {
@@ -177,6 +179,7 @@ public final class BukovRealtimeWorld
 	private final int missionGateCell;
 	private final int[] missionGateCells;
 	private final RealtimeInput input = new RealtimeInput();
+	private final BukovSprintState sprintState = new BukovSprintState();
 	private final RealtimeCameraFollow cameraFollow = new RealtimeCameraFollow(
 			CAMERA_HALF_DEAD_ZONE_X,
 			CAMERA_HALF_DEAD_ZONE_Y,
@@ -524,6 +527,10 @@ public final class BukovRealtimeWorld
 					medicalStatus.concussionRemaining(),
 					medicalStatus.stimulantRemaining());
 		}
+		target.mobility(
+				sprintState.staminaFraction(),
+				sprintState.sprinting(),
+				carriedLoadFraction());
 		target.presentationSettings(
 				SPDSettings.bukovColorblindAssist(),
 				SPDSettings.bukovDamageNumbers());
@@ -855,6 +862,14 @@ public final class BukovRealtimeWorld
 			movementMultiplier *= raidTheme.environmentRules
 					.movementMultiplier(heroTerrain());
 		}
+		boolean movementIntent =
+				inputFrame.movement.x != 0f
+						|| inputFrame.movement.y != 0f;
+		float carriedLoadFraction = carriedLoadFraction();
+		movementMultiplier *= sprintState.speedMultiplier(
+				inputFrame.sprintHeld,
+				movementIntent,
+				carriedLoadFraction);
 		float deltaX = inputFrame.movement.x
 				* PLAYER_SPEED_TILES_PER_SECOND * movementMultiplier * dt;
 		float deltaY = inputFrame.movement.y
@@ -879,6 +894,11 @@ public final class BukovRealtimeWorld
 		}
 		moving = Math.abs(heroBody.x - heroBody.previousX) > 0.00001f
 				|| Math.abs(heroBody.y - heroBody.previousY) > 0.00001f;
+		sprintState.fixedStep(
+				dt,
+				inputFrame.sprintHeld,
+				moving,
+				carriedLoadFraction);
 		if (footstepCadence.advance(
 				heroBody.x - heroBody.previousX,
 				heroBody.y - heroBody.previousY,
@@ -1014,6 +1034,12 @@ public final class BukovRealtimeWorld
 	public void updateSoundField(float dt) {
 		keySoundVisual.advance(dt);
 		combatHudTimeline.advance(dt);
+		if (combatHudTimeline.consumeKillSoundCue()) {
+			playSfx(
+					Assets.Sounds.Bukov.UI_CONFIRM,
+					0.42f,
+					KILL_CONFIRM_PITCH);
+		}
 		playerSounds.advance(dt);
 		if (playerSounds.activeCount() == 0) {
 			return;
@@ -1368,7 +1394,11 @@ public final class BukovRealtimeWorld
 			}
 		}
 		if (inputFrame.medicalPressed && !medicalSystem.isUsing()) {
-			beginBestAvailableMedical();
+			if (inputFrame.medicalSlot > 0) {
+				beginMedicalQuickSlot(inputFrame.medicalSlot);
+			} else {
+				beginBestAvailableMedical();
+			}
 		}
 		String activeUid = medicalSystem.activeItemUid();
 		RealtimeMedicalSystem.StepResult result = medicalSystem.fixedStep(
@@ -1933,6 +1963,45 @@ public final class BukovRealtimeWorld
 						"bukov.raid.runtime.no_medical_available"));
 	}
 
+	private void beginMedicalQuickSlot(int slot) {
+		RealtimeMedicalSystem.BeginResult finalResult =
+				RealtimeMedicalSystem.BeginResult.UNKNOWN_ITEM;
+		for (String itemUid :
+				BukovMedicalQuickSlots.candidateItemUids(
+						raid.loot(),
+						slot)) {
+			finalResult = beginMedical(itemUid);
+			if (finalResult
+					== RealtimeMedicalSystem.BeginResult.STARTED) {
+				return;
+			}
+			if (finalResult == RealtimeMedicalSystem.BeginResult.BUSY
+					|| finalResult
+							== RealtimeMedicalSystem.BeginResult.COOLDOWN) {
+				break;
+			}
+		}
+		showHeroStatus(finalResult == RealtimeMedicalSystem.BeginResult.NO_EFFECT
+				? BukovMessages.get(
+						"bukov.raid.runtime.medical_not_needed")
+				: BukovMessages.get(
+						"bukov.raid.runtime.no_medical_available"));
+	}
+
+	private float carriedLoadFraction() {
+		if (raid == null) return 0f;
+		float maximum = raid.loot().maxWeight();
+		if (!com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers
+						.isFinite(maximum)
+				|| maximum <= 0f
+				|| maximum == Float.MAX_VALUE) {
+			return 0f;
+		}
+		return Math.max(
+				0f,
+				Math.min(1f, raid.loot().totalWeight() / maximum));
+	}
+
 	public RealtimeMedicalSystem.BeginResult beginMedical(String itemUid) {
 		if (medicalSystem == null || raid == null) {
 			return RealtimeMedicalSystem.BeginResult.UNKNOWN_ITEM;
@@ -2458,7 +2527,7 @@ public final class BukovRealtimeWorld
 				-1,
 				hero.pos,
 				playerAimCell(),
-				CombatFeedbackType.RIFLE_SHOT,
+				playerShotFeedback(definition),
 				definition.feedbackIntensity);
 
 		int fxSequence = playerFxSequence++;
@@ -5201,6 +5270,7 @@ public final class BukovRealtimeWorld
 				hitFeedback,
 				intensity);
 		if (wasAlive && !target.isAlive()) {
+			combatHudTimeline.kill(killDistanceTiles(target));
 			combatPresentation.emit(
 					CombatPresentationEvent.Type.ENEMY_DEATH,
 					hero.id(),
@@ -5210,6 +5280,30 @@ public final class BukovRealtimeWorld
 					deathFeedback,
 					intensity);
 		}
+	}
+
+	static CombatFeedbackType playerShotFeedback(
+			FirearmDefinition definition) {
+		return definition != null
+				&& (definition.weaponClass == FirearmClass.SHOTGUN
+						|| definition.pellets > 1)
+				? CombatFeedbackType.SHOTGUN_NEAR
+				: CombatFeedbackType.RIFLE_SHOT;
+	}
+
+	private float killDistanceTiles(Char target) {
+		if (target != null && target.realtimeBody != null
+				&& heroBody != null) {
+			float deltaX = target.realtimeBody.x - heroBody.x;
+			float deltaY = target.realtimeBody.y - heroBody.y;
+			return (float)Math.sqrt(
+					deltaX * deltaX + deltaY * deltaY);
+		}
+		if (target == null || Dungeon.level == null) return 0f;
+		int width = Dungeon.level.width();
+		float deltaX = target.pos % width - hero.pos % width;
+		float deltaY = target.pos / width - hero.pos / width;
+		return (float)Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 	}
 
 	private void emitPlayerHitOutcome(

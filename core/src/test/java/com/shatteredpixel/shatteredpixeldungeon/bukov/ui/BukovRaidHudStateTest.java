@@ -28,6 +28,7 @@ public class BukovRaidHudStateTest {
 				2f,
 				-4f,
 				Float.NaN);
+		state.mobility(2f, true, -1f);
 		state.interaction(
 				BukovRaidHudState.Interaction.SEARCH,
 				" 搜索容器 ",
@@ -50,6 +51,9 @@ public class BukovRaidHudStateTest {
 		assertEquals(0f, state.bleedingPerSecond(), 0f);
 		assertTrue(state.fractured());
 		assertEquals(1f, state.painSeverity(), 0f);
+		assertEquals(1f, state.staminaFraction(), 0f);
+		assertTrue(state.sprinting());
+		assertEquals(0f, state.carriedLoadFraction(), 0f);
 		assertEquals(1f, state.interactionProgress(), 0f);
 		assertEquals(0f, state.interactionSeconds(), 0f);
 		assertEquals(0, state.availableExtractions());
@@ -63,6 +67,7 @@ public class BukovRaidHudStateTest {
 		state.beginFrame("任务 A", 10f);
 		state.weapon("城防-556", true, 12, 24, 48, 1f, 2f);
 		state.status(0.5f, true, 0.4f, 3f, 5f);
+		state.mobility(0.25f, true, 0.8f);
 		state.interaction(
 				BukovRaidHudState.Interaction.EXTRACT,
 				"撤离中",
@@ -96,6 +101,9 @@ public class BukovRaidHudStateTest {
 		assertEquals(0, state.magazineCapacity());
 		assertFalse(state.reloading());
 		assertFalse(state.fractured());
+		assertEquals(1f, state.staminaFraction(), 0f);
+		assertFalse(state.sprinting());
+		assertEquals(0f, state.carriedLoadFraction(), 0f);
 		assertEquals(BukovRaidHudState.Interaction.NONE, state.interaction());
 		assertFalse(state.extractionActive());
 		assertEquals(0, state.availableExtractions());

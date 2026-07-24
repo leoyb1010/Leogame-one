@@ -1,5 +1,8 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmClass;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFeedbackType;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudState;
 import org.junit.Test;
 
@@ -35,5 +38,22 @@ public class BukovCombatHudRuntimeTest {
 		assertFalse(BukovRealtimeWorld.shouldShowDamageNumber(1, 7, 100));
 		assertTrue(BukovRealtimeWorld.shouldShowDamageNumber(1, 15, 100));
 		assertTrue(BukovRealtimeWorld.shouldShowDamageNumber(2, 1, 100));
+	}
+
+	@Test
+	public void shotgunFireUsesItsAuthoredNearRecoilFeedback() {
+		FirearmDefinition shotgun = new FirearmDefinition();
+		shotgun.weaponClass = FirearmClass.SHOTGUN;
+		shotgun.pellets = 8;
+		assertEquals(
+				CombatFeedbackType.SHOTGUN_NEAR,
+				BukovRealtimeWorld.playerShotFeedback(shotgun));
+
+		FirearmDefinition rifle = new FirearmDefinition();
+		rifle.weaponClass = FirearmClass.ASSAULT_RIFLE;
+		rifle.pellets = 1;
+		assertEquals(
+				CombatFeedbackType.RIFLE_SHOT,
+				BukovRealtimeWorld.playerShotFeedback(rifle));
 	}
 }

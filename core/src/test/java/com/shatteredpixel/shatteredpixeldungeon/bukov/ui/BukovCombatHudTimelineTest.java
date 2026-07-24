@@ -117,6 +117,51 @@ public class BukovCombatHudTimelineTest {
 		assertEquals(0, timeline.hitCount());
 	}
 
+	@Test
+	public void killTickAndSoundLastTwoHundredFortyMilliseconds() {
+		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		timeline.kill(8f);
+
+		assertTrue(timeline.consumeKillSoundCue());
+		assertFalse(timeline.consumeKillSoundCue());
+		assertEquals(
+				BukovCombatHudTimeline.KILL_TICK_SECONDS,
+				timeline.killTickRemainingSeconds(),
+				0f);
+		BukovRaidHudState state = new BukovRaidHudState();
+		state.beginFrame("测试", 0f);
+		timeline.copyTo(state);
+		assertTrue(state.killConfirmationVisible());
+
+		timeline.advance(0.239f);
+		assertTrue(timeline.killTickRemainingSeconds() > 0f);
+		timeline.advance(0.002f);
+		assertEquals(0f, timeline.killTickRemainingSeconds(), 0f);
+	}
+
+	@Test
+	public void longRangeKillWaitsForBallisticCausality() {
+		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		float delay =
+				BukovCombatHudTimeline.killConfirmationDelaySeconds(24f);
+		assertEquals(
+				BukovCombatHudTimeline.MAX_KILL_CONFIRM_DELAY_SECONDS,
+				delay,
+				0f);
+
+		timeline.kill(24f);
+		assertFalse(timeline.consumeKillSoundCue());
+		assertEquals(0f, timeline.killTickRemainingSeconds(), 0f);
+		timeline.advance(delay - 0.001f);
+		assertFalse(timeline.consumeKillSoundCue());
+		timeline.advance(0.002f);
+		assertTrue(timeline.consumeKillSoundCue());
+		assertEquals(
+				BukovCombatHudTimeline.KILL_TICK_SECONDS,
+				timeline.killTickRemainingSeconds(),
+				0f);
+	}
+
 	private static boolean contains(
 			BukovRaidHudState state,
 			BukovRaidHudState.Direction direction) {
