@@ -6,7 +6,9 @@
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
     "releaseState": "automation_and_platform_smoke_passed_not_final",
-    "releaseSourceCommit": "478d34b9ccae351026a3881f9f31bab158fc6d30"
+    "releaseSourceCommit": "fdbfbc06b3963f161732c9dd7b59a5dc3388ca4b",
+    "packagedCandidateSourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+    "packagedCandidateVersion": "2.0.0-alpha30-ios-ui-audio"
   },
   "content": {
     "themes": {
@@ -67,15 +69,18 @@
       "implementation": "present",
       "packageEvidence": {
         "status": "superseded",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫.app/Contents/MacOS/逃离布科夫",
-        "binarySha256": "38012f08b63bfc281ca8941b66dd3b53c585d343125f2850cdd8038906a7962b",
-        "builtAt": "2026-07-24T13:53:20+08:00",
-        "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
+        "candidateState": "current_installed_candidate_not_final",
+        "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha30-ios-ui-audio-248b811a7/逃离布科夫-macOS-alpha30-ios-ui-audio-248b811a7.zip",
+        "archiveSha256": "a95ecf784acbca2a87460ee9646b5475a1ee37a0a3011178fb118e639f4c215c",
+        "binary": "/Users/leoyuan/Applications/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "binarySha256": "707f424b7c6cd63c75a369ccf40e39b2f81e011868b25b4d35c4fcf4664b8dec",
+        "builtAt": "2026-07-25T07:38:05+08:00",
+        "log": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts/20260724T234007Z-248b811a7c05-41185.txt"
       },
       "interactiveQa": {
         "status": "partial_pass",
-        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence",
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance",
         "report": "docs/bukov/FINAL_QA_REPORT.md"
       }
     },
@@ -83,11 +88,14 @@
       "implementation": "present",
       "aotEvidence": {
         "status": "superseded",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app",
-        "binary": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/逃离布科夫-iOS-Simulator.app/IOSLauncher",
-        "binarySha256": "d0ef05a421565d2aa024a4a8cf3b85f9fb095fc211ab9aff2c64944013192346",
-        "builtAt": "2026-07-24T13:50:13+08:00",
-        "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
+        "candidateState": "current_installed_candidate_not_final",
+        "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha30-ios-ui-audio-248b811a7/逃离布科夫-iOS-Simulator-alpha30-ios-ui-audio-248b811a7.zip",
+        "archiveSha256": "b3193f8767903098a7b6923322890e17af5d3ec68652e2c4fda73b9908513ac4",
+        "binary": "/Users/leoyuan/Library/Developer/CoreSimulator/Devices/50D8337F-7AFD-4AAE-AB44-318BCDC02AF6/data/Containers/Bundle/Application/AF8E49D4-EE67-40AE-87E2-AFBE516A4AFE/逃离布科夫-iOS-Simulator.app/IOSLauncher",
+        "binarySha256": "ea76394fe0ab85afb5f91513a0d7d39cbf788bee208b150a94bb7ccfa6308926",
+        "builtAt": "2026-07-25T07:38:05+08:00",
+        "log": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts/20260724T234007Z-248b811a7c05-41185.txt"
       },
       "simulatorQa": {
         "status": "partial_pass",
@@ -98,7 +106,8 @@
           "portrait",
           "landscape"
         ],
-        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance",
+        "nativeAudioEvidence": "/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance/iOS-audio.log"
       },
       "deviceQa": {
         "status": "not_run",
@@ -117,16 +126,29 @@
       "scripts/bukov_performance_smoke.sh",
       "scripts/bukov_performance_e2e.sh"
     ],
-    "packagedGpuFramePacing": {
-      "status": "manual_pass",
+    "packagedRenderCallbackFramePacing": {
+      "status": "passed",
+      "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
       "scope": "macOS package and iOS simulator",
-      "limitation": "No instrumented P50/P95/P99 GPU frame-time capture was performed."
+      "metricKind": "cpu-render-callback-frame-pacing",
+      "hardwareGpuCounter": false,
+      "summary": "/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance/render-frame-summary.json",
+      "worstRunP95Ms": 17.8,
+      "worstRunP99Ms": 18.1,
+      "limitation": "Gdx.graphics.getDeltaTime measures delivered render-callback pacing, not hardware GPU time, draw calls, Metal utilization, temperature or thermal throttling."
+    },
+    "hardwareGpuProfiling": {
+      "status": "not_run",
+      "requiredTool": "Instruments/Metal"
     },
     "thirtyMinuteSoak": {
-      "status": "passed_simulation",
-      "durationSeconds": 1800,
-      "log": "build/evidence/final-qa/performance-e2e-1800.log",
-      "limitation": "Automated 30-minute-equivalent simulation gate, not a wall-clock packaged-app thermal soak."
+      "status": "passed_packaged_apps",
+      "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+      "minimumDurationSecondsPerPlatform": 1800,
+      "macOSActiveGameplaySeconds": 1820.854,
+      "iOSActiveGameplaySeconds": 1831.635,
+      "log": "/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance/render-frame-summary.json",
+      "limitation": "Wall-clock packaged-app render-callback soak passed; this is not hardware GPU or physical iOS thermal evidence."
     }
   },
   "persistence": {
@@ -134,10 +156,23 @@
       "scripts/bukov_save_stress.sh",
       "scripts/bukov_seed_sweep.sh"
     ],
+    "seedSweep": {
+      "status": "passed",
+      "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+      "count": 10000,
+      "log": "build/reports/bukov-seed-sweep.log"
+    },
+    "saveStress": {
+      "status": "passed",
+      "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+      "iterations": 100,
+      "log": "build/reports/bukov-save-stress.log"
+    },
     "freshInstallRecoveryQa": {
       "status": "passed",
-      "scope": "macOS fresh profile plus iOS simulator resume",
-      "evidenceDirectory": "build/evidence/final-qa"
+      "sourceCommit": "248b811a7c0575c1ffed7bc073da0179e1538c4c",
+      "scope": "macOS installed app plus iOS simulator install/launch",
+      "evidenceDirectory": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts"
     }
   },
   "validation": {
@@ -152,25 +187,28 @@
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
       "status": "pending_final_gate",
-      "sourceCommit": "478d34b9ccae351026a3881f9f31bab158fc6d30",
+      "sourceCommit": "fdbfbc06b3963f161732c9dd7b59a5dc3388ca4b",
       "tests": {
-        "core": 0,
-        "desktop": 0,
-        "ios": 0,
+        "core": 1005,
+        "desktop": 10,
+        "ios": 11,
         "failures": 0
       },
-      "log": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha14-ae7505d07/evidence"
+      "log": "/private/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle"
     }
   },
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
     "currentPlatformClaim": "final_gate_pending",
-    "rule": "Passed claims are bound to releaseSourceCommit and the local evidence directory.",
+    "rule": "Packaged evidence is bound to each package sourceCommit; development automation is bound to releaseSourceCommit. Final sign-off requires one rebuilt SHA for both.",
     "knownLimitations": [
+      "The latest tested development source commit has not yet been repackaged; installed Apple candidates remain bound to 248b811a7c0575c1ffed7bc073da0179e1538c4c.",
       "Physical iOS device QA was not run.",
+      "Physical game-controller QA was not run.",
       "Three-person blind usability testing was not run.",
-      "Instrumented packaged-app GPU percentile capture was not run."
+      "Instrumented packaged-app hardware GPU percentile capture was not run.",
+      "The complete two-platform player-journey video has not been signed off."
     ]
   }
 }

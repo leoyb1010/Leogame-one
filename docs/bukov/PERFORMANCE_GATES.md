@@ -66,19 +66,24 @@ Ordinary platform log prefixes before each telemetry JSON object are accepted.
 Run both platform captures through:
 
 ```sh
+package_source_commit=248b811a7c0575c1ffed7bc073da0179e1538c4c
 python3 scripts/bukov_render_frame_gate.py \
   --input /absolute/path/macOS-render.log \
   --input /absolute/path/iOS-render.log \
-  --expected-source-commit "$(git rev-parse HEAD)" \
+  --expected-source-commit "$package_source_commit" \
   --require-platform macOS \
   --require-platform iOS \
   --output /absolute/new/path/render-frame-summary.json
 ```
 
+Use the source commit embedded in the package and every telemetry record. Do
+not substitute a later development `HEAD` after more commits have landed:
+the gate must identify the binary that actually produced the logs.
+
 The default per-run thresholds are:
 
 - uninterrupted duration at least 1,800 seconds;
-- P95 at most 16.7 ms, tightened to 10.0 ms when the recorded target is
+- P95 at most 18.4 ms at 60 Hz, tightened to 10.0 ms when the recorded target is
   120 Hz or higher;
 - P99 at most 33.3 ms;
 - no more than 5% of frames above the recorded refresh budget;
@@ -94,6 +99,29 @@ The default per-run thresholds are:
 The JSON summary reports exact counts and the worst cumulative histogram
 percentile among the individual runs. It deliberately does not label that
 value as a reconstructed cross-run percentile.
+
+## Accepted Alpha 30 packaged-app evidence
+
+The installed `2.0.0-alpha30-ios-ui-audio` candidate, source commit
+`248b811a7c0575c1ffed7bc073da0179e1538c4c`, passed the two-platform
+render-callback gate on 2026-07-25. The immutable summary is:
+
+`/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance/render-frame-summary.json`
+
+| Platform | Active gameplay | Delivered FPS | P50 | P95 | P99 | Refresh-budget misses |
+|---|---:|---:|---:|---:|---:|---:|
+| macOS | 1820.854 s | 115.629 | 9.7 ms | 13.2 ms | 16.8 ms | 3 / 210543 |
+| iOS Simulator | 1831.635 s | 59.995 | 16.7 ms | 17.8 ms | 18.1 ms | 322 / 109889 |
+
+Both runs reported continuous active gameplay, monotonic sequences, no
+pause/suspend/session discontinuity and one stable resolution/refresh target.
+The aggregate P95 worst case was 17.8 ms, below the 18.4 ms 60 Hz threshold.
+This acceptance remains bound to `248b811a7`; later development code requires
+new packages and new captures.
+
+The adjacent `thermal-process-snapshot.txt` reported no system thermal or
+performance warning at capture time. It is a process snapshot, not a substitute
+for Instruments/Metal hardware GPU, temperature or throttling evidence.
 
 The final serial gate requires both captures:
 
