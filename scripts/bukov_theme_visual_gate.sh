@@ -17,6 +17,44 @@ node "$SCRIPT_DIR/generate_bukov_landmarks.mjs" \
 node "$SCRIPT_DIR/generate_bukov_theme_visuals.mjs" \
   "$REPO_ROOT" "$TMP_DIR/assets" "$TMP_DIR/first_raid_landmarks.png"
 
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+decode_rgba() {
+  ffmpeg -hide_banner -loglevel error -i "$1" \
+    -f rawvideo -pix_fmt rgba "$2"
+}
+
+assert_png_rgba_equal() {
+  local committed="$1"
+  local generated="$2"
+  local label="$3"
+  decode_rgba "$committed" "$TMP_DIR/${label}-committed.rgba"
+  decode_rgba "$generated" "$TMP_DIR/${label}-generated.rgba"
+  cmp \
+    "$TMP_DIR/${label}-committed.rgba" \
+    "$TMP_DIR/${label}-generated.rgba"
+}
+
+assert_manifest_hash() {
+  local manifest="$1"
+  local expression="$2"
+  local png="$3"
+  local label="$4"
+  local expected actual
+  expected="$(jq -er "$expression" "$manifest")"
+  actual="$(sha256_file "$png")"
+  if [[ "$expected" != "$actual" ]]; then
+    echo "$label manifest SHA does not match PNG" >&2
+    exit 1
+  fi
+}
+
 asset_ids=(
   fog_depot
   rust_works
@@ -28,9 +66,11 @@ asset_ids=(
 
 for asset_id in "${asset_ids[@]}"; do
   for prefix in tiles water landmarks; do
-    cmp \
+    # ponytail: decoded pixels are the portable contract across PNG encoders.
+    assert_png_rgba_equal \
       "$ASSET_DIR/${prefix}_${asset_id}.png" \
-      "$TMP_DIR/assets/${prefix}_${asset_id}.png"
+      "$TMP_DIR/assets/${prefix}_${asset_id}.png" \
+      "${prefix}-${asset_id}"
   done
   [[ "$(ffprobe -v error -select_streams v:0 \
     -show_entries stream=width,height,pix_fmt -of csv=p=0 \
@@ -43,12 +83,42 @@ for asset_id in "${asset_ids[@]}"; do
     "$ASSET_DIR/landmarks_${asset_id}.png")" == "320,32,rgba" ]]
 done
 
-cmp \
+assert_png_rgba_equal \
   "$ASSET_DIR/theme_visual_contact_sheet.png" \
-  "$TMP_DIR/assets/theme_visual_contact_sheet.png"
-cmp \
+  "$TMP_DIR/assets/theme_visual_contact_sheet.png" \
+  "theme-contact-sheet"
+
+jq -S 'del(.themes[].sha256, .contactSheet.sha256)' \
   "$ASSET_DIR/theme_visual_manifest.json" \
-  "$TMP_DIR/assets/theme_visual_manifest.json"
+  >"$TMP_DIR/theme_visual_manifest-committed.logical.json"
+jq -S 'del(.themes[].sha256, .contactSheet.sha256)' \
+  "$TMP_DIR/assets/theme_visual_manifest.json" \
+  >"$TMP_DIR/theme_visual_manifest-generated.logical.json"
+cmp \
+  "$TMP_DIR/theme_visual_manifest-committed.logical.json" \
+  "$TMP_DIR/theme_visual_manifest-generated.logical.json"
+
+for manifest_kind in committed generated; do
+  if [[ "$manifest_kind" == "committed" ]]; then
+    manifest="$ASSET_DIR/theme_visual_manifest.json"
+    assets="$ASSET_DIR"
+  else
+    manifest="$TMP_DIR/assets/theme_visual_manifest.json"
+    assets="$TMP_DIR/assets"
+  fi
+  for asset_id in "${asset_ids[@]}"; do
+    for channel in tiles water landmarks; do
+      assert_manifest_hash "$manifest" \
+        ".themes[] | select(.assetId == \"$asset_id\") | .sha256.$channel" \
+        "$assets/${channel}_${asset_id}.png" \
+        "$manifest_kind $asset_id $channel"
+    done
+  done
+  assert_manifest_hash "$manifest" '.contactSheet.sha256' \
+    "$assets/theme_visual_contact_sheet.png" \
+    "$manifest_kind contact sheet"
+done
+
 [[ "$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height,pix_fmt -of csv=p=0 \
   "$ASSET_DIR/theme_visual_contact_sheet.png")" == "576,96,rgba" ]]
@@ -81,6 +151,7 @@ for asset_id in "${asset_ids[@]}"; do
 done
 
 node - "$ASSET_DIR" <<'NODE'
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -90,14 +161,6 @@ const manifest = JSON.parse(readFileSync(
   join(directory, "theme_visual_manifest.json"), "utf8"));
 if (manifest.themes.length !== 6) {
   throw new Error("theme visual manifest must contain six themes");
-}
-
-for (const channel of ["tiles", "water", "landmarks"]) {
-  const hashes = new Set(
-    manifest.themes.map((theme) => theme.sha256[channel]));
-  if (hashes.size !== 6) {
-    throw new Error(`${channel} assets are not visually unique`);
-  }
 }
 
 function decode(path, width, height) {
@@ -126,9 +189,26 @@ function colorCount(buffer, color) {
 }
 
 const semantic = manifest.interactionColors;
+const rgbaHashes = {
+  tiles: new Set(),
+  water: new Set(),
+  landmarks: new Set(),
+};
+const dimensions = {
+  tiles: [256, 256],
+  water: [32, 32],
+  landmarks: [320, 32],
+};
 for (const theme of manifest.themes) {
-  const landmarks = decode(
-    join(directory, `landmarks_${theme.assetId}.png`), 320, 32);
+  const decoded = {};
+  for (const channel of Object.keys(rgbaHashes)) {
+    decoded[channel] = decode(
+      join(directory, `${channel}_${theme.assetId}.png`),
+      ...dimensions[channel]);
+    rgbaHashes[channel].add(
+      createHash("sha256").update(decoded[channel]).digest("hex"));
+  }
+  const landmarks = decoded.landmarks;
   for (const role of [
     "archive", "gate", "extraction", "conditional", "cache",
   ]) {
@@ -139,6 +219,11 @@ for (const theme of manifest.themes) {
   }
   if (colorCount(landmarks, [...theme.palette.accent, 255]) < 8) {
     throw new Error(`${theme.assetId} lacks its landmark silhouette motif`);
+  }
+}
+for (const [channel, hashes] of Object.entries(rgbaHashes)) {
+  if (hashes.size !== 6) {
+    throw new Error(`${channel} assets are not visually unique`);
   }
 }
 NODE

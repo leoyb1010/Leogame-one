@@ -36,6 +36,14 @@ enemy_ids=(
 node "$ROOT/scripts/generate_bukov_enemy_sprites.mjs" \
   "$TMP/assets" "$TMP/enemy_animation_manifest.json" >/dev/null
 
+# ponytail: compare decoded pixels; PNG compression bytes are not portable.
+jq -S 'del(.sheets[].sha256)' "$MANIFEST" \
+  >"$TMP/enemy_animation_manifest.committed.logical.json"
+jq -S 'del(.sheets[].sha256)' "$TMP/enemy_animation_manifest.json" \
+  >"$TMP/enemy_animation_manifest.generated.logical.json"
+cmp "$TMP/enemy_animation_manifest.committed.logical.json" \
+  "$TMP/enemy_animation_manifest.generated.logical.json"
+
 asset_hashes=()
 for name in "${expected[@]}"; do
   path="$ASSETS/$name.png"
@@ -50,9 +58,11 @@ for name in "${expected[@]}"; do
     echo "FAIL: $path does not satisfy 16x18 x 21-frame RGBA: $probe" >&2
     exit 1
   }
-  cmp "$path" "$generated"
-  ffmpeg -hide_banner -loglevel error -i "$path" \
+  ffmpeg -y -hide_banner -loglevel error -i "$path" \
     -f rawvideo -pix_fmt rgba "$TMP/$name.rgba"
+  ffmpeg -y -hide_banner -loglevel error -i "$generated" \
+    -f rawvideo -pix_fmt rgba "$TMP/$name.generated.rgba"
+  cmp "$TMP/$name.rgba" "$TMP/$name.generated.rgba"
   node - "$TMP/$name.rgba" "$name" <<'NODE'
 import { readFileSync } from "node:fs";
 const bytes = readFileSync(process.argv[2]);
@@ -99,20 +109,33 @@ for (const [action, frames] of Object.entries({
 }
 NODE
   asset_hash="$(shasum -a 256 "$path" | awk '{print $1}')"
+  generated_asset_hash="$(shasum -a 256 "$generated" | awk '{print $1}')"
+  manifest_hash="$(jq -er --arg asset "sprites/bukov/$name.png" \
+    '.sheets[] | select(.asset == $asset) | .sha256' "$MANIFEST")"
+  generated_manifest_hash="$(jq -er --arg asset "sprites/bukov/$name.png" \
+    '.sheets[] | select(.asset == $asset) | .sha256' \
+    "$TMP/enemy_animation_manifest.json")"
+  [[ "$asset_hash" == "$manifest_hash" ]] || {
+    echo "FAIL: $path does not match its committed manifest hash" >&2
+    exit 1
+  }
+  [[ "$generated_asset_hash" == "$generated_manifest_hash" ]] || {
+    echo "FAIL: $generated does not match its generated manifest hash" >&2
+    exit 1
+  }
   rg -Fq "$asset_hash" "$PROVENANCE" || {
     echo "FAIL: $path hash is missing from asset provenance" >&2
     exit 1
   }
-  asset_hashes+=("$asset_hash")
+  asset_hashes+=("$(shasum -a 256 "$TMP/$name.rgba" | awk '{print $1}')")
 done
 
 unique_asset_hashes="$(printf '%s\n' "${asset_hashes[@]}" | sort -u | wc -l | tr -d ' ')"
 [[ "$unique_asset_hashes" -eq "${#expected[@]}" ]] || {
-  echo "FAIL: one or more enemy sheets are byte-identical placeholders" >&2
+  echo "FAIL: one or more enemy sheets are RGBA-identical placeholders" >&2
   exit 1
 }
 
-cmp "$MANIFEST" "$TMP/enemy_animation_manifest.json"
 [[ "$(jq '.schemaVersion' "$MANIFEST")" -eq 2 ]]
 [[ "$(jq '.frameCount' "$MANIFEST")" -eq 21 ]]
 [[ "$(jq '.sheets | length' "$MANIFEST")" -eq 13 ]]

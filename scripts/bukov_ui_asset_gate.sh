@@ -14,14 +14,25 @@ node "$root/scripts/generate_bukov_ui_atlas.mjs" \
   "$root/core/src/main/assets/bukov/content/ui_tokens.json" \
   >/dev/null
 
-cmp "$atlas" "$temporary/bukov_ui.png"
-cmp "$manifest" "$temporary/bukov_ui_manifest.json"
-
+# ponytail: PNG containers may differ across zlib builds; decoded pixels are the contract.
 ffmpeg -y -hide_banner -loglevel error \
-  -i "$atlas" -f rawvideo -pix_fmt rgba "$temporary/bukov_ui.rgba"
+  -i "$atlas" -f rawvideo -pix_fmt rgba "$temporary/bukov_ui.committed.rgba"
+ffmpeg -y -hide_banner -loglevel error \
+  -i "$temporary/bukov_ui.png" -f rawvideo -pix_fmt rgba \
+  "$temporary/bukov_ui.generated.rgba"
+cmp "$temporary/bukov_ui.committed.rgba" \
+  "$temporary/bukov_ui.generated.rgba"
+
+jq -S 'del(.sha256)' "$manifest" \
+  >"$temporary/bukov_ui.committed.logical.json"
+jq -S 'del(.sha256)' "$temporary/bukov_ui_manifest.json" \
+  >"$temporary/bukov_ui.generated.logical.json"
+cmp "$temporary/bukov_ui.committed.logical.json" \
+  "$temporary/bukov_ui.generated.logical.json"
 
 node - "$manifest" "$atlas" "$provenance" \
-  "$temporary/bukov_ui.rgba" <<'NODE'
+  "$temporary/bukov_ui.committed.rgba" \
+  "$temporary/bukov_ui_manifest.json" "$temporary/bukov_ui.png" <<'NODE'
 const { createHash } = require("node:crypto");
 const { readFileSync } = require("node:fs");
 
@@ -29,6 +40,8 @@ const manifest = JSON.parse(readFileSync(process.argv[2], "utf8"));
 const png = readFileSync(process.argv[3]);
 const provenance = readFileSync(process.argv[4], "utf8");
 const rgba = readFileSync(process.argv[5]);
+const generatedManifest = JSON.parse(readFileSync(process.argv[6], "utf8"));
+const generatedPng = readFileSync(process.argv[7]);
 const expected = [
   "PANEL",
   "PANEL_RAISED",
@@ -88,7 +101,9 @@ if (manifest.schemaVersion !== 2
   throw new Error("Bukov UI atlas manifest contract drift");
 }
 const hash = createHash("sha256").update(png).digest("hex");
+const generatedHash = createHash("sha256").update(generatedPng).digest("hex");
 if (hash !== manifest.sha256
+    || generatedHash !== generatedManifest.sha256
     || !provenance.includes(`core/src/main/assets/interfaces/bukov_ui.png,`)
     || !provenance.includes(hash)) {
   throw new Error("Bukov UI atlas provenance/hash closure is incomplete");

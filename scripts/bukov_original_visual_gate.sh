@@ -19,11 +19,80 @@ node "$SCRIPT_DIR/generate_bukov_operator_sprite.mjs" \
   "$TMP_DIR/operator_lower.png" "$TMP_DIR/operator_upper.png"
 node "$SCRIPT_DIR/generate_bukov_landmarks.mjs" "$TMP_DIR/landmarks.png"
 
-cmp "$OPERATOR" "$TMP_DIR/operator.png"
-cmp "$OPERATOR_LOWER" "$TMP_DIR/operator_lower.png"
-cmp "$OPERATOR_UPPER" "$TMP_DIR/operator_upper.png"
-cmp "$OPERATOR_MANIFEST" "$TMP_DIR/operator_manifest.json"
-cmp "$LANDMARKS" "$TMP_DIR/landmarks.png"
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+decode_rgba() {
+  ffmpeg -hide_banner -loglevel error -i "$1" \
+    -f rawvideo -pix_fmt rgba "$2"
+}
+
+assert_png_rgba_equal() {
+  local committed="$1"
+  local generated="$2"
+  local label="$3"
+  decode_rgba "$committed" "$TMP_DIR/${label}-committed.rgba"
+  decode_rgba "$generated" "$TMP_DIR/${label}-generated.rgba"
+  cmp \
+    "$TMP_DIR/${label}-committed.rgba" \
+    "$TMP_DIR/${label}-generated.rgba"
+}
+
+assert_manifest_hash() {
+  local manifest="$1"
+  local expression="$2"
+  local png="$3"
+  local label="$4"
+  local expected actual
+  expected="$(jq -er "$expression" "$manifest")"
+  actual="$(sha256_file "$png")"
+  if [[ "$expected" != "$actual" ]]; then
+    echo "$label manifest SHA does not match PNG" >&2
+    exit 1
+  fi
+}
+
+# ponytail: decoded pixels are the portable contract; revisit only if color
+# profiles become an intentional part of the asset pipeline.
+assert_png_rgba_equal "$OPERATOR" "$TMP_DIR/operator.png" "operator"
+assert_png_rgba_equal \
+  "$OPERATOR_LOWER" "$TMP_DIR/operator_lower.png" "operator-lower"
+assert_png_rgba_equal \
+  "$OPERATOR_UPPER" "$TMP_DIR/operator_upper.png" "operator-upper"
+assert_png_rgba_equal "$LANDMARKS" "$TMP_DIR/landmarks.png" "landmarks"
+
+jq -S 'del(.sha256, .layerSha256)' "$OPERATOR_MANIFEST" \
+  >"$TMP_DIR/operator_manifest-committed.logical.json"
+jq -S 'del(.sha256, .layerSha256)' "$TMP_DIR/operator_manifest.json" \
+  >"$TMP_DIR/operator_manifest-generated.logical.json"
+cmp \
+  "$TMP_DIR/operator_manifest-committed.logical.json" \
+  "$TMP_DIR/operator_manifest-generated.logical.json"
+
+for manifest_kind in committed generated; do
+  if [[ "$manifest_kind" == "committed" ]]; then
+    manifest="$OPERATOR_MANIFEST"
+    operator="$OPERATOR"
+    lower="$OPERATOR_LOWER"
+    upper="$OPERATOR_UPPER"
+  else
+    manifest="$TMP_DIR/operator_manifest.json"
+    operator="$TMP_DIR/operator.png"
+    lower="$TMP_DIR/operator_lower.png"
+    upper="$TMP_DIR/operator_upper.png"
+  fi
+  assert_manifest_hash "$manifest" '.sha256' \
+    "$operator" "$manifest_kind operator"
+  assert_manifest_hash "$manifest" '.layerSha256.lowerBody' \
+    "$lower" "$manifest_kind lower layer"
+  assert_manifest_hash "$manifest" '.layerSha256.upperBodyWeapon' \
+    "$upper" "$manifest_kind upper layer"
+done
 
 operator_probe="$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height,pix_fmt -of csv=p=0 "$OPERATOR")"
