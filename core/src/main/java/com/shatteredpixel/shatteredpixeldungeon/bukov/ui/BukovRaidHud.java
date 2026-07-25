@@ -60,6 +60,38 @@ public final class BukovRaidHud extends Component {
 			new BukovTutorialHintState();
 	private final BukovReloadRingModel reloadRing =
 			new BukovReloadRingModel();
+	private final BukovResponsiveUiLayout.Cache responsiveUiCache =
+			new BukovResponsiveUiLayout.Cache();
+	private final BukovRaidHudLayout.FitCache healthFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache armorFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache statusFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache medicalFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache ammoFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache weaponFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache objectiveFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache extractionFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache interactionFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache timerFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache bossFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache bossObjectiveFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache navigationFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache threatFit =
+			new BukovRaidHudLayout.FitCache();
+	private final BukovRaidHudLayout.FitCache tutorialFit =
+			new BukovRaidHudLayout.FitCache();
 
 	private BukovUiTokens tokens;
 	private int primaryColor;
@@ -155,12 +187,12 @@ public final class BukovRaidHud extends Component {
 	private String lastInteractionLabel;
 	private BukovRaidHudState.Interaction lastInteractionType;
 	private String lastTutorialMessage;
+	private String currentBossTitle = "";
+	private String currentBossObjective = "";
 	private int lastExtractionKey = Integer.MIN_VALUE;
 	private String lastExtractionId;
 	private int lastReloadBucket = Integer.MIN_VALUE;
 	private BukovRaidHudState.Direction lastMobileNavigationDirection;
-	private final BukovMobileNavigationLayout.Rect mobileNavigationRect =
-			new BukovMobileNavigationLayout.Rect();
 	private float healthFraction;
 	private float uiSeconds;
 	private float healthFlashRemaining;
@@ -568,12 +600,18 @@ public final class BukovRaidHud extends Component {
 		if (inputMode != lastMedicalInputMode
 				|| hudSource != null) {
 			lastMedicalInputMode = inputMode;
-			medicalHintText.text(desktop || controller
-					? BukovMessages.get(
-							"bukov.raid.hud.mobility_hint_format",
-							staminaLabel(live),
-							medicalHint(desktop, controller))
-					: staminaLabel(live));
+			// Sits in the last fixed-pitch slot of the left rail; a wrapped
+			// second line falls out of the HUD onto the playfield.
+			medicalHintText.text(medicalFit.captionLine(
+					desktop || controller
+							? BukovMessages.get(
+									"bukov.raid.hud.mobility_hint_format",
+									staminaLabel(live),
+									medicalHint(desktop, controller))
+							: staminaLabel(live),
+					Math.max(1f, Math.min(88f, width * 0.28f)
+							- PADDING * 2f),
+					uiScaleLevel));
 		}
 		boolean urgent = healthFraction <= 0.7f
 				|| live.bleedingPerSecond() > 0f
@@ -781,13 +819,16 @@ public final class BukovRaidHud extends Component {
 		interactionBadge.visible =
 				live.interaction() != BukovRaidHudState.Interaction.NONE;
 		interactionIcon.visible = interactionBadge.visible;
+		interactionText.visible = interactionBadge.visible;
 		interactionText.hardlight(
 				live.interaction() == BukovRaidHudState.Interaction.LOCKED
 						? dangerColor : interactColor);
 		extractionText.hardlight(
 				live.extractionId() != null && !live.extractionAvailable()
 						? dangerColor : extractColor);
-		float soundAlpha = BukovSoundRingModel.alpha(live);
+		float soundAlpha = BukovSoundRingModel.alpha(
+				live,
+				tokens.motionSeconds("hud.soundRing"));
 		int soundSegment =
 				BukovSoundRingModel.segmentIndex(live.soundDirection());
 		boolean longSoundArc =
@@ -820,8 +861,8 @@ public final class BukovRaidHud extends Component {
 					Math.min(
 							1f,
 							live.hitRemainingSeconds(index)
-									/ BukovCombatHudTimeline
-											.HIT_LIFETIME_SECONDS));
+									/ tokens.motionSeconds(
+											"hud.damageArc")));
 			float arcAlpha = lifetimeAlpha
 					* (0.55f + 0.45f * live.hitStrength(index));
 			arc.alpha(arcAlpha);
@@ -869,17 +910,31 @@ public final class BukovRaidHud extends Component {
 		killConfirmationTick.alpha(Math.min(
 				1f,
 				live.killConfirmationRemaining()
-						/ (BukovCombatHudTimeline.KILL_TICK_SECONDS * 0.35f)));
+						/ (tokens.motionSeconds(
+								"hud.killConfirm") * 0.35f)));
 	}
 
 	private void refreshCombatAwareness() {
 		soundText.text(BukovCombatHudFormat.sound(live));
 		hitText.text(BukovCombatHudFormat.hit(live));
-		bossText.text(BukovCombatHudFormat.bossTitle(live));
-		bossObjectiveText.text(
-				BukovCombatHudFormat.bossObjective(live));
-		navigationText.text(BukovCombatHudFormat.navigation(live));
-		threatText.text(BukovCombatHudFormat.threat(live));
+		currentBossTitle = BukovCombatHudFormat.bossTitle(live);
+		currentBossObjective = BukovCombatHudFormat.bossObjective(live);
+		// The desktop awareness badges are a fixed 12px-tall box, so a label
+		// long enough to wrap spills out of it and onto the playfield. Fit
+		// them to one line here, where the final string is set exactly once.
+		float badgeLabelWidth = Math.max(
+				1f,
+				awarenessBadgeWidth(
+						camera == null ? x + width : camera.width,
+						uiScale) - 4f);
+		navigationText.text(navigationFit.bodyLine(
+				BukovCombatHudFormat.navigation(live),
+				badgeLabelWidth,
+				uiScaleLevel));
+		threatText.text(threatFit.bodyLine(
+				BukovCombatHudFormat.threat(live),
+				badgeLabelWidth,
+				uiScaleLevel));
 	}
 
 	@Override
@@ -910,84 +965,95 @@ public final class BukovRaidHud extends Component {
 		for (ColorBlock piece : weaponGlyph) {
 			piece.visible = lastCapacity > 0;
 		}
-		healthText.text(BukovHudFormat.health(
-				lastHp, lastMaxHp, lastShield));
-		armorText.text(lastArmorMin < 0
-				? BukovHudFormat.armor(null, null)
-				: BukovHudFormat.armor(lastArmorMin, lastArmorMax));
-		ammoText.text(BukovHudFormat.tacticalAmmo(
-				lastWeapon,
-				lastMagazine,
-				lastCapacity,
-				lastReserve));
-		statusText.text(currentStatusLabel());
-		weaponText.text(currentWeaponLabel());
-		objectiveText.text(objectiveLabel(
-				BukovHudFormat.objective(lastObjective)));
-		float raidElapsed = hudSource != null
-				? live.raidElapsedSeconds()
-				: raidSession == null ? 0f : raidSession.elapsedSeconds;
-		String clock = BukovHudFormat.clock(raidElapsed);
-		timerText.text(DeviceCompat.isDesktop()
-				? BukovMessages.get(
-						"bukov.raid.hud.timer_desktop_format",
-						clock,
-						controlHint(true))
-				: BukovMessages.get(
-						"bukov.raid.hud.timer_format",
-						clock));
-		extractionText.text(BukovHudFormat.extraction(
-				live.availableExtractions(),
-				live.extractionId(),
-				live.extractionAvailable(),
-				live.extractionActive(),
-				live.extractionProgress(),
-				live.extractionSeconds()));
 		float leftWidth = Math.min(88f, width * 0.28f);
 		float rightWidth = Math.min(78f, width * 0.24f);
 		float centerLeft = x + leftWidth + PADDING;
 		float centerRight = x + width - rightWidth - PADDING;
 		float centerWidth = Math.max(34f, centerRight - centerLeft);
-		if (!DeviceCompat.isDesktop()) {
-			// Landscape phones use the wide geometry, but not the desktop copy
-			// budget. Keep every persistent row to one line so the raid stays
-			// readable above the touch controls in both languages.
-			statusText.text(BukovRaidHudLayout.compactLine(
-					currentStatusLabel(),
-					leftWidth - PADDING * 2f,
-					uiScaleLevel));
-			weaponText.text(BukovRaidHudLayout.compactLine(
-					currentWeaponLabel(),
-					rightWidth - PADDING
-							- BukovRaidHudLayout.RELOAD_RING_SIZE - 3f,
-					uiScaleLevel));
-			objectiveText.text(BukovRaidHudLayout.compactLine(
-					objectiveLabel(
-							BukovHudFormat.objective(lastObjective)),
-					centerWidth - 10f,
-					uiScaleLevel));
-			extractionText.text(BukovRaidHudLayout.compactLine(
-					BukovHudFormat.extraction(
-							live.availableExtractions(),
-							live.extractionId(),
-							live.extractionAvailable(),
-							live.extractionActive(),
-							live.extractionProgress(),
-							live.extractionSeconds()),
-					centerWidth,
-					uiScaleLevel));
-			interactionText.text(BukovRaidHudLayout.compactLine(
-					BukovHudFormat.interaction(
-							live.interaction(),
-							live.interactionLabel(),
-							live.interactionProgress(),
-							live.interactionSeconds(),
-							false),
-					centerWidth - 10f,
-					uiScaleLevel));
-		}
+		float weaponWidth = rightWidth - PADDING
+				- BukovRaidHudLayout.RELOAD_RING_SIZE - 3f;
+		float ammoWidth = rightWidth - PADDING
+				- BukovRaidHudLayout.RELOAD_RING_SIZE - 13f;
+		float timerWidth = rightWidth - PADDING - 10f;
+		float healthWidth = Math.max(
+				1f, leftWidth - PADDING * 2f - 10f);
+		float armorWidth = Math.max(
+				1f, leftWidth - PADDING * 2f - 14f);
+		/*
+		 * Every persistent row here occupies a fixed-pitch slot 8-11px tall, so
+		 * a label allowed to wrap collides with the row below it. Desktop has a
+		 * larger copy budget than a landscape phone, but that budget is already
+		 * expressed by these widths - it never made the wrap safe. Each label is
+		 * therefore fitted once, and set once, on every platform.
+		 */
+		healthText.text(healthFit.primaryLine(
+				BukovHudFormat.health(lastHp, lastMaxHp, lastShield),
+				healthWidth,
+				uiScaleLevel));
+		armorText.text(armorFit.captionLine(
+				lastArmorMin < 0
+						? BukovHudFormat.armor(null, null)
+						: BukovHudFormat.armor(lastArmorMin, lastArmorMax),
+				armorWidth,
+				uiScaleLevel));
+		ammoText.text(ammoFit.primaryLine(
+				BukovHudFormat.tacticalAmmo(
+						lastWeapon,
+						lastMagazine,
+						lastCapacity,
+						lastReserve),
+				ammoWidth,
+				uiScaleLevel));
+		statusText.text(statusFit.captionLine(
+				currentStatusLabel(),
+				leftWidth - PADDING * 2f,
+				uiScaleLevel));
+		weaponText.text(weaponFit.captionLine(
+				currentWeaponLabel(),
+				weaponWidth,
+				uiScaleLevel));
+		objectiveText.text(objectiveFit.bodyLine(
+				objectiveLabel(
+						BukovHudFormat.objective(lastObjective)),
+				centerWidth - 10f,
+				uiScaleLevel));
+		float raidElapsed = hudSource != null
+				? live.raidElapsedSeconds()
+				: raidSession == null ? 0f : raidSession.elapsedSeconds;
+		String clock = BukovHudFormat.clock(raidElapsed);
+		timerText.text(timerFit.captionLine(
+				DeviceCompat.isDesktop()
+						? BukovMessages.get(
+								"bukov.raid.hud.timer_desktop_format",
+								clock,
+								controlHint(true))
+						: BukovMessages.get(
+								"bukov.raid.hud.timer_format",
+								clock),
+				timerWidth,
+				uiScaleLevel));
+		extractionText.text(extractionFit.captionLine(
+				BukovHudFormat.extraction(
+						live.availableExtractions(),
+						live.extractionId(),
+						live.extractionAvailable(),
+						live.extractionActive(),
+						live.extractionProgress(),
+						live.extractionSeconds()),
+				centerWidth,
+				uiScaleLevel));
+		interactionText.text(interactionFit.bodyLine(
+				BukovHudFormat.interaction(
+						live.interaction(),
+						live.interactionLabel(),
+						live.interactionProgress(),
+						live.interactionSeconds(),
+						false),
+				centerWidth - 10f,
+				uiScaleLevel));
 
 		positionHudIcon(healthIcon, x + PADDING, y + 3f);
+		healthText.maxWidth((int)healthWidth);
 		healthText.setPos(x + PADDING + 10f, y + 3f);
 		healthTrack.x = x + PADDING;
 		healthTrack.y = y + 14f;
@@ -998,6 +1064,7 @@ public final class BukovRaidHud extends Component {
 		armorEdge.x = x + PADDING + 10f;
 		armorEdge.y = y + 20f;
 		armorEdge.size(2f, 5f);
+		armorText.maxWidth((int)armorWidth);
 		armorText.setPos(x + PADDING + 14f, y + 19f);
 		statusText.maxWidth((int)(leftWidth - PADDING * 2f));
 		statusText.setPos(x + PADDING, y + 28f);
@@ -1062,7 +1129,7 @@ public final class BukovRaidHud extends Component {
 				y + vitalPrimary.y);
 		float healthCopyWidth = Math.max(
 				1f, vitalPrimary.width - 10f * uiScale);
-		healthText.text(BukovRaidHudLayout.compactPrimaryLine(
+		healthText.text(healthFit.primaryLine(
 				BukovHudFormat.health(lastHp, lastMaxHp, lastShield),
 				healthCopyWidth,
 				uiScaleLevel));
@@ -1087,7 +1154,7 @@ public final class BukovRaidHud extends Component {
 		armorEdge.size(2f * uiScale, 5f * uiScale);
 		float armorCopyWidth = Math.max(
 				1f, vitalSecondary.width - 14f * uiScale);
-		armorText.text(BukovRaidHudLayout.compactLine(
+		armorText.text(armorFit.captionLine(
 				lastArmorMin < 0
 						? BukovHudFormat.armor(null, null)
 						: BukovHudFormat.armor(
@@ -1099,7 +1166,7 @@ public final class BukovRaidHud extends Component {
 		armorText.setPos(
 				x + vitalSecondary.x + 14f * uiScale,
 				y + vitalSecondary.y);
-		statusText.text(BukovRaidHudLayout.compactLine(
+		statusText.text(statusFit.captionLine(
 				currentStatusLabel(),
 				hudLayout.condition.width,
 				uiScaleLevel));
@@ -1121,7 +1188,7 @@ public final class BukovRaidHud extends Component {
 				y + firepowerPrimary.y);
 		float ammoCopyWidth = Math.max(
 				1f, firepowerPrimary.width - 10f * uiScale);
-		ammoText.text(BukovRaidHudLayout.compactPrimaryLine(
+		ammoText.text(ammoFit.primaryLine(
 				BukovHudFormat.tacticalAmmo(
 						lastWeapon,
 						lastMagazine,
@@ -1139,7 +1206,7 @@ public final class BukovRaidHud extends Component {
 						firepowerSecondary.width
 								- reloadSize - 3f * uiScale)
 				: firepowerSecondary.width;
-		weaponText.text(BukovRaidHudLayout.compactLine(
+		weaponText.text(weaponFit.captionLine(
 				live.reloading() || lastWeapon == null
 						? currentWeaponLabel()
 						: lastWeapon,
@@ -1167,10 +1234,13 @@ public final class BukovRaidHud extends Component {
 		// The labelled medical touch target is directly below portrait HUD, so
 		// this scarce line is reserved for the live stamina decision.
 		medicalHintText.visible = true;
-		medicalHintText.text(staminaLabel(live));
 		float staminaWidth = Math.max(
 				36f * uiScale,
 				hudLayout.condition.width * 0.42f);
+		medicalHintText.text(medicalFit.captionLine(
+				staminaLabel(live),
+				staminaWidth,
+				uiScaleLevel));
 		medicalHintText.maxWidth((int)staminaWidth);
 		medicalHintText.setPos(
 				x + hudLayout.condition.right() - staminaWidth,
@@ -1184,7 +1254,7 @@ public final class BukovRaidHud extends Component {
 		float raidElapsed = hudSource != null
 				? live.raidElapsedSeconds()
 				: raidSession == null ? 0f : raidSession.elapsedSeconds;
-		timerText.text(BukovRaidHudLayout.compactLine(
+		timerText.text(timerFit.captionLine(
 				BukovMessages.get(
 						"bukov.raid.hud.timer_format",
 						BukovHudFormat.clock(raidElapsed)),
@@ -1194,7 +1264,7 @@ public final class BukovRaidHud extends Component {
 				x + hudLayout.clock.x + 10f * uiScale,
 				y + hudLayout.clock.y);
 
-		extractionText.text(BukovRaidHudLayout.compactLine(
+		extractionText.text(extractionFit.captionLine(
 				BukovHudFormat.extraction(
 						live.availableExtractions(),
 						live.extractionId(),
@@ -1208,7 +1278,7 @@ public final class BukovRaidHud extends Component {
 		extractionText.setPos(
 				x + hudLayout.extraction.x,
 				y + hudLayout.extraction.y);
-		objectiveText.text(BukovRaidHudLayout.compactObjective(
+		objectiveText.text(objectiveFit.objective(
 				objectiveLabel(BukovHudFormat.objective(lastObjective)),
 				hudLayout.objective.width - 24f * uiScale,
 				uiScaleLevel));
@@ -1291,6 +1361,7 @@ public final class BukovRaidHud extends Component {
 		 * shallow edge rail rather than placing 94-112 world-unit slabs over
 		 * the direction they describe, where they can hide the actual enemy.
 		 */
+		BukovResponsiveUiLayout mobileLayout = null;
 		if (DeviceCompat.isDesktop()) {
 			float awarenessWidth = awarenessBadgeWidth(
 					viewportWidth, uiScale);
@@ -1346,18 +1417,43 @@ public final class BukovRaidHud extends Component {
 		} else {
 			/*
 			 * Mobile already has directional sound/damage arcs. Keep only the
-			 * actionable interaction copy, in the left rail opposite the two
-			 * navigation buttons, so no text slab covers either touch stick.
+			 * actionable interaction copy. The shared responsive model derives
+			 * the exact same touch-control rectangles as BukovTouchControls,
+			 * then reserves interaction, navigation and tutorial in priority
+			 * order instead of clamping them onto one another.
 			 */
-			BukovRaidHudLayout.Rect feedback =
-					BukovRaidHudLayout.mobileFeedback(
-							viewportWidth,
-							viewportHeight,
-							x,
-							y + actualHeight);
+			mobileLayout = responsiveUiCache.layout(
+					viewportWidth,
+					viewportHeight,
+					safeLeft,
+					safeTop,
+					safeRight,
+					safeBottom,
+					y + actualHeight,
+					uiScaleLevel,
+					interactionBadge.visible,
+					mobileNavigationBadge.visible
+							? live.navigationDirection() : null,
+					tutorialText.visible);
+			BukovResponsiveUiLayout.Overlay feedback =
+					mobileLayout.interaction;
+			interactionBadge.visible = feedback.visible();
+			interactionIcon.visible = feedback.visible();
+			interactionText.visible =
+					feedback.presentation
+							== BukovResponsiveUiLayout.Presentation.FULL;
 			interactionBadge.x = feedback.x;
 			interactionBadge.y = feedback.y;
 			interactionBadge.size(feedback.width, feedback.height);
+			interactionText.text(interactionFit.bodyLine(
+					BukovHudFormat.interaction(
+							live.interaction(),
+							live.interactionLabel(),
+							live.interactionProgress(),
+							live.interactionSeconds(),
+							false),
+					Math.max(1f, feedback.width - 12f),
+					uiScaleLevel));
 			interactionText.maxWidth((int)feedback.width);
 			interactionText.setPos(
 					feedback.x,
@@ -1366,10 +1462,7 @@ public final class BukovRaidHud extends Component {
 			hitText.visible = false;
 			soundIcon.visible = false;
 			hitIcon.visible = false;
-			layoutMobileNavigation(
-					viewportWidth,
-					viewportHeight,
-					playableTop);
+			layoutMobileNavigation(mobileLayout.navigation);
 		}
 		positionHudIcon(
 				interactionIcon,
@@ -1378,48 +1471,58 @@ public final class BukovRaidHud extends Component {
 		layoutTutorialHint(
 				viewportWidth,
 				viewportHeight,
-				playableTop);
+				playableTop,
+				mobileLayout);
 	}
 
 	private void layoutTutorialHint(
 			float viewportWidth,
 			float viewportHeight,
-			float playableTop) {
+			float playableTop,
+			BukovResponsiveUiLayout mobileLayout) {
 		if (!tutorialText.visible) return;
-		boolean portraitTouch = !DeviceCompat.isDesktop()
-				&& compactLayout();
-		BukovRaidHudLayout.Rect portraitHint = portraitTouch
-				? BukovRaidHudLayout.portraitTutorialHint(
-						viewportWidth,
-						viewportHeight,
-						playableTop - 3f,
-						uiScaleLevel)
-				: null;
-		float hintWidth = portraitTouch
-				? portraitHint.width
-				: Math.min(
+		BukovResponsiveUiLayout.Overlay mobileHint = mobileLayout == null
+				? null : mobileLayout.tutorial;
+		if (mobileHint != null && !mobileHint.visible()) {
+			tutorialBadge.visible = false;
+			tutorialEdge.visible = false;
+			tutorialText.visible = false;
+			return;
+		}
+		float hintWidth = mobileHint == null
+				? Math.min(
 						190f * uiScale,
-						Math.max(1f, viewportWidth - 16f));
+						Math.max(1f, viewportWidth - 16f))
+				: mobileHint.width;
 		tutorialText.maxWidth((int)Math.max(1f, hintWidth - 12f));
-		tutorialText.text(BukovRaidHudLayout.compactObjective(
-				lastTutorialMessage,
-				hintWidth - 12f,
-				uiScaleLevel));
-		float hintHeight = portraitTouch
-				? portraitHint.height
-				: clamp(
+		tutorialText.text(
+				mobileHint != null
+								&& mobileHint.presentation
+										== BukovResponsiveUiLayout
+												.Presentation.COMPACT
+						? tutorialFit.bodyLine(
+								lastTutorialMessage,
+								hintWidth - 12f,
+								uiScaleLevel)
+						: tutorialFit.objective(
+								lastTutorialMessage,
+								hintWidth - 12f,
+								uiScaleLevel));
+		float hintHeight = mobileHint == null
+				? clamp(
 						tutorialText.height() + 8f,
 						16f,
-						28f * uiScale);
-		float hintX = portraitTouch
-				? portraitHint.x
-				: Math.max(0f, (viewportWidth - hintWidth) * 0.5f);
+						28f * uiScale)
+				: mobileHint.height;
+		float hintX = mobileHint == null
+				? Math.max(0f, (viewportWidth - hintWidth) * 0.5f)
+				: mobileHint.x;
 		// Desktop edge-awareness badges own the first row below the combat
 		// bar. The tutorial sits on the next row; touch has no text rail and
 		// can use the first row. Neither surface captures input.
 		float hintY;
-		if (portraitTouch) {
-			hintY = portraitHint.y;
+		if (mobileHint != null) {
+			hintY = mobileHint.y;
 		} else {
 			float preferredY = playableTop
 					+ (DeviceCompat.isDesktop() ? 17f : 4f);
@@ -1433,9 +1536,12 @@ public final class BukovRaidHud extends Component {
 		tutorialBadge.x = hintX;
 		tutorialBadge.y = hintY;
 		tutorialBadge.size(hintWidth, hintHeight);
+		tutorialBadge.visible = true;
 		tutorialEdge.x = hintX;
 		tutorialEdge.y = hintY;
 		tutorialEdge.size(2f, hintHeight);
+		tutorialEdge.visible = true;
+		tutorialText.visible = true;
 		tutorialText.setPos(
 				hintX + 6f,
 				hintY + Math.max(
@@ -1560,20 +1666,14 @@ public final class BukovRaidHud extends Component {
 	}
 
 	private void layoutMobileNavigation(
-			float viewportWidth,
-			float viewportHeight,
-			float playableTop) {
-		if (live.navigationDirection() == null) return;
-		BukovMobileNavigationLayout.Rect indicator =
-				BukovMobileNavigationLayout.calculate(
-						viewportWidth,
-						viewportHeight,
-						safeLeft,
-						Math.max(safeTop, playableTop),
-						safeRight,
-						safeBottom,
-						live.navigationDirection(),
-						mobileNavigationRect);
+			BukovResponsiveUiLayout.Overlay indicator) {
+		if (indicator == null || !indicator.visible()) {
+			refreshMobileNavigation(false, 0f);
+			return;
+		}
+		boolean compact =
+				indicator.presentation
+						== BukovResponsiveUiLayout.Presentation.COMPACT;
 		mobileNavigationBadge.x = indicator.x;
 		mobileNavigationBadge.y = indicator.y;
 		mobileNavigationBadge.size(
@@ -1582,26 +1682,36 @@ public final class BukovRaidHud extends Component {
 		mobileNavigationEdge.x = indicator.x;
 		mobileNavigationEdge.y = indicator.y;
 		mobileNavigationEdge.size(2f, indicator.height);
-		positionMobileNavigationIcon(
-				mobileNavigationPickupIcon,
-				indicator.x + 2f,
-				indicator.y + 3f);
-		positionMobileNavigationIcon(
-				mobileNavigationMissionIcon,
-				indicator.x + 2f,
-				indicator.y + 3f);
-		positionMobileNavigationIcon(
-				mobileNavigationExtractionIcon,
-				indicator.x + 2f,
-				indicator.y + 3f);
-		positionMobileNavigationIcon(
-				mobileNavigationUnavailableStrike,
-				indicator.x + 2f,
-				indicator.y + 3f);
-		mobileNavigationArrow.maxWidth(7);
+		if (compact) {
+			// The arrow still communicates direction in the 12px fallback.
+			// Secondary cue-kind glyphs yield rather than escaping its bounds.
+			mobileNavigationPickupIcon.visible = false;
+			mobileNavigationMissionIcon.visible = false;
+			mobileNavigationExtractionIcon.visible = false;
+			mobileNavigationUnavailableStrike.visible = false;
+		} else {
+			positionMobileNavigationIcon(
+					mobileNavigationPickupIcon,
+					indicator.x + 2f,
+					indicator.y + 3f);
+			positionMobileNavigationIcon(
+					mobileNavigationMissionIcon,
+					indicator.x + 2f,
+					indicator.y + 3f);
+			positionMobileNavigationIcon(
+					mobileNavigationExtractionIcon,
+					indicator.x + 2f,
+					indicator.y + 3f);
+			positionMobileNavigationIcon(
+					mobileNavigationUnavailableStrike,
+					indicator.x + 2f,
+					indicator.y + 3f);
+		}
+		mobileNavigationArrow.maxWidth(
+				compact ? (int)indicator.width - 3 : 7);
 		mobileNavigationArrow.setPos(
-				indicator.x + 12f,
-				indicator.y + 5f);
+				indicator.x + (compact ? 2f : 12f),
+				indicator.y + (compact ? 2f : 5f));
 	}
 
 	private void positionReticle(float centerX, float centerY) {
@@ -1667,8 +1777,16 @@ public final class BukovRaidHud extends Component {
 	}
 
 	private void positionBoss(float barX, float textY, float barWidth) {
+		bossText.text(bossFit.bodyLine(
+				currentBossTitle,
+				barWidth,
+				uiScaleLevel));
 		bossText.maxWidth((int)barWidth);
 		bossText.setPos(barX, textY);
+		bossObjectiveText.text(bossObjectiveFit.captionLine(
+				currentBossObjective,
+				barWidth,
+				uiScaleLevel));
 		bossObjectiveText.maxWidth((int)barWidth);
 		bossObjectiveText.setPos(barX, textY + 9f);
 		bossTrack.x = barX;

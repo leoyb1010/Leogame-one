@@ -4,6 +4,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class BukovRaidHudLayoutTest {
@@ -243,6 +245,163 @@ public class BukovRaidHudLayoutTest {
 				"  状态   稳定  ", 100f, 0));
 	}
 
+	@Test
+	public void desktopPauseAndHudShareOneNonOverlappingGeometryContract() {
+		for (float[] viewport : new float[][] {
+				{360f, 0f, 0f},
+				{640f, 8f, 12f},
+				{960f, 24f, 16f}
+		}) {
+			float width = viewport[0];
+			float safeLeft = viewport[1];
+			float safeRight = viewport[2];
+			float hudLeft =
+					safeLeft + BukovRaidHudLayout.HUD_SIDE_INSET;
+			float hudRight = hudLeft
+					+ BukovRaidHudLayout.desktopHudWidth(
+							width, safeLeft, safeRight);
+			float pauseLeft =
+					BukovRaidHudLayout.desktopPauseX(width, safeRight);
+			float pauseRight = pauseLeft
+					+ BukovRaidHudLayout.DESKTOP_PAUSE_WIDTH;
+
+			assertEquals(
+					BukovRaidHudLayout.DESKTOP_HUD_PAUSE_GAP,
+					pauseLeft - hudRight,
+					0f);
+			assertEquals(
+					width - safeRight
+							- BukovRaidHudLayout
+									.DESKTOP_PAUSE_RIGHT_MARGIN,
+					pauseRight,
+					0f);
+			assertTrue(hudRight <= pauseLeft);
+		}
+	}
+
+	@Test
+	public void wideFixedRowsFitLongestChineseAndEnglishAtEveryScale() {
+		String[] longestCopy = {
+				"生命值 100/100 +999 临时防护正在衰减",
+				"Health 100/100 +999 temporary protection is decaying",
+				"稀有实验型突击步枪 · 全自动 · 枪膛故障待排除",
+				"Experimental assault rifle · automatic · chamber fault",
+				"首领：维修区重装守卫第二阶段正在压制撤离通道",
+				"Boss: maintenance heavy guard suppressing extraction"
+		};
+		for (float hudWidth : new float[] {300f, 640f, 960f}) {
+			float leftWidth = Math.min(88f, hudWidth * 0.28f);
+			float rightWidth = Math.min(78f, hudWidth * 0.24f);
+			float centerWidth = Math.max(
+					34f,
+					hudWidth - rightWidth - 4f
+							- (leftWidth + 4f));
+			float healthWidth = Math.max(1f, leftWidth - 18f);
+			float armorWidth = Math.max(1f, leftWidth - 22f);
+			float statusWidth = Math.max(1f, leftWidth - 8f);
+			float weaponWidth = Math.max(
+					1f,
+					rightWidth - 4f
+							- BukovRaidHudLayout.RELOAD_RING_SIZE
+							- 3f);
+			float ammoWidth = Math.max(
+					1f,
+					rightWidth - 4f
+							- BukovRaidHudLayout.RELOAD_RING_SIZE
+							- 13f);
+			float timerWidth = Math.max(1f, rightWidth - 14f);
+			for (int scaleLevel = 0; scaleLevel <= 2; scaleLevel++) {
+				assertBodyLineFits(longestCopy[0], healthWidth, scaleLevel);
+				assertBodyLineFits(longestCopy[1], healthWidth, scaleLevel);
+				assertCaptionLineFits(
+						"护甲 12–24 · 裂损待修复",
+						armorWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						"流血 · 骨折 · 震荡 · 疼痛",
+						statusWidth,
+						scaleLevel);
+				assertBodyLineFits(
+						"AMMO 999/999 · RESERVE 9999",
+						ammoWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						longestCopy[2],
+						weaponWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						longestCopy[3],
+						weaponWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						"机动 100 · 医疗快捷键 4",
+						statusWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						"59:59 · PAUSE / BACKPACK",
+						timerWidth,
+						scaleLevel);
+				assertBodyLineFits(
+						longestCopy[4],
+						centerWidth,
+						scaleLevel);
+				assertBodyLineFits(
+						longestCopy[5],
+						centerWidth,
+						scaleLevel);
+				assertCaptionLineFits(
+						"阶段目标：摧毁护盾发生器并撤离",
+						centerWidth,
+						scaleLevel);
+			}
+		}
+	}
+
+	@Test
+	public void bodyAwarenessBadgesFitLongestLocalesAtEveryScale() {
+		String[] labels = {
+				"导航：紧急撤离点 东北 128米 暂不可用",
+				"Navigation: emergency extraction northeast 128m unavailable",
+				"威胁：重装守卫正在右后方持续压制",
+				"Threat: heavy guard suppressing from rear right"
+		};
+		for (float viewportWidth : new float[] {360f, 640f, 960f}) {
+			for (int scaleLevel = 0; scaleLevel <= 2; scaleLevel++) {
+				float scale =
+						BukovRaidHudLayout.scaleMultiplier(scaleLevel);
+				float width = Math.min(
+						84f + 24f * (scale - 1f),
+						(viewportWidth - 16f) * 0.5f) - 4f;
+				for (String label : labels) {
+					assertBodyLineFits(label, width, scaleLevel);
+				}
+			}
+		}
+	}
+
+	@Test
+	public void fitCacheSkipsStableFramesAndInvalidatesEveryInput() {
+		BukovRaidHudLayout.FitCache cache =
+				new BukovRaidHudLayout.FitCache();
+		String source =
+				"Primary objective: reach emergency extraction before timeout";
+		String first = cache.bodyLine(source, 84f, 0);
+		String sameValue = cache.bodyLine(
+				new String(source), 84f, 0);
+		assertSame(first, sameValue);
+		assertEquals(1, cache.recomputations());
+
+		String changedWidth = cache.bodyLine(source, 64f, 0);
+		assertNotSame(first, changedWidth);
+		assertEquals(2, cache.recomputations());
+		cache.bodyLine(source, 64f, 2);
+		assertEquals(3, cache.recomputations());
+		cache.captionLine(source, 64f, 2);
+		assertEquals(4, cache.recomputations());
+		cache.captionLine(source + " now", 64f, 2);
+		assertEquals(5, cache.recomputations());
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void rejectsMissingHudWidth() {
 		BukovRaidHudLayout.calculate(0f, 0);
@@ -254,6 +413,30 @@ public class BukovRaidHudLayoutTest {
 		assertTrue(lower.y >= upper.bottom());
 	}
 
+	private static void assertBodyLineFits(
+			String source, float width, int scaleLevel) {
+		String fitted = BukovRaidHudLayout.compactBodyLine(
+				source, width, scaleLevel);
+		assertFalse(fitted.contains("\n"));
+		assertTrue(BukovRaidHudLayout.objectiveFootprint(
+				fitted, width, scaleLevel).fits(
+						width,
+						BukovRaidHudLayout.bodyLineHeight(scaleLevel),
+						1));
+	}
+
+	private static void assertCaptionLineFits(
+			String source, float width, int scaleLevel) {
+		String fitted = BukovRaidHudLayout.compactLine(
+				source, width, scaleLevel);
+		assertFalse(fitted.contains("\n"));
+		assertTrue(BukovRaidHudLayout.captionFootprint(
+				fitted, width, scaleLevel).fits(
+						width,
+						BukovRaidHudLayout.captionLineHeight(scaleLevel),
+						1));
+	}
+
 	private static void assertMobileFeedbackClear(
 			float viewportWidth,
 			float viewportHeight,
@@ -262,20 +445,22 @@ public class BukovRaidHudLayoutTest {
 			float safeRight,
 			float safeBottom,
 			float hudBottom) {
-		BukovRaidHudLayout.Rect feedback =
-				BukovRaidHudLayout.mobileFeedback(
-						viewportWidth,
-						viewportHeight,
-						safeLeft + 4f,
-						hudBottom);
-		BukovTouchLayout touch = BukovTouchLayout.calculate(
+		BukovResponsiveUiLayout responsive =
+				BukovResponsiveUiLayout.calculateMobile(
 				viewportWidth,
 				viewportHeight,
 				safeLeft,
 				safeTop,
 				safeRight,
 				safeBottom,
-				hudBottom + 2f);
+				hudBottom,
+				0,
+				true,
+				null,
+				false);
+		BukovResponsiveUiLayout.Overlay feedback =
+				responsive.interaction;
+		BukovTouchLayout touch = responsive.touch;
 
 		assertTrue(feedback.x >= safeLeft);
 		assertTrue(feedback.y >= 0f);
@@ -293,6 +478,15 @@ public class BukovRaidHudLayoutTest {
 
 	private static boolean overlaps(
 			BukovRaidHudLayout.Rect first,
+			BukovTouchLayout.Rect second) {
+		return first.x < second.right()
+				&& first.right() > second.x
+				&& first.y < second.bottom()
+				&& first.bottom() > second.y;
+	}
+
+	private static boolean overlaps(
+			BukovResponsiveUiLayout.Overlay first,
 			BukovTouchLayout.Rect second) {
 		return first.x < second.right()
 				&& first.right() > second.x

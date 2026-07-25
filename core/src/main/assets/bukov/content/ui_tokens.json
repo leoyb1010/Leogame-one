@@ -64,7 +64,12 @@
     "fast": 120,
     "base": 180,
     "slow": 320,
-    "ritual": 900
+    "ritual": 900,
+    "hud.idleHold": 8000,
+    "hud.fade": 350,
+    "hud.damageArc": 500,
+    "hud.killConfirm": 240,
+    "hud.soundRing": 900
   },
   "hapticMaximumShakePx": 8.0,
   "haptics": {

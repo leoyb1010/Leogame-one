@@ -169,6 +169,7 @@ final class BukovRealtimeCombatHarness {
 		final int pausedDamageDelta;
 		final float resumedElapsedDelta;
 		final int resumedMagazineDelta;
+		final int rearmedMagazineDelta;
 		final int resumedDamageDelta;
 
 		private BackpackPauseEvidence(
@@ -180,6 +181,7 @@ final class BukovRealtimeCombatHarness {
 				int pausedDamageDelta,
 				float resumedElapsedDelta,
 				int resumedMagazineDelta,
+				int rearmedMagazineDelta,
 				int resumedDamageDelta) {
 			this.damageBeforePause = damageBeforePause;
 			this.pausedElapsedDelta = pausedElapsedDelta;
@@ -189,6 +191,7 @@ final class BukovRealtimeCombatHarness {
 			this.pausedDamageDelta = pausedDamageDelta;
 			this.resumedElapsedDelta = resumedElapsedDelta;
 			this.resumedMagazineDelta = resumedMagazineDelta;
+			this.rearmedMagazineDelta = rearmedMagazineDelta;
 			this.resumedDamageDelta = resumedDamageDelta;
 		}
 	}
@@ -438,6 +441,16 @@ final class BukovRealtimeCombatHarness {
 		int magazineAfterResumeFrame = firearm.magazineAmmo();
 
 		input.fire = false;
+		system.update(RENDER_STEP);
+		int magazineBeforeRearm = firearm.magazineAmmo();
+		input.fire = true;
+		for (int frame = 0;
+				frame < 12 && firearm.magazineAmmo() == magazineBeforeRearm;
+				frame++) {
+			system.update(RENDER_STEP);
+		}
+		int magazineAfterRearm = firearm.magazineAmmo();
+		input.fire = false;
 		for (int frame = 0;
 				frame < ENEMY_FIRE_TIMEOUT_FRAMES
 						&& raid.session().balanceTelemetry().damageTaken()
@@ -459,6 +472,7 @@ final class BukovRealtimeCombatHarness {
 				damageDuringPause - damageBeforePause,
 				elapsedAfterResumeFrame - elapsedBeforePause,
 				magazineAfterResumeFrame - magazineBeforePause,
+				magazineAfterRearm - magazineBeforeRearm,
 				raid.session().balanceTelemetry().damageTaken()
 						- damageBeforePause);
 	}

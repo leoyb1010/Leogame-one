@@ -14,11 +14,7 @@ import java.util.Map;
  */
 public final class BukovCombatHudTimeline {
 
-	public static final float ACTIVE_HOLD_SECONDS = 8f;
-	public static final float FADE_SECONDS = 0.35f;
 	public static final float IDLE_ALPHA = 0.30f;
-	public static final float HIT_LIFETIME_SECONDS = 0.50f;
-	public static final float KILL_TICK_SECONDS = 0.24f;
 	public static final float LONG_KILL_DISTANCE_TILES = 12f;
 	public static final float BALLISTIC_CONFIRM_SPEED_TILES_PER_SECOND = 120f;
 	public static final float MAX_KILL_CONFIRM_DELAY_SECONDS = 0.18f;
@@ -42,6 +38,10 @@ public final class BukovCombatHudTimeline {
 	private final Hit[] hits = new Hit[MAX_HIT_DIRECTIONS];
 	private final Map<Integer, Float> lastAcceptedBySource =
 			new HashMap<>();
+	private final float activeHoldSeconds;
+	private final float fadeSeconds;
+	private final float hitLifetimeSeconds;
+	private final float killTickSeconds;
 	private float elapsedSeconds;
 	private float idleSeconds;
 	private float killDelaySeconds;
@@ -49,6 +49,17 @@ public final class BukovCombatHudTimeline {
 	private boolean killSoundCue;
 
 	public BukovCombatHudTimeline() {
+		this(BukovUiTokens.loadDefault());
+	}
+
+	BukovCombatHudTimeline(BukovUiTokens tokens) {
+		if (tokens == null) {
+			throw new IllegalArgumentException("UI tokens are required");
+		}
+		activeHoldSeconds = tokens.motionSeconds("hud.idleHold");
+		fadeSeconds = tokens.motionSeconds("hud.fade");
+		hitLifetimeSeconds = tokens.motionSeconds("hud.damageArc");
+		killTickSeconds = tokens.motionSeconds("hud.killConfirm");
 		for (int index = 0; index < hits.length; index++) {
 			hits[index] = new Hit();
 		}
@@ -146,16 +157,16 @@ public final class BukovCombatHudTimeline {
 		selected.sourceId = sourceId;
 		selected.direction = direction;
 		selected.strength = clamp01(strength);
-		selected.remaining = HIT_LIFETIME_SECONDS;
+		selected.remaining = hitLifetimeSeconds;
 		lastAcceptedBySource.put(sourceId, elapsedSeconds);
 		return true;
 	}
 
 	public float awarenessAlpha() {
-		if (idleSeconds <= ACTIVE_HOLD_SECONDS) return 1f;
+		if (idleSeconds <= activeHoldSeconds) return 1f;
 		float fade = Math.min(
 				1f,
-				(idleSeconds - ACTIVE_HOLD_SECONDS) / FADE_SECONDS);
+				(idleSeconds - activeHoldSeconds) / fadeSeconds);
 		return 1f + (IDLE_ALPHA - 1f) * fade;
 	}
 
@@ -190,7 +201,7 @@ public final class BukovCombatHudTimeline {
 
 	private void activateKillConfirmation() {
 		killDelaySeconds = 0f;
-		killTickRemainingSeconds = KILL_TICK_SECONDS;
+		killTickRemainingSeconds = killTickSeconds;
 		killSoundCue = true;
 	}
 }

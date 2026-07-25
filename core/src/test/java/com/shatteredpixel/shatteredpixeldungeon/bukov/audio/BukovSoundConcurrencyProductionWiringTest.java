@@ -50,9 +50,10 @@ public class BukovSoundConcurrencyProductionWiringTest {
 				"BukovConcurrentSoundPlayer.production("));
 			assertTrue(world.contains("worldSounds.update(dt)"));
 			assertTrue(world.contains("worldSounds.stopAll()"));
+			// Which input surfaces a paused frame clears is owned by
+			// RealtimeInputPauseLatchTest; only the audio duties belong here.
 			assertTrue(world.contains(
-					"input.cancelTouches();\n"
-							+ "\t\t\tpreserveExtractionCompleteCue();\n"
+					"preserveExtractionCompleteCue();\n"
 							+ "\t\t\tworldSounds.stopAll();"));
 			assertTrue(world.contains(
 					"worldSounds.detach(extractionCompleteSoundToken)"));

@@ -146,8 +146,6 @@ public class WndBukovSettingsTest {
 		assertEquals("配置", chinese.getProperty(
 				"bukov.entry.settings.configure"));
 
-		assertTrue(source.contains(
-				"windows.WndKeyBindings;"));
 		assertTrue(source.contains("KEYBOARD_BINDINGS,"));
 		assertTrue(source.contains("CONTROLLER_BINDINGS,"));
 		assertTrue(source.indexOf("KEYBOARD_BINDINGS,")
@@ -168,7 +166,9 @@ public class WndBukovSettingsTest {
 		assertTrue(helperStart >= 0);
 		assertTrue(helperEnd > helperStart);
 		String helper = source.substring(helperStart, helperEnd);
-		assertTrue(helper.contains("new WndKeyBindings(controller)"));
+		// The editor is the Bukov catalog window, not the classic full-action
+		// one; it lives in this package so no import is expected.
+		assertTrue(helper.contains("new WndBukovKeyBindings(controller)"));
 		assertTrue(helper.contains("addToFront("));
 		assertFalse(helper.contains("hide();"));
 	}

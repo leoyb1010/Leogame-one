@@ -10,18 +10,18 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void awarenessHoldsEightSecondsThenFadesAndActivityRestoresIt() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 
 		timeline.advance(8f);
 		assertEquals(1f, timeline.awarenessAlpha(), 0f);
 
-		timeline.advance(BukovCombatHudTimeline.FADE_SECONDS * 0.5f);
+		timeline.advance(seconds("hud.fade") * 0.5f);
 		assertEquals(
 				0.65f,
 				timeline.awarenessAlpha(),
 				0.0001f);
 
-		timeline.advance(BukovCombatHudTimeline.FADE_SECONDS);
+		timeline.advance(seconds("hud.fade"));
 		assertEquals(
 				BukovCombatHudTimeline.IDLE_ALPHA,
 				timeline.awarenessAlpha(),
@@ -33,7 +33,7 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void hitArcsExpireAtFiveHundredMilliseconds() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		assertTrue(timeline.damage(
 				1,
 				BukovRaidHudState.Direction.E,
@@ -49,7 +49,7 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void sameSourceIsDeduplicatedForTwoHundredMilliseconds() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		assertTrue(timeline.damage(
 				7,
 				BukovRaidHudState.Direction.N,
@@ -74,7 +74,7 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void keepsAtMostThreeNewestDirections() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		for (int source = 1; source <= 4; source++) {
 			assertTrue(timeline.damage(
 					source,
@@ -101,7 +101,7 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void ongoingSelfDamageWakesHudWithoutDirectionArc() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		timeline.advance(12f);
 		assertEquals(
 				BukovCombatHudTimeline.IDLE_ALPHA,
@@ -119,13 +119,13 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void killTickAndSoundLastTwoHundredFortyMilliseconds() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		timeline.kill(8f);
 
 		assertTrue(timeline.consumeKillSoundCue());
 		assertFalse(timeline.consumeKillSoundCue());
 		assertEquals(
-				BukovCombatHudTimeline.KILL_TICK_SECONDS,
+				seconds("hud.killConfirm"),
 				timeline.killTickRemainingSeconds(),
 				0f);
 		BukovRaidHudState state = new BukovRaidHudState();
@@ -141,7 +141,7 @@ public class BukovCombatHudTimelineTest {
 
 	@Test
 	public void longRangeKillWaitsForBallisticCausality() {
-		BukovCombatHudTimeline timeline = new BukovCombatHudTimeline();
+		BukovCombatHudTimeline timeline = timeline();
 		float delay =
 				BukovCombatHudTimeline.killConfirmationDelaySeconds(24f);
 		assertEquals(
@@ -157,9 +157,21 @@ public class BukovCombatHudTimelineTest {
 		timeline.advance(0.002f);
 		assertTrue(timeline.consumeKillSoundCue());
 		assertEquals(
-				BukovCombatHudTimeline.KILL_TICK_SECONDS,
+				seconds("hud.killConfirm"),
 				timeline.killTickRemainingSeconds(),
 				0f);
+	}
+
+	private static BukovCombatHudTimeline timeline() {
+		return new BukovCombatHudTimeline(tokens());
+	}
+
+	private static float seconds(String role) {
+		return tokens().motionSeconds(role);
+	}
+
+	private static BukovUiTokens tokens() {
+		return BukovUiTokens.loadDefault();
 	}
 
 	private static boolean contains(

@@ -53,6 +53,7 @@ exec "$script_dir/apple-gradle" \
   --tests '*BukovUiTokensTest' \
   --tests '*BukovUiTokenBoundaryGuardTest' \
   --tests '*BukovTypographyHapticTokenGuardTest' \
+  --tests '*BukovMotionTokenBoundaryGuardTest' \
   --tests '*ExperienceContractRegistryTest' \
   --rerun-tasks \
   --no-daemon

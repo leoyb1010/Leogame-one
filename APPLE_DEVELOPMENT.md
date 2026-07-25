@@ -7,6 +7,9 @@ Escape from Bukov currently targets macOS, iPhone, and iPad. The Android module 
 - Apple Silicon Mac
 - Xcode with an iOS Simulator runtime
 - Homebrew OpenJDK 17
+- `ripgrep` (`brew install ripgrep`) — the static asset, audio, localization and
+  UI-token gates under `scripts/` exit 1 without it, so a machine that lacks it
+  reports a red gate that never actually scanned anything
 
 ## Commands
 

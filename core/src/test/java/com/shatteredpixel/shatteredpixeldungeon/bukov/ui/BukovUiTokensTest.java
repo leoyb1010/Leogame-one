@@ -25,6 +25,11 @@ public class BukovUiTokensTest {
 		assertEquals(12, tokens.typographyPx("title"));
 		assertEquals(16, tokens.typographyPx("display"));
 		assertEquals(120, tokens.motionMs("fast"));
+		assertEquals(8f, tokens.motionSeconds("hud.idleHold"), 0f);
+		assertEquals(0.35f, tokens.motionSeconds("hud.fade"), 0f);
+		assertEquals(0.5f, tokens.motionSeconds("hud.damageArc"), 0f);
+		assertEquals(0.24f, tokens.motionSeconds("hud.killConfirm"), 0f);
+		assertEquals(0.9f, tokens.motionSeconds("hud.soundRing"), 0f);
 		assertEquals(8f, tokens.maximumShakePx(), 0f);
 		assertEquals(
 				2.5f,
@@ -64,6 +69,14 @@ public class BukovUiTokensTest {
 				authoredJson().replace("\"hud\": 7", "\"hud\": 6"));
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void rejectsMissingRequiredMotionRole() throws IOException {
+		BukovUiTokens.parse(
+				authoredJson().replace(
+						"\"hud.killConfirm\": 240",
+						"\"hud.unrecognized\": 240"));
+	}
+
 	private static String minimalJson(String colors) {
 		return "{"
 				+ "\"uiTokensVersion\":1,"
@@ -71,7 +84,9 @@ public class BukovUiTokensTest {
 				+ "\"typographyPx\":{\"hud\":7,\"body\":8,"
 				+ "\"section\":9,\"title\":12,\"display\":16},"
 				+ "\"motionMs\":{\"instant\":70,\"fast\":120,\"base\":180,"
-				+ "\"slow\":320,\"ritual\":900},"
+				+ "\"slow\":320,\"ritual\":900,\"hud.idleHold\":8000,"
+				+ "\"hud.fade\":350,\"hud.damageArc\":500,"
+				+ "\"hud.killConfirm\":240,\"hud.soundRing\":900},"
 				+ "\"hapticMaximumShakePx\":8,"
 				+ "\"haptics\":{"
 				+ haptic("RIFLE_SHOT") + ","

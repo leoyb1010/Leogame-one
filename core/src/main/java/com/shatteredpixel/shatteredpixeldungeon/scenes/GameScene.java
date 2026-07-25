@@ -91,6 +91,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovNavigation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovPauseButton;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHud;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudLayout;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchState;
@@ -997,11 +998,15 @@ public class GameScene extends PixelScene {
 						}
 					});
 					bukovPause.camera = uiCamera;
+					// 32f left the label 9px for a two-glyph CJK word that
+					// needs ~14px, so the text overran the icon.
 					bukovPause.setRect(
-							uiCamera.width - insets.right - 36f,
+							BukovRaidHudLayout.desktopPauseX(
+									uiCamera.width,
+									insets.right),
 							screentop + 4f,
-							32f,
-							18f);
+							BukovRaidHudLayout.DESKTOP_PAUSE_WIDTH,
+							BukovRaidHudLayout.DESKTOP_PAUSE_HEIGHT);
 					add(bukovPause);
 				} else {
 					bukovTouchControls = new BukovTouchControls()
@@ -1027,12 +1032,19 @@ public class GameScene extends PixelScene {
 					bukovWorld.touchControls(bukovTouchControls);
 				}
 
-				float hudWidth = Math.max(
-						1f,
-						uiCamera.width - insets.left - insets.right
-								- (DeviceCompat.isDesktop() ? 44f : 8f));
+				float hudWidth = DeviceCompat.isDesktop()
+						? BukovRaidHudLayout.desktopHudWidth(
+								uiCamera.width,
+								insets.left,
+								insets.right)
+						: Math.max(
+								1f,
+								uiCamera.width
+										- insets.left
+										- insets.right
+										- 8f);
 				bukovHud.setRect(
-						insets.left + 4f,
+						insets.left + BukovRaidHudLayout.HUD_SIDE_INSET,
 						bukovSafeTop + 4f,
 						hudWidth,
 						BukovRaidHud.preferredHeight(

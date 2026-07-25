@@ -34,6 +34,12 @@ public class BukovBackpackVisualBoundaryGuardTest {
 		assertFalse(source.contains("new ItemSprite("));
 		assertTrue(source.contains("BukovItemSprite"));
 		assertTrue(source.contains("frameForDefinition(item.definitionId)"));
+		assertTrue(source.contains("private final ColorBlock iconPlate"));
+		assertTrue(source.contains("tokens.color(\"panel.deep\")"));
+		assertTrue(source.contains("rarityColor()"));
+		assertTrue(source.contains(".colorToken"));
+		assertTrue(source.contains(
+				"ItemRowGeometry geometry = itemRowGeometry()"));
 		assertFalse(source.contains("RedButton"));
 		assertTrue(source.contains(
 				"BukovMessages.get(\"bukov.raid.backpack.title\")"));

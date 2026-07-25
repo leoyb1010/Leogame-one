@@ -44,7 +44,11 @@ public class BukovAudioRuntimeWiringGuardTest {
 				1,
 				occurrences(world, "Assets.Sounds.Bukov.RELOAD_START"));
 		assertFalse(world.contains("Assets.Sounds.Bukov.RELOAD_FINISH"));
-		assertTrue(world.contains("KEY_SOUND_LIFETIME_SECONDS = 0.9f"));
+		assertFalse(world.contains("KEY_SOUND_LIFETIME_SECONDS"));
+		assertTrue(world.contains(
+				"BukovUiTokens.loadDefault().motionSeconds(\"hud.soundRing\")"));
+		assertTrue(world.contains("keySoundVisual.activate("));
+		assertTrue(world.contains("keySoundLifetimeSeconds);"));
 		assertTrue(world.contains("SPDSettings.bukovMasterVolume()"));
 		assertTrue(world.contains("SPDSettings.bukovSfxVolume()"));
 		assertTrue(world.contains("private float realtimeSfxGain()"));

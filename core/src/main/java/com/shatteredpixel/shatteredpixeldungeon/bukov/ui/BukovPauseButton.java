@@ -67,10 +67,17 @@ public final class BukovPauseButton extends Button {
 				y + (height - iconSize) * 0.5f,
 				iconSize,
 				iconSize);
+		// setRect only positions a RenderedTextBlock; without an explicit fit
+		// the label keeps its natural width and draws straight over the icon.
+		float labelWidth = Math.max(1f, width - iconSize - 11f);
+		label.text(BukovRaidHudLayout.compactLine(
+				BukovMessages.get("bukov.raid.pause.button"),
+				labelWidth,
+				0));
 		label.setRect(
 				x + iconSize + 7f,
 				y + (height - 7) / 2f,
-				Math.max(1f, width - iconSize - 11f),
+				labelWidth,
 				7);
 	}
 }

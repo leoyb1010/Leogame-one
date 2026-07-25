@@ -98,6 +98,30 @@ public class WndBukovBackpackLayoutTest {
 				WndBukovBackpack.pausedHintKey(false));
 	}
 
+	@Test
+	public void rarityRailAndIconPlateKeepAOnePixelSilhouetteGutter() {
+		WndBukovBackpack.ItemRowGeometry row =
+				WndBukovBackpack.itemRowGeometry();
+
+		assertEquals(0f, row.railX, 0f);
+		assertEquals(2f, row.railWidth, 0f);
+		assertEquals(18f, row.plateSize, 0f);
+		assertEquals(16f, row.iconSize, 0f);
+		assertTrue(row.railX + row.railWidth <= row.plateX);
+		assertEquals(1f, row.iconX - row.plateX, 0f);
+		assertEquals(1f, row.iconY - row.plateY, 0f);
+		assertEquals(
+				1f,
+				row.plateX + row.plateSize
+						- (row.iconX + row.iconSize),
+				0f);
+		assertEquals(
+				1f,
+				row.plateY + row.plateSize
+						- (row.iconY + row.iconSize),
+				0f);
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void rejectsInvalidMeasuredLayoutInput() {
 		WndBukovBackpack.layoutFor(

@@ -72,7 +72,7 @@ public class FloatingText extends RenderedTextBlock {
 
 	public static final int ICON_WIDTH = 7;
 	public static final int ICON_HEIGHT = 8;
-	public static TextureFilm iconFilm = new TextureFilm( Assets.Effects.TEXT_ICONS, ICON_WIDTH, ICON_HEIGHT );
+	public static TextureFilm iconFilm;
 
 	public static int NO_ICON   = -1;
 
@@ -221,20 +221,25 @@ public class FloatingText extends RenderedTextBlock {
 		
 		zoom( 1 / (float)PixelScene.defaultZoom );
 
-		text( text );
-		hardlight( color );
-
-		if (iconIdx != NO_ICON){
-			icon = new Image( Assets.Effects.TEXT_ICONS);
-			icon.frame(iconFilm.get(iconIdx));
-			add(icon);
-			iconLeft = left;
-			if (iconLeft){
-				align(RIGHT_ALIGN);
-			}
-		} else {
+		//text() only rebuilds (and so only clear()s this icon) when the string
+		//actually changed, and pooled instances often repeat one
+		if (icon != null) {
+			remove( icon );
 			icon = null;
 		}
+		text( text );
+		hardlight( color );
+		alpha( 1f );
+
+		if (iconIdx != NO_ICON){
+			icon = createIcon(iconIdx);
+			add(icon);
+			iconLeft = left;
+		} else {
+			icon = null;
+			iconLeft = false;
+		}
+		align(iconLeft ? RIGHT_ALIGN : LEFT_ALIGN);
 
 		setPos(
 			PixelScene.align( Camera.main, x - width() / 2),
@@ -242,6 +247,18 @@ public class FloatingText extends RenderedTextBlock {
 		);
 		
 		timeLeft = LIFESPAN;
+	}
+
+	protected Image createIcon(int iconIdx) {
+		if (iconFilm == null) {
+			iconFilm = new TextureFilm(
+					Assets.Effects.TEXT_ICONS,
+					ICON_WIDTH,
+					ICON_HEIGHT);
+		}
+		Image result = new Image(Assets.Effects.TEXT_ICONS);
+		result.frame(iconFilm.get(iconIdx));
+		return result;
 	}
 	
 	/* STATIC METHODS */

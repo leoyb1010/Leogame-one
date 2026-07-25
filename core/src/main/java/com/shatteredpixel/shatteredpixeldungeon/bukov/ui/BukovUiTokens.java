@@ -123,7 +123,11 @@ public final class BukovUiTokens {
 		requireKeys(typography,
 				"hud", "body", "section", "title", "display");
 		validateTypography(typography);
-		requireKeys(motion, "instant", "fast", "base", "slow", "ritual");
+		requireKeys(
+				motion,
+				"instant", "fast", "base", "slow", "ritual",
+				"hud.idleHold", "hud.fade", "hud.damageArc",
+				"hud.killConfirm", "hud.soundRing");
 		requireKeys(haptics,
 				"RIFLE_SHOT", "PLAYER_HIT", "SHOTGUN_NEAR",
 				"EXPLOSION", "BOSS_SLAM", "BOSS_OVERLOAD",
@@ -155,6 +159,10 @@ public final class BukovUiTokens {
 
 	public int motionMs(String token) {
 		return require(motionMs, token, "motion");
+	}
+
+	public float motionSeconds(String token) {
+		return motionMs(token) / 1000f;
 	}
 
 	public int typographyPx(String token) {

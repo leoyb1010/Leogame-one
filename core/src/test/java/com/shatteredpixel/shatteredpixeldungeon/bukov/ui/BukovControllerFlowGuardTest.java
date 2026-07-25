@@ -29,15 +29,24 @@ public class BukovControllerFlowGuardTest {
 				"src/main/java/com/shatteredpixel/"
 						+ "shatteredpixeldungeon/bukov/runtime/"
 						+ "RealtimeInput.java");
+		String catalog = read(
+				"src/main/java/com/shatteredpixel/"
+						+ "shatteredpixeldungeon/bukov/runtime/"
+						+ "BukovInputBindings.java");
 
 		assertTrue(title.contains("SPDAction.TAG_ATTACK"));
 		assertTrue(title.contains("public GameAction keyAction()"));
-		assertTrue(input.contains("Input.Keys.BUTTON_R2"));
-		assertTrue(input.contains("Input.Keys.BUTTON_X"));
-		assertTrue(input.contains("Input.Keys.BUTTON_A"));
-		assertTrue(input.contains("Input.Keys.BUTTON_Y"));
-		assertTrue(input.contains("Input.Keys.TAB"));
-		assertTrue(input.contains("ControllerHandler.DPAD_KEY_OFFSET"));
+		assertTrue(input.contains("BukovInputBindings.isFire(action)"));
+		assertTrue(input.contains("BukovInputBindings.isReload("));
+		assertTrue(input.contains("BukovInputBindings.isInteract("));
+		assertTrue(input.contains("BukovInputBindings.isBackpack("));
+		assertTrue(input.contains("BukovInputBindings.medicalSlot("));
+		assertTrue(catalog.contains(
+				"CONTROLLER_RELOAD =\n"
+						+ "\t\t\tSPDAction.QUICKSLOT_SELECTOR"));
+		assertTrue(catalog.contains(
+				"CONTROLLER_BACKPACK =\n"
+						+ "\t\t\tSPDAction.INVENTORY_SELECTOR"));
 	}
 
 	private static void assertFocus(String file) throws Exception {

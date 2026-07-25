@@ -2,7 +2,6 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.shatteredpixel.shatteredpixeldungeon.SPDAction;
 import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchState;
@@ -39,6 +38,9 @@ public final class RealtimeInput {
 	private boolean controllerSprintHeld;
 	private int controllerMedicalSlot;
 	private boolean backpackPressed;
+	private boolean backpackHeld;
+	private boolean suppressBackpackUntilRelease;
+	private boolean suppressFireUntilRelease;
 	private boolean listening;
 	private boolean touchEnabled;
 	private boolean legacyTouchListening;
@@ -56,6 +58,7 @@ public final class RealtimeInput {
 	private int[] medicalTwoKeys = {Input.Keys.NUM_2};
 	private int[] medicalThreeKeys = {Input.Keys.NUM_3};
 	private int[] medicalFourKeys = {Input.Keys.NUM_4};
+	private int bindingRevision = -1;
 
 	private final Signal.Listener<PointerEvent> pointerListener = event -> {
 		if (!touchEnabled) {
@@ -108,31 +111,48 @@ public final class RealtimeInput {
 
 	private final Signal.Listener<KeyEvent> keyListener = event -> {
 		GameAction action = KeyBindings.getActionForKey(event);
+		boolean controller =
+				ControllerHandler.icControllerKey(event.code);
 		if (event.pressed
-				&& (action == SPDAction.INVENTORY
-						|| action == SPDAction.INVENTORY_SELECTOR
-						|| action == SPDAction.CYCLE
-						|| event.code == Input.Keys.TAB)) {
+				&& BukovInputBindings.isBackpack(
+						action, controller)
+				&& !backpackHeld
+				&& !suppressBackpackUntilRelease) {
 			backpackPressed = true;
 		}
-		if (event.code == Input.Keys.BUTTON_R2) {
-			if (event.pressed && !controllerFireHeld) {
+		if (BukovInputBindings.isBackpack(action, controller)) {
+			backpackHeld = event.pressed;
+			if (!event.pressed) {
+				suppressBackpackUntilRelease = false;
+			}
+		}
+		if (BukovInputBindings.isFire(action)) {
+			// Bukov owns FIRE as realtime state. Without consuming the raw
+			// action KeyEvent would also emulate a pointer click after this
+			// listener returns, causing one physical press to shoot and click.
+			event.consumeRaw();
+			if (event.pressed
+					&& !controllerFireHeld
+					&& !suppressFireUntilRelease) {
 				controllerFirePressed = true;
 			}
 			controllerFireHeld = event.pressed;
-		} else if (event.code == Input.Keys.BUTTON_X && event.pressed) {
+		} else if (BukovInputBindings.isReload(
+				action, controller) && event.pressed) {
 			controllerReloadPressed = true;
-		} else if (event.code == Input.Keys.BUTTON_A) {
+		} else if (BukovInputBindings.isInteract(
+				action, controller)) {
 			if (event.pressed && !controllerInteractHeld) {
 				controllerInteractPressed = true;
 			}
 			controllerInteractHeld = event.pressed;
-		} else if (event.code == Input.Keys.BUTTON_THUMBL) {
+		} else if (BukovInputBindings.isSprint(
+				action, controller)) {
 			controllerSprintHeld = event.pressed;
-		} else if (event.code == Input.Keys.BUTTON_Y && event.pressed) {
-			backpackPressed = true;
 		} else if (event.pressed) {
-			int medicalSlot = medicalSlotFor(action, event.code);
+			int medicalSlot =
+					BukovInputBindings.medicalSlot(
+							action, controller);
 			if (medicalSlot > 0) {
 				controllerMedicalSlot = medicalSlot;
 			}
@@ -143,7 +163,7 @@ public final class RealtimeInput {
 	public void start() {
 		if (!listening) {
 			refreshBindings();
-			KeyEvent.addKeyListener(keyListener);
+			KeyEvent.addRawKeyListener(keyListener);
 			touchEnabled = !DeviceCompat.isDesktop();
 			if (touchEnabled && touchControls == null) {
 				PointerEvent.addPointerListener(pointerListener);
@@ -155,7 +175,7 @@ public final class RealtimeInput {
 
 	public void stop() {
 		if (listening) {
-			KeyEvent.removeKeyListener(keyListener);
+			KeyEvent.removeRawKeyListener(keyListener);
 			if (legacyTouchListening) {
 				PointerEvent.removePointerListener(pointerListener);
 				legacyTouchListening = false;
@@ -172,6 +192,28 @@ public final class RealtimeInput {
 	 * backgrounded, so clearing only touch pointers can leave fire held.
 	 */
 	public void resetTransientState() {
+		clearTransientState();
+		suppressBackpackUntilRelease = false;
+		suppressFireUntilRelease = false;
+	}
+
+	/**
+	 * Drops the input which opened or dismissed a blocking interface and keeps
+	 * held fire suppressed until the physical button is released. This must be
+	 * called by the interface transition itself: the window can be destroyed
+	 * before the next world {@code paused()} check.
+	 */
+	public void suppressInterfaceInputUntilRelease() {
+		boolean keepFireSuppressed = suppressFireUntilRelease
+				|| currentFireHeld();
+		boolean keepBackpackSuppressed = suppressBackpackUntilRelease
+				|| backpackHeld;
+		clearTransientState();
+		suppressFireUntilRelease = keepFireSuppressed;
+		suppressBackpackUntilRelease = keepBackpackSuppressed;
+	}
+
+	private void clearTransientState() {
 		controllerFireHeld = false;
 		controllerFirePressed = false;
 		controllerReloadPressed = false;
@@ -180,6 +222,7 @@ public final class RealtimeInput {
 		controllerSprintHeld = false;
 		controllerMedicalSlot = 0;
 		backpackPressed = false;
+		backpackHeld = false;
 		previousFireHeld = false;
 		frame.movement.set(0f, 0f);
 		frame.fireHeld = false;
@@ -228,6 +271,9 @@ public final class RealtimeInput {
 			throw new IllegalArgumentException("heroBody is required");
 		}
 		frame.clearEdges();
+		if (bindingRevision != BukovInputBindings.revision()) {
+			refreshBindings();
+		}
 		ControllerHandler.configureTriggerThresholds(
 				SPDSettings.bukovTriggerPress() / 100f,
 				SPDSettings.bukovTriggerRelease() / 100f);
@@ -296,6 +342,14 @@ public final class RealtimeInput {
 				controllerFireHeld,
 				mobile != null && mobile.fireHeld(),
 				touchEnabled && touch.fireHeld());
+		if (suppressFireUntilRelease) {
+			if (!fireHeld) {
+				suppressFireUntilRelease = false;
+			}
+			fireHeld = false;
+			mouseFirePressed = false;
+			controllerFirePressed = false;
+		}
 		frame.fireHeld = fireHeld;
 		frame.firePressed = resolveFirePressed(
 				mouseFirePressed,
@@ -352,6 +406,18 @@ public final class RealtimeInput {
 		edgeLatch.capture(frame);
 	}
 
+	private boolean currentFireHeld() {
+		BukovTouchState mobile =
+				touchControls == null ? null : touchControls.state();
+		return resolveFireHeld(
+				!touchEnabled
+						&& Gdx.input != null
+						&& Gdx.input.isButtonPressed(Input.Buttons.LEFT),
+				controllerFireHeld,
+				mobile != null && mobile.fireHeld(),
+				touchEnabled && touch.fireHeld());
+	}
+
 	/**
 	 * Returns the latest continuous sample plus edge values for only the first
 	 * fixed step after capture.
@@ -385,20 +451,35 @@ public final class RealtimeInput {
 	}
 
 	private void refreshBindings() {
-		northKeys = boundKeys(SPDAction.N, Input.Keys.W);
-		southKeys = boundKeys(SPDAction.S, Input.Keys.S);
-		westKeys = boundKeys(SPDAction.W, Input.Keys.A);
-		eastKeys = boundKeys(SPDAction.E, Input.Keys.D);
-		reloadKeys = boundKeys(SPDAction.TAG_RESUME, Input.Keys.R);
-		interactKeys = boundKeys(SPDAction.EXAMINE, Input.Keys.E);
+		northKeys = boundKeys(
+				BukovInputBindings.MOVE_UP, Input.Keys.W);
+		southKeys = boundKeys(
+				BukovInputBindings.MOVE_DOWN, Input.Keys.S);
+		westKeys = boundKeys(
+				BukovInputBindings.MOVE_LEFT, Input.Keys.A);
+		eastKeys = boundKeys(
+				BukovInputBindings.MOVE_RIGHT, Input.Keys.D);
+		reloadKeys = boundKeys(
+				BukovInputBindings.RELOAD, Input.Keys.R);
+		interactKeys = boundKeys(
+				BukovInputBindings.INTERACT, Input.Keys.E);
 		medicalOneKeys =
-				boundKeys(SPDAction.QUICKSLOT_1, Input.Keys.NUM_1);
+				boundKeys(
+						BukovInputBindings.MEDICAL_1,
+						Input.Keys.NUM_1);
 		medicalTwoKeys =
-				boundKeys(SPDAction.QUICKSLOT_2, Input.Keys.NUM_2);
+				boundKeys(
+						BukovInputBindings.MEDICAL_2,
+						Input.Keys.NUM_2);
 		medicalThreeKeys =
-				boundKeys(SPDAction.QUICKSLOT_3, Input.Keys.NUM_3);
+				boundKeys(
+						BukovInputBindings.MEDICAL_3,
+						Input.Keys.NUM_3);
 		medicalFourKeys =
-				boundKeys(SPDAction.QUICKSLOT_4, Input.Keys.NUM_4);
+				boundKeys(
+						BukovInputBindings.MEDICAL_4,
+						Input.Keys.NUM_4);
+		bindingRevision = BukovInputBindings.revision();
 	}
 
 	private static int[] boundKeys(GameAction action, int fallback) {
@@ -429,16 +510,7 @@ public final class RealtimeInput {
 	}
 
 	static int medicalSlotFor(GameAction action, int keyCode) {
-		if (action == SPDAction.QUICKSLOT_1) return 1;
-		if (action == SPDAction.QUICKSLOT_2) return 2;
-		if (action == SPDAction.QUICKSLOT_3) return 3;
-		if (action == SPDAction.QUICKSLOT_4) return 4;
-		int offset = ControllerHandler.DPAD_KEY_OFFSET;
-		if (keyCode == Input.Keys.DPAD_UP + offset) return 1;
-		if (keyCode == Input.Keys.DPAD_RIGHT + offset) return 2;
-		if (keyCode == Input.Keys.DPAD_DOWN + offset) return 3;
-		if (keyCode == Input.Keys.DPAD_LEFT + offset) return 4;
-		return 0;
+		return BukovInputBindings.medicalSlot(action, keyCode);
 	}
 
 	/**

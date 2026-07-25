@@ -162,6 +162,108 @@ public class BukovEnemyAnimationContractTest {
 				"WEAK_POINT_SLOW_MOTION_SCALE = 0.3f"));
 	}
 
+	@Test
+	public void firstRaidActionGroupsRemainReachableInProduction()
+			throws Exception {
+		String sprite = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovEnemySprite.java");
+		String host = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/ai/BukovHostMob.java");
+		String director = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/ai/FirstRaidEnemySpawnDirector.java");
+		String presentation = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/fx/BukovCombatPresentation.java");
+		String world = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "bukov/runtime/BukovRealtimeWorld.java");
+
+		assertTrue(sprite.contains("idle.frames(frames, 0, 0, 1, 0)"));
+		assertTrue(sprite.contains("run.frames(frames, 4, 5, 6, 7)"));
+		assertTrue(sprite.contains("attack.frames(frames, 2, 3, 0)"));
+		assertTrue(sprite.contains("die.frames(frames, 8, 9, 10)"));
+		assertTrue(sprite.contains("hit.frames(frames, 11, 12)"));
+		assertTrue(sprite.contains("special.frames(frames, 13, 14, 15)"));
+
+		assertFirstRaidMapping(
+				director, host,
+				"FIRST_GUNNER", "scavenger_gunner",
+				"BukovGunnerSprite.class");
+		assertFirstRaidMapping(
+				director, host,
+				"FIRST_RUSHER", "melee_rusher",
+				"BukovScavengerSprite.class");
+		assertFirstRaidMapping(
+				director, host,
+				"FIRST_GUARD", "iron_clasp_guard",
+				"BukovArmoredSprite.class");
+		assertFirstRaidMapping(
+				director, host,
+				"FIRST_ALARM", "sensor_doll",
+				"BukovDroneSprite.class");
+		assertFirstRaidMapping(
+				director, host,
+				"FIRST_BOSS", "boss_white_line",
+				"BukovWhiteLineSprite.class");
+
+		assertTrue(source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovGunnerSprite.java")
+				.contains("SpecialAction.RELOAD"));
+		assertTrue(source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovScavengerSprite.java")
+				.contains("SpecialAction.RUSH"));
+		assertTrue(source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovArmoredSprite.java")
+				.contains("SpecialAction.RELOAD"));
+		assertTrue(source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovDroneSprite.java")
+				.contains("SpecialAction.SCAN"));
+		assertTrue(source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/"
+						+ "sprites/bukov/BukovWhiteLineSprite.java")
+				.contains("SpecialAction.PHASE_CAST"));
+
+		assertTrue(world.contains(
+				"enemy.mob.sprite.setRealtimeMoving(enemy.moving)"));
+		assertTrue(presentation.contains(
+				"source.sprite.realtimeAttack(event.targetCell())"));
+		assertTrue(presentation.contains(
+				"target.sprite.realtimeHitReaction()"));
+		assertTrue(presentation.contains("case ENEMY_DEATH:"));
+		assertTrue(presentation.contains("playDeath(target);"));
+		assertTrue(world.contains("playEnemyRush(enemy);"));
+		assertTrue(world.contains("playEnemyReload(enemy);"));
+		assertTrue(world.contains("playEnemyScan(source);"));
+		assertTrue(world.contains("realtimePhaseCast(hero.pos)"));
+	}
+
+	private static void assertFirstRaidMapping(
+			String director,
+			String host,
+			String constant,
+			String enemyId,
+			String spriteClass) {
+		assertTrue(director.contains(
+				"public static final String " + constant
+						+ " = \"" + enemyId + "\""));
+		int caseOffset = host.indexOf("case \"" + enemyId + "\":");
+		assertTrue(enemyId + " is missing from BukovHostMob",
+				caseOffset >= 0);
+		int returnOffset = host.indexOf("return;", caseOffset);
+		assertTrue(enemyId + " mapping has no terminal return",
+				returnOffset > caseOffset);
+		assertTrue(enemyId + " uses the wrong sprite",
+				host.substring(caseOffset, returnOffset)
+						.contains("spriteClass = " + spriteClass));
+	}
+
 	private static byte[] hashFrame(
 			BufferedImage sheet, int frame) throws Exception {
 		MessageDigest digest = MessageDigest.getInstance("SHA-256");

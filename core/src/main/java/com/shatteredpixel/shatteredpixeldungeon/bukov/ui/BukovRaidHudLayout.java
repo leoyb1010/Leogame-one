@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import java.util.regex.Pattern;
+
 /**
  * Renderer-independent geometry and copy fitting for the raid HUD.
  *
@@ -11,13 +13,135 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
  */
 public final class BukovRaidHudLayout {
 
+	private static final Pattern WHITESPACE_RUN = Pattern.compile("\\s+");
 	public static final float WIDE_THRESHOLD = 220f;
 	public static final float RELOAD_RING_SIZE = 24f;
+	public static final float DESKTOP_PAUSE_WIDTH = 48f;
+	public static final float DESKTOP_PAUSE_HEIGHT = 18f;
+	public static final float DESKTOP_PAUSE_RIGHT_MARGIN = 4f;
+	public static final float DESKTOP_HUD_PAUSE_GAP = 4f;
+	public static final float HUD_SIDE_INSET = 4f;
 	private static final float WIDE_HEIGHT = 46f;
 	private static final float COMPACT_HEIGHT = 90f;
 	private static final float MOBILE_FEEDBACK_SIDE_MARGIN = 6f;
 	private static final float MOBILE_FEEDBACK_HEIGHT = 13f;
 	private static final float TUTORIAL_HINT_HEIGHT = 28f;
+	private static final int CAPTION_FONT_PX = 7;
+	private static final int BODY_FONT_PX = 8;
+
+	/**
+	 * Conservative renderer-free footprint used by both production fitting and
+	 * layout gates. CJK, Latin, digits and punctuation intentionally have
+	 * different advances; UI scale adds a small safety allowance rather than
+	 * pretending that every code point occupies one fixed cell.
+	 */
+	public static final class TextFootprint {
+		public final float width;
+		public final float height;
+		public final int lines;
+
+		private TextFootprint(float width, float height, int lines) {
+			this.width = width;
+			this.height = height;
+			this.lines = lines;
+		}
+
+		public boolean fits(
+				float availableWidth,
+				float availableHeight,
+				int maximumLines) {
+			return width <= availableWidth
+					&& height <= availableHeight
+					&& lines <= maximumLines;
+		}
+	}
+
+	/**
+	 * Allocation-free cache hit for one rendered HUD row. A row owns one cache
+	 * and invalidates only when its source copy, measured width, scale or
+	 * typography contract changes.
+	 */
+	public static final class FitCache {
+		private static final int OBJECTIVE = 0;
+		private static final int CAPTION = 1;
+		private static final int BODY = 2;
+		private static final int PRIMARY = 3;
+
+		private String source;
+		private int widthBits;
+		private int scaleLevel = Integer.MIN_VALUE;
+		private int contract = Integer.MIN_VALUE;
+		private String fitted;
+		private int recomputations;
+
+		public String objective(
+				String value, float availableWidth, int uiScaleLevel) {
+			return fit(value, availableWidth, uiScaleLevel, OBJECTIVE);
+		}
+
+		public String captionLine(
+				String value, float availableWidth, int uiScaleLevel) {
+			return fit(value, availableWidth, uiScaleLevel, CAPTION);
+		}
+
+		public String bodyLine(
+				String value, float availableWidth, int uiScaleLevel) {
+			return fit(value, availableWidth, uiScaleLevel, BODY);
+		}
+
+		public String primaryLine(
+				String value, float availableWidth, int uiScaleLevel) {
+			return fit(value, availableWidth, uiScaleLevel, PRIMARY);
+		}
+
+		public int recomputations() {
+			return recomputations;
+		}
+
+		private String fit(
+				String value,
+				float availableWidth,
+				int uiScaleLevel,
+				int requestedContract) {
+			int requestedWidthBits =
+					Float.floatToIntBits(Math.max(1f, availableWidth));
+			int requestedScale = clampScaleLevel(uiScaleLevel);
+			if (fitted != null
+					&& same(source, value)
+					&& widthBits == requestedWidthBits
+					&& scaleLevel == requestedScale
+					&& contract == requestedContract) {
+				return fitted;
+			}
+			source = value;
+			widthBits = requestedWidthBits;
+			scaleLevel = requestedScale;
+			contract = requestedContract;
+			float width = Float.intBitsToFloat(requestedWidthBits);
+			switch (requestedContract) {
+				case OBJECTIVE:
+					fitted = compactObjective(value, width, requestedScale);
+					break;
+				case BODY:
+					fitted = compactBodyLine(value, width, requestedScale);
+					break;
+				case PRIMARY:
+					fitted = compactPrimaryLine(value, width, requestedScale);
+					break;
+				case CAPTION:
+				default:
+					fitted = compactLine(value, width, requestedScale);
+					break;
+			}
+			recomputations++;
+			return fitted;
+		}
+
+		private static boolean same(String first, String second) {
+			return first == second
+					|| first != null && first.equals(second);
+		}
+	}
 
 	public static final class Rect {
 		public final float x;
@@ -96,6 +220,29 @@ public final class BukovRaidHudLayout {
 				availableWidth < WIDE_THRESHOLD
 						? availableWidth * 2f : availableWidth,
 				scaleLevel);
+	}
+
+	/**
+	 * Shared desktop top-bar contract. Keeping the pause origin and HUD width
+	 * in one renderer-free model prevents the 48px button from silently
+	 * overlapping a HUD which still reserves the former 32px button.
+	 */
+	public static float desktopPauseX(
+			float viewportWidth, float safeRight) {
+		return viewportWidth
+				- Math.max(0f, safeRight)
+				- DESKTOP_PAUSE_RIGHT_MARGIN
+				- DESKTOP_PAUSE_WIDTH;
+	}
+
+	public static float desktopHudWidth(
+			float viewportWidth,
+			float safeLeft,
+			float safeRight) {
+		float hudLeft = Math.max(0f, safeLeft) + HUD_SIDE_INSET;
+		float hudRight = desktopPauseX(viewportWidth, safeRight)
+				- DESKTOP_HUD_PAUSE_GAP;
+		return Math.max(1f, hudRight - hudLeft);
 	}
 
 	public static BukovRaidHudLayout calculate(
@@ -308,44 +455,276 @@ public final class BukovRaidHudLayout {
 	 */
 	public static String compactObjective(
 			String value, float availableWidth, int scaleLevel) {
-		String normalized = normalize(value);
-		float glyphWidth = 6.4f + clampScaleLevel(scaleLevel) * 0.8f;
-		int perLine = Math.max(
-				10, (int)Math.floor(Math.max(1f, availableWidth) / glyphWidth));
-		return ellipsize(normalized, Math.min(64, perLine * 2));
+		return fitText(
+				value,
+				availableWidth,
+				BODY_FONT_PX,
+				scaleLevel,
+				2,
+				Math.min(
+						64,
+						32 - clampScaleLevel(scaleLevel) * 2));
 	}
 
 	/** Keeps the status/weapon priority rows to one line on narrow screens. */
 	public static String compactLine(
 			String value, float availableWidth, int scaleLevel) {
-		String normalized = normalize(value);
-		float glyphWidth = 6.2f + clampScaleLevel(scaleLevel) * 0.9f;
-		int limit = Math.max(
-				6, (int)Math.floor(Math.max(1f, availableWidth) / glyphWidth));
-		return ellipsize(normalized, Math.min(32, limit));
+		return fitText(
+				value,
+				availableWidth,
+				CAPTION_FONT_PX,
+				scaleLevel,
+				1,
+				32);
+	}
+
+	/** One-line fitting for body typography used by objective/action copy. */
+	public static String compactBodyLine(
+			String value, float availableWidth, int scaleLevel) {
+		return fitText(
+				value,
+				availableWidth,
+				BODY_FONT_PX,
+				scaleLevel,
+				1,
+				32);
 	}
 
 	/** One-line fitting for the larger HP/ammunition typography. */
 	public static String compactPrimaryLine(
 			String value, float availableWidth, int scaleLevel) {
+		return fitText(
+				value,
+				availableWidth,
+				BODY_FONT_PX,
+				scaleLevel,
+				1,
+				Math.min(
+						24,
+						Math.max(
+								5,
+								(int)Math.floor(
+										Math.max(1f, availableWidth)
+												/ (BODY_FONT_PX * 0.68f)))));
+	}
+
+	public static TextFootprint objectiveFootprint(
+			String value, float availableWidth, int scaleLevel) {
+		return textFootprint(
+				value,
+				availableWidth,
+				BODY_FONT_PX,
+				scaleLevel);
+	}
+
+	public static TextFootprint captionFootprint(
+			String value, float availableWidth, int scaleLevel) {
+		return textFootprint(
+				value,
+				availableWidth,
+				CAPTION_FONT_PX,
+				scaleLevel);
+	}
+
+	public static TextFootprint primaryFootprint(
+			String value, float availableWidth, int scaleLevel) {
+		return textFootprint(
+				value,
+				availableWidth,
+				BODY_FONT_PX,
+				scaleLevel);
+	}
+
+	public static float bodyLineHeight(int scaleLevel) {
+		return lineHeight(BODY_FONT_PX, scaleLevel);
+	}
+
+	public static float captionLineHeight(int scaleLevel) {
+		return lineHeight(CAPTION_FONT_PX, scaleLevel);
+	}
+
+	private static String fitText(
+			String value,
+			float availableWidth,
+			int fontPx,
+			int scaleLevel,
+			int maximumLines,
+			int hardCodePointLimit) {
 		String normalized = normalize(value);
-		float glyphWidth = 5.5f + clampScaleLevel(scaleLevel) * 0.5f;
-		int limit = Math.max(
-				5, (int)Math.floor(Math.max(1f, availableWidth) / glyphWidth));
-		return ellipsize(normalized, Math.min(24, limit));
+		float width = Math.max(1f, availableWidth);
+		int codePoints = normalized.codePointCount(0, normalized.length());
+		if (codePoints <= hardCodePointLimit
+				&& fitsText(
+						normalized,
+						width,
+						fontPx,
+						scaleLevel,
+						codePoints,
+						false,
+						maximumLines)) {
+			return normalized;
+		}
+
+		int retained = Math.min(
+				Math.max(0, hardCodePointLimit - 1),
+				codePoints);
+		while (retained > 0) {
+			if (fitsText(
+					normalized,
+					width,
+					fontPx,
+					scaleLevel,
+					retained,
+					true,
+					maximumLines)) {
+				return prefixByCodePoints(normalized, retained) + "…";
+			}
+			retained--;
+		}
+		return fitsText(
+				"…",
+				width,
+				fontPx,
+				scaleLevel,
+				1,
+				false,
+				maximumLines) ? "…" : "";
+	}
+
+	private static boolean fitsText(
+			String value,
+			float availableWidth,
+			int fontPx,
+			int scaleLevel,
+			int codePointLimit,
+			boolean appendEllipsis,
+			int maximumLines) {
+		float currentLine = 0f;
+		int lines = 1;
+		int consumed = 0;
+		for (int offset = 0;
+				offset < value.length() && consumed < codePointLimit;) {
+			int codePoint = value.codePointAt(offset);
+			float advance = glyphAdvance(
+					codePoint,
+					fontPx,
+					scaleLevel);
+			if (advance > availableWidth) return false;
+			if (currentLine > 0f
+					&& currentLine + advance > availableWidth) {
+				lines++;
+				currentLine = advance;
+			} else {
+				currentLine += advance;
+			}
+			if (lines > maximumLines) return false;
+			offset += Character.charCount(codePoint);
+			consumed++;
+		}
+		if (!appendEllipsis) return true;
+		float ellipsis = glyphAdvance('…', fontPx, scaleLevel);
+		if (ellipsis > availableWidth) return false;
+		if (currentLine > 0f
+				&& currentLine + ellipsis > availableWidth) {
+			lines++;
+		}
+		return lines <= maximumLines;
+	}
+
+	private static TextFootprint textFootprint(
+			String value,
+			float availableWidth,
+			int fontPx,
+			int scaleLevel) {
+		String normalized = normalize(value);
+		if (normalized.isEmpty()) {
+			return new TextFootprint(0f, 0f, 0);
+		}
+		float maximumWidth = Math.max(1f, availableWidth);
+		float widestLine = 0f;
+		float currentLine = 0f;
+		int lines = 1;
+		for (int offset = 0; offset < normalized.length();) {
+			int codePoint = normalized.codePointAt(offset);
+			float advance = glyphAdvance(
+					codePoint,
+					fontPx,
+					scaleLevel);
+			if (currentLine > 0f
+					&& currentLine + advance > maximumWidth) {
+				widestLine = Math.max(widestLine, currentLine);
+				currentLine = advance;
+				lines++;
+			} else {
+				currentLine += advance;
+			}
+			offset += Character.charCount(codePoint);
+		}
+		widestLine = Math.max(widestLine, currentLine);
+		return new TextFootprint(
+				widestLine,
+				lines * lineHeight(fontPx, scaleLevel),
+				lines);
+	}
+
+	private static float glyphAdvance(
+			int codePoint, int fontPx, int scaleLevel) {
+		float em;
+		if (isCjk(codePoint) || codePoint > 0xFFFF) {
+			em = 1f;
+		} else if (Character.isWhitespace(codePoint)) {
+			em = 0.35f;
+		} else if (Character.isUpperCase(codePoint)) {
+			em = 0.68f;
+		} else if (Character.isLowerCase(codePoint)) {
+			em = 0.56f;
+		} else if (Character.isDigit(codePoint)) {
+			em = 0.58f;
+		} else {
+			em = 0.42f;
+		}
+		float scaleSafety =
+				1f + clampScaleLevel(scaleLevel) * 0.04f;
+		return fontPx * em * scaleSafety;
+	}
+
+	private static float lineHeight(int fontPx, int scaleLevel) {
+		float scaleSafety =
+				1f + clampScaleLevel(scaleLevel) * 0.04f;
+		return (float)Math.ceil(fontPx * scaleSafety);
+	}
+
+	private static boolean isCjk(int codePoint) {
+		// RoboVM's Java runtime does not expose Character.UnicodeScript.of.
+		// These stable Unicode blocks cover Han, kana, and Hangul HUD copy.
+		return codePoint >= 0x3400 && codePoint <= 0x4DBF
+				|| codePoint >= 0x4E00 && codePoint <= 0x9FFF
+				|| codePoint >= 0xF900 && codePoint <= 0xFAFF
+				|| codePoint >= 0x20000 && codePoint <= 0x2FA1F
+				|| codePoint >= 0x3040 && codePoint <= 0x30FF
+				|| codePoint >= 0x31F0 && codePoint <= 0x31FF
+				|| codePoint >= 0xFF66 && codePoint <= 0xFF9D
+				|| codePoint >= 0x1100 && codePoint <= 0x11FF
+				|| codePoint >= 0x3130 && codePoint <= 0x318F
+				|| codePoint >= 0xA960 && codePoint <= 0xA97F
+				|| codePoint >= 0xAC00 && codePoint <= 0xD7FF;
+	}
+
+	private static String prefixByCodePoints(
+			String value, int codePointCount) {
+		int end = value.offsetByCodePoints(
+				0,
+				Math.min(
+						codePointCount,
+						value.codePointCount(0, value.length())));
+		return value.substring(0, end);
 	}
 
 	private static String normalize(String value) {
 		if (value == null) return "";
-		return value.trim().replaceAll("\\s+", " ");
-	}
-
-	private static String ellipsize(String value, int maximumCodePoints) {
-		int count = value.codePointCount(0, value.length());
-		if (count <= maximumCodePoints) return value;
-		int keep = Math.max(1, maximumCodePoints - 1);
-		int end = value.offsetByCodePoints(0, keep);
-		return value.substring(0, end).trim() + "…";
+		// String.replaceAll compiles its pattern on every call, and every HUD
+		// row normalizes once per frame.
+		return WHITESPACE_RUN.matcher(value.trim()).replaceAll(" ");
 	}
 
 	private static Rect rect(

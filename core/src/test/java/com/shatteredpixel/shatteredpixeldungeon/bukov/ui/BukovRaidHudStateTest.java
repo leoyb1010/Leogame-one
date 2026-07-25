@@ -144,7 +144,7 @@ public class BukovRaidHudStateTest {
 				"↖ " + BukovMessages.get(
 						"bukov.raid.combat.direction_northwest")));
 		assertTrue(BukovCombatHudFormat.sound(state).contains(
-				"○ " + BukovMessages.get(
+				". " + BukovMessages.get(
 						"bukov.raid.combat.distance_far")));
 		assertTrue(BukovCombatHudFormat.hit(state).contains(
 				"→ " + BukovMessages.get(
@@ -221,7 +221,7 @@ public class BukovRaidHudStateTest {
 		assertEquals(
 				BukovMessages.get(
 						"bukov.raid.combat.navigation_format",
-						"◆",
+						"*",
 						"↖",
 						"维修档案",
 						BukovMessages.get(
@@ -233,7 +233,7 @@ public class BukovRaidHudStateTest {
 		assertEquals(
 				BukovMessages.get(
 						"bukov.raid.combat.threat_format",
-						"⚠ ",
+						"! ",
 						"→",
 						"拾荒枪手",
 						BukovMessages.get(

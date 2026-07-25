@@ -41,6 +41,8 @@ import com.watabou.utils.PointF;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class WndKeyBindings extends Window {
 
@@ -58,15 +60,41 @@ public class WndKeyBindings extends Window {
 
 	private LinkedHashMap<Integer, GameAction> changedBindings;
 
-	private static boolean controller = false;
+	private final boolean controller;
+	private final List<GameAction> actionCatalog;
+	private final Map<GameAction, String> actionLabels;
+	private final String inputInfo;
+	private final String unknownActionLabel;
+	private final String protectedConflictMessage;
 
 	public WndKeyBindings(Boolean controller) {
+		this(controller, null, null, null, null, null);
+	}
+
+	/**
+	 * Reuses the binding editor for a product-specific, explicitly bounded
+	 * action surface. A null catalog preserves the inherited full editor.
+	 */
+	protected WndKeyBindings(
+			boolean controller,
+			List<GameAction> actionCatalog,
+			Map<GameAction, String> actionLabels,
+			String inputInfo,
+			String unknownActionLabel,
+			String protectedConflictMessage) {
 
 		this.controller = controller;
+		this.actionCatalog = actionCatalog == null
+				? null : new ArrayList<>(actionCatalog);
+		this.actionLabels = actionLabels;
+		this.inputInfo = inputInfo;
+		this.unknownActionLabel = unknownActionLabel;
+		this.protectedConflictMessage = protectedConflictMessage;
 
 		changedBindings = controller ? KeyBindings.getAllControllerBindings() : KeyBindings.getAllBindings();
 
-		RenderedTextBlock ttlAction = PixelScene.renderTextBlock(Messages.get(this, "ttl_action"), 9);
+		RenderedTextBlock ttlAction = PixelScene.renderTextBlock(
+				Messages.get(WndKeyBindings.class, "ttl_action"), 9);
 		ttlAction.setPos( COL1_CENTER - ttlAction.width()/2, (BTN_HEIGHT - ttlAction.height())/2);
 		add(ttlAction);
 
@@ -74,7 +102,8 @@ public class WndKeyBindings extends Window {
 		ttlSep1.x = 0.4f*WIDTH - 1;
 		add(ttlSep1);
 
-		RenderedTextBlock ttlKey1 = PixelScene.renderTextBlock(Messages.get(this, "ttl_key1"), 6);
+		RenderedTextBlock ttlKey1 = PixelScene.renderTextBlock(
+				Messages.get(WndKeyBindings.class, "ttl_key1"), 6);
 		ttlKey1.maxWidth(WIDTH/5);
 		ttlKey1.align(RenderedTextBlock.CENTER_ALIGN);
 		ttlKey1.setPos(COL2_CENTER - ttlKey1.width()/2, (BTN_HEIGHT - ttlKey1.height())/2);
@@ -84,7 +113,8 @@ public class WndKeyBindings extends Window {
 		ttlSep2.x = 0.6f*WIDTH - 1;
 		add(ttlSep2);
 
-		RenderedTextBlock ttlKey2 = PixelScene.renderTextBlock(Messages.get(this, "ttl_key2"), 6);
+		RenderedTextBlock ttlKey2 = PixelScene.renderTextBlock(
+				Messages.get(WndKeyBindings.class, "ttl_key2"), 6);
 		ttlKey2.maxWidth(WIDTH/5);
 		ttlKey2.align(RenderedTextBlock.CENTER_ALIGN);
 		ttlKey2.setPos(COL3_CENTER - ttlKey2.width()/2, (BTN_HEIGHT - ttlKey2.height())/2);
@@ -94,7 +124,8 @@ public class WndKeyBindings extends Window {
 		ttlSep3.x = 0.8f*WIDTH - 1;
 		add(ttlSep3);
 
-		RenderedTextBlock ttlKey3 = PixelScene.renderTextBlock(Messages.get(this, "ttl_key3"), 6);
+		RenderedTextBlock ttlKey3 = PixelScene.renderTextBlock(
+				Messages.get(WndKeyBindings.class, "ttl_key3"), 6);
 		ttlKey3.maxWidth(WIDTH/5);
 		ttlKey3.align(RenderedTextBlock.CENTER_ALIGN);
 		ttlKey3.setPos(COL4_CENTER - ttlKey2.width()/2, (BTN_HEIGHT - ttlKey2.height())/2);
@@ -121,8 +152,12 @@ public class WndKeyBindings extends Window {
 
 		int y = 0;
 
-		if (controller){
-			RenderedTextBlock controllerInfo = PixelScene.renderTextBlock(Messages.get(this, "controller_info"), 6);
+		if (controller || inputInfo != null){
+			String info = inputInfo == null
+					? Messages.get(WndKeyBindings.class, "controller_info")
+					: inputInfo;
+			RenderedTextBlock controllerInfo =
+					PixelScene.renderTextBlock(info, 6);
 			controllerInfo.maxWidth(WIDTH);
 			controllerInfo.setPos(0, 2);
 			controllerInfo.hardlight(TITLE_COLOR);
@@ -136,23 +171,28 @@ public class WndKeyBindings extends Window {
 
 		LinkedHashMap<Integer, GameAction> defaults = controller ? SPDAction.getControllerDefaults() : SPDAction.getDefaults();
 
-		ArrayList<GameAction> actionList = GameAction.allActions();
-		for (GameAction action : actionList.toArray(new GameAction[0])) {
-			//start at 1. No bindings for NONE
-			if (action.code() < 1) {
-				actionList.remove(action);
+		ArrayList<GameAction> actionList;
+		if (actionCatalog == null) {
+			actionList = GameAction.allActions();
+			for (GameAction action : actionList.toArray(new GameAction[0])) {
+				//start at 1. No bindings for NONE
+				if (action.code() < 1) {
+					actionList.remove(action);
 
-			//mouse bindings are only available to controllers
-			} else if ((action == GameAction.LEFT_CLICK
-					|| action == GameAction.RIGHT_CLICK
-					|| action == GameAction.MIDDLE_CLICK) && !controller) {
-				actionList.remove(action);
+				//mouse bindings are only available to controllers
+				} else if ((action == GameAction.LEFT_CLICK
+						|| action == GameAction.RIGHT_CLICK
+						|| action == GameAction.MIDDLE_CLICK) && !controller) {
+					actionList.remove(action);
 
-			//actions with no default binding are moved to the end of the list
-			} else if (!defaults.containsValue(action)){
-						actionList.remove(action);
-						actionList.add(action);
+				//actions with no default binding are moved to the end of the list
+				} else if (!defaults.containsValue(action)){
+							actionList.remove(action);
+							actionList.add(action);
+				}
 			}
+		} else {
+			actionList = new ArrayList<>(actionCatalog);
 		}
 
 		for (GameAction action : actionList){
@@ -166,10 +206,19 @@ public class WndKeyBindings extends Window {
 
 		resize(WIDTH, Math.min(BTN_HEIGHT *3 + 3 + BindingItem.HEIGHT*listItems.size(), PixelScene.uiCamera.height-20));
 
-		RedButton btnDefaults = new RedButton(Messages.get(this, "default"), 9){
+		RedButton btnDefaults = new RedButton(
+				Messages.get(WndKeyBindings.class, "default"), 9){
 			@Override
 			protected void onClick() {
-				changedBindings = controller ? SPDAction.getControllerDefaults() : SPDAction.getDefaults();
+				LinkedHashMap<Integer, GameAction> defaults =
+						controller ? SPDAction.getControllerDefaults()
+								: SPDAction.getDefaults();
+				if (actionCatalog == null) {
+					changedBindings = defaults;
+				} else {
+					changedBindings = resetCatalogBindings(
+							changedBindings, defaults, actionCatalog);
+				}
 				for (BindingItem i : listItems){
 					int key1 = 0;
 					int key2 = 0;
@@ -188,7 +237,8 @@ public class WndKeyBindings extends Window {
 		btnDefaults.setRect(0, height - BTN_HEIGHT *2 -1, WIDTH, BTN_HEIGHT);
 		add(btnDefaults);
 
-		RedButton btnConfirm = new RedButton(Messages.get(this, "confirm"), 9){
+		RedButton btnConfirm = new RedButton(
+				Messages.get(WndKeyBindings.class, "confirm"), 9){
 			@Override
 			protected void onClick() {
 				if (controller) KeyBindings.setAllControllerBindings(changedBindings);
@@ -200,7 +250,8 @@ public class WndKeyBindings extends Window {
 		btnConfirm.setRect(0, height - BTN_HEIGHT, WIDTH/2, BTN_HEIGHT);
 		add(btnConfirm);
 
-		RedButton btnCancel = new RedButton(Messages.get(this, "cancel"), 9){
+		RedButton btnCancel = new RedButton(
+				Messages.get(WndKeyBindings.class, "cancel"), 9){
 			@Override
 			protected void onClick() {
 				hide(); //close and don't save
@@ -222,6 +273,42 @@ public class WndKeyBindings extends Window {
 	@Override
 	public void onBackPressed() {
 		//do nothing, avoids accidental back presses which would lose progress.
+	}
+
+	private String actionLabel(GameAction action) {
+		if (actionLabels != null) {
+			String label = actionLabels.get(action);
+			return label == null ? unknownActionLabel : label;
+		}
+		return Messages.get(WndKeyBindings.class, action.name());
+	}
+
+	static LinkedHashMap<Integer, GameAction> resetCatalogBindings(
+			LinkedHashMap<Integer, GameAction> current,
+			LinkedHashMap<Integer, GameAction> defaults,
+			List<GameAction> catalog) {
+		LinkedHashMap<Integer, GameAction> result =
+				new LinkedHashMap<>(current);
+		for (Integer key : new ArrayList<>(result.keySet())) {
+			if (catalog.contains(result.get(key))) {
+				result.remove(key);
+			}
+		}
+		for (Map.Entry<Integer, GameAction> entry :
+				defaults.entrySet()) {
+			if (catalog.contains(entry.getValue())
+					&& !result.containsKey(entry.getKey())) {
+				result.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return result;
+	}
+
+	static boolean canReplaceBinding(
+			List<GameAction> catalog, GameAction occupiedAction) {
+		return catalog == null
+				|| occupiedAction == null
+				|| catalog.contains(occupiedAction);
 	}
 
 	private class BindingItem extends Component {
@@ -255,7 +342,8 @@ public class WndKeyBindings extends Window {
 		public BindingItem( GameAction action ){
 			gameAction = action;
 
-			actionName = PixelScene.renderTextBlock(Messages.get(WndKeyBindings.class, action.name()), 6 );
+			actionName = PixelScene.renderTextBlock(
+					actionLabel(action), 6);
 			actionName.setHightlighting(false);
 			add(actionName);
 
@@ -404,7 +492,7 @@ public class WndKeyBindings extends Window {
 			else if (keyAssigning == 2) descKey = "desc_second";
 			else if (keyAssigning == 3) descKey = "desc_third";
 			RenderedTextBlock desc = PixelScene.renderTextBlock( Messages.get(this, descKey,
-						Messages.get(WndKeyBindings.class, action.name()),
+						actionLabel(action),
 						KeyBindings.getKeyName(curKeyCode)), 6 );
 			desc.maxWidth(WIDTH);
 			desc.setRect(0, 0, WIDTH, desc.height());
@@ -527,6 +615,15 @@ public class WndKeyBindings extends Window {
 					warnErr.hardlight(CharSprite.NEGATIVE);
 					btnConfirm.enable(false);
 
+				} else if (event.code != 0
+						&& !canReplaceBinding(
+								actionCatalog,
+								changedBindings.get(
+										changedKeyCode))) {
+					warnErr.text(protectedConflictMessage);
+					warnErr.hardlight(CharSprite.NEGATIVE);
+					btnConfirm.enable(false);
+
 				} else if (event.code != 0 && changedBindings.get(changedKeyCode) != null){
 					for (BindingItem i : listItems) {
 						if (i.gameAction == changedBindings.get(changedKeyCode)) {
@@ -534,7 +631,10 @@ public class WndKeyBindings extends Window {
 							break;
 						}
 					}
-					warnErr.text(Messages.get(this, "warning", Messages.get(WndKeyBindings.class, changedBindings.get(changedKeyCode).name() )));
+					warnErr.text(Messages.get(
+							this,
+							"warning",
+							actionLabel(changedBindings.get(changedKeyCode))));
 					warnErr.hardlight(CharSprite.WARNING);
 					btnConfirm.enable(true);
 

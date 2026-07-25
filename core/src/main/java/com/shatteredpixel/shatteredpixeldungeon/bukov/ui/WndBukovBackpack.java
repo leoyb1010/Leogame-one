@@ -637,6 +637,35 @@ public final class WndBukovBackpack extends Window {
 		}
 	}
 
+	static final class ItemRowGeometry {
+		final float railX;
+		final float railWidth;
+		final float plateX;
+		final float plateY;
+		final float plateSize;
+		final float iconX;
+		final float iconY;
+		final float iconSize;
+
+		private ItemRowGeometry() {
+			railX = 0f;
+			railWidth = 2f;
+			plateX = 17f;
+			plateY = 1f;
+			plateSize = 18f;
+			iconX = 18f;
+			iconY = 2f;
+			iconSize = 16f;
+		}
+	}
+
+	private static final ItemRowGeometry ITEM_ROW_GEOMETRY =
+			new ItemRowGeometry();
+
+	static ItemRowGeometry itemRowGeometry() {
+		return ITEM_ROW_GEOMETRY;
+	}
+
 	static boolean headerFitsInline(
 			int windowWidth,
 			float titleWidth,
@@ -911,6 +940,7 @@ public final class WndBukovBackpack extends Window {
 		private final ColorBlock edge;
 		private final ColorBlock divider;
 		private final RenderedTextBlock category;
+		private final ColorBlock iconPlate;
 		private final BukovItemSprite icon;
 		private final RenderedTextBlock title;
 		private final RenderedTextBlock metrics;
@@ -933,8 +963,7 @@ public final class WndBukovBackpack extends Window {
 					tokens.colorWithAlpha("accent.extract", 30));
 			stateSurface.visible = false;
 			addToBack(stateSurface);
-			edge = new ColorBlock(1, 1,
-					tokens.color("text.disabled"));
+			edge = new ColorBlock(1, 1, rarityColor());
 			add(edge);
 			divider = new ColorBlock(
 					1,
@@ -946,6 +975,12 @@ public final class WndBukovBackpack extends Window {
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(category);
+			// 29 of the 72 item frames sit within 12 luminance of
+			// panel.surface, so on the bare row they read as a smudge. A deeper
+			// plate behind every icon gives each silhouette a constant edge.
+			iconPlate = new ColorBlock(
+					1, 1, tokens.color("panel.deep"));
+			add(iconPlate);
 			icon = new BukovItemSprite();
 			icon.view(BukovItemSprite.frameForDefinition(item.definitionId));
 			add(icon);
@@ -963,6 +998,12 @@ public final class WndBukovBackpack extends Window {
 			add(metrics);
 		}
 
+		private int rarityColor() {
+			return tokens.color(
+					BukovHubViewModel.rarityFor(item.unitValue)
+							.colorToken);
+		}
+
 		private void setSelected(boolean selected) {
 			this.selected = selected;
 			updateState();
@@ -978,11 +1019,13 @@ public final class WndBukovBackpack extends Window {
 			stateSurface.hardlight(focused
 					? tokens.color("accent.interact")
 					: tokens.color("accent.extract"));
+			// The rail carries loot value at rest; focus and selection are
+			// transient states and still win while they are active.
 			edge.hardlight(focused
 					? tokens.color("accent.interact")
 					: selected
 					? tokens.color("accent.extract")
-					: tokens.color("text.disabled"));
+					: rarityColor());
 			title.hardlight(focused
 					? tokens.color("accent.interact")
 					: item.equipped
@@ -1002,21 +1045,25 @@ public final class WndBukovBackpack extends Window {
 		@Override
 		protected void layout() {
 			super.layout();
+			ItemRowGeometry geometry = itemRowGeometry();
 			background.x = x;
 			background.y = y;
 			background.size(width, height);
 			stateSurface.x = x;
 			stateSurface.y = y;
 			stateSurface.size(width, height);
-			edge.x = x;
+			edge.x = x + geometry.railX;
 			edge.y = y;
-			edge.size(2, height);
+			edge.size(geometry.railWidth, height);
 			divider.x = x + 4;
 			divider.y = y + height - 1;
 			divider.size(width - 8, 1);
 			category.setPos(x + 5, y + 4);
-			icon.x = x + 18;
-			icon.y = y + 2;
+			iconPlate.x = x + geometry.plateX;
+			iconPlate.y = y + geometry.plateY;
+			iconPlate.size(geometry.plateSize, geometry.plateSize);
+			icon.x = x + geometry.iconX;
+			icon.y = y + geometry.iconY;
 			fitSingleLine(
 					title,
 					item.title(),

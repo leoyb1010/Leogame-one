@@ -88,7 +88,14 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("live.combatAwarenessAlpha()"));
 		assertTrue(hud.contains("BukovHitDirectionArc"));
 		assertTrue(hud.contains("BukovSoundDirectionArc"));
-		assertTrue(hud.contains("BukovSoundRingModel.alpha(live)"));
+		assertTrue(hud.contains("BukovSoundRingModel.alpha("));
+		String compactHud = hud.replaceAll("\\s+", "");
+		assertTrue(compactHud.contains(
+				"tokens.motionSeconds(\"hud.soundRing\")"));
+		assertTrue(compactHud.contains(
+				"tokens.motionSeconds(\"hud.damageArc\")"));
+		assertTrue(compactHud.contains(
+				"tokens.motionSeconds(\"hud.killConfirm\")"));
 		assertTrue(hud.contains("BukovReloadRingModel"));
 		assertTrue(hud.contains("new ColorBlock[BukovReloadRingModel.SEGMENT_COUNT]"));
 		assertTrue(hud.contains("BukovUiAssets.StatusIcon.BLEEDING"));
@@ -149,6 +156,8 @@ public class BukovRaidHudWiringGuardTest {
 			throws Exception {
 		String input = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/RealtimeInput.java");
+		String catalog = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovInputBindings.java");
 		String touch = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovTouchControls.java");
 		String hud = source(
@@ -160,8 +169,13 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(input.contains("Input.Keys.NUM_3"));
 		assertTrue(input.contains("Input.Keys.NUM_4"));
 		assertTrue(input.contains("controllerMedicalSlot = medicalSlot"));
-		assertTrue(input.contains("SPDAction.QUICKSLOT_1"));
-		assertTrue(input.contains("Input.Keys.DPAD_UP + offset"));
+		assertTrue(input.contains("BukovInputBindings.MEDICAL_1"));
+		assertTrue(catalog.contains(
+				"CONTROLLER_MEDICAL_1 =\n"
+						+ "\t\t\tSPDAction.TAG_ACTION"));
+		assertTrue(catalog.contains(
+				"CONTROLLER_MEDICAL_4 =\n"
+						+ "\t\t\tSPDAction.CYCLE"));
 		assertTrue(touch.contains("BukovTouchState.Action.MEDICAL"));
 		assertTrue(touch.contains(
 				"\"bukov.raid.touch.medical\""));
@@ -200,7 +214,11 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(scene.contains(
 				"bukovSafeTop + 4f"));
 		assertTrue(scene.contains(
-				"float hudWidth = Math.max("));
+				"BukovRaidHudLayout.desktopPauseX("));
+		assertTrue(scene.contains(
+				"BukovRaidHudLayout.desktopHudWidth("));
+		assertTrue(scene.contains(
+				"BukovRaidHudLayout.DESKTOP_PAUSE_WIDTH"));
 	}
 
 	@Test

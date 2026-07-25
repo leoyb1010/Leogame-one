@@ -11,7 +11,6 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
-import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.input.KeyEvent;
@@ -222,7 +221,7 @@ public final class WndBukovSettings extends Window {
 		// Keep this settings window alive underneath the editor. Confirming or
 		// cancelling bindings then returns to the same focus and scroll state.
 		ShatteredPixelDungeon.scene().addToFront(
-				new WndKeyBindings(controller));
+				new WndBukovKeyBindings(controller));
 	}
 
 	private enum Setting {

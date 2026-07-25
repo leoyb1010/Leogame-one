@@ -29,6 +29,12 @@ public class FirearmRegistryTest {
 		assertEquals("9x19", registry.require("needle_9").caliber);
 		assertEquals("ammo_9_standard", registry.require("needle_9").defaultAmmo);
 		assertEquals(FireMode.AUTO, registry.require("ward_556").fireMode);
+		// v2.0 Gate 2 baseline: Ward-556 must stay 24 / 600 / 1.4 s.
+		assertEquals(24, registry.require("ward_556").magazineSize);
+		assertEquals(
+				600f,
+				registry.require("ward_556").rpm,
+				0.001f);
 		assertEquals(
 				1.4f,
 				registry.require("ward_556").reloadSeconds,

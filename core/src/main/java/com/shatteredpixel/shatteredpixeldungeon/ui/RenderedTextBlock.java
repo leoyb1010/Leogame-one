@@ -65,14 +65,54 @@ public class RenderedTextBlock extends Component {
 	}
 
 	public void text(String text){
+		//realtime HUDs re-assert their labels every frame; rebuilding identical
+		//text would re-allocate a RenderedText per word 60 times a second
+		if (text == null ? this.text == null : text.equals(this.text)) {
+			if ((text == null || text.isEmpty())
+					&& tokens == null
+					&& words.isEmpty()
+					&& length == 0) {
+				return;
+			}
+			if (tokens != null && renderedWordsReusable()) {
+				return;
+			}
+		}
+		rebuild(text);
+	}
+
+	private void rebuild(String text){
 		this.text = text;
 
-		if (text != null && !text.equals("")) {
-			
-			tokens = Game.platform.splitforTextBlock(text, multiline);
-			
-			build();
+		if (text == null || text.isEmpty()) {
+			tokens = null;
+			clear();
+			words = new ArrayList<>();
+			width = height = 0;
+			nLines = 1;
+			return;
 		}
+
+		tokens = Game.platform.splitforTextBlock(text, multiline);
+		build();
+	}
+
+	/**
+	 * A killed pooled block keeps its word objects, but Group.kill() kills those
+	 * children too. Reusing the text is only safe while every rendered child is
+	 * still live and attached; otherwise rebuild once during pool reset.
+	 */
+	private boolean renderedWordsReusable(){
+		for (RenderedText word : words) {
+			if (word == SPACE || word == NEWLINE) continue;
+			if (word == null
+					|| !word.exists
+					|| !word.alive
+					|| word.parent != this) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	//for manual text block splitting, a space between each word is assumed
@@ -90,7 +130,7 @@ public class RenderedTextBlock extends Component {
 	public void text(String text, int maxWidth){
 		this.maxWidth = maxWidth;
 		multiline = true;
-		text(text);
+		rebuild(text);
 	}
 
 	public String text(){
@@ -101,7 +141,7 @@ public class RenderedTextBlock extends Component {
 		if (this.maxWidth != maxWidth){
 			this.maxWidth = maxWidth;
 			multiline = true;
-			text(text);
+			rebuild(text);
 		}
 	}
 

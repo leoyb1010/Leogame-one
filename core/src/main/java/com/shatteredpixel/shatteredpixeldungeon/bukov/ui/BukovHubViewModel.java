@@ -731,7 +731,8 @@ public final class BukovHubViewModel {
 		return (int) Math.max(-999d, Math.min(999d, Math.round(raw)));
 	}
 
-	private static ItemRarity rarityFor(int unitValue) {
+	/** Shared with the raid backpack so both surfaces read value the same way. */
+	static ItemRarity rarityFor(int unitValue) {
 		if (unitValue >= 5_000) return ItemRarity.LEGENDARY;
 		if (unitValue >= 1_800) return ItemRarity.RARE;
 		if (unitValue >= 500) return ItemRarity.UNCOMMON;

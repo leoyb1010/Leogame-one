@@ -6,7 +6,6 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
 final class BukovSoundRingModel {
 
 	static final int SEGMENT_COUNT = 8;
-	static final float LIFETIME_SECONDS = 0.9f;
 
 	static int segmentIndex(BukovRaidHudState.Direction direction) {
 		return direction == null ? -1 : direction.ordinal();
@@ -19,8 +18,13 @@ final class BukovSoundRingModel {
 				|| category == SoundCategory.EXTRACTION_CUE;
 	}
 
-	static float alpha(BukovRaidHudState state) {
-		if (state == null || !state.soundVisible()) return 0f;
+	static float alpha(
+			BukovRaidHudState state, float lifetimeSeconds) {
+		if (state == null
+				|| !state.soundVisible()
+				|| !finitePositive(lifetimeSeconds)) {
+			return 0f;
+		}
 		float distanceAlpha;
 		switch (state.soundDistance()) {
 			case FAR:
@@ -35,7 +39,7 @@ final class BukovSoundRingModel {
 				break;
 		}
 		float lifetimeAlpha = clamp01(
-				state.soundRemainingSeconds() / LIFETIME_SECONDS);
+				state.soundRemainingSeconds() / lifetimeSeconds);
 		float strengthAlpha = 0.35f + 0.65f
 				* clamp01(state.soundStrength());
 		return clamp01(
@@ -48,6 +52,12 @@ final class BukovSoundRingModel {
 	private static float clamp01(float value) {
 		if (Float.isNaN(value) || Float.isInfinite(value)) return 0f;
 		return Math.max(0f, Math.min(1f, value));
+	}
+
+	private static boolean finitePositive(float value) {
+		return !Float.isNaN(value)
+				&& !Float.isInfinite(value)
+				&& value > 0f;
 	}
 
 	private BukovSoundRingModel() {

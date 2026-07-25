@@ -369,9 +369,13 @@ public class BukovPlayerJourneyAcceptanceTest {
 				1f / 60f,
 				pause.resumedElapsedDelta,
 				0.00001f);
+		assertEquals(
+				"held fire across backpack close must not leak a deferred shot",
+				0,
+				pause.resumedMagazineDelta);
 		assertTrue(
-				"held fire must resume through the production input/fire loop",
-				pause.resumedMagazineDelta < 0);
+				"release plus a fresh press must resume the production fire loop",
+				pause.rearmedMagazineDelta < 0);
 		assertTrue(
 				"enemy AI must resume after the backpack closes",
 				pause.resumedDamageDelta > 0);

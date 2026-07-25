@@ -92,6 +92,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovCombatHudTimeline;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudSource;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovTouchControls;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovUiTokens;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialGuide;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.tutorial.BukovTutorialHintSource;
@@ -145,7 +146,6 @@ public final class BukovRealtimeWorld
 	private static final float CAMERA_HALF_DEAD_ZONE_X = 12f;
 	private static final float CAMERA_HALF_DEAD_ZONE_Y = 8f;
 	private static final float CAMERA_RESPONSIVENESS = 8f;
-	private static final float KEY_SOUND_LIFETIME_SECONDS = 0.9f;
 	private static final float SHORT_SFX_TIMEOUT_SECONDS = 0.40f;
 	private static final float FOOTSTEP_TIMEOUT_SECONDS = 0.35f;
 	private static final float GUNSHOT_TIMEOUT_SECONDS = 0.85f;
@@ -222,6 +222,8 @@ public final class BukovRealtimeWorld
 	private final GunshotAudioPlan gunshotAudio = new GunshotAudioPlan();
 	private final KeySoundVisualEvent keySoundVisual =
 			new KeySoundVisualEvent();
+	private final float keySoundLifetimeSeconds =
+			BukovUiTokens.loadDefault().motionSeconds("hud.soundRing");
 	private final PlayerSoundEventBuffer playerSounds =
 			new PlayerSoundEventBuffer();
 	private final FootstepCadence footstepCadence =
@@ -555,7 +557,10 @@ public final class BukovRealtimeWorld
 
 	public void setBackpackOpen(boolean open) {
 		backpackOpen = open;
-		input.cancelTouches();
+		// The same physical event can close the window before the next
+		// RealtimeRaidSystem.paused() check. Drop it at the transition so it
+		// cannot reopen the backpack or become a shot on the resumed frame.
+		input.suppressInterfaceInputUntilRelease();
 	}
 
 	public boolean consumeBackpackRequested() {
@@ -912,7 +917,12 @@ public final class BukovRealtimeWorld
 				|| GameScene.interfaceBlockingHero()
 				|| !hero.isAlive();
 		if (paused) {
-			input.cancelTouches();
+			// The realtime key listener observes the raw signal, so an open
+			// window no longer consumes keystrokes before it sees them. A
+			// paused frame never calls sample(), so latched edges and held
+			// states would otherwise survive the window and fire on resume
+			// (reopening the backpack, or shooting the moment it closes).
+			input.suppressInterfaceInputUntilRelease();
 			preserveExtractionCompleteCue();
 			worldSounds.stopAll();
 		}
@@ -4393,7 +4403,7 @@ public final class BukovRealtimeWorld
 		if (keySoundVisual.visible()) {
 			keySoundVisual.activate(
 					nextKeySoundSequence(),
-					KEY_SOUND_LIFETIME_SECONDS);
+					keySoundLifetimeSeconds);
 		}
 	}
 

@@ -47,6 +47,8 @@ public class BukovRaidHudPresentationModelTest {
 
 	@Test
 	public void soundRingMapsAllDirectionsAndEncodesTypeDistanceAndLifetime() {
+		float lifetimeSeconds =
+				BukovUiTokens.loadDefault().motionSeconds("hud.soundRing");
 		for (BukovRaidHudState.Direction direction
 				: BukovRaidHudState.Direction.values()) {
 			assertEquals(
@@ -65,19 +67,27 @@ public class BukovRaidHudPresentationModelTest {
 				BukovRaidHudState.Direction.NE,
 				BukovRaidHudState.Distance.NEAR,
 				1f,
-				BukovSoundRingModel.LIFETIME_SECONDS);
-		assertEquals(1f, BukovSoundRingModel.alpha(state), 0f);
+				lifetimeSeconds);
+		assertEquals(
+				1f,
+				BukovSoundRingModel.alpha(state, lifetimeSeconds),
+				0f);
 
 		state.sound(
 				SoundCategory.ENEMY_GUNSHOT,
 				BukovRaidHudState.Direction.SW,
 				BukovRaidHudState.Distance.FAR,
 				0.5f,
-				BukovSoundRingModel.LIFETIME_SECONDS * 0.5f);
+				lifetimeSeconds * 0.5f);
 		assertEquals(
 				0.45f * 0.675f * 0.5f,
-				BukovSoundRingModel.alpha(state),
+				BukovSoundRingModel.alpha(state, lifetimeSeconds),
 				0.0001f);
+		assertEquals(0f, BukovSoundRingModel.alpha(state, 0f), 0f);
+		assertEquals(
+				0f,
+				BukovSoundRingModel.alpha(state, Float.NaN),
+				0f);
 	}
 
 	@Test

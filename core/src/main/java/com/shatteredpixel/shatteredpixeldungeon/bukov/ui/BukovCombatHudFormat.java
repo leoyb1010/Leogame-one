@@ -10,7 +10,7 @@ public final class BukovCombatHudFormat {
 		if (state == null || !state.soundVisible()) return "";
 		return BukovMessages.get(
 				"bukov.raid.combat.sound_format",
-				state.colorblindAssist() ? "◆ " : "",
+				state.colorblindAssist() ? "* " : "",
 				directionShape(state.soundDirection()),
 				directionText(state.soundDirection()),
 				distanceShape(state.soundDistance()),
@@ -27,7 +27,7 @@ public final class BukovCombatHudFormat {
 					.append(' ')
 					.append(directionText(state.hitDirection(index)));
 		}
-		return (state.colorblindAssist() ? "▲ " : "")
+		return (state.colorblindAssist() ? "^ " : "")
 				+ BukovMessages.get(
 						"bukov.raid.combat.hit_format",
 						BukovMessages.get("bukov.raid.combat.hit_prefix"),
@@ -92,7 +92,7 @@ public final class BukovCombatHudFormat {
 		if (state == null || !state.threatVisible()) return "";
 		return BukovMessages.get(
 				"bukov.raid.combat.threat_format",
-				state.threatUrgent() ? "⚠ " : "△ ",
+				state.threatUrgent() ? "! " : "~ ",
 				directionShape(state.threatDirection()),
 				safe(
 						state.threatLabel(),
@@ -153,9 +153,9 @@ public final class BukovCombatHudFormat {
 	}
 
 	private static String distanceShape(BukovRaidHudState.Distance distance) {
-		if (distance == BukovRaidHudState.Distance.NEAR) return "●";
-		if (distance == BukovRaidHudState.Distance.MID) return "◎";
-		return "○";
+		if (distance == BukovRaidHudState.Distance.NEAR) return "@";
+		if (distance == BukovRaidHudState.Distance.MID) return "o";
+		return ".";
 	}
 
 	private static String distanceText(BukovRaidHudState.Distance distance) {
@@ -191,9 +191,9 @@ public final class BukovCombatHudFormat {
 	}
 
 	private static String cueShape(BukovRaidHudState.Cue cue) {
-		if (cue == BukovRaidHudState.Cue.PICKUP) return "◇";
-		if (cue == BukovRaidHudState.Cue.MISSION) return "◆";
-		if (cue == BukovRaidHudState.Cue.EXTRACTION) return "▣";
+		if (cue == BukovRaidHudState.Cue.PICKUP) return "+";
+		if (cue == BukovRaidHudState.Cue.MISSION) return "*";
+		if (cue == BukovRaidHudState.Cue.EXTRACTION) return "#";
 		return "•";
 	}
 

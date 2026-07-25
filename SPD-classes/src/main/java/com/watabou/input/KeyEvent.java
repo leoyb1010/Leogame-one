@@ -30,10 +30,23 @@ public class KeyEvent {
 	
 	public int code;
 	public boolean pressed;
+	private boolean rawConsumed;
 	
 	public KeyEvent( int code, boolean pressed ) {
 		this.code = code;
 		this.pressed = pressed;
+	}
+
+	/**
+	 * Prevents a raw mouse-action binding from also being converted into an
+	 * emulated pointer event. Normal key dispatch remains unchanged.
+	 */
+	public void consumeRaw() {
+		rawConsumed = true;
+	}
+
+	public boolean rawConsumed() {
+		return rawConsumed;
 	}
 	
 	// **********************
@@ -41,6 +54,7 @@ public class KeyEvent {
 	// **********************
 	
 	private static Signal<KeyEvent> keySignal = new Signal<>( true );
+	private static Signal<KeyEvent> rawKeySignal = new Signal<>( true );
 	
 	public static void addKeyListener( Signal.Listener<KeyEvent> listener ){
 		keySignal.add(listener);
@@ -50,8 +64,23 @@ public class KeyEvent {
 		keySignal.remove(listener);
 	}
 	
+	/**
+	 * Observes physical key/controller events before mouse-action bindings are
+	 * converted to emulated pointer input. Product runtimes which treat a
+	 * bound click action as continuous realtime input need this path; the
+	 * existing key signal intentionally keeps its classic conversion rules.
+	 */
+	public static void addRawKeyListener( Signal.Listener<KeyEvent> listener ){
+		rawKeySignal.add(listener);
+	}
+
+	public static void removeRawKeyListener( Signal.Listener<KeyEvent> listener ){
+		rawKeySignal.remove(listener);
+	}
+
 	public static void clearListeners(){
 		keySignal.removeAll();
+		rawKeySignal.removeAll();
 	}
 	
 	//Accumulated key events
@@ -67,14 +96,21 @@ public class KeyEvent {
 		}
 
 		for (KeyEvent k : keyEvents){
+			rawKeySignal.dispatch(k);
 			if (KeyBindings.getActionForKey(k) == GameAction.LEFT_CLICK){
-				Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.LEFT, k.pressed);
+				if (!k.rawConsumed()) {
+					Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.LEFT, k.pressed);
+				}
 				if (KeyBindings.bindingKey) keySignal.dispatch(k);
 			} else if (KeyBindings.getActionForKey(k) == GameAction.RIGHT_CLICK){
-				Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.RIGHT, k.pressed);
+				if (!k.rawConsumed()) {
+					Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.RIGHT, k.pressed);
+				}
 				if (KeyBindings.bindingKey) keySignal.dispatch(k);
 			} else if (KeyBindings.getActionForKey(k) == GameAction.MIDDLE_CLICK){
-				Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.MIDDLE, k.pressed);
+				if (!k.rawConsumed()) {
+					Game.inputHandler.emulateTouch(ControllerHandler.CONTROLLER_POINTER_ID, PointerEvent.MIDDLE, k.pressed);
+				}
 				if (KeyBindings.bindingKey) keySignal.dispatch(k);
 			} else {
 				keySignal.dispatch(k);
