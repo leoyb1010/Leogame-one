@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
@@ -170,5 +171,38 @@ public class BukovItemVisualMappingTest {
 		assertEquals(
 				BukovItemSprite.Frame.PUMP_STATION,
 				BukovInteractionMarker.Kind.PUMP_STATION.frame());
+		assertEquals(
+				BukovItemSprite.Frame.MISSION_ARCHIVE,
+				BukovInteractionMarker.Kind.MISSION_ARCHIVE.frame());
+	}
+
+	@Test
+	public void missionMarkerCentersOnItsWorldCell() {
+		assertEquals(
+				64f,
+				BukovInteractionMarker.worldX(34, 10, 16f, 16f),
+				0f);
+		assertEquals(
+				48f,
+				BukovInteractionMarker.worldY(34, 10, 16f, 16f),
+				0f);
+	}
+
+	@Test
+	public void missionMarkerUsesOneHertzFifteenPercentBreathingRange() {
+		float bright = BukovInteractionMarker.pulseAlpha(
+				BukovInteractionMarker.Kind.MISSION_ARCHIVE,
+				0.25f);
+		float dim = BukovInteractionMarker.pulseAlpha(
+				BukovInteractionMarker.Kind.MISSION_ARCHIVE,
+				0.75f);
+		float nextBright = BukovInteractionMarker.pulseAlpha(
+				BukovInteractionMarker.Kind.MISSION_ARCHIVE,
+				1.25f);
+
+		assertEquals(1f, bright, 0.0001f);
+		assertEquals(0.85f, dim, 0.0001f);
+		assertEquals(bright, nextBright, 0.0001f);
+		assertTrue(dim <= bright);
 	}
 }

@@ -193,6 +193,7 @@ public final class BukovRealtimeWorld
 	private final int pumpCell;
 	private final int missionGateCell;
 	private final int[] missionGateCells;
+	private final boolean presentationObjectsEnabled;
 	private final RealtimeInput input = new RealtimeInput();
 	private final BukovSprintState sprintState = new BukovSprintState();
 	private final RealtimeCameraFollow cameraFollow = new RealtimeCameraFollow(
@@ -243,6 +244,7 @@ public final class BukovRealtimeWorld
 			new ArrayList<>();
 	private final ArrayList<BukovInteractionMarker> bossMechanismMarkers =
 			new ArrayList<>();
+	private BukovInteractionMarker missionArchiveMarker;
 	private final ArrayList<EnemyRuntime> enemies = new ArrayList<>();
 	private final IdentityHashMap<Mob, EnemyRuntime> enemiesByMob =
 			new IdentityHashMap<>();
@@ -365,6 +367,7 @@ public final class BukovRealtimeWorld
 		}
 		this.hero = hero;
 		this.raid = raid;
+		presentationObjectsEnabled = createPresentationObjects;
 		playerSounds.restore(
 				raid == null ? null : raid.playerSoundEvents());
 		raidMode = raid == null
@@ -2758,6 +2761,7 @@ public final class BukovRealtimeWorld
 		}
 		interactionMarkers.clear();
 		bossMechanismMarkers.clear();
+		missionArchiveMarker = null;
 	}
 
 	@Override
@@ -4792,10 +4796,40 @@ public final class BukovRealtimeWorld
 		addInteractionMarker(
 				pumpCell,
 				BukovInteractionMarker.Kind.PUMP_STATION);
+		createMissionArchiveMarker();
 		refreshBossMechanismMarkers();
 	}
 
+	private void createMissionArchiveMarker() {
+		if (!missionEnabled
+				|| missionGateUnlocked
+				|| missionArchiveMarker != null) {
+			return;
+		}
+		BukovRaidCoordinator.ContainerSnapshot archive =
+				raid.container(FirstRaidMission.ARCHIVE_CONTAINER_ID);
+		if (archive == null || archive.contentsReleased
+				|| archive.cell < 0
+				|| archive.cell >= Dungeon.level.length()) {
+			return;
+		}
+		missionArchiveMarker =
+				new BukovInteractionMarker(
+						BukovInteractionMarker.Kind.MISSION_ARCHIVE)
+						.placeAtCell(archive.cell);
+		interactionMarkers.add(missionArchiveMarker);
+		GameScene.effect(missionArchiveMarker);
+	}
+
+	private void clearMissionArchiveMarker() {
+		if (missionArchiveMarker == null) return;
+		missionArchiveMarker.killAndErase();
+		interactionMarkers.remove(missionArchiveMarker);
+		missionArchiveMarker = null;
+	}
+
 	private void refreshBossMechanismMarkers() {
+		if (!presentationObjectsEnabled) return;
 		EnemyRuntime boss = activeWhiteLine();
 		if (boss == null
 				|| boss.bossState.phase()
@@ -5526,6 +5560,9 @@ public final class BukovRealtimeWorld
 						released)
 				: BukovMessages.get(
 						"bukov.raid.runtime.search_completed_empty"));
+		if (FirstRaidMission.ARCHIVE_CONTAINER_ID.equals(containerId)) {
+			clearMissionArchiveMarker();
+		}
 		checkpointLootChange();
 	}
 

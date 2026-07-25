@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -57,6 +58,8 @@ public class BukovFirstRaidProductionWiringTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/MissionGateTerrain.java");
 		String hud = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/ui/BukovRaidHud.java");
+		String marker = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/bukov/BukovInteractionMarker.java");
 
 		assertTrue(world.contains(
 				"missionEnabled = raid != null && raid.firstRaidMissionActive()"));
@@ -80,6 +83,21 @@ public class BukovFirstRaidProductionWiringTest {
 				"ExtractionIntentResolver.resolve("));
 		assertTrue(world.contains(
 				"BukovRaidHudState.Interaction.EXTRACT"));
+		assertTrue(world.contains("createMissionArchiveMarker()"));
+		assertTrue(world.contains(
+				"BukovInteractionMarker.Kind.MISSION_ARCHIVE"));
+		assertTrue(world.contains(
+				"FirstRaidMission.ARCHIVE_CONTAINER_ID.equals(containerId)"));
+		assertTrue(world.contains("clearMissionArchiveMarker()"));
+		assertTrue(marker.contains(
+				"MISSION_ARCHIVE(BukovItemSprite.Frame.MISSION_ARCHIVE)"));
+		assertTrue(marker.contains("alpha(pulseAlpha(kind, pulseTime))"));
+		String markerPlacement = between(
+				marker,
+				"private void place() {",
+				"@Override",
+				0);
+		assertFalse(markerPlacement.contains("new "));
 
 		assertTrue(collision.contains(
 				"terrain == Terrain.DOOR || terrain == Terrain.OPEN_DOOR"));

@@ -22,7 +22,10 @@
 旧触屏地图缩放/拖离/边缘滚屏旁路也已封闭；敌人跨 FOV 隐身、关闭普通门的
 视线/弹道穿透，以及低渲染帧率下单次输入被固定步重复消费三个根因均已补齐。
 本候选还补齐斜角交互遮挡、真实 World 背包暂停无补帧门禁、iOS 屏外任务/
-战利品/撤离方向提示，以及独立击杀与 Boss 战斗反馈音效。
+战利品/撤离方向提示，以及独立击杀与 Boss 战斗反馈音效；新增“白线”Boss
+生产 World 无头旅程、10 个确定 seed 的第一关生产 World 自动路线矩阵，以及
+任务档案释放前的 1 Hz 世界呼吸标记。自动路线 JSON 明确标为固定步模拟而非
+真人试玩，Boss 门禁也不替代难度、渲染和双平台手感签字。
 完整变更和未完成边界见 `docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
 
 本节在生成干净提交、同 SHA Final Gate、双端包和人工玩家路线证据前，不覆盖
@@ -95,14 +98,14 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 |---|---|---|
 | 120 Hz 实时层 | `bukov/runtime/`、`GameScene.java`、`Char.java`、`CharSprite.java` | `bukov/runtime/*Test.java` |
 | 枪械与弹药 | `bukov/combat/`、`assets/bukov/content/firearms.json`、`ammunition.json` | `bukov/combat/**/*Test.java` |
-| 敌人、精英、Boss | `bukov/ai/`、`assets/bukov/content/enemies.json`、`BukovRealtimeWorld.java` | `bukov/ai/*Test.java` |
+| 敌人、精英、Boss | `bukov/ai/`、`assets/bukov/content/enemies.json`、`BukovRealtimeWorld.java` | `bukov/ai/*Test.java`、`BukovWhiteLineProductionHarness`、`BukovPlayerJourneyAcceptanceTest.productionWorldDefeatsWhiteLineDropsLootAndCompletesContract` |
 | 地图与撤离 | `bukov/levels/`、`bukov/map/`、`Dungeon.java` | `bukov/levels/*Test.java`、`bukov/map/*Test.java` |
 | 搜刮、仓库、结算 | `bukov/raid/`、`bukov/content/`、`WndBukovHub.java` | `bukov/raid/*Test.java`、`bukov/content/*Test.java` |
 | 文件存档 | `bukov/save/` | `bukov/save/*Test.java` |
 | 本地平衡与路线证据 | `RaidBalanceTelemetry.java`、`BukovBalanceReport.java`、`RaidSession.java`、`BukovRealtimeWorld.java` | `RaidBalanceTelemetryTest`、`BukovBalanceReportTest`、`BukovBalanceRuntimeWiringTest` |
-| HUD、触控与 UI 令牌 | `BukovRaidHud.java`、`BukovTouchControls.java`、`WndBukovHub.java`、`ui_tokens.json` | `bukov/ui/*Test.java` |
+| HUD、触控与 UI 令牌 | `BukovRaidHud.java`、`BukovTouchControls.java`、`WndBukovHub.java`、`BukovInteractionMarker.java`、`BukovRealtimeWorld.java`、`ui_tokens.json` | `bukov/ui/*Test.java`、`BukovItemVisualMappingTest`、`BukovFirstRaidProductionWiringTest` |
 | 表现、音频与体验合同 | `bukov/fx/`、`bukov/audio/`、`experience_contract.json` | `bukov/fx/*Test.java`、`bukov/audio/*Test.java` |
-| 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、`BukovRealtimeCombatHarness`、`BukovFirstRaidProductionWiringTest`、CI |
+| 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、`BukovRealtimeCombatHarness`、`BukovFirstRaidWorldSeedMatrixTest`、`BukovFirstRaidProductionWiringTest`、`scripts/bukov_seed_sweep.sh`、CI |
 | 生产场景压力接线 | `GameScene.java`、`BukovGameSceneFrameLoop.java`、实时系统/空间索引/命中/表现对象池 | `BukovGameSceneProductionStressTest`、`scripts/bukov_gamescene_stress.sh`；无头 CPU 证据，不代表 GPU 帧率 |
 
 ## 最终统一验收命令

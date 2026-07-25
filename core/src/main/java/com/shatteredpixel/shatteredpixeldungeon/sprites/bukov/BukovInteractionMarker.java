@@ -7,7 +7,6 @@ import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.Image;
 import com.watabou.noosa.TextureFilm;
-import com.watabou.utils.PointF;
 
 /**
  * World-space marker for Bukov-only interaction anchors.
@@ -21,6 +20,7 @@ public final class BukovInteractionMarker extends Image {
 		FIXED_EXTRACTION(BukovItemSprite.Frame.FIXED_EXTRACTION),
 		CONDITIONAL_EXTRACTION(BukovItemSprite.Frame.CONDITIONAL_EXTRACTION),
 		PUMP_STATION(BukovItemSprite.Frame.PUMP_STATION),
+		MISSION_ARCHIVE(BukovItemSprite.Frame.MISSION_ARCHIVE),
 		BOSS_DECOY(BukovItemSprite.Frame.CONDITIONAL_EXTRACTION),
 		BOSS_SYNCHRONIZED_TRACE(BukovItemSprite.Frame.FIXED_EXTRACTION);
 
@@ -77,12 +77,20 @@ public final class BukovInteractionMarker extends Image {
 		if (cell < 0 || Dungeon.level == null) {
 			return;
 		}
-		PointF point = new PointF(
-				PixelScene.align(Camera.main,
-						((cell % Dungeon.level.width()) + 0.5f) * DungeonTilemap.SIZE - width() * 0.5f),
-				PixelScene.align(Camera.main,
-						((cell / Dungeon.level.width()) + 0.5f) * DungeonTilemap.SIZE - height() * 0.5f));
-		point(point);
+		x = PixelScene.align(
+				Camera.main,
+				worldX(
+						cell,
+						Dungeon.level.width(),
+						DungeonTilemap.SIZE,
+						width()));
+		y = PixelScene.align(
+				Camera.main,
+				worldY(
+						cell,
+						Dungeon.level.width(),
+						DungeonTilemap.SIZE,
+						height()));
 	}
 
 	@Override
@@ -93,11 +101,49 @@ public final class BukovInteractionMarker extends Image {
 		// The synchronized phase-two trace is a stable, slower signal. Hollow
 		// decoys flicker rapidly, giving a deterministic visual clue without
 		// requiring colour perception.
-		float rate = kind == Kind.BOSS_SYNCHRONIZED_TRACE ? 1.8f
+		alpha(pulseAlpha(kind, pulseTime));
+	}
+
+	public static float worldX(
+			int cell,
+			int levelWidth,
+			float tileSize,
+			float markerWidth) {
+		if (cell < 0 || levelWidth <= 0
+				|| tileSize <= 0f || markerWidth < 0f) {
+			throw new IllegalArgumentException(
+					"valid cell geometry is required");
+		}
+		return ((cell % levelWidth) + 0.5f) * tileSize
+				- markerWidth * 0.5f;
+	}
+
+	public static float worldY(
+			int cell,
+			int levelWidth,
+			float tileSize,
+			float markerHeight) {
+		if (cell < 0 || levelWidth <= 0
+				|| tileSize <= 0f || markerHeight < 0f) {
+			throw new IllegalArgumentException(
+					"valid cell geometry is required");
+		}
+		return ((cell / levelWidth) + 0.5f) * tileSize
+				- markerHeight * 0.5f;
+	}
+
+	public static float pulseAlpha(Kind kind, float seconds) {
+		if (kind == null) {
+			throw new IllegalArgumentException("kind is required");
+		}
+		float rate = kind == Kind.MISSION_ARCHIVE
+				? (float)(Math.PI * 2d)
+				: kind == Kind.BOSS_SYNCHRONIZED_TRACE ? 1.8f
 				: kind == Kind.BOSS_DECOY ? 7f : 4f;
-		float floor = kind == Kind.BOSS_SYNCHRONIZED_TRACE ? 0.94f : 0.86f;
-		float pulse = floor
-				+ (1f - floor) * (float)Math.sin(pulseTime * rate);
-		alpha(pulse);
+		float floor = kind == Kind.MISSION_ARCHIVE ? 0.85f
+				: kind == Kind.BOSS_SYNCHRONIZED_TRACE ? 0.94f : 0.86f;
+		float wave = 0.5f
+				+ 0.5f * (float)Math.sin(Math.max(0f, seconds) * rate);
+		return floor + (1f - floor) * wave;
 	}
 }

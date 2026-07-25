@@ -612,7 +612,7 @@ final class BukovRealtimeCombatHarness {
 		system.update(RENDER_STEP);
 	}
 
-	private static void placeHero(
+	static void placeHero(
 			Hero hero,
 			BukovLevel level,
 			int cell) {
@@ -822,7 +822,7 @@ final class BukovRealtimeCombatHarness {
 		return fallback;
 	}
 
-	private static void aimAt(BukovHostMob target) {
+	static void aimAt(BukovHostMob target) {
 		float worldX = target.realtimeBody.x * DungeonTilemap.SIZE;
 		float worldY = target.realtimeBody.y * DungeonTilemap.SIZE;
 		Point screen = Camera.main.cameraToScreen(worldX, worldY);
@@ -842,7 +842,7 @@ final class BukovRealtimeCombatHarness {
 		PointerEvent.setHoverPos(new PointF(screen.x, screen.y));
 	}
 
-	private static Files headlessFiles(Path assets) {
+	static Files headlessFiles(Path assets) {
 		InvocationHandler handler = (proxy, method, arguments) -> {
 			String name = method.getName();
 			if ("internal".equals(name)
@@ -874,7 +874,7 @@ final class BukovRealtimeCombatHarness {
 				handler);
 	}
 
-	private static Input headlessInput(InputState input) {
+	static Input headlessInput(InputState input) {
 		InvocationHandler handler = (proxy, method, arguments) -> {
 			String name = method.getName();
 			if ("isButtonPressed".equals(name)
@@ -888,8 +888,9 @@ final class BukovRealtimeCombatHarness {
 						|| key == Input.Keys.E && input.interactHeld;
 			}
 			if ("isKeyJustPressed".equals(name)) {
-				return ((Integer)arguments[0]) == Input.Keys.E
-						&& input.interactPressed;
+				int key = (Integer)arguments[0];
+				return key == Input.Keys.E && input.interactPressed
+						|| key == Input.Keys.R && input.reloadPressed;
 			}
 			Class<?> type = method.getReturnType();
 			if (type == boolean.class) return false;
@@ -923,7 +924,7 @@ final class BukovRealtimeCombatHarness {
 		}
 	}
 
-	private static Path locateAssets() {
+	static Path locateAssets() {
 		Path current = Paths.get(System.getProperty("user.dir", "."))
 				.toAbsolutePath()
 				.normalize();
@@ -944,11 +945,12 @@ final class BukovRealtimeCombatHarness {
 				.isFile();
 	}
 
-	private static final class InputState {
-		private boolean fire;
-		private boolean interactHeld;
-		private boolean interactPressed;
-		private int movementKey = -1;
+	static final class InputState {
+		boolean fire;
+		boolean interactHeld;
+		boolean interactPressed;
+		boolean reloadPressed;
+		int movementKey = -1;
 	}
 
 	private static final class FxEvidence {
@@ -973,8 +975,8 @@ final class BukovRealtimeCombatHarness {
 		}
 	}
 
-	private static final class HeadlessCharSprite extends CharSprite {
-		private HeadlessCharSprite() {
+	static final class HeadlessCharSprite extends CharSprite {
+		HeadlessCharSprite() {
 			visible = false;
 		}
 

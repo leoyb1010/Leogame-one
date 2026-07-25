@@ -18,6 +18,7 @@ report="$project_root/build/reports/bukov-seed-sweep.log"
   print "worktree_state=$([[ -n "$(git -C "$project_root" status --porcelain)" ]] && print dirty || print clean)"
   print "started_utc=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   print "seed_count=$count"
+  print "world_route_seed_count=10"
   print "host=$(uname -srm)"
 } | tee "$report"
 
@@ -26,8 +27,10 @@ set +e
   core:test \
   --tests '*BukovSeedSweepTest' \
   --tests '*BukovFirstRaidCriticalPathSeedGateTest' \
+  --tests '*BukovFirstRaidWorldSeedMatrixTest' \
   -Dbukov.seed.count="$count" \
   -Dbukov.firstRaidSeedCount="$count" \
+  -Dbukov.firstRaidWorldEvidenceDir="$project_root/build/reports/bukov-first-raid-world-seed-matrix" \
   --rerun-tasks \
   --no-daemon 2>&1 | tee -a "$report"
 gate_exit=${pipestatus[1]}

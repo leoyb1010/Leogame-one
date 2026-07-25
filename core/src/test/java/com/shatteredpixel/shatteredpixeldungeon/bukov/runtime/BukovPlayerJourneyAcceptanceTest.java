@@ -1,6 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.Badges;
+import com.shatteredpixel.shatteredpixeldungeon.Statistics;
+import com.shatteredpixel.shatteredpixeldungeon.actors.Actor;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.FirstRaidEnemySpawnDirector;
@@ -24,16 +27,20 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.save.InMemoryBukovSaveServ
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
+import com.shatteredpixel.shatteredpixeldungeon.items.Item;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.badlogic.gdx.Preferences;
 import com.watabou.noosa.Game;
+import com.watabou.utils.Bundle;
 import com.watabou.utils.GameSettings;
+import com.watabou.utils.SparseArray;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,35 +72,123 @@ public class BukovPlayerJourneyAcceptanceTest {
 	private BukovRaidMode previousMode;
 	private List<String> previousMaps;
 	private String previousSelectedMap;
+	private SparseArray<ArrayList<Item>> previousDroppedItems;
+	private Object[] previousBadgesState;
+	private HeadlessStatisticsState previousStatistics;
 
 	@Before
 	public void captureGlobals() {
+		Actor.clear();
 		previousDepth = Dungeon.depth;
 		previousBranch = Dungeon.branch;
 		previousSeed = Dungeon.seed;
 		previousVersion = Game.version;
 		previousLevel = Dungeon.level;
 		previousHero = Dungeon.hero;
+		previousDroppedItems = Dungeon.droppedItems;
 		previousMode = BukovMode.raidMode();
 		previousMaps = new ArrayList<>(BukovMode.unlockedRaidThemes());
 		previousSelectedMap = BukovMode.selectedRaidTheme();
 		GameSettings.set(new MemoryPreferences());
 		if (Game.version == null) Game.version = "test";
+		previousBadgesState = replaceBadgesForHeadlessTest();
+		previousStatistics = replaceStatisticsForHeadlessTest();
+		Dungeon.droppedItems = new SparseArray<>();
 	}
 
 	@After
 	public void restoreGlobals() {
+		Actor.clear();
 		Dungeon.depth = previousDepth;
 		Dungeon.branch = previousBranch;
 		Dungeon.seed = previousSeed;
 		Dungeon.level = previousLevel;
 		Dungeon.hero = previousHero;
+		Dungeon.droppedItems = previousDroppedItems;
+		restoreBadgesAfterHeadlessTest(previousBadgesState);
+		restoreStatisticsAfterHeadlessTest(previousStatistics);
 		Dungeon.quickslot.reset();
 		Game.version = previousVersion;
 		BukovMode.prepareRaidMode(previousMode);
 		BukovMode.prepareUnlockedMaps(previousMaps);
 		BukovMode.prepareSelectedMap(previousSelectedMap);
 		GameSettings.set(null);
+	}
+
+	static Object[] replaceBadgesForHeadlessTest() {
+		try {
+			Field global = Badges.class.getDeclaredField("global");
+			Field local = Badges.class.getDeclaredField("local");
+			Field saveNeeded = Badges.class.getDeclaredField("saveNeeded");
+			global.setAccessible(true);
+			local.setAccessible(true);
+			saveNeeded.setAccessible(true);
+			Object[] previous = {
+					global.get(null),
+					local.get(null),
+					saveNeeded.get(null)
+			};
+			global.set(null, new HashSet<Badges.Badge>());
+			local.set(null, new HashSet<Badges.Badge>());
+			saveNeeded.set(null, false);
+			return previous;
+		} catch (ReflectiveOperationException exception) {
+			throw new AssertionError(
+					"could not initialize headless badge state",
+					exception);
+		}
+	}
+
+	static void restoreBadgesAfterHeadlessTest(Object[] previous) {
+		try {
+			Field global = Badges.class.getDeclaredField("global");
+			Field local = Badges.class.getDeclaredField("local");
+			Field saveNeeded = Badges.class.getDeclaredField("saveNeeded");
+			global.setAccessible(true);
+			local.setAccessible(true);
+			saveNeeded.setAccessible(true);
+			global.set(null, previous[0]);
+			local.set(null, previous[1]);
+			saveNeeded.set(null, previous[2]);
+		} catch (ReflectiveOperationException exception) {
+			throw new AssertionError(
+					"could not restore headless badge state",
+					exception);
+		}
+	}
+
+	static HeadlessStatisticsState replaceStatisticsForHeadlessTest() {
+		Bundle previous = new Bundle();
+		Statistics.storeInBundle(previous);
+		HeadlessStatisticsState state = new HeadlessStatisticsState(
+				previous,
+				Statistics.completedWithNoKilling);
+		resetStatisticsForHeadlessSample();
+		return state;
+	}
+
+	static void resetStatisticsForHeadlessSample() {
+		Statistics.reset();
+		Statistics.completedWithNoKilling = false;
+	}
+
+	static void restoreStatisticsAfterHeadlessTest(
+			HeadlessStatisticsState previous) {
+		Statistics.restoreFromBundle(previous.bundle);
+		Statistics.completedWithNoKilling =
+				previous.completedWithNoKilling;
+	}
+
+	static final class HeadlessStatisticsState {
+		final Bundle bundle;
+		final boolean completedWithNoKilling;
+
+		HeadlessStatisticsState(
+				Bundle bundle,
+				boolean completedWithNoKilling) {
+			this.bundle = bundle;
+			this.completedWithNoKilling = completedWithNoKilling;
+		}
 	}
 
 	@Test
@@ -432,6 +527,61 @@ public class BukovPlayerJourneyAcceptanceTest {
 	}
 
 	@Test
+	public void productionWorldDefeatsWhiteLineDropsLootAndCompletesContract()
+			throws Exception {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.selectRaidMode(BukovRaidMode.BOSS_CONTRACT);
+		hub.prepareAndConfirmDeployment();
+
+		long seed = 0xB055C0DEL;
+		BukovLevel level = buildLevel(
+				seed, BukovRaidMode.BOSS_CONTRACT);
+		BukovRaidCoordinator raid = startRaid(
+				saves,
+				level,
+				seed,
+				"journey-white-line-production");
+		assertTrue(raid.bossContractRequired());
+		assertFalse(raid.bossContractCompleted());
+
+		BukovWhiteLineProductionHarness.Evidence evidence =
+				BukovWhiteLineProductionHarness
+						.defeatThroughProductionWorld(raid, level);
+
+		assertTrue(evidence.toString(),
+				evidence.initialHealth > 0);
+		assertEquals(evidence.toString(), 0, evidence.finalHealth);
+		assertTrue(evidence.toString(),
+				evidence.playerFireEvents > 0);
+		assertEquals(evidence.toString(),
+				2, evidence.phaseBreakEvents);
+		assertTrue(evidence.toString(), evidence.slamEvents > 0);
+		assertTrue(evidence.toString(), evidence.overloadEvents > 0);
+		assertEquals(evidence.toString(),
+				1, evidence.weakpointKillEvents);
+		assertTrue(evidence.toString(),
+				evidence.bossLootCount >= 3);
+		assertEquals(evidence.toString(), 1, evidence.killCount);
+		assertTrue(evidence.toString(), evidence.bodyInactive);
+		assertTrue(evidence.toString(), evidence.removedFromLevel);
+		assertTrue(evidence.toString(), evidence.levelResolved);
+		assertTrue(evidence.toString(), evidence.contractCompleted);
+		assertTrue(evidence.toString(), evidence.extractionAvailable);
+		assertTrue(evidence.toString(), evidence.extractionPrompted);
+		assertTrue(evidence.toString(), evidence.extractionCompleted);
+
+		RaidResult result = raid.settleSuccess();
+		assertEquals(RaidOutcome.SUCCESS, result.outcome());
+		assertTrue(result.missionCompleted());
+		assertEquals(1, result.kills());
+		assertTrue(saves.loadProfile()
+				.settlement("journey-white-line-production")
+				.missionCompleted());
+	}
+
+	@Test
 	public void secondRaidDeathLosesExactCarriedUidsAndReturnsToHub()
 			throws Exception {
 		InMemoryBukovSaveService saves =
@@ -506,7 +656,13 @@ public class BukovPlayerJourneyAcceptanceTest {
 	}
 
 	private static BukovLevel buildLevel(long seed) {
-		BukovMode.prepareRaidMode(BukovRaidMode.EXPEDITION);
+		return buildLevel(seed, BukovRaidMode.EXPEDITION);
+	}
+
+	private static BukovLevel buildLevel(
+			long seed,
+			BukovRaidMode mode) {
+		BukovMode.prepareRaidMode(mode);
 		BukovMode.prepareUnlockedMaps(
 				Collections.singletonList("fog_depot"));
 		BukovMode.prepareSelectedMap("fog_depot");
@@ -687,7 +843,7 @@ public class BukovPlayerJourneyAcceptanceTest {
 	}
 
 	/** Minimal deterministic preference store for generated-level headless runs. */
-	private static final class MemoryPreferences implements Preferences {
+	static final class MemoryPreferences implements Preferences {
 
 		private final Map<String, Object> values = new HashMap<>();
 
