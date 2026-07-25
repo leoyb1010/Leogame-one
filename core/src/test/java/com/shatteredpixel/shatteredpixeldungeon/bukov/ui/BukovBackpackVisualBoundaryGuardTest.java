@@ -37,8 +37,9 @@ public class BukovBackpackVisualBoundaryGuardTest {
 		assertFalse(source.contains("RedButton"));
 		assertTrue(source.contains(
 				"BukovMessages.get(\"bukov.raid.backpack.title\")"));
-		assertTrue(source.contains(
-				"BukovMessages.get(\"bukov.raid.backpack.paused_hint\")"));
+		assertTrue(source.contains("pausedHintKey("));
+		assertTrue(source.contains("DeviceCompat.isDesktop()"));
+		assertTrue(source.contains("item.category.label"));
 		assertTrue(source.contains("setBackpackOpen(true)"));
 		assertTrue(source.contains("setBackpackOpen(false)"));
 		assertTrue(source.contains(

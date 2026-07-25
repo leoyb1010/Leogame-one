@@ -14,6 +14,7 @@ import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.NinePatch;
 import com.watabou.noosa.ui.Component;
+import com.watabou.utils.DeviceCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -151,7 +152,8 @@ public final class WndBukovBackpack extends Window {
 				BukovVisualContract.FONT_BODY,
 				tokens.color("accent.valuable"));
 		RenderedTextBlock code = text(
-				BukovMessages.get("bukov.raid.backpack.paused_hint"),
+				BukovMessages.get(pausedHintKey(
+						DeviceCompat.isDesktop())),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
 		totals = text(
@@ -647,6 +649,12 @@ public final class WndBukovBackpack extends Window {
 		return titleWidth + codeWidth + HEADER_INLINE_GAP <= innerWidth;
 	}
 
+	static String pausedHintKey(boolean desktop) {
+		return desktop
+				? "bukov.raid.backpack.paused_hint"
+				: "bukov.raid.backpack.paused_hint_touch";
+	}
+
 	/**
 	 * Pure layout policy used after the actual localized text has been
 	 * measured. The action stack is reserved first so the close control cannot
@@ -934,7 +942,7 @@ public final class WndBukovBackpack extends Window {
 					tokens.colorWithAlpha("panel.border", 145));
 			add(divider);
 			category = text(
-					item.category.code,
+					item.category.label,
 					BukovVisualContract.FONT_CAPTION,
 					tokens.color("text.secondary"));
 			add(category);

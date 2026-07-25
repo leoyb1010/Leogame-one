@@ -88,6 +88,16 @@ public class WndBukovBackpackLayoutTest {
 				226, 40f, 80f));
 	}
 
+	@Test
+	public void pausedHintMatchesTheActiveInputSurface() {
+		assertEquals(
+				"bukov.raid.backpack.paused_hint",
+				WndBukovBackpack.pausedHintKey(true));
+		assertEquals(
+				"bukov.raid.backpack.paused_hint_touch",
+				WndBukovBackpack.pausedHintKey(false));
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void rejectsInvalidMeasuredLayoutInput() {
 		WndBukovBackpack.layoutFor(
