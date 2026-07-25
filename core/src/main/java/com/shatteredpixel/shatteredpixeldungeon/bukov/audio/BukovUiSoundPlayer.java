@@ -1,7 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 
 import com.shatteredpixel.shatteredpixeldungeon.Assets;
-import com.watabou.noosa.audio.Sample;
 
 /**
  * Dedicated Bukov UI sound bank. Focus movement is debounced at 30ms and no
@@ -18,6 +17,14 @@ public final class BukovUiSoundPlayer {
 
 	private static final float UI_MINUS_SIX_DB = 0.5011872f;
 	private static final float FOCUS_DEBOUNCE_SECONDS = 0.03f;
+	private static final float FOCUS_TIMEOUT_SECONDS = 0.08f;
+	private static final float CONFIRM_TIMEOUT_SECONDS = 0.14f;
+	private static final float CANCEL_TIMEOUT_SECONDS = 0.12f;
+	private static final float ERROR_TIMEOUT_SECONDS = 0.18f;
+
+	private final BukovConcurrentSoundPlayer sounds =
+			new BukovConcurrentSoundPlayer(
+					new BukovSamplePlaybackSink());
 	private float focusCooldown;
 
 	public void update(float deltaSeconds) {
@@ -27,6 +34,7 @@ public final class BukovUiSoundPlayer {
 			return;
 		}
 		focusCooldown = Math.max(0f, focusCooldown - deltaSeconds);
+		sounds.update(deltaSeconds);
 	}
 
 	public boolean play(Cue cue, float sfxGain) {
@@ -45,8 +53,40 @@ public final class BukovUiSoundPlayer {
 			focusCooldown = FOCUS_DEBOUNCE_SECONDS;
 		}
 		if (sfxGain <= 0f) return false;
-		Sample.INSTANCE.play(asset(cue), sfxGain * UI_MINUS_SIX_DB, 1f);
-		return true;
+		return sounds.play(
+				asset(cue),
+				AudioChannel.SFX,
+				priority(cue),
+				cue != Cue.FOCUS,
+				timeout(cue),
+				sfxGain * UI_MINUS_SIX_DB,
+				sfxGain * UI_MINUS_SIX_DB,
+				1f) != SoundConcurrencyBudget.NO_TOKEN;
+	}
+
+	private static SoundConcurrencyBudget.Priority priority(Cue cue) {
+		if (cue == Cue.FOCUS) {
+			return SoundConcurrencyBudget.Priority.LOW;
+		}
+		if (cue == Cue.ERROR) {
+			return SoundConcurrencyBudget.Priority.CRITICAL;
+		}
+		return SoundConcurrencyBudget.Priority.HIGH;
+	}
+
+	private static float timeout(Cue cue) {
+		switch (cue) {
+			case FOCUS:
+				return FOCUS_TIMEOUT_SECONDS;
+			case CONFIRM:
+				return CONFIRM_TIMEOUT_SECONDS;
+			case CANCEL:
+				return CANCEL_TIMEOUT_SECONDS;
+			case ERROR:
+				return ERROR_TIMEOUT_SECONDS;
+			default:
+				throw new IllegalStateException("unknown cue: " + cue);
+		}
 	}
 
 	private static String asset(Cue cue) {

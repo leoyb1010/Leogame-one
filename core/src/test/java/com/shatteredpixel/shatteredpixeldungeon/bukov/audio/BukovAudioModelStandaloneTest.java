@@ -72,6 +72,7 @@ public final class BukovAudioModelStandaloneTest {
 		}
 
 		assertFootstepAudio();
+		assertConcurrencyBudget();
 
 		BukovAtmosphereController atmosphere =
 				new BukovAtmosphereController();
@@ -140,6 +141,74 @@ public final class BukovAudioModelStandaloneTest {
 		}
 	}
 
+	private static void assertConcurrencyBudget() {
+		SoundConcurrencyBudget budget = new SoundConcurrencyBudget();
+		long oldest = SoundConcurrencyBudget.NO_TOKEN;
+		for (int index = 0;
+				index < SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS;
+				index++) {
+			long token = budget.admit(
+					AudioChannel.SFX,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f).token();
+			if (index == 0) oldest = token;
+		}
+		SoundConcurrencyBudget.Admission critical = budget.admit(
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.defaultPriority(
+						SoundCategory.PLAYER_GUNSHOT),
+				SoundConcurrencyBudget.protectedByDefault(
+						SoundCategory.PLAYER_GUNSHOT),
+				1f);
+		if (!critical.admitted()
+				|| critical.evictedToken() != oldest
+				|| !budget.active(critical.token())
+				|| budget.activeCount(AudioChannel.SFX)
+						!= SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS) {
+			throw new AssertionError(
+					"critical source must replace the oldest low voice");
+		}
+		for (int index = 0; index < 12; index++) {
+			budget.admit(
+					AudioChannel.SFX,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f);
+		}
+		if (!budget.active(critical.token())) {
+			throw new AssertionError(
+					"low priority sources must not evict player gunfire");
+		}
+		budget.update(1.1f);
+		if (budget.activeCount(AudioChannel.SFX) != 0) {
+			throw new AssertionError("voice timeout must recover capacity");
+		}
+
+		CountingSoundSink sink = new CountingSoundSink();
+		BukovConcurrentSoundPlayer player =
+				new BukovConcurrentSoundPlayer(sink);
+		long token = player.play(
+				"critical",
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.Priority.CRITICAL,
+				true,
+				0.1f,
+				1f,
+				1f,
+				1f);
+		if (token <= 0L || sink.played != 1) {
+			throw new AssertionError(
+					"admitted source must reach the audio backend");
+		}
+		player.update(0.11f);
+		if (sink.stopped != 1
+				|| player.activeCount(AudioChannel.SFX) != 0) {
+			throw new AssertionError(
+					"timeout must stop backend playback and free its voice");
+		}
+	}
+
 	private static ExperienceContract contract() {
 		ExperienceContract contract = new ExperienceContract();
 		contract.fullVolumeDistance = 1f;
@@ -194,6 +263,28 @@ public final class BukovAudioModelStandaloneTest {
 		public boolean blocked(int x, int y) {
 			return (verticalWalls && (y == 8 || y == 12))
 					|| (horizontalWalls && (x == 8 || x == 12));
+		}
+	}
+
+	private static final class CountingSoundSink
+			implements BukovSoundPlaybackSink {
+
+		private int played;
+		private int stopped;
+
+		@Override
+		public long play(
+				String asset,
+				float leftVolume,
+				float rightVolume,
+				float pitch) {
+			played++;
+			return played;
+		}
+
+		@Override
+		public void stop(String asset, long playbackId) {
+			stopped++;
 		}
 	}
 

@@ -1268,22 +1268,22 @@ public final class BukovRealtimeWorld
 					heroBody.y,
 					enemy.engagementRange()
 			);
-			float navigationTargetX = enemy.brain.seesPlayer()
-					? heroBody.x : enemy.brain.lastSeenX();
-			float navigationTargetY = enemy.brain.seesPlayer()
-					? heroBody.y : enemy.brain.lastSeenY();
 			enemy.navigator.step(
 					dt,
 					enemy.body.x,
 					enemy.body.y,
-					navigationTargetX,
-					navigationTargetY,
+					enemy.brain.navigationTargetX(),
+					enemy.brain.navigationTargetY(),
 					enemy.brain.seesPlayer(),
 					enemy.brain.desiredX(),
 					enemy.brain.desiredY(),
 					collisionMap,
 					enemy.navigationIntent
 			);
+			enemy.brain.observeNavigation(
+					enemy.navigationIntent.targetUnreachable(),
+					enemy.body.x,
+					enemy.body.y);
 			enemy.tactics.step(
 					dt,
 					enemy.brain.seesPlayer(),
@@ -2598,8 +2598,25 @@ public final class BukovRealtimeWorld
 					)
 			);
 			enemy.mob.sprite.setRealtimeMoving(enemy.moving);
-			if (enemy.brain.state() != RealtimeEnemyBrain.State.IDLE) {
-				enemy.mob.sprite.turnTo(enemy.mob.pos, hero.pos);
+			if (enemy.brain.desiredX() != 0f
+					|| enemy.brain.desiredY() != 0f) {
+				int facingX = Math.max(
+						0,
+						Math.min(
+								Dungeon.level.width() - 1,
+								(int)Math.floor(
+										enemy.body.x
+												+ enemy.brain.desiredX())));
+				int facingY = Math.max(
+						0,
+						Math.min(
+								Dungeon.level.height() - 1,
+								(int)Math.floor(
+										enemy.body.y
+												+ enemy.brain.desiredY())));
+				enemy.mob.sprite.turnTo(
+						enemy.mob.pos,
+						facingX + facingY * Dungeon.level.width());
 			}
 			if (enemy.bossState != null
 					&& enemy.mob.sprite instanceof BukovWhiteLineSprite) {
@@ -4108,6 +4125,7 @@ public final class BukovRealtimeWorld
 					combat = true;
 					break;
 				case INVESTIGATE:
+				case SEARCH:
 					tense = true;
 					break;
 				default:

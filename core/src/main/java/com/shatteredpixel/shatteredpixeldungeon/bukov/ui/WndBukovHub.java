@@ -1,6 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
 import com.shatteredpixel.shatteredpixeldungeon.ShatteredPixelDungeon;
+import com.shatteredpixel.shatteredpixeldungeon.SPDSettings;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidOutcome;
 import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
@@ -45,6 +46,8 @@ public final class WndBukovHub extends Window {
 	private static final int INVENTORY_TOP_L_COMPACT = 66;
 	private static final int FOOTER_RESERVED = 60;
 	private static final int FOOTER_RESERVED_COMPACT = 48;
+	private static final int MOTION_ENTRANCE = 0;
+	private static final float ENTRANCE_TRAVEL_PX = 6f;
 
 	private final BukovHubController controller;
 	private final Callback deploy;
@@ -56,8 +59,17 @@ public final class WndBukovHub extends Window {
 	private final List<BukovHubViewModel.ItemRow> inventoryItems;
 	private final BukovHubFocusModel focus;
 	private final BukovUiTokens tokens;
+	private final BukovUiMotionScheduler motionScheduler =
+			new BukovUiMotionScheduler();
 	private final List<LoadoutRow> itemRows = new ArrayList<>();
 	private final List<TacticalButton> actionButtons = new ArrayList<>();
+	private ColorBlock entranceRule;
+	private RenderedTextBlock entranceEyebrow;
+	private RenderedTextBlock entranceTitle;
+	private float entranceEyebrowX;
+	private float entranceTitleX;
+	private float entranceTextY;
+	private float entranceRuleWidth;
 	private ScrollPane itemScroll;
 	private ModeSelectButton modeButton;
 	private FilterCycleButton filterButton;
@@ -123,6 +135,15 @@ public final class WndBukovHub extends Window {
 		focus = new BukovHubFocusModel(inventoryItems.size());
 		focus.focus(restoredFocus);
 		tokens = BukovUiTokens.loadDefault();
+		motionScheduler.start(
+				this,
+				MOTION_ENTRANCE,
+				0f,
+				1f,
+				tokens.motionMs("slow"));
+		if (SPDSettings.bukovReduceMotion()) {
+			motionScheduler.cancelToEnd(this, MOTION_ENTRANCE);
+		}
 
 		int windowWidth = BukovWindowLayout.safeWidth(
 				PixelScene.landscape() ? WIDTH_L : WIDTH_P);
@@ -130,6 +151,7 @@ public final class WndBukovHub extends Window {
 				PixelScene.landscape() ? HEIGHT_L : HEIGHT_P);
 		resize(windowWidth, windowHeight);
 		build(windowWidth, windowHeight);
+		applyEntranceMotion();
 		updateFocus();
 	}
 
@@ -146,33 +168,38 @@ public final class WndBukovHub extends Window {
 				16,
 				tokens.colorWithAlpha("panel.surface", 255));
 		add(header);
-		ColorBlock headerRule = new ColorBlock(
+		entranceRuleWidth = windowWidth;
+		entranceRule = new ColorBlock(
 				windowWidth,
 				1,
 				tokens.color("accent.valuable"));
-		headerRule.y = 15;
-		add(headerRule);
+		entranceRule.y = 15;
+		add(entranceRule);
 
-		RenderedTextBlock eyebrow = text(
+		entranceEyebrow = text(
 				BukovMessages.get(viewModel.activeRaid
-						? "bukov.economy.hub.eyebrow_active"
-						: "bukov.economy.hub.eyebrow_loadout"),
+							? "bukov.economy.hub.eyebrow_active"
+							: "bukov.economy.hub.eyebrow_loadout"),
 				BukovVisualContract.FONT_CAPTION,
 				tokens.color("text.secondary"));
-		eyebrow.setPos(windowWidth - MARGIN - eyebrow.width(), y);
+		entranceEyebrowX =
+				windowWidth - MARGIN - entranceEyebrow.width();
+		entranceTextY = y;
+		entranceEyebrow.setPos(entranceEyebrowX, entranceTextY);
 		// The bilingual eyebrow and 11px Chinese title cannot share a 127px
 		// portrait header without drawing through one another.
-		eyebrow.visible = landscape;
-		add(eyebrow);
+		entranceEyebrow.visible = landscape;
+		add(entranceEyebrow);
 
-		RenderedTextBlock title = text(
+		entranceTitle = text(
 				BukovMessages.get(viewModel.activeRaid
-						? "bukov.economy.hub.title_active"
-						: "bukov.economy.hub.title_loadout"),
+							? "bukov.economy.hub.title_active"
+							: "bukov.economy.hub.title_loadout"),
 				BukovVisualContract.FONT_BODY,
 				tokens.color("text.primary"));
-		title.setPos(MARGIN, y);
-		add(title);
+		entranceTitleX = MARGIN;
+		entranceTitle.setPos(entranceTitleX, entranceTextY);
+		add(entranceTitle);
 		y += 16;
 
 		if (!compactLandscape) {
@@ -833,6 +860,8 @@ public final class WndBukovHub extends Window {
 	@Override
 	public void update() {
 		super.update();
+		motionScheduler.update(Game.elapsed);
+		applyEntranceMotion();
 		int delta = focusRepeater.update(
 				ControllerHandler.leftStickPosition.x,
 				ControllerHandler.leftStickPosition.y,
@@ -841,6 +870,27 @@ public final class WndBukovHub extends Window {
 			focus.move(delta);
 			updateFocus();
 		}
+	}
+
+	private void applyEntranceMotion() {
+		float progress = entranceEase(
+				motionScheduler.value(this, MOTION_ENTRANCE));
+		float offset = -ENTRANCE_TRAVEL_PX * (1f - progress);
+		entranceTitle.setPos(
+				entranceTitleX + offset,
+				entranceTextY);
+		entranceTitle.alpha(progress);
+		entranceEyebrow.setPos(
+				entranceEyebrowX - offset,
+				entranceTextY);
+		entranceEyebrow.alpha(progress);
+		entranceRule.size(entranceRuleWidth * progress, 1f);
+	}
+
+	static float entranceEase(float progress) {
+		float clamped = Math.max(0f, Math.min(1f, progress));
+		float remaining = 1f - clamped;
+		return 1f - remaining * remaining * remaining;
 	}
 
 	@Override

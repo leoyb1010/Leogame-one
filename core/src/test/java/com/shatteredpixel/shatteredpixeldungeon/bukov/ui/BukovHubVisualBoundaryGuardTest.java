@@ -88,7 +88,7 @@ public class BukovHubVisualBoundaryGuardTest {
 
 		assertTrue(hub.contains("compactLandscape"));
 		assertTrue(hub.contains("inventoryUtilityHeight"));
-		assertTrue(hub.contains("eyebrow.visible = landscape"));
+		assertTrue(hub.contains("entranceEyebrow.visible = landscape"));
 		assertTrue(search.contains("DeviceCompat.hasHardKeyboard()"));
 		assertTrue(search.contains("boundOffsetWithMargin(0)"));
 		assertTrue(search.contains("public void offset(int xOffset, int yOffset)"));

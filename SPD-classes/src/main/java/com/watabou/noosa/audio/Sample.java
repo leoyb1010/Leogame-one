@@ -115,6 +115,12 @@ public enum Sample {
 		}
 	}
 
+	public synchronized void stop( Object id, long playbackId ) {
+		if (playbackId >= 0L && ids.containsKey(id)) {
+			ids.get(id).stop(playbackId);
+		}
+	}
+
 	private class DelayedSoundEffect{
 		Object id;
 		float delay;

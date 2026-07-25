@@ -90,6 +90,20 @@ public class BukovUiMotionSchedulerTest {
 		assertFalse(scheduler.cancelToEnd(owner, 2));
 	}
 
+	@Test
+	public void reducedMotionCanReachTerminalStateBeforeFirstFrame() {
+		BukovUiMotionScheduler scheduler =
+				new BukovUiMotionScheduler();
+		Object owner = new Object();
+
+		scheduler.start(owner, 0, 0f, 1f, 320);
+		scheduler.cancelToEnd(owner, 0);
+
+		assertEquals(1f, scheduler.value(owner, 0), 0f);
+		assertFalse(scheduler.isActive(owner, 0));
+		assertEquals(0, scheduler.activeCount());
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void zeroDurationIsRejected() {
 		new BukovUiMotionScheduler().start(

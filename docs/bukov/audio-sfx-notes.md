@@ -60,6 +60,22 @@ first-difference energy for each family. This keeps future remasters flexible
 while rejecting six valid-looking WAV files that no longer sound materially
 different from one another.
 
+## Concurrent voice budget
+
+`SoundConcurrencyBudget` caps each of the four audio buses at six logical
+voices. When a bus is full it deterministically replaces the oldest voice in
+the lowest eligible priority. Protected player gunfire, extraction cues and
+key UI cues cannot be evicted by lower-priority ambience or footsteps.
+Explicit release supports backends with a playback-complete callback; bounded
+timeouts release and stop voices on the host backend otherwise.
+
+The existing `BukovUiSoundRouter` production path now enters the budget through
+`BukovUiSoundPlayer`: focus ticks are low priority, while confirm, cancel and
+error cues are protected. The router's master/SFX gain and `soundFx` mute check
+remain upstream and unchanged. Realtime gunfire is represented by the protected
+category policy but remains at its private world playback seam until that seam
+can be migrated without combining audio work with combat-world changes.
+
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is
 still in the raid.

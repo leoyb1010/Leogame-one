@@ -5,6 +5,10 @@ repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 world="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovRealtimeWorld.java"
 fire_control="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/combat/FireControl.java"
 assets="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java"
+concurrency_budget="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SoundConcurrencyBudget.java"
+concurrent_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovConcurrentSoundPlayer.java"
+ui_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovUiSoundPlayer.java"
+sample="$repo_root/SPD-classes/src/main/java/com/watabou/noosa/audio/Sample.java"
 sound_dir="$repo_root/core/src/main/assets/sounds/bukov"
 firearms="$repo_root/core/src/main/assets/bukov/content/firearms.json"
 provenance="$repo_root/artwork/licenses/ASSET_PROVENANCE.csv"
@@ -228,6 +232,27 @@ for record in "${expected[@]}"; do
   fi
   if ! rg -F --quiet "$asset_path" "$provenance"; then
     echo "Bukov audio gate: provenance missing for $filename" >&2
+    exit 1
+  fi
+done
+
+for contract in \
+  "$concurrency_budget:MAX_ACTIVE_PER_BUS = 6" \
+  "$concurrency_budget:protectedByDefault(SoundCategory category)" \
+  "$concurrency_budget:case PLAYER_GUNSHOT:" \
+  "$concurrency_budget:case EXTRACTION_CUE:" \
+  "$concurrency_budget:candidate.order" \
+  "$concurrency_budget:remainingSeconds <= 0f" \
+  "$concurrent_player:stopInactivePlaybacks()" \
+  "$concurrent_player:budget.release(admission.token())" \
+  "$ui_player:BukovConcurrentSoundPlayer sounds" \
+  "$ui_player:cue != Cue.FOCUS" \
+  "$sample:public synchronized void stop( Object id, long playbackId )"
+do
+  contract_file="${contract%%:*}"
+  contract_text="${contract#*:}"
+  if ! rg -F --quiet "$contract_text" "$contract_file"; then
+    echo "Bukov audio gate: concurrency contract missing: $contract_text" >&2
     exit 1
   fi
 done
