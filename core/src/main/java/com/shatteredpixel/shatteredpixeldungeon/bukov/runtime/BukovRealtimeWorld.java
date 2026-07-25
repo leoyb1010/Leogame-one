@@ -4980,14 +4980,28 @@ public final class BukovRealtimeWorld
 
 	private BukovRaidCoordinator.ContainerSnapshot containerWithinRange(
 			int cell) {
+		/*
+		 * The container the operator is standing on always wins. Returning the
+		 * first in-range container instead let an ordinary loot cache generated
+		 * beside the mission archive shadow it: the prompt described the wrong
+		 * container, searching opened the wrong container, and the objective
+		 * stayed permanently unreachable on roughly one first raid in six.
+		 */
+		BukovRaidCoordinator.ContainerSnapshot fallback = null;
 		for (BukovRaidCoordinator.ContainerSnapshot container :
 				raid.containers()) {
-			if (!container.contentsReleased
-					&& withinInteractionRange(cell, container.cell)) {
+			if (container.contentsReleased
+					|| !withinInteractionRange(cell, container.cell)) {
+				continue;
+			}
+			if (container.cell == cell) {
 				return container;
 			}
+			if (fallback == null) {
+				fallback = container;
+			}
 		}
-		return null;
+		return fallback;
 	}
 
 	private boolean withinInteractionRange(int firstCell, int secondCell) {

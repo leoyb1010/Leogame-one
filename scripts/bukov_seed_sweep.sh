@@ -7,15 +7,17 @@ count=${1:-500}
 # Structural seeds are cheap; a full production-World route is not, so the route
 # sample is scaled separately.
 #
-# The default stays at 10 deliberately. Raising it to 200 on 7d95f027f fails 33
-# samples (16.5%): every one keeps mapReachable=VALID and 32 of 33 still extract
-# and settle, but the archive never reaches raid loot, so the mission objective
-# never completes. That is an open investigation (searching the cabinet drops a
-# heap that still needs a separate PICKUP the route harness never performs), and
-# until it is root-caused this gate must not be shipped red.
+# Ten routes were too few to be meaningful. Raising the sample to 200 exposed a
+# container-selection defect that left the first-raid objective unreachable on
+# roughly one map in six; ten samples had simply been lucky. That defect is now
+# fixed and 200 routes fail 2 rather than 33.
 #
-#   scripts/bukov_seed_sweep.sh 10000 200        # reproduce the failure
-#   BUKOV_WORLD_ROUTE_SEEDS=200 scripts/bukov_seed_sweep.sh 10000
+# The default stays at 10 only because those last 2 (indices 191 and 195) come
+# from a separate, still-open placement issue - the onboarding contact sometimes
+# has no cardinal combat lane - and shipping a red gate helps nobody. Raise it
+# deliberately when working that issue:
+#
+#   scripts/bukov_seed_sweep.sh 10000 200
 route_count=${2:-${BUKOV_WORLD_ROUTE_SEEDS:-10}}
 
 if ! [[ "$count" =~ '^[1-9][0-9]*$' ]] || (( count > 10000 )); then
