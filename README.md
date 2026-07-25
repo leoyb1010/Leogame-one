@@ -1,8 +1,6 @@
+# 逃离布科夫 · ESCAPE FROM BUKOV
+
 <div align="center">
-
-# 逃离布科夫
-
-### ESCAPE FROM BUKOV
 
 **离线单机 · 俯视角 · 实时战斗 · 像素搜打撤**
 
