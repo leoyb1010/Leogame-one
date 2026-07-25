@@ -399,6 +399,10 @@ public final class BukovRaidHud extends Component {
 		return interactionActionAvailable(live.interaction());
 	}
 
+	public BukovRaidHudState.Interaction interactionAction() {
+		return live.interaction();
+	}
+
 	static boolean interactionActionAvailable(
 			BukovRaidHudState.Interaction interaction) {
 		if (interaction == null) return false;

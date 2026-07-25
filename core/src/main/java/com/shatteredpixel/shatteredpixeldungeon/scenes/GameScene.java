@@ -1670,7 +1670,7 @@ public class GameScene extends PixelScene {
 				}
 				if (bukovTouchControls != null && bukovHud != null) {
 					bukovTouchControls.liveActionAvailability(
-							bukovHud.interactionActionAvailable(),
+							bukovHud.interactionAction(),
 							bukovWorld.reloadActionAvailable(),
 							bukovWorld.medicalActionAvailable());
 				}

@@ -61,6 +61,33 @@ public class BukovTouchIconTest {
 	}
 
 	@Test
+	public void interactionGlyphTracksTheLiveWorldPrompt() {
+		assertEquals(
+				BukovTouchIcon.Glyph.SEARCH,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.SEARCH));
+		assertEquals(
+				BukovTouchIcon.Glyph.BACKPACK,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.PICKUP));
+		assertEquals(
+				BukovTouchIcon.Glyph.DEPLOY,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.EXTRACT));
+		assertEquals(
+				BukovTouchIcon.Glyph.SETTINGS,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.PUMP));
+		assertEquals(
+				BukovTouchIcon.Glyph.INTERACT,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.UNLOCK));
+		assertEquals(
+				BukovTouchIcon.Glyph.INTERACT,
+				BukovTouchControls.interactionGlyph(null));
+	}
+
+	@Test
 	public void touchButtonsKeepFullHitRectsAndNonColourStateCues()
 			throws Exception {
 		String controls = source("BukovTouchControls.java");
@@ -75,6 +102,7 @@ public class BukovTouchIconTest {
 				"if (inputBlocked || disabled || pointerId != -1)"));
 		assertTrue(controls.contains("liveActionAvailability("));
 		assertTrue(controls.contains("icon.visualState("));
+		assertTrue(controls.contains("interact.setGlyph(interactionGlyph("));
 		assertTrue(controls.contains("setDisabled(blocked)"));
 		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.66f"));
 		assertTrue(controls.contains("ACTION_LABEL_HEIGHT_PX = 5f"));
@@ -88,6 +116,8 @@ public class BukovTouchIconTest {
 		assertTrue(icon.contains("(pressed ? 1f : 0f)"));
 		assertTrue(icon.contains("touchDisabledStrike("));
 		assertTrue(icon.contains("TouchGlyph.valueOf(glyph.name())"));
+		assertTrue(icon.contains("glyphImage.frame("));
+		assertTrue(icon.contains("public Glyph glyph()"));
 		assertFalse(icon.contains("ColorBlock"));
 		assertFalse(icon.contains("Icons.get("));
 		assertFalse(icon.contains("new Image("));
@@ -161,6 +191,8 @@ public class BukovTouchIconTest {
 				StandardCharsets.UTF_8);
 		assertTrue(scene.contains(
 				"bukovTouchControls.liveActionAvailability("));
+		assertTrue(scene.contains(
+				"bukovHud.interactionAction()"));
 		assertTrue(scene.contains(
 				"bukovWorld.reloadActionAvailable()"));
 		assertTrue(scene.contains(

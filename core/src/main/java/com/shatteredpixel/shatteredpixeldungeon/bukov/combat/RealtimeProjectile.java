@@ -62,7 +62,7 @@ public final class RealtimeProjectile {
 		for (int i = 0; i < steps && active; i++) {
 			float nextX = x + velocityX * stepDt;
 			float nextY = y + velocityY * stepDt;
-			if (map.blocked(
+			if (map.blocksLine(
 					(int)Math.floor(nextX),
 					(int)Math.floor(nextY))) {
 				active = false;

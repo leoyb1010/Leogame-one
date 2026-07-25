@@ -52,7 +52,7 @@ public final class GunshotAcousticSpaceResolver {
 			int stepX,
 			int stepY) {
 		for (int distance = 1; distance <= WALL_PROBE_TILES; distance++) {
-			if (collisionMap.blocked(
+			if (collisionMap.blocksLine(
 					x + stepX * distance,
 					y + stepY * distance)) {
 				return true;

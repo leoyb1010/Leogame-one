@@ -42,7 +42,7 @@ public final class GridLineOfSight {
 		int error = width + height;
 
 		while (true) {
-			if ((x != startX || y != startY) && map.blocked(x, y)) {
+			if ((x != startX || y != startY) && map.blocksLine(x, y)) {
 				return false;
 			}
 			if (x == endX && y == endY) {

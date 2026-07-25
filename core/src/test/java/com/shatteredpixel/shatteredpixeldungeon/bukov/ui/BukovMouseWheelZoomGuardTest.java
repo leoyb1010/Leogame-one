@@ -54,5 +54,30 @@ public class BukovMouseWheelZoomGuardTest {
 				"if (!BukovMode.active() && action == SPDAction.ZOOM_IN)"));
 		assertTrue(text.contains(
 				"} else if (!BukovMode.active() && action == SPDAction.ZOOM_OUT)"));
+
+		assertGuardBefore(
+				text,
+				"protected void onPointerDown",
+				"camera.edgeScroll.set(-1);");
+		assertGuardBefore(
+				text,
+				"protected void onPointerUp",
+				"camera.edgeScroll.set(1);");
+		assertGuardBefore(
+				text,
+				"protected void onDrag",
+				"if (pinching)");
+		assertTrue(text.contains(
+				"if (BukovMode.active()) {\n"
+						+ "\t\t\tcamera.edgeScroll.set(0);"));
+	}
+
+	private static void assertGuardBefore(
+			String source, String method, String legacyMutation) {
+		int start = source.indexOf(method);
+		int guard = source.indexOf("if (BukovMode.active())", start);
+		int mutation = source.indexOf(legacyMutation, start);
+		assertTrue(method + " must guard the inherited camera mutation",
+				start >= 0 && guard > start && mutation > guard);
 	}
 }

@@ -184,6 +184,13 @@ public class CellSelector extends ScrollArea {
 	
 	@Override
 	protected void onPointerDown( PointerEvent event ) {
+		if (BukovMode.active()) {
+			// The raid touch layer owns every gameplay pointer. In particular,
+			// never let an inherited pointer sequence re-enable edge scrolling
+			// or begin a map pinch while the action camera follows the operator.
+			camera.edgeScroll.set(0);
+			return;
+		}
 		camera.edgeScroll.set(-1);
 		if (event != curEvent && another == null) {
 					
@@ -207,6 +214,15 @@ public class CellSelector extends ScrollArea {
 	
 	@Override
 	protected void onPointerUp( PointerEvent event ) {
+		if (BukovMode.active()) {
+			// The classic release path restores edgeScroll to 1. That is valid
+			// for the dungeon cursor, but breaks Bukov's fixed follow camera.
+			camera.edgeScroll.set(0);
+			pinching = false;
+			another = null;
+			dragging = false;
+			return;
+		}
 		camera.edgeScroll.set(1);
 		if (pinching && (event == curEvent || event == another)) {
 			
@@ -228,6 +244,10 @@ public class CellSelector extends ScrollArea {
 	
 	@Override
 	protected void onDrag( PointerEvent event ) {
+		if (BukovMode.active()) {
+			camera.edgeScroll.set(0);
+			return;
+		}
 
 		if (pinching) {
 

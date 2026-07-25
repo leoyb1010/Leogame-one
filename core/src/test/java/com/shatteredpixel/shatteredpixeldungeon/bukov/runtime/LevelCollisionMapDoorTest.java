@@ -1,5 +1,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.GridLineOfSight;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpace;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpaceResolver;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeProjectile;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 import com.watabou.utils.SparseArray;
@@ -7,6 +12,7 @@ import com.watabou.utils.SparseArray;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
@@ -42,6 +48,114 @@ public class LevelCollisionMapDoorTest {
 	}
 
 	@Test
+	public void closedOrdinaryDoorBlocksTracesButNotMovementPlanning() {
+		TestLevel level = corridorLevel(Terrain.DOOR);
+		LevelCollisionMap map = new LevelCollisionMap(level);
+		int doorCell = cell(GATE_X, CORRIDOR_Y);
+
+		assertFalse("closed door remains reachable for auto-open movement",
+				map.blocked(GATE_X, CORRIDOR_Y));
+		assertTrue("closed door must physically block line traces",
+				map.blocksLine(GATE_X, CORRIDOR_Y));
+		assertFalse(GridLineOfSight.visible(
+				2.5f,
+				CORRIDOR_Y + 0.5f,
+				6.5f,
+				CORRIDOR_Y + 0.5f,
+				8f,
+				map));
+
+		HitscanResolver.Hit hit = new HitscanResolver.Hit();
+		HitscanResolver.cast(
+				2.5f,
+				CORRIDOR_Y + 0.5f,
+				1f,
+				0f,
+				4f,
+				map,
+				(minX, minY, maxX, maxY) -> Collections.emptyList(),
+				null,
+				hit);
+		assertEquals("hitscan stops at the closed door boundary",
+				1.5f, hit.distance, 0.0001f);
+
+		ProjectileListener closedListener = new ProjectileListener();
+		RealtimeProjectile closedProjectile = new RealtimeProjectile();
+		closedProjectile.launch(
+				3.5f,
+				CORRIDOR_Y + 0.5f,
+				2f,
+				0f,
+				0.05f,
+				2f);
+		closedProjectile.update(0.5f, map, closedListener);
+		assertFalse(closedProjectile.active);
+		assertEquals(1, closedListener.terrainHits);
+
+		map.approach(GATE_X, CORRIDOR_Y);
+
+		assertEquals(Terrain.OPEN_DOOR, level.map[doorCell]);
+		assertFalse(map.blocked(GATE_X, CORRIDOR_Y));
+		assertFalse("opened door must release the same trace map instance",
+				map.blocksLine(GATE_X, CORRIDOR_Y));
+		assertTrue(GridLineOfSight.visible(
+				2.5f,
+				CORRIDOR_Y + 0.5f,
+				6.5f,
+				CORRIDOR_Y + 0.5f,
+				8f,
+				map));
+
+		HitscanResolver.cast(
+				2.5f,
+				CORRIDOR_Y + 0.5f,
+				1f,
+				0f,
+				4f,
+				map,
+				(minX, minY, maxX, maxY) -> Collections.emptyList(),
+				null,
+				hit);
+		assertEquals(4f, hit.distance, 0.0001f);
+
+		ProjectileListener openListener = new ProjectileListener();
+		RealtimeProjectile openProjectile = new RealtimeProjectile();
+		openProjectile.launch(
+				3.5f,
+				CORRIDOR_Y + 0.5f,
+				2f,
+				0f,
+				0.05f,
+				2f);
+		openProjectile.update(0.5f, map, openListener);
+		assertTrue(openProjectile.active);
+		assertEquals(0, openListener.terrainHits);
+	}
+
+	@Test
+	public void closedOrdinaryDoorContributesToGunshotOcclusion() {
+		TestLevel level = openLevel(15, 15);
+		int sourceX = 7;
+		int sourceY = 7;
+		setTerrain(level, sourceX, sourceY - 1, Terrain.WALL);
+		setTerrain(level, sourceX - 1, sourceY, Terrain.WALL);
+		setTerrain(level, sourceX + 1, sourceY, Terrain.DOOR);
+		LevelCollisionMap map = new LevelCollisionMap(level);
+
+		assertEquals(
+				GunshotAcousticSpace.INDOOR,
+				GunshotAcousticSpaceResolver.resolve(
+						map, sourceX + 0.5f, sourceY + 0.5f));
+
+		map.approach(sourceX + 1, sourceY);
+
+		assertEquals(
+				GunshotAcousticSpace.OPEN,
+				GunshotAcousticSpaceResolver.resolve(
+						map, sourceX + 0.5f, sourceY + 0.5f));
+	}
+
+	@Test
 	public void freshGateBlocksAndCompletedRestoreImmediatelyUnblocks() {
 		TestLevel fresh = corridorLevel(Terrain.EMPTY);
 		int gateCell = cell(GATE_X, CORRIDOR_Y);
@@ -49,6 +163,7 @@ public class LevelCollisionMapDoorTest {
 				fresh, new int[]{gateCell}, false, null));
 		LevelCollisionMap freshMap = new LevelCollisionMap(fresh);
 		assertTrue(freshMap.blocked(GATE_X, CORRIDOR_Y));
+		assertTrue(freshMap.blocksLine(GATE_X, CORRIDOR_Y));
 
 		TestLevel restored = corridorLevel(Terrain.LOCKED_DOOR);
 		LevelCollisionMap restoredMap = new LevelCollisionMap(restored);
@@ -66,6 +181,7 @@ public class LevelCollisionMapDoorTest {
 				gateCell, refreshedCell[0]);
 		assertFalse("existing map must observe restored event state",
 				restoredMap.blocked(GATE_X, CORRIDOR_Y));
+		assertFalse(restoredMap.blocksLine(GATE_X, CORRIDOR_Y));
 	}
 
 	@Test
@@ -174,13 +290,51 @@ public class LevelCollisionMapDoorTest {
 		return level;
 	}
 
+	private static TestLevel openLevel(int width, int height) {
+		TestLevel level = new TestLevel(width, height);
+		Arrays.fill(level.map, Terrain.EMPTY);
+		for (int x = 0; x < width; x++) {
+			setTerrain(level, x, 0, Terrain.WALL);
+			setTerrain(level, x, height - 1, Terrain.WALL);
+		}
+		for (int y = 0; y < height; y++) {
+			setTerrain(level, 0, y, Terrain.WALL);
+			setTerrain(level, width - 1, y, Terrain.WALL);
+		}
+		refreshFlags(level);
+		return level;
+	}
+
+	private static void setTerrain(
+			TestLevel level, int x, int y, int terrain) {
+		int cell = x + y * level.width();
+		level.map[cell] = terrain;
+		int flags = Terrain.flags[terrain];
+		level.passable[cell] = (flags & Terrain.PASSABLE) != 0;
+		level.solid[cell] = (flags & Terrain.SOLID) != 0;
+		level.avoid[cell] = (flags & Terrain.AVOID) != 0;
+	}
+
+	private static void refreshFlags(TestLevel level) {
+		for (int cell = 0; cell < level.length(); cell++) {
+			int flags = Terrain.flags[level.map[cell]];
+			level.passable[cell] = (flags & Terrain.PASSABLE) != 0;
+			level.solid[cell] = (flags & Terrain.SOLID) != 0;
+			level.avoid[cell] = (flags & Terrain.AVOID) != 0;
+		}
+	}
+
 	private static int cell(int x, int y) {
 		return x + y * WIDTH;
 	}
 
 	private static final class TestLevel extends Level {
 		TestLevel() {
-			setSize(WIDTH, HEIGHT);
+			this(WIDTH, HEIGHT);
+		}
+
+		TestLevel(int width, int height) {
+			setSize(width, height);
 			blobs = new HashMap<>();
 			traps = new SparseArray<>();
 		}
@@ -196,6 +350,30 @@ public class LevelCollisionMapDoorTest {
 
 		@Override
 		protected void createItems() {
+		}
+	}
+
+	private static final class ProjectileListener
+			implements RealtimeProjectile.Listener {
+
+		int terrainHits;
+
+		@Override
+		public boolean hitTarget(
+				RealtimeProjectile projectile,
+				float fromX,
+				float fromY,
+				float toX,
+				float toY) {
+			return false;
+		}
+
+		@Override
+		public void hitTerrain(
+				RealtimeProjectile projectile,
+				float x,
+				float y) {
+			terrainHits++;
 		}
 	}
 }

@@ -165,12 +165,13 @@ public final class BukovTouchControls extends Component {
 	}
 
 	public void liveActionAvailability(
-			boolean interactAvailable,
+			BukovRaidHudState.Interaction interaction,
 			boolean reloadAvailable,
 			boolean medicalAvailable) {
 		setActionEnabled(
 				BukovTouchState.Action.INTERACT,
-				interactAvailable);
+				BukovRaidHud.interactionActionAvailable(interaction));
+		interact.setGlyph(interactionGlyph(interaction));
 		setActionEnabled(
 				BukovTouchState.Action.RELOAD,
 				reloadAvailable);
@@ -342,6 +343,29 @@ public final class BukovTouchControls extends Component {
 								Math.max(1f, width - 5f),
 								Math.max(1f, height)
 										* ACTION_ICON_HEIGHT_RATIO)));
+	}
+
+	static BukovTouchIcon.Glyph interactionGlyph(
+			BukovRaidHudState.Interaction interaction) {
+		if (interaction == null) {
+			return BukovTouchIcon.Glyph.INTERACT;
+		}
+		switch (interaction) {
+			case SEARCH:
+				return BukovTouchIcon.Glyph.SEARCH;
+			case PICKUP:
+				return BukovTouchIcon.Glyph.BACKPACK;
+			case EXTRACT:
+				return BukovTouchIcon.Glyph.DEPLOY;
+			case PUMP:
+				return BukovTouchIcon.Glyph.SETTINGS;
+			case NONE:
+			case MEDICAL:
+			case LOCKED:
+			case UNLOCK:
+			default:
+				return BukovTouchIcon.Glyph.INTERACT;
+		}
 	}
 
 	static BukovTouchIcon.Glyph iconFor(BukovTouchState.Stick stick) {
@@ -848,6 +872,10 @@ public final class BukovTouchControls extends Component {
 							: tokens.color("text.secondary"));
 			icon.visualState(visiblyPressed, disabled);
 			layout();
+		}
+
+		private void setGlyph(BukovTouchIcon.Glyph glyph) {
+			icon.glyph(glyph);
 		}
 
 		private void setDisabled(boolean disabled) {

@@ -38,6 +38,7 @@ public final class BukovTouchIcon extends Component {
 	private final int restingColor;
 	private final int pressedColor;
 	private final int disabledColor;
+	private Glyph glyph;
 	private Image glyphImage;
 	private Image disabledStrike;
 	private boolean pressed;
@@ -54,6 +55,7 @@ public final class BukovTouchIcon extends Component {
 		this.restingColor = restingColor;
 		this.pressedColor = pressedColor;
 		this.disabledColor = disabledColor;
+		this.glyph = glyph;
 		glyphImage = BukovUiAssets.touchGlyph(
 				BukovUiAssets.TouchGlyph.valueOf(glyph.name()),
 				withFullAlpha(restingColor));
@@ -63,6 +65,37 @@ public final class BukovTouchIcon extends Component {
 		disabledStrike.visible = false;
 		add(disabledStrike);
 		visualState(false, false);
+	}
+
+	/**
+	 * Changes the semantic symbol without allocating a new scene node. The
+	 * interaction button uses this to show search, loot and extraction intent
+	 * directly, while retaining its stable hit target and compact text label.
+	 */
+	public void glyph(Glyph glyph) {
+		if (glyph == null) {
+			throw new IllegalArgumentException("glyph is required");
+		}
+		if (this.glyph == glyph) {
+			return;
+		}
+		this.glyph = glyph;
+		if (BukovUiAssets.atlasAvailable()) {
+			BukovUiAssets.TouchGlyph atlasGlyph =
+					BukovUiAssets.TouchGlyph.valueOf(glyph.name());
+			glyphImage.frame(
+					BukovUiAssets.touchGlyphColumn(atlasGlyph)
+							* BukovUiAssets.TILE_SIZE,
+					BukovUiAssets.touchGlyphRow(atlasGlyph)
+							* BukovUiAssets.TILE_SIZE,
+					BukovUiAssets.TILE_SIZE,
+					BukovUiAssets.TILE_SIZE);
+		}
+		visualState(pressed, disabled);
+	}
+
+	public Glyph glyph() {
+		return glyph;
 	}
 
 	@Override

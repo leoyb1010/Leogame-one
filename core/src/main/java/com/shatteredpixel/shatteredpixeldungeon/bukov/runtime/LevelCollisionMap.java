@@ -50,6 +50,20 @@ public final class LevelCollisionMap implements CollisionMap {
 	}
 
 	@Override
+	public boolean blocksLine(int x, int y) {
+		if (x <= 0 || y <= 0 || x >= width() - 1 || y >= height() - 1) {
+			return true;
+		}
+		int cell = x + y * width();
+		// A closed ordinary door is reachable for movement, but remains a
+		// physical sight/projectile/acoustic barrier until approach() opens it.
+		if (level.map[cell] == Terrain.DOOR) {
+			return true;
+		}
+		return blocked(x, y);
+	}
+
+	@Override
 	public void approach(int x, int y) {
 		if (x <= 0 || y <= 0 || x >= width() - 1 || y >= height() - 1) {
 			return;

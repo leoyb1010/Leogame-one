@@ -65,8 +65,10 @@ public class AndroidMissingNativesHandler extends Activity {
 		}
 
 		TextView text = new TextView(this);
-		String message = "Shattered Pixel Dungeon failed to access some of its internal code and cannot start!\n\n" +
-				"Try downloading the game from an official source if you haven't already. You can also screenshot this debug info and send it to the developer (Evan@ShatteredPixel.com):";
+		String message = "Escape from Bukov could not access required internal code and cannot start.\n"
+				+ "《逃离布科夫》无法访问必要的内部代码，因此无法启动。\n\n"
+				+ "Please reinstall the latest build from the same source. "
+				+ "If the issue continues, save a screenshot of the debug details below.";
 
 		message += "\n\nPackage: " + getPackageName();
 		message += "\nVersion: " + versionName + " (" + versionCode + ")";

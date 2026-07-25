@@ -927,8 +927,13 @@ public final class BukovRealtimeWorld
 	}
 
 	@Override
+	public void sampleInput() {
+		input.sample(heroBody);
+	}
+
+	@Override
 	public void pollInput() {
-		inputFrame = input.poll(heroBody);
+		inputFrame = input.consumeFixedStep();
 		if (inputFrame.backpackPressed) {
 			backpackRequested = true;
 		}
@@ -3652,9 +3657,35 @@ public final class BukovRealtimeWorld
 				enemy.body.y);
 		int nextCell = enemy.body.cell(Dungeon.level.width());
 		if (nextCell != enemy.mob.pos) {
-			enemy.mob.pos = nextCell;
+			syncMovedEnemyVisibility(
+					enemy.mob,
+					nextCell,
+					Dungeon.level.heroFOV);
 		}
 		targetSpatialIndex.update(enemy.body);
+	}
+
+	/**
+	 * Keeps one moving enemy aligned with the player's already-computed FOV.
+	 *
+	 * <p>The player may remain stationary while an off-screen enemy crosses into
+	 * a visible cell. In that case no player FOV refresh runs, so the sprite must
+	 * be synchronized at the enemy's logical-cell boundary. This deliberately
+	 * touches only the enemy that moved rather than scanning every mob at
+	 * 120 Hz.</p>
+	 */
+	static void syncMovedEnemyVisibility(
+			Mob mob, int nextCell, boolean[] heroFieldOfView) {
+		if (mob == null) {
+			throw new IllegalArgumentException("mob is required");
+		}
+		mob.pos = nextCell;
+		if (mob.sprite != null
+				&& heroFieldOfView != null
+				&& nextCell >= 0
+				&& nextCell < heroFieldOfView.length) {
+			mob.sprite.visible = heroFieldOfView[nextCell];
+		}
 	}
 
 	private void announceEnemyManeuver(EnemyRuntime enemy) {
@@ -4540,7 +4571,7 @@ public final class BukovRealtimeWorld
 				y0 += stepY;
 			}
 			if ((x0 != x1 || y0 != y1)
-					&& collisionMap.blocked(x0, y0)) {
+					&& collisionMap.blocksLine(x0, y0)) {
 				blocked++;
 			}
 		}

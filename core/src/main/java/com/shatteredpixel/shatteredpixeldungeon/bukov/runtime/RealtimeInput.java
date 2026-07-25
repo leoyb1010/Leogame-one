@@ -25,6 +25,8 @@ import com.watabou.utils.Signal;
 public final class RealtimeInput {
 
 	private final InputFrame frame = new InputFrame();
+	private final InputFrame fixedFrame = new InputFrame();
+	private final InputEdgeLatch edgeLatch = new InputEdgeLatch();
 	private final RealtimeTouchState touch = new RealtimeTouchState();
 	private final PointF tunedLeftStick = new PointF();
 	private final PointF tunedRightStick = new PointF();
@@ -184,6 +186,13 @@ public final class RealtimeInput {
 		frame.interactHeld = false;
 		frame.sprintHeld = false;
 		frame.clearEdges();
+		fixedFrame.movement.set(0f, 0f);
+		fixedFrame.aim.set(1f, 0f);
+		fixedFrame.fireHeld = false;
+		fixedFrame.interactHeld = false;
+		fixedFrame.sprintHeld = false;
+		fixedFrame.clearEdges();
+		edgeLatch.reset();
 		cancelTouches();
 	}
 
@@ -209,7 +218,12 @@ public final class RealtimeInput {
 		}
 	}
 
-	public InputFrame poll(RealtimeBody heroBody) {
+	/**
+	 * Samples devices exactly once per rendered frame. Edge values are latched
+	 * until a fixed step consumes them; continuous axes and held states simply
+	 * replace the previous render sample.
+	 */
+	public void sample(RealtimeBody heroBody) {
 		if (heroBody == null) {
 			throw new IllegalArgumentException("heroBody is required");
 		}
@@ -335,7 +349,31 @@ public final class RealtimeInput {
 		controllerInteractPressed = false;
 		controllerMedicalSlot = 0;
 		backpackPressed = false;
-		return frame;
+		edgeLatch.capture(frame);
+	}
+
+	/**
+	 * Returns the latest continuous sample plus edge values for only the first
+	 * fixed step after capture.
+	 */
+	public InputFrame consumeFixedStep() {
+		fixedFrame.movement.set(frame.movement);
+		fixedFrame.aim.set(frame.aim);
+		fixedFrame.fireHeld = frame.fireHeld;
+		fixedFrame.interactHeld = frame.interactHeld;
+		fixedFrame.sprintHeld = frame.sprintHeld;
+		fixedFrame.aimAssistScale = frame.aimAssistScale;
+		edgeLatch.drainTo(fixedFrame);
+		return fixedFrame;
+	}
+
+	/**
+	 * Compatibility seam for renderer-free callers which intentionally use one
+	 * device sample per fixed step.
+	 */
+	public InputFrame poll(RealtimeBody heroBody) {
+		sample(heroBody);
+		return consumeFixedStep();
 	}
 
 	private int firstMedicalSlotPressed() {

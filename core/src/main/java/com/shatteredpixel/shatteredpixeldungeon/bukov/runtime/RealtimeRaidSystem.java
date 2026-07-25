@@ -13,6 +13,9 @@ public final class RealtimeRaidSystem {
 
 	public interface World {
 		boolean paused();
+		default void sampleInput() {
+			// Renderer-free worlds may have no device input.
+		}
 		void beginFixedStep();
 		void pollInput();
 		void updatePlayer(float dt);
@@ -71,6 +74,7 @@ public final class RealtimeRaidSystem {
 			clock.reset();
 			return;
 		}
+		world.sampleInput();
 		clock.advanceWhile(renderDelta, dt -> {
 			if (world.paused()) {
 				return false;

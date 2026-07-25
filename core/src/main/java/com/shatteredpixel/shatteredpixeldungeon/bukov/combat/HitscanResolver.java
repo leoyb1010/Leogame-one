@@ -157,7 +157,7 @@ public final class HitscanResolver {
 		float distance = 0f;
 
 		while (distance <= maximum) {
-			if (map.blocked(cellX, cellY)) {
+			if (map.blocksLine(cellX, cellY)) {
 				return Math.max(0f, distance);
 			}
 			if (Math.abs(maxX - maxY) <= 0.00001f) {
@@ -167,8 +167,8 @@ public final class HitscanResolver {
 				// seam between two tiles. The epsilon preserves that topology
 				// after normalized direction arithmetic rounds the two times.
 				distance = Math.min(maxX, maxY);
-				if (map.blocked(cellX + stepX, cellY)
-						|| map.blocked(cellX, cellY + stepY)) {
+				if (map.blocksLine(cellX + stepX, cellY)
+						|| map.blocksLine(cellX, cellY + stepY)) {
 					return Math.max(0f, distance);
 				}
 				cellX += stepX;
