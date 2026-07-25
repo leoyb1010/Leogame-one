@@ -7,7 +7,7 @@
 > 搜到什么不算本事，能带回来才算。
 
 [![CI](https://github.com/leoyb1010/Leogame-one/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/leoyb1010/Leogame-one/actions/workflows/ci.yml)
-![Alpha](https://img.shields.io/badge/Alpha-33.0-D6A72C)
+![Alpha](https://img.shields.io/badge/Alpha-34.0-D6A72C)
 ![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20iOS-2A7882)
 ![Combat](https://img.shields.io/badge/combat-realtime-C64E37)
 ![Offline](https://img.shields.io/badge/mode-offline%20single--player-3B8168)
@@ -101,7 +101,7 @@ iOS 使用双区触控：左侧移动、右侧瞄准射击，并提供背包、�
 
 ## 当前内容规模
 
-| 内容 | Alpha 33 |
+| 内容 | Alpha 34 |
 |---|---:|
 | 程序化地图主题 | 6 |
 | 枪械 | 18 |
@@ -179,34 +179,32 @@ iOS 使用双区触控：左侧移动、右侧瞄准射击，并提供背包、�
 
 ---
 
-## Alpha 33 阶段状态
+## Alpha 34 阶段状态
 
 当前封存提交：
 
 ```text
-7d4bf0fda5763746a1777a29a744d481cdea87a1
+以本文件所在的干净提交及封存清单为准
 ```
 
 本阶段重点关闭了：
 
-- 开火同时触发 UI 点击。
-- 背包关闭后补发一枪、重新打开或携带旧输入。
-- macOS 暂停按钮与 HUD 重叠。
-- 长中英文 HUD 文案越界和稳定帧重复拟合。
-- 低亮度背包图标融入背景。
-- 浮动伤害文字对象池复用后不显示。
-- RoboVM 缺少 `Character.UnicodeScript.of` 导致的 iOS AOT 兼容问题。
+- 把首局真实玩家路线门禁从 10 条提升到默认 200 条，避免小样本掩盖断路。
+- 修复搜索容器、地面战利品与相邻水泵竞争交互焦点，任务物不再出现“有提示但捡不到”。
+- 首局引导敌人只生成在存在真实直线交火通道的位置，避免敌人隔墙或卡在墙角后不可交战。
+- 补齐碰撞与视线查询审计，新增查询必须显式经过测试白名单评审。
+- 保留 Alpha 33 已关闭的输入转场、响应式 HUD、背包可读性与 iOS AOT 修复。
 
-完整变更见 [Alpha 33 阶段封存说明](docs/bukov/ALPHA33_CHANGELOG_ZH.md)。
+完整变更见 [Alpha 34 阶段封存说明](docs/bukov/ALPHA34_CHANGELOG_ZH.md)。
 
 ### 自动验收
 
 | 模块 | 结果 |
 |---|---:|
-| Core | 1159 tests，0 failure |
+| Core | 以本次封存报告为准，0 failure |
 | Desktop | 10 tests，0 failure |
 | iOS | 11 tests，0 failure |
-| 合计 | **1180 tests，全部通过** |
+| 首局真实路线 | **10,000 结构 Seed + 200/200 production World 路线** |
 
 同时通过音频、敌人图集、物品图集、本地化、原创视觉、六主题结构、UI 图集、
 UI/Motion Token、法律文件、地图可见性、战利品可发现性、内容规模和 RoboVM API
@@ -216,7 +214,7 @@ UI/Motion Token、法律文件、地图可见性、战利品可发现性、内�
 
 - 物理 iPhone 完整路线。
 - 实体控制器从启动到撤离的全流程。
-- 当前提交双端各 30 分钟连续渲染长测。
+- 当前提交双端各 30 分钟连续渲染长测及物理 GPU/热状态证据。
 - 五模式真人通关、10 名玩家复玩测试和三人音频盲测。
 - 24 张最终原创环境母图与最终美术签字。
 
@@ -337,6 +335,7 @@ scripts/                        Apple 构建、打包、安装和专项质量门
 
 ## 项目文档
 
+- [Alpha 34 阶段封存说明](docs/bukov/ALPHA34_CHANGELOG_ZH.md)
 - [Alpha 33 阶段封存说明](docs/bukov/ALPHA33_CHANGELOG_ZH.md)
 - [v2.0 逐条完成度审计](docs/bukov/V2_COMPLETION_AUDIT.md)
 - [布科夫实现矩阵](docs/bukov/IMPLEMENTATION_MATRIX.md)
