@@ -7,18 +7,11 @@ count=${1:-500}
 # Structural seeds are cheap; a full production-World route is not, so the route
 # sample is scaled separately.
 #
-# Ten routes were too few to be meaningful. Raising the sample to 200 exposed a
-# container-selection defect that left the first-raid objective unreachable on
-# roughly one map in six; ten samples had simply been lucky. That defect is now
-# fixed and 200 routes fail 2 rather than 33.
-#
-# The default stays at 10 only because those last 2 (indices 191 and 195) come
-# from a separate, still-open placement issue - the onboarding contact sometimes
-# has no cardinal combat lane - and shipping a red gate helps nobody. Raise it
-# deliberately when working that issue:
-#
-#   scripts/bukov_seed_sweep.sh 10000 200
-route_count=${2:-${BUKOV_WORLD_ROUTE_SEEDS:-10}}
+# Ten routes were too few to be meaningful. Raising the sample to 200 exposed
+# interaction-priority and onboarding-combat-lane defects that the smaller
+# sample had simply missed. Keep the production route matrix at 200 by default
+# so regressions cannot hide behind another lucky ten-seed run.
+route_count=${2:-${BUKOV_WORLD_ROUTE_SEEDS:-200}}
 
 if ! [[ "$count" =~ '^[1-9][0-9]*$' ]] || (( count > 10000 )); then
   print -u2 "seed count must be an integer from 1 to 10000"

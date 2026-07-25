@@ -752,7 +752,12 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		if (withinInteractionRange(hero.pos, pumpCell)) {
+		BukovRaidCoordinator.ContainerSnapshot nearby =
+				containerWithinRange(hero.pos);
+		int heapCell = nearbyLootHeapCell();
+		if (withinInteractionRange(hero.pos, pumpCell)
+				&& (nearby == null || nearby.cell != hero.pos)
+				&& heapCell != hero.pos) {
 			ExtractionState conditional =
 					raid.extraction(CONDITIONAL_EXTRACTION_ID);
 			boolean ready = conditional != null
@@ -781,8 +786,6 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		BukovRaidCoordinator.ContainerSnapshot nearby =
-				containerWithinRange(hero.pos);
 		if (nearby != null) {
 			boolean locked = nearby.state
 					== BukovSearchableContainer.State.LOCKED;
@@ -813,13 +816,6 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		int heapCell = selectVisibleLootHeap(
-				hero.pos,
-				Dungeon.level.width(),
-				Dungeon.level.length(),
-				Dungeon.level.heroFOV,
-				Dungeon.level.heaps,
-				extractionCell);
 		if (heapCell >= 0) {
 			Heap nearbyHeap = Dungeon.level.heaps.get(heapCell);
 			target.interaction(
@@ -1748,13 +1744,16 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		if (withinInteractionRange(hero.pos, pumpCell)) {
+		BukovRaidCoordinator.ContainerSnapshot container =
+				containerWithinRange(hero.pos);
+		int heapCell = nearbyLootHeapCell();
+		if (withinInteractionRange(hero.pos, pumpCell)
+				&& (container == null || container.cell != hero.pos)
+				&& heapCell != hero.pos) {
 			activatePump();
 			return;
 		}
 
-		BukovRaidCoordinator.ContainerSnapshot container =
-				containerWithinRange(hero.pos);
 		if (container != null) {
 			if (container.state == BukovSearchableContainer.State.SEARCHED
 					&& !container.contentsReleased) {
@@ -1814,7 +1813,9 @@ public final class BukovRealtimeWorld
 			return;
 		}
 
-		pickupNearbyHeap();
+		if (heapCell >= 0) {
+			pickupHeap(heapCell, false);
+		}
 	}
 
 	@Override
@@ -1823,7 +1824,15 @@ public final class BukovRealtimeWorld
 	}
 
 	private void pickupNearbyHeap() {
-		int heapCell = selectVisibleLootHeap(
+		int heapCell = nearbyLootHeapCell();
+		if (heapCell < 0) {
+			return;
+		}
+		pickupHeap(heapCell, false);
+	}
+
+	private int nearbyLootHeapCell() {
+		return selectVisibleLootHeap(
 				hero.pos,
 				Dungeon.level.width(),
 				Dungeon.level.length(),
@@ -1831,10 +1840,6 @@ public final class BukovRealtimeWorld
 				Dungeon.level.heaps,
 				extractionCell
 		);
-		if (heapCell < 0) {
-			return;
-		}
-		pickupHeap(heapCell, false);
 	}
 
 	private boolean pickupNearbyAutomaticItem() {
@@ -3314,6 +3319,10 @@ public final class BukovRealtimeWorld
 							&& whiteLineResolved())) {
 				continue;
 			}
+			if (onboardingContact
+					&& !hasOnboardingCombatLane(point.cell)) {
+				continue;
+			}
 			BukovHostMob mob = new BukovHostMob().configure(selected);
 			if (onboardingContact) {
 				mob.markOnboardingContact();
@@ -3362,6 +3371,7 @@ public final class BukovRealtimeWorld
 			int x = cell % width;
 			int y = cell / width;
 			if (collisionMap.blocked(x, y)) continue;
+			if (!hasOnboardingCombatLane(cell)) continue;
 			float centerX = x + 0.5f;
 			float centerY = y + 0.5f;
 			float deltaX = centerX - heroBody.x;
@@ -3395,6 +3405,41 @@ public final class BukovRealtimeWorld
 		mob.state = mob.WANDERING;
 		GameScene.add(mob);
 		return true;
+	}
+
+	private boolean hasOnboardingCombatLane(int targetCell) {
+		if (targetCell < 0 || targetCell >= Dungeon.level.length()) {
+			return false;
+		}
+		int width = Dungeon.level.width();
+		int targetX = targetCell % width;
+		int targetY = targetCell / width;
+		int[] directions = {-1, 0, 1, 0, 0, -1, 0, 1};
+		for (int distance = 4; distance >= 2; distance--) {
+			for (int index = 0; index < directions.length; index += 2) {
+				int deltaX = directions[index];
+				int deltaY = directions[index + 1];
+				int playerX = targetX + deltaX * distance;
+				int playerY = targetY + deltaY * distance;
+				if (playerX < 0 || playerX >= width
+						|| playerY < 0
+						|| playerY >= Dungeon.level.height()
+						|| collisionMap.blocked(playerX, playerY)) {
+					continue;
+				}
+				boolean clear = true;
+				for (int step = 1; step < distance; step++) {
+					if (collisionMap.blocksLine(
+							targetX + deltaX * step,
+							targetY + deltaY * step)) {
+						clear = false;
+						break;
+					}
+				}
+				if (clear) return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean attemptWhiteLineSpawn(float elapsed) {
