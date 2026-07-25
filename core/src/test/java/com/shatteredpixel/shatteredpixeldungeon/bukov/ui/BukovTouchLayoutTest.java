@@ -167,6 +167,39 @@ public class BukovTouchLayoutTest {
 		assertExpandedHitTargetsDoNotOverlap(layout);
 	}
 
+	@Test
+	public void liveInteractionButtonStaysClearOfBothSticksInEitherOrientation() {
+		BukovTouchLayout portrait = BukovTouchLayout.calculate(
+				135f,
+				225f,
+				3f,
+				6f,
+				3f,
+				10f,
+				42f);
+		BukovTouchLayout landscape = BukovTouchLayout.calculate(
+				240f,
+				135f,
+				6f,
+				3f,
+				6f,
+				5f,
+				55f);
+
+		assertFalse(portrait.interact.overlaps(portrait.movement));
+		assertFalse(portrait.interact.overlaps(portrait.aimFire));
+		assertFalse(landscape.interact.overlaps(landscape.movement));
+		assertFalse(landscape.interact.overlaps(landscape.aimFire));
+		assertFalse(expandedHitRect(portrait.interact)
+				.overlaps(portrait.movement));
+		assertFalse(expandedHitRect(portrait.interact)
+				.overlaps(portrait.aimFire));
+		assertFalse(expandedHitRect(landscape.interact)
+				.overlaps(landscape.movement));
+		assertFalse(expandedHitRect(landscape.interact)
+				.overlaps(landscape.aimFire));
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void rejectsMissingTouchSurface() {
 		BukovTouchLayout.calculate(0f, 200f, 0f, 0f, 0f, 0f);

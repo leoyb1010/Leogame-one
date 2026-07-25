@@ -283,6 +283,100 @@ public class BukovPlayerJourneyAcceptanceTest {
 	}
 
 	@Test
+	public void productionWorldCompletesFirstRaidAndRedeploys()
+			throws Exception {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.prepareAndConfirmDeployment();
+		Set<String> deployedUids = new HashSet<>(
+				saves.loadProfile().loadout().selectedUids());
+		assertFalse(deployedUids.isEmpty());
+
+		long seed = 0xB0C0F101L;
+		BukovLevel level = buildLevel(seed);
+		BukovRaidCoordinator raid = startRaid(
+				saves,
+				level,
+				seed,
+				"journey-production-world");
+		BukovRealtimeCombatHarness.Result live =
+				BukovRealtimeCombatHarness
+						.completeFirstRaidThroughWorld(raid, level);
+		assertRealCombatResult(live);
+
+		BukovRealtimeCombatHarness.FirstRaidJourneyEvidence journey =
+				live.firstRaidJourney;
+		assertNotNull(live.toString(), journey);
+		assertTrue("mission gate must start physically closed",
+				journey.gateInitiallyBlocked);
+		assertTrue("archive cabinet must expose the production search prompt",
+				journey.archiveSearchPrompted);
+		assertTrue("archive must enter the real carried-loot ledger",
+				journey.archiveCarried);
+		assertTrue("carrying the archive must unlock the production gate",
+				journey.gateUnlockedByArchive);
+		assertTrue("operator must cross the unlocked gate through real movement",
+				journey.crossedUnlockedGate);
+		assertTrue("high-value cache must expose the production search prompt",
+				journey.highValueSearchPrompted);
+		assertTrue("searched high-value loot must be picked up through World",
+				journey.highValueLootCollected);
+		assertTrue("real search and pickup must complete the first mission",
+				journey.missionCompleted);
+		assertTrue("E01 must expose the production extraction prompt",
+				journey.extractionPrompted);
+		assertTrue("holding production interact must complete E01",
+				journey.extractionCompleted);
+
+		String archiveUid = raid.loot().firstItemUidForDefinition(
+				FirstRaidMission.ARCHIVE_DEFINITION_ID);
+		assertNotNull(archiveUid);
+		RaidResult settlement = raid.settleSuccess();
+		assertEquals(RaidOutcome.SUCCESS, settlement.outcome());
+		assertTrue(settlement.missionCompleted());
+		assertEquals(1, settlement.kills());
+		assertTrue(settlement.transferredUids().contains(archiveUid));
+		assertTrue(settlement.transferredUids().containsAll(deployedUids));
+		assertNull(saves.loadRaidCheckpoint());
+
+		BukovHubController returned = new BukovHubController(saves);
+		BukovHubViewModel returnedView = returned.viewModel();
+		assertFalse(returnedView.activeRaid);
+		assertNotNull(returnedView.latestSettlement);
+		assertEquals(
+				RaidOutcome.SUCCESS,
+				returnedView.latestSettlement.outcome);
+		assertTrue(returnedView.latestSettlement.missionCompleted);
+		assertEquals(1, returnedView.latestSettlement.kills);
+		assertTrue(saves.loadProfile().stash().contains(archiveUid));
+
+		returned.repeatLastLoadout();
+		if (!returned.viewModel().canDeploy) {
+			returned.prepareAndConfirmDeployment();
+		}
+		assertTrue("settlement must leave a valid second loadout",
+				returned.viewModel().canDeploy);
+		returned.confirmDeployment();
+
+		// Reuse the established visible-contact seed so this assertion tests
+		// redeployment and production combat, not an unrelated wall-separated
+		// spawn that the headless harness cannot autonomously path toward.
+		long secondSeed = 0xB0C0F001L;
+		BukovLevel secondLevel = buildLevel(secondSeed);
+		BukovRaidCoordinator secondRaid = startRaid(
+				saves,
+				secondLevel,
+				secondSeed,
+				"journey-production-world-second");
+		BukovRealtimeCombatHarness.Result secondContact =
+				BukovRealtimeCombatHarness.killOneGeneratedEnemy(
+						secondRaid,
+						secondLevel);
+		assertRealCombatResult(secondContact);
+	}
+
+	@Test
 	public void e01E02AndE03AllSettleThroughRealMapDefinitions()
 			throws Exception {
 		String[] extractionIds = {"E01", "E02", "E03"};
@@ -536,6 +630,11 @@ public class BukovPlayerJourneyAcceptanceTest {
 				BukovRealtimeCombatHarness.killOneGeneratedEnemy(
 						raid,
 						level);
+		assertRealCombatResult(result);
+	}
+
+	private static void assertRealCombatResult(
+			BukovRealtimeCombatHarness.Result result) {
 		assertTrue(result.toString(), result.generatedEnemyCount > 0);
 		assertEquals(
 				FirstRaidEnemySpawnDirector.FIRST_GUNNER,

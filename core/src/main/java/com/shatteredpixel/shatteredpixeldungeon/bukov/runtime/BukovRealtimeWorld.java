@@ -5378,7 +5378,7 @@ public final class BukovRealtimeWorld
 			return CombatFeedbackType.BOSS_SLAM;
 		}
 		if (phase == WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD) {
-			return CombatFeedbackType.EXPLOSION;
+			return CombatFeedbackType.BOSS_OVERLOAD;
 		}
 		return null;
 	}

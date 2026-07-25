@@ -31,14 +31,14 @@ public class CombatFeedbackAudioCueTest {
 		assertEquals(
 				Assets.Sounds.Bukov.BOSS_OVERLOAD,
 				CombatFeedbackAudioCue.asset(
-						CombatFeedbackType.EXPLOSION));
+						CombatFeedbackType.BOSS_OVERLOAD));
 
 		for (CombatFeedbackType type : new CombatFeedbackType[]{
 				CombatFeedbackType.KILL,
 				CombatFeedbackType.WEAKPOINT_KILL,
 				CombatFeedbackType.BOSS_PHASE_BREAK,
 				CombatFeedbackType.BOSS_SLAM,
-				CombatFeedbackType.EXPLOSION}) {
+				CombatFeedbackType.BOSS_OVERLOAD}) {
 			assertTrue(type.name(),
 					CombatFeedbackAudioCue.volume(type) > 0f);
 			assertEquals(type.name(),
@@ -51,9 +51,11 @@ public class CombatFeedbackAudioCueTest {
 	}
 
 	@Test
-	public void ordinaryShotsDoNotManufactureAnExtraFeedbackCue() {
+	public void ordinaryCombatEventsDoNotBorrowBossOrKillCues() {
 		assertNull(CombatFeedbackAudioCue.asset(
 				CombatFeedbackType.RIFLE_SHOT));
+		assertNull(CombatFeedbackAudioCue.asset(
+				CombatFeedbackType.EXPLOSION));
 		assertNull(CombatFeedbackAudioCue.category(
 				CombatFeedbackType.PLAYER_HIT));
 		assertEquals(
@@ -89,6 +91,6 @@ public class CombatFeedbackAudioCueTest {
 		assertEquals(
 				SoundCategory.BOSS_CUE,
 				CombatFeedbackAudioCue.category(
-						CombatFeedbackType.EXPLOSION));
+						CombatFeedbackType.BOSS_OVERLOAD));
 	}
 }

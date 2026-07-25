@@ -105,7 +105,8 @@ public class CombatFeedbackResolverTest {
 	@Test
 	public void explosionFeedbackFadesOutAtFifteenTiles() {
 		ExperienceContract contract = ExperienceContractTestFixture.load();
-		CombatFeedbackPlan plan = new CombatFeedbackPlan();
+		CombatFeedbackPlan explosion = new CombatFeedbackPlan();
+		CombatFeedbackPlan bossOverload = new CombatFeedbackPlan();
 
 		CombatFeedbackResolver.add(
 				new CombatFeedbackRequest(
@@ -113,13 +114,24 @@ public class CombatFeedbackResolverTest {
 				),
 				contract,
 				BukovExperienceSettings.defaults(contract),
-				plan
+				explosion
+		);
+		CombatFeedbackResolver.add(
+				new CombatFeedbackRequest(
+						CombatFeedbackType.BOSS_OVERLOAD, 15f, 1f
+				),
+				contract,
+				BukovExperienceSettings.defaults(contract),
+				bossOverload
 		);
 
-		assertFalse(plan.visual());
-		assertFalse(plan.audio());
-		assertEquals(0f, plan.shakeAmplitudePx(), 0f);
-		assertEquals(0f, plan.vibrationAmplitude(), 0f);
+		for (CombatFeedbackPlan plan :
+				new CombatFeedbackPlan[]{explosion, bossOverload}) {
+			assertFalse(plan.visual());
+			assertFalse(plan.audio());
+			assertEquals(0f, plan.shakeAmplitudePx(), 0f);
+			assertEquals(0f, plan.vibrationAmplitude(), 0f);
+		}
 	}
 
 	@Test

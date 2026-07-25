@@ -79,6 +79,7 @@ public class BukovUiTokensTest {
 				+ haptic("SHOTGUN_NEAR") + ","
 				+ haptic("EXPLOSION") + ","
 				+ haptic("BOSS_SLAM") + ","
+				+ haptic("BOSS_OVERLOAD") + ","
 				+ haptic("EXTRACT_STAMP") + ","
 				+ haptic("KILL") + ","
 				+ haptic("WEAKPOINT_KILL") + ","

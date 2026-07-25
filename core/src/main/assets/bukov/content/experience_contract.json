@@ -47,6 +47,11 @@
         "visualIntensity": 1.4
       },
       {
+        "type": "BOSS_OVERLOAD",
+        "hitstopMs": 0,
+        "visualIntensity": 1.5
+      },
+      {
         "type": "EXTRACT_STAMP",
         "hitstopMs": 0,
         "visualIntensity": 1.0

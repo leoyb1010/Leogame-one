@@ -15,9 +15,13 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRuntimeLoadoutAdapter;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidBalanceTelemetry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovRaidHudState;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.watabou.input.ControllerHandler;
@@ -67,6 +71,7 @@ final class BukovRealtimeCombatHarness {
 		final boolean targetBodyActive;
 		final boolean targetStillInLevel;
 		final BackpackPauseEvidence backpackPause;
+		final FirstRaidJourneyEvidence firstRaidJourney;
 
 		private Result(
 				int generatedEnemyCount,
@@ -80,7 +85,8 @@ final class BukovRealtimeCombatHarness {
 				int killCount,
 				boolean targetBodyActive,
 				boolean targetStillInLevel,
-				BackpackPauseEvidence backpackPause) {
+				BackpackPauseEvidence backpackPause,
+				FirstRaidJourneyEvidence firstRaidJourney) {
 			this.generatedEnemyCount = generatedEnemyCount;
 			this.targetDefinitionId = targetDefinitionId;
 			this.initialTargetHealth = initialTargetHealth;
@@ -97,6 +103,7 @@ final class BukovRealtimeCombatHarness {
 			this.targetBodyActive = targetBodyActive;
 			this.targetStillInLevel = targetStillInLevel;
 			this.backpackPause = backpackPause;
+			this.firstRaidJourney = firstRaidJourney;
 		}
 
 		@Override
@@ -114,6 +121,42 @@ final class BukovRealtimeCombatHarness {
 					+ ", kills=" + killCount
 					+ ", bodyActive=" + targetBodyActive
 					+ ", stillInLevel=" + targetStillInLevel;
+		}
+	}
+
+	static final class FirstRaidJourneyEvidence {
+		final boolean gateInitiallyBlocked;
+		final boolean archiveSearchPrompted;
+		final boolean archiveCarried;
+		final boolean gateUnlockedByArchive;
+		final boolean crossedUnlockedGate;
+		final boolean highValueSearchPrompted;
+		final boolean highValueLootCollected;
+		final boolean missionCompleted;
+		final boolean extractionPrompted;
+		final boolean extractionCompleted;
+
+		private FirstRaidJourneyEvidence(
+				boolean gateInitiallyBlocked,
+				boolean archiveSearchPrompted,
+				boolean archiveCarried,
+				boolean gateUnlockedByArchive,
+				boolean crossedUnlockedGate,
+				boolean highValueSearchPrompted,
+				boolean highValueLootCollected,
+				boolean missionCompleted,
+				boolean extractionPrompted,
+				boolean extractionCompleted) {
+			this.gateInitiallyBlocked = gateInitiallyBlocked;
+			this.archiveSearchPrompted = archiveSearchPrompted;
+			this.archiveCarried = archiveCarried;
+			this.gateUnlockedByArchive = gateUnlockedByArchive;
+			this.crossedUnlockedGate = crossedUnlockedGate;
+			this.highValueSearchPrompted = highValueSearchPrompted;
+			this.highValueLootCollected = highValueLootCollected;
+			this.missionCompleted = missionCompleted;
+			this.extractionPrompted = extractionPrompted;
+			this.extractionCompleted = extractionCompleted;
 		}
 	}
 
@@ -153,19 +196,26 @@ final class BukovRealtimeCombatHarness {
 	static Result killOneGeneratedEnemy(
 			BukovRaidCoordinator raid,
 			BukovLevel level) throws IOException {
-		return runGeneratedEnemyCombat(raid, level, false);
+		return runGeneratedEnemyCombat(raid, level, false, false);
 	}
 
 	static Result verifyBackpackPauseAgainstGeneratedEnemy(
 			BukovRaidCoordinator raid,
 			BukovLevel level) throws IOException {
-		return runGeneratedEnemyCombat(raid, level, true);
+		return runGeneratedEnemyCombat(raid, level, true, false);
+	}
+
+	static Result completeFirstRaidThroughWorld(
+			BukovRaidCoordinator raid,
+			BukovLevel level) throws IOException {
+		return runGeneratedEnemyCombat(raid, level, false, true);
 	}
 
 	private static Result runGeneratedEnemyCombat(
 			BukovRaidCoordinator raid,
 			BukovLevel level,
-			boolean verifyBackpackPause) throws IOException {
+			boolean verifyBackpackPause,
+			boolean completeFirstRaid) throws IOException {
 		if (raid == null || level == null) {
 			throw new IllegalArgumentException("raid and level are required");
 		}
@@ -184,13 +234,13 @@ final class BukovRealtimeCombatHarness {
 		int previousMasterVolume = SPDSettings.bukovMasterVolume();
 		int previousSfxVolume = SPDSettings.bukovSfxVolume();
 
-		MouseState mouse = new MouseState();
+		InputState input = new InputState();
 		BukovRealtimeWorld world = null;
 		RealtimeRaidSystem system = null;
 		BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime = null;
 		try {
 			Gdx.files = headlessFiles(locateAssets());
-			Gdx.input = headlessInput(mouse);
+			Gdx.input = headlessInput(input);
 			SPDSettings.bukovMasterVolume(0);
 			SPDSettings.bukovSfxVolume(0);
 			ControllerHandler.controllerActive = false;
@@ -263,6 +313,7 @@ final class BukovRealtimeCombatHarness {
 					mob.realtimeBody.active = false;
 				}
 			}
+			placeHeroForVisibleContact(hero, level, target);
 
 			FxEvidence fx = new FxEvidence();
 			for (int frame = 0;
@@ -283,7 +334,7 @@ final class BukovRealtimeCombatHarness {
 							hero,
 							firearm,
 							target,
-							mouse)
+							input)
 					: null;
 
 			for (int frame = 0;
@@ -292,17 +343,28 @@ final class BukovRealtimeCombatHarness {
 					frame++) {
 				// The starter sidearm is semi-automatic, so drive real trigger
 				// release/press edges instead of holding an automatic-fire input.
-				mouse.fire = frame % 2 == 0;
+				input.fire = frame % 2 == 0;
 				aimAt(target);
 				system.update(RENDER_STEP);
 				system.drainCombatFx(fx::accept);
 			}
-			mouse.fire = false;
+			input.fire = false;
 			for (int frame = 0; frame < REMOVAL_REFRESH_FRAMES; frame++) {
 				aimAt(target);
 				system.update(RENDER_STEP);
 				system.drainCombatFx(fx::accept);
 			}
+
+			FirstRaidJourneyEvidence firstRaidJourney =
+					completeFirstRaid
+							? exerciseFirstRaidJourney(
+									world,
+									system,
+									raid,
+									level,
+									hero,
+									input)
+							: null;
 
 			runtime.writeBack(raid.loot());
 			RaidBalanceTelemetry telemetry =
@@ -319,7 +381,8 @@ final class BukovRealtimeCombatHarness {
 					raid.session().killCount(),
 					target.realtimeBody.active,
 					level.mobs.contains(target),
-					backpackPause);
+					backpackPause,
+					firstRaidJourney);
 		} finally {
 			if (system != null) {
 				system.dispose();
@@ -347,9 +410,9 @@ final class BukovRealtimeCombatHarness {
 			Hero hero,
 			Firearm firearm,
 			BukovHostMob target,
-			MouseState mouse) {
+			InputState input) {
 		aimAwayFrom(target, hero);
-		mouse.fire = true;
+		input.fire = true;
 		float elapsedBeforePause = raid.session().elapsedSeconds;
 		int heroHealthBeforePause = hero.HP;
 		int magazineBeforePause = firearm.magazineAmmo();
@@ -374,7 +437,7 @@ final class BukovRealtimeCombatHarness {
 		float elapsedAfterResumeFrame = raid.session().elapsedSeconds;
 		int magazineAfterResumeFrame = firearm.magazineAmmo();
 
-		mouse.fire = false;
+		input.fire = false;
 		for (int frame = 0;
 				frame < ENEMY_FIRE_TIMEOUT_FRAMES
 						&& raid.session().balanceTelemetry().damageTaken()
@@ -398,6 +461,350 @@ final class BukovRealtimeCombatHarness {
 				magazineAfterResumeFrame - magazineBeforePause,
 				raid.session().balanceTelemetry().damageTaken()
 						- damageBeforePause);
+	}
+
+	private static FirstRaidJourneyEvidence exerciseFirstRaidJourney(
+			BukovRealtimeWorld world,
+			RealtimeRaidSystem system,
+			BukovRaidCoordinator raid,
+			BukovLevel level,
+			Hero hero,
+			InputState input) {
+		BukovRaidLayout.MissionGate gate = level.missionGate();
+		if (gate == null || gate.gateCells.length == 0) {
+			throw new AssertionError(
+					"Production first raid is missing its mission gate");
+		}
+		LevelCollisionMap collision = new LevelCollisionMap(level);
+		boolean gateInitiallyBlocked =
+				allGateCellsBlocked(collision, level.width(), gate.gateCells);
+
+		BukovRaidCoordinator.ContainerSnapshot archive =
+				raid.container(FirstRaidMission.ARCHIVE_CONTAINER_ID);
+		if (archive == null) {
+			throw new AssertionError(
+					"Production first raid is missing the archive container");
+		}
+		placeHero(hero, level, archive.cell);
+		idleFrame(system, input);
+		boolean archiveSearchPrompted =
+				interaction(world) == BukovRaidHudState.Interaction.SEARCH;
+		holdInteract(system, input, archive.searchSeconds + 0.25f);
+		for (int frame = 0;
+				frame < 30
+						&& raid.loot().firstItemUidForDefinition(
+								FirstRaidMission.ARCHIVE_DEFINITION_ID) == null;
+				frame++) {
+			idleFrame(system, input);
+		}
+		boolean archiveCarried =
+				raid.loot().firstItemUidForDefinition(
+						FirstRaidMission.ARCHIVE_DEFINITION_ID) != null;
+		boolean gateUnlockedByArchive =
+				raid.eventCompleted(FirstRaidMission.EVENT_ID)
+						&& allGateCellsOpen(
+								collision,
+								level.width(),
+								gate.gateCells);
+		boolean crossedUnlockedGate =
+				gateUnlockedByArchive
+						&& crossMissionGate(
+								system,
+								input,
+								hero,
+								level,
+								collision,
+								gate.gateCells);
+
+		BukovRaidCoordinator.ContainerSnapshot highValue =
+				containerForTable(
+						raid,
+						FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID);
+		if (highValue == null) {
+			throw new AssertionError(
+					"Production first raid is missing its high-value container");
+		}
+		placeHero(hero, level, highValue.cell);
+		idleFrame(system, input);
+		boolean highValueSearchPrompted =
+				interaction(world) == BukovRaidHudState.Interaction.SEARCH;
+		long lootBeforeSearch = raid.loot().totalQuantity();
+		holdInteract(system, input, highValue.searchSeconds + 0.25f);
+		for (int attempt = 0;
+				attempt < 8
+						&& raid.loot().totalQuantity() <= lootBeforeSearch;
+				attempt++) {
+			tapInteract(system, input);
+		}
+		boolean highValueLootCollected =
+				raid.loot().totalQuantity() > lootBeforeSearch;
+		boolean missionCompleted = raid.firstRaidMissionCompleted();
+
+		ExtractionState extraction = raid.extraction("E01");
+		int extractionCell = level.extractionCell("E01");
+		if (extraction == null || extractionCell < 0) {
+			throw new AssertionError(
+					"Production first raid is missing baseline extraction E01");
+		}
+		placeHero(hero, level, extractionCell);
+		idleFrame(system, input);
+		boolean extractionPrompted =
+				interaction(world) == BukovRaidHudState.Interaction.EXTRACT;
+		holdInteract(
+				system,
+				input,
+				extraction.interactionSeconds() + 0.25f);
+
+		return new FirstRaidJourneyEvidence(
+				gateInitiallyBlocked,
+				archiveSearchPrompted,
+				archiveCarried,
+				gateUnlockedByArchive,
+				crossedUnlockedGate,
+				highValueSearchPrompted,
+				highValueLootCollected,
+				missionCompleted,
+				extractionPrompted,
+				extraction.completed());
+	}
+
+	private static BukovRaidHudState.Interaction interaction(
+			BukovRealtimeWorld world) {
+		BukovRaidHudState state = new BukovRaidHudState();
+		world.readRaidHudState(state);
+		return state.interaction();
+	}
+
+	private static void holdInteract(
+			RealtimeRaidSystem system,
+			InputState input,
+			float seconds) {
+		int frames = Math.max(
+				2,
+				(int)Math.ceil(seconds / RENDER_STEP) + 2);
+		input.interactHeld = true;
+		for (int frame = 0; frame < frames; frame++) {
+			input.interactPressed = frame == 0;
+			system.update(RENDER_STEP);
+		}
+		input.interactHeld = false;
+		input.interactPressed = false;
+		system.update(RENDER_STEP);
+	}
+
+	private static void tapInteract(
+			RealtimeRaidSystem system,
+			InputState input) {
+		input.interactHeld = true;
+		input.interactPressed = true;
+		system.update(RENDER_STEP);
+		input.interactHeld = false;
+		input.interactPressed = false;
+		system.update(RENDER_STEP);
+	}
+
+	private static void idleFrame(
+			RealtimeRaidSystem system,
+			InputState input) {
+		input.interactHeld = false;
+		input.interactPressed = false;
+		input.movementKey = -1;
+		system.update(RENDER_STEP);
+	}
+
+	private static void placeHero(
+			Hero hero,
+			BukovLevel level,
+			int cell) {
+		hero.pos = cell;
+		RealtimeBody body = hero.ensureRealtimeBody();
+		body.x = cell % level.width() + 0.5f;
+		body.y = cell / level.width() + 0.5f;
+		body.previousX = body.x;
+		body.previousY = body.y;
+		body.velocityX = 0f;
+		body.velocityY = 0f;
+		level.updateFieldOfView(hero, level.heroFOV);
+	}
+
+	private static void placeHeroForVisibleContact(
+			Hero hero,
+			BukovLevel level,
+			BukovHostMob target) {
+		LevelCollisionMap collision = new LevelCollisionMap(level);
+		int targetX = target.pos % level.width();
+		int targetY = target.pos / level.width();
+		int[] directions = {
+				-1, 0,
+				1, 0,
+				0, -1,
+				0, 1
+		};
+		for (int distance = 4; distance >= 2; distance--) {
+			for (int index = 0; index < directions.length; index += 2) {
+				int deltaX = directions[index];
+				int deltaY = directions[index + 1];
+				int heroX = targetX + deltaX * distance;
+				int heroY = targetY + deltaY * distance;
+				if (heroX < 0
+						|| heroX >= level.width()
+						|| heroY < 0
+						|| heroY >= level.height()
+						|| collision.blocked(heroX, heroY)) {
+					continue;
+				}
+				boolean clear = true;
+				for (int step = 1; step < distance; step++) {
+					if (collision.blocksLine(
+							targetX + deltaX * step,
+							targetY + deltaY * step)) {
+						clear = false;
+						break;
+					}
+				}
+				if (clear) {
+					placeHero(
+							hero,
+							level,
+							heroX + heroY * level.width());
+					return;
+				}
+			}
+		}
+		throw new AssertionError(
+				"Generated onboarding contact has no visible combat lane");
+	}
+
+	private static boolean allGateCellsBlocked(
+			LevelCollisionMap collision,
+			int width,
+			int[] gateCells) {
+		for (int cell : gateCells) {
+			if (!collision.blocked(cell % width, cell / width)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean allGateCellsOpen(
+			LevelCollisionMap collision,
+			int width,
+			int[] gateCells) {
+		for (int cell : gateCells) {
+			if (collision.blocked(cell % width, cell / width)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean crossMissionGate(
+			RealtimeRaidSystem system,
+			InputState input,
+			Hero hero,
+			BukovLevel level,
+			LevelCollisionMap collision,
+			int[] gateCells) {
+		GateCrossing crossing =
+				findGateCrossing(level, collision, gateCells);
+		if (crossing == null) return false;
+		placeHero(hero, level, crossing.startCell);
+		input.movementKey = crossing.movementKey;
+		boolean crossed = false;
+		for (int frame = 0; frame < 180; frame++) {
+			system.update(RENDER_STEP);
+			if (hero.pos == crossing.endCell) {
+				crossed = true;
+				break;
+			}
+		}
+		input.movementKey = -1;
+		system.update(RENDER_STEP);
+		return crossed;
+	}
+
+	private static GateCrossing findGateCrossing(
+			BukovLevel level,
+			LevelCollisionMap collision,
+			int[] gateCells) {
+		int width = level.width();
+		for (int gateCell : gateCells) {
+			GateCrossing horizontal = gateCrossing(
+					gateCell - 1,
+					gateCell + 1,
+					Input.Keys.D,
+					level,
+					collision,
+					gateCells);
+			if (horizontal != null) return horizontal;
+			GateCrossing vertical = gateCrossing(
+					gateCell - width,
+					gateCell + width,
+					Input.Keys.S,
+					level,
+					collision,
+					gateCells);
+			if (vertical != null) return vertical;
+		}
+		return null;
+	}
+
+	private static GateCrossing gateCrossing(
+			int startCell,
+			int endCell,
+			int movementKey,
+			BukovLevel level,
+			LevelCollisionMap collision,
+			int[] gateCells) {
+		if (!walkableNonGate(
+					startCell, level, collision, gateCells)
+				|| !walkableNonGate(
+						endCell, level, collision, gateCells)) {
+			return null;
+		}
+		return new GateCrossing(startCell, endCell, movementKey);
+	}
+
+	private static boolean walkableNonGate(
+			int cell,
+			BukovLevel level,
+			LevelCollisionMap collision,
+			int[] gateCells) {
+		if (cell < 0 || cell >= level.length()) return false;
+		for (int gateCell : gateCells) {
+			if (cell == gateCell) return false;
+		}
+		return !collision.blocked(
+				cell % level.width(),
+				cell / level.width());
+	}
+
+	private static BukovRaidCoordinator.ContainerSnapshot containerForTable(
+			BukovRaidCoordinator raid,
+			String lootTableId) {
+		for (BukovRaidCoordinator.ContainerSnapshot container :
+				raid.containers()) {
+			if (lootTableId.equals(container.lootTableId)) {
+				return container;
+			}
+		}
+		return null;
+	}
+
+	private static final class GateCrossing {
+		private final int startCell;
+		private final int endCell;
+		private final int movementKey;
+
+		private GateCrossing(
+				int startCell,
+				int endCell,
+				int movementKey) {
+			this.startCell = startCell;
+			this.endCell = endCell;
+			this.movementKey = movementKey;
+		}
 	}
 
 	private static BukovHostMob onboardingGunner(BukovLevel level) {
@@ -467,13 +874,22 @@ final class BukovRealtimeCombatHarness {
 				handler);
 	}
 
-	private static Input headlessInput(MouseState mouse) {
+	private static Input headlessInput(InputState input) {
 		InvocationHandler handler = (proxy, method, arguments) -> {
 			String name = method.getName();
 			if ("isButtonPressed".equals(name)
 					|| "isButtonJustPressed".equals(name)) {
-				return mouse.fire
+				return input.fire
 						&& ((Integer)arguments[0]) == Input.Buttons.LEFT;
+			}
+			if ("isKeyPressed".equals(name)) {
+				int key = (Integer)arguments[0];
+				return key == input.movementKey
+						|| key == Input.Keys.E && input.interactHeld;
+			}
+			if ("isKeyJustPressed".equals(name)) {
+				return ((Integer)arguments[0]) == Input.Keys.E
+						&& input.interactPressed;
 			}
 			Class<?> type = method.getReturnType();
 			if (type == boolean.class) return false;
@@ -528,8 +944,11 @@ final class BukovRealtimeCombatHarness {
 				.isFile();
 	}
 
-	private static final class MouseState {
+	private static final class InputState {
 		private boolean fire;
+		private boolean interactHeld;
+		private boolean interactPressed;
+		private int movementKey = -1;
 	}
 
 	private static final class FxEvidence {

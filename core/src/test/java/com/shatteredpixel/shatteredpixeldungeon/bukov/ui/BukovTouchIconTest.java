@@ -79,12 +79,52 @@ public class BukovTouchIconTest {
 				BukovTouchControls.interactionGlyph(
 						BukovRaidHudState.Interaction.PUMP));
 		assertEquals(
+				BukovTouchIcon.Glyph.MEDICAL,
+				BukovTouchControls.interactionGlyph(
+						BukovRaidHudState.Interaction.MEDICAL));
+		assertEquals(
 				BukovTouchIcon.Glyph.INTERACT,
 				BukovTouchControls.interactionGlyph(
 						BukovRaidHudState.Interaction.UNLOCK));
 		assertEquals(
 				BukovTouchIcon.Glyph.INTERACT,
 				BukovTouchControls.interactionGlyph(null));
+	}
+
+	@Test
+	public void interactionButtonUsesShortLiveActionLabels() {
+		assertEquals(
+				"Use",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.NONE));
+		assertEquals(
+				"Search",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.SEARCH));
+		assertEquals(
+				"Loot",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.PICKUP));
+		assertEquals(
+				"Exit",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.EXTRACT));
+		assertEquals(
+				"Power",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.PUMP));
+		assertEquals(
+				"Heal",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.MEDICAL));
+		assertEquals(
+				"Unlock",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.UNLOCK));
+		assertEquals(
+				"Locked",
+				BukovTouchControls.interactionActionLabel(
+						BukovRaidHudState.Interaction.LOCKED));
 	}
 
 	@Test
@@ -103,6 +143,10 @@ public class BukovTouchIconTest {
 		assertTrue(controls.contains("liveActionAvailability("));
 		assertTrue(controls.contains("icon.visualState("));
 		assertTrue(controls.contains("interact.setGlyph(interactionGlyph("));
+		assertTrue(controls.contains(
+				"interact.setLabel("));
+		assertTrue(controls.contains(
+				"if (lastLiveInteraction != resolvedInteraction)"));
 		assertTrue(controls.contains("setDisabled(blocked)"));
 		assertTrue(controls.contains("ACTION_ICON_HEIGHT_RATIO = 0.66f"));
 		assertTrue(controls.contains("ACTION_LABEL_HEIGHT_PX = 5f"));
@@ -189,6 +233,12 @@ public class BukovTouchIconTest {
 						"src/main/java/com/shatteredpixel/"
 								+ "shatteredpixeldungeon/scenes/GameScene.java")),
 				StandardCharsets.UTF_8);
+		String world = new String(
+				Files.readAllBytes(Paths.get(
+						"src/main/java/com/shatteredpixel/"
+								+ "shatteredpixeldungeon/bukov/runtime/"
+								+ "BukovRealtimeWorld.java")),
+				StandardCharsets.UTF_8);
 		assertTrue(scene.contains(
 				"bukovTouchControls.liveActionAvailability("));
 		assertTrue(scene.contains(
@@ -197,6 +247,18 @@ public class BukovTouchIconTest {
 				"bukovWorld.reloadActionAvailable()"));
 		assertTrue(scene.contains(
 				"bukovWorld.medicalActionAvailable()"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.SEARCH"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.PICKUP"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.EXTRACT"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.PUMP"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.UNLOCK"));
+		assertTrue(world.contains(
+				"BukovRaidHudState.Interaction.LOCKED"));
 	}
 
 	@Test

@@ -36,7 +36,7 @@ for required in \
   'case WEAKPOINT_KILL:' \
   'case BOSS_PHASE_BREAK:' \
   'case BOSS_SLAM:' \
-  'case EXPLOSION:' \
+  'case BOSS_OVERLOAD:' \
   'Assets.Sounds.Bukov.KILL_CONFIRM' \
   'Assets.Sounds.Bukov.BOSS_PHASE_BREAK' \
   'Assets.Sounds.Bukov.BOSS_SLAM' \
@@ -47,6 +47,16 @@ do
     exit 1
   fi
 done
+
+if rg -F --quiet 'case EXPLOSION:' "$feedback_audio"; then
+  echo "Bukov audio gate: generic explosion borrows the White Line overload cue" >&2
+  exit 1
+fi
+if ! rg -F --quiet \
+    'return CombatFeedbackType.BOSS_OVERLOAD;' "$world"; then
+  echo "Bukov audio gate: White Line overload production event is not dedicated" >&2
+  exit 1
+fi
 
 if rg --pcre2 --quiet 'Assets\\.Sounds\\.(?!Bukov\\.)' "$world"; then
   echo "Bukov audio gate: realtime world uses a non-Bukov sound constant" >&2

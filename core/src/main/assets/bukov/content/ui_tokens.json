@@ -103,6 +103,13 @@
       "vibrationDurationMs": 220,
       "frequency": "low"
     },
+    "BOSS_OVERLOAD": {
+      "shakeAmplitudePx": 5.0,
+      "shakeDurationMs": 300,
+      "vibrationAmplitude": 1.0,
+      "vibrationDurationMs": 250,
+      "frequency": "low"
+    },
     "EXTRACT_STAMP": {
       "shakeAmplitudePx": 1.0,
       "shakeDurationMs": 80,

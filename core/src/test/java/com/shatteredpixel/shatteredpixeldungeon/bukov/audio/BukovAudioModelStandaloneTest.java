@@ -107,7 +107,7 @@ public final class BukovAudioModelStandaloneTest {
 				CombatFeedbackType.WEAKPOINT_KILL,
 				CombatFeedbackType.BOSS_PHASE_BREAK,
 				CombatFeedbackType.BOSS_SLAM,
-				CombatFeedbackType.EXPLOSION}) {
+				CombatFeedbackType.BOSS_OVERLOAD}) {
 			if (CombatFeedbackAudioCue.asset(type) == null
 					|| CombatFeedbackAudioCue.volume(type) <= 0f
 					|| CombatFeedbackAudioCue.pitch(type) != 1f
@@ -115,6 +115,11 @@ public final class BukovAudioModelStandaloneTest {
 				throw new AssertionError(
 						type + " must have a complete Gate 5 audio route");
 			}
+		}
+		if (CombatFeedbackAudioCue.asset(
+				CombatFeedbackType.EXPLOSION) != null) {
+			throw new AssertionError(
+					"ordinary explosions must not borrow the White Line cue");
 		}
 	}
 

@@ -126,7 +126,8 @@ public final class BukovUiTokens {
 		requireKeys(motion, "instant", "fast", "base", "slow", "ritual");
 		requireKeys(haptics,
 				"RIFLE_SHOT", "PLAYER_HIT", "SHOTGUN_NEAR",
-				"EXPLOSION", "BOSS_SLAM", "EXTRACT_STAMP",
+				"EXPLOSION", "BOSS_SLAM", "BOSS_OVERLOAD",
+				"EXTRACT_STAMP",
 				"KILL", "WEAKPOINT_KILL", "BOSS_PHASE_BREAK");
 		requireKeys(pools,
 				"muzzleFlash", "tracer", "shell", "impactSpark",
@@ -284,9 +285,9 @@ public final class BukovUiTokens {
 						"Duplicate haptic event: " + event.name);
 			}
 		}
-		if (result.size() != 9) {
+		if (result.size() != 10) {
 			throw new IllegalArgumentException(
-					"haptics must define exactly nine feedback events");
+					"haptics must define exactly ten feedback events");
 		}
 		return result;
 	}

@@ -97,7 +97,8 @@ public final class CombatFeedbackResolver {
 	private static float distanceScale(
 			CombatFeedbackType type,
 			float distanceTiles) {
-		if (type != CombatFeedbackType.EXPLOSION) {
+		if (type != CombatFeedbackType.EXPLOSION
+				&& type != CombatFeedbackType.BOSS_OVERLOAD) {
 			return 1f;
 		}
 		return Math.max(0f, 1f - distanceTiles / 15f);

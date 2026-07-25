@@ -21,7 +21,7 @@ public final class CombatFeedbackAudioCue {
 				return Assets.Sounds.Bukov.BOSS_PHASE_BREAK;
 			case BOSS_SLAM:
 				return Assets.Sounds.Bukov.BOSS_SLAM;
-			case EXPLOSION:
+			case BOSS_OVERLOAD:
 				return Assets.Sounds.Bukov.BOSS_OVERLOAD;
 			default:
 				return null;
@@ -39,7 +39,7 @@ public final class CombatFeedbackAudioCue {
 				return 0.78f;
 			case BOSS_SLAM:
 				return 0.72f;
-			case EXPLOSION:
+			case BOSS_OVERLOAD:
 				return 0.82f;
 			default:
 				return 0f;
@@ -53,7 +53,7 @@ public final class CombatFeedbackAudioCue {
 	public static SoundCategory category(CombatFeedbackType type) {
 		if (type == CombatFeedbackType.BOSS_PHASE_BREAK
 				|| type == CombatFeedbackType.BOSS_SLAM
-				|| type == CombatFeedbackType.EXPLOSION) {
+				|| type == CombatFeedbackType.BOSS_OVERLOAD) {
 			return SoundCategory.BOSS_CUE;
 		}
 		return asset(type) == null ? null : SoundCategory.COMBAT_FEEDBACK;

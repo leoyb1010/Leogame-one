@@ -39,7 +39,7 @@ public class BukovBossFeedbackRoutingTest {
 				BukovRealtimeWorld.bossPulseFeedback(
 						WhiteLineBossStateMachine.Phase.DECOY_SEARCH));
 		assertEquals(
-				CombatFeedbackType.EXPLOSION,
+				CombatFeedbackType.BOSS_OVERLOAD,
 				BukovRealtimeWorld.bossPulseFeedback(
 						WhiteLineBossStateMachine.Phase.FOG_LAMP_OVERLOAD));
 		assertNull(BukovRealtimeWorld.bossPulseFeedback(

@@ -54,6 +54,7 @@ public final class BukovTouchControls extends Component {
 	private float hudBottom;
 	private boolean inputBlocked;
 	private BukovTouchLayout currentLayout;
+	private BukovRaidHudState.Interaction lastLiveInteraction;
 
 	@Override
 	protected void createChildren() {
@@ -168,10 +169,20 @@ public final class BukovTouchControls extends Component {
 			BukovRaidHudState.Interaction interaction,
 			boolean reloadAvailable,
 			boolean medicalAvailable) {
+		BukovRaidHudState.Interaction resolvedInteraction =
+				interaction == null
+						? BukovRaidHudState.Interaction.NONE
+						: interaction;
 		setActionEnabled(
 				BukovTouchState.Action.INTERACT,
-				BukovRaidHud.interactionActionAvailable(interaction));
-		interact.setGlyph(interactionGlyph(interaction));
+				BukovRaidHud.interactionActionAvailable(
+						resolvedInteraction));
+		if (lastLiveInteraction != resolvedInteraction) {
+			lastLiveInteraction = resolvedInteraction;
+			interact.setGlyph(interactionGlyph(resolvedInteraction));
+			interact.setLabel(
+					interactionActionLabel(resolvedInteraction));
+		}
 		setActionEnabled(
 				BukovTouchState.Action.RELOAD,
 				reloadAvailable);
@@ -359,12 +370,47 @@ public final class BukovTouchControls extends Component {
 				return BukovTouchIcon.Glyph.DEPLOY;
 			case PUMP:
 				return BukovTouchIcon.Glyph.SETTINGS;
-			case NONE:
 			case MEDICAL:
+				return BukovTouchIcon.Glyph.MEDICAL;
+			case NONE:
 			case LOCKED:
 			case UNLOCK:
 			default:
 				return BukovTouchIcon.Glyph.INTERACT;
+		}
+	}
+
+	static String interactionActionLabel(
+			BukovRaidHudState.Interaction interaction) {
+		if (interaction == null
+				|| interaction == BukovRaidHudState.Interaction.NONE) {
+			return compactActionLabel(
+					BukovTouchState.Action.INTERACT,
+					BukovMessages.get("bukov.raid.touch.interact"));
+		}
+		switch (interaction) {
+			case SEARCH:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_search");
+			case PICKUP:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_pickup");
+			case EXTRACT:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_extract");
+			case PUMP:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_pump");
+			case MEDICAL:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_medical");
+			case UNLOCK:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_unlock");
+			case LOCKED:
+			default:
+				return BukovMessages.get(
+						"bukov.raid.touch.interaction_locked");
 		}
 	}
 
@@ -676,6 +722,7 @@ public final class BukovTouchControls extends Component {
 		private ColorBlock labelDivider;
 		private BukovTouchIcon icon;
 		private RenderedTextBlock label;
+		private String currentLabel;
 		private PointerArea pointerArea;
 		private int pointerId = -1;
 		private boolean disabled;
@@ -733,8 +780,9 @@ public final class BukovTouchControls extends Component {
 					accentColor,
 					tokens.color("text.disabled"));
 			add(icon);
+			currentLabel = compactActionLabel(action, text);
 			label = PixelScene.renderTextBlock(
-					compactActionLabel(action, text),
+					currentLabel,
 					actionLabelFontPx(tokens.typographyPx(
 							BukovVisualContract.FONT_CAPTION)));
 			label.align(RenderedTextBlock.CENTER_ALIGN);
@@ -876,6 +924,15 @@ public final class BukovTouchControls extends Component {
 
 		private void setGlyph(BukovTouchIcon.Glyph glyph) {
 			icon.glyph(glyph);
+		}
+
+		private void setLabel(String value) {
+			String next = value == null ? "" : value.trim();
+			if (next.equals(currentLabel)) {
+				return;
+			}
+			currentLabel = next;
+			label.text(currentLabel);
 		}
 
 		private void setDisabled(boolean disabled) {

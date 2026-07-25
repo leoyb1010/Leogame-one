@@ -31,6 +31,12 @@ public class ExperienceContractRegistryTest {
 						CombatFeedbackType.BOSS_PHASE_BREAK
 				).hitstopMs
 		);
+		assertEquals(
+				5f,
+				contract.profile(
+						CombatFeedbackType.BOSS_OVERLOAD)
+						.shakeAmplitudePx,
+				0f);
 	}
 
 	@Test
