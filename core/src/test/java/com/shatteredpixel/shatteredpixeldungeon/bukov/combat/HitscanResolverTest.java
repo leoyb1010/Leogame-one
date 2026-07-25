@@ -34,6 +34,47 @@ public class HitscanResolverTest {
 		assertEquals(2.75f, hit.distance, 0.0001f);
 		assertEquals(4.25f, hit.x, 0.0001f);
 		assertEquals(2.5f, hit.y, 0.0001f);
+		assertEquals(RealtimeDamage.HitZone.CORE, hit.zone);
+	}
+
+	@Test
+	public void selectedTargetProvidesItsActualHitZone() {
+		RealtimeBody target = body(4.5f, 2.5f, 0.25f);
+		HitscanResolver.Hit hit = new HitscanResolver.Hit();
+		HitscanResolver.TargetQuery query =
+				new HitscanResolver.TargetQuery() {
+					@Override
+					public Iterable<RealtimeBody> candidates(
+							float minX,
+							float minY,
+							float maxX,
+							float maxY) {
+						return Collections.singletonList(target);
+					}
+
+					@Override
+					public RealtimeDamage.HitZone hitZone(
+							RealtimeBody body,
+							float originX,
+							float originY,
+							float directionX,
+							float directionY) {
+						assertSame(target, body);
+						return RealtimeDamage.HitZone.LIMB;
+					}
+				};
+
+		HitscanResolver.cast(
+				1.5f, 2.5f,
+				1f, 0f,
+				10f,
+				mapWithVerticalWall(8),
+				query,
+				null,
+				hit);
+
+		assertSame(target, hit.body);
+		assertEquals(RealtimeDamage.HitZone.LIMB, hit.zone);
 	}
 
 	@Test
@@ -52,6 +93,7 @@ public class HitscanResolverTest {
 		);
 
 		assertNull(hit.body);
+		assertNull(hit.zone);
 		assertEquals(4.5f, hit.distance, 0.0001f);
 		assertEquals(6f, hit.x, 0.0001f);
 	}

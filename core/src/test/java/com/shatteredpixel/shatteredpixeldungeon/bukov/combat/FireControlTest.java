@@ -206,6 +206,28 @@ public class FireControlTest {
 	}
 
 	@Test
+	public void cancelledReloadCannotConsumeReserveOrEmitLateCues() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		definition.magazineSize = 5;
+		definition.reloadSeconds = 2f;
+		Firearm firearm = new Firearm().configure("test", "uid", 1);
+		RecordingSink sink = new RecordingSink();
+		sink.availableAmmo = 4;
+		FireControl control = new FireControl();
+
+		control.update(0f, false, false, true, firearm, definition, sink);
+		assertTrue(control.isReloading());
+		control.cancelReload();
+		control.update(2f, false, false, false, firearm, definition, sink);
+
+		assertFalse(control.isReloading());
+		assertEquals(1, firearm.magazineAmmo());
+		assertEquals(4, sink.availableAmmo);
+		assertEquals(0, sink.reloadCueCallbacks);
+		assertEquals(0, sink.reloadFinishes);
+	}
+
+	@Test
 	public void emptyMagazineEmitsDryFire() {
 		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
 		Firearm firearm = new Firearm().configure("test", "uid", 0);

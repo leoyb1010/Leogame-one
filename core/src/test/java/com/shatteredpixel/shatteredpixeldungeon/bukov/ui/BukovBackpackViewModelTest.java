@@ -20,7 +20,8 @@ public class BukovBackpackViewModelTest {
 		LootTransaction ledger = new LootTransaction("raid-01", 40f);
 		pickup(ledger, item(
 				"gun-a", "firearm:needle_9",
-				1, 0.9f, 850, false, 0.78f));
+				1, 0.9f, 850, false, 0.78f)
+				.withRuntimeState(1, 0.78f, 0.22f));
 		pickup(ledger, item(
 				"gun-b", "firearm:shuttle_9",
 				1, 2.2f, 2100, true, 0.51f));
@@ -40,7 +41,10 @@ public class BukovBackpackViewModelTest {
 				new BukovBackpackViewModel.EquippedFirearm(
 						"gun-a",
 						7,
-						12));
+						12,
+						0.64f,
+						0.47f,
+						0.31f));
 
 		assertEquals(5, model.items.size());
 		assertEquals("4.82/40.00kg", model.weightSummary());
@@ -75,8 +79,13 @@ public class BukovBackpackViewModelTest {
 								"0.8"),
 						7,
 						12,
-						78),
+						64,
+						31,
+						47),
 				equipped.stateSummary());
+		assertEquals(0.64f, equipped.durability, 0.0001f);
+		assertEquals(0.31f, equipped.fouling, 0.0001f);
+		assertEquals(0.47f, equipped.heat, 0.0001f);
 		assertEquals(
 				BukovMessages.get(
 						"bukov.raid.backpack.row_economy_summary_format",
@@ -93,6 +102,9 @@ public class BukovBackpackViewModelTest {
 						"bukov.raid.item.firearm_shuttle_9"),
 				second.name);
 		assertEquals(24, second.magazineCapacity);
+		assertEquals(0.51f, second.durability, 0.0001f);
+		assertEquals(0f, second.fouling, 0f);
+		assertEquals(0f, second.heat, 0f);
 		assertTrue(second.canEquip);
 
 		BukovBackpackViewModel.ItemRow ammo = model.find("ammo-a");

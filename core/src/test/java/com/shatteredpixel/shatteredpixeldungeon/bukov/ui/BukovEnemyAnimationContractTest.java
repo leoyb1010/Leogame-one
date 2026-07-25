@@ -152,6 +152,14 @@ public class BukovEnemyAnimationContractTest {
 				"shieldPhase.frames(frames, 16, 17)"));
 		assertTrue(boss.contains(
 				"vulnerablePhase.frames(frames, 20, 20, 0)"));
+		assertTrue(boss.contains(
+				"phaseTransition.frames(frames, 16, 17, 18, 19, 20, 0)"));
+		assertTrue(boss.contains(
+				"playRealtimeAction(phaseTransition, targetCell, 2, null)"));
+		assertTrue(boss.contains(
+				"WEAK_POINT_SLOW_MOTION_SECONDS = 0.2f"));
+		assertTrue(boss.contains(
+				"WEAK_POINT_SLOW_MOTION_SCALE = 0.3f"));
 	}
 
 	private static byte[] hashFrame(

@@ -133,9 +133,11 @@ public final class BukovRuntimeLoadoutAdapter {
 				}
 				int quantity = binding.host.quantity();
 				float durability = binding.original.durability();
+				float fouling = binding.original.fouling();
 				if (binding.host instanceof Firearm) {
 					quantity = 1;
 					durability = ((Firearm) binding.host).durability();
+					fouling = ((Firearm) binding.host).fouling();
 				}
 
 				if (quantity <= 0) {
@@ -144,7 +146,8 @@ public final class BukovRuntimeLoadoutAdapter {
 					ledger.replace(
 							binding.original.withRuntimeState(
 									quantity,
-									durability));
+									durability,
+									fouling));
 				}
 			}
 			refundMagazine(ledger, primaryWeapon);
@@ -302,6 +305,7 @@ public final class BukovRuntimeLoadoutAdapter {
 							0,
 							definition.defaultAmmo);
 					firearm.setDurability(item.durability());
+					firearm.setCondition(0f, item.fouling());
 					registerHost(checkpoint, item, firearm);
 				}
 				if (firearmBuilds != null) {

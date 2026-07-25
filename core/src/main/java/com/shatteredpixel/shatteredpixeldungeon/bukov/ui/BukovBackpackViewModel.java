@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.ui;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmClass;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
@@ -42,11 +43,30 @@ public final class BukovBackpackViewModel {
 		public final String itemUid;
 		public final int magazineAmmo;
 		public final int magazineCapacity;
+		public final float durability;
+		public final float heat;
+		public final float fouling;
 
 		public EquippedFirearm(
 				String itemUid,
 				int magazineAmmo,
 				int magazineCapacity) {
+			this(
+					itemUid,
+					magazineAmmo,
+					magazineCapacity,
+					1f,
+					0f,
+					0f);
+		}
+
+		public EquippedFirearm(
+				String itemUid,
+				int magazineAmmo,
+				int magazineCapacity,
+				float durability,
+				float heat,
+				float fouling) {
 			if (itemUid == null || itemUid.trim().isEmpty()) {
 				throw new IllegalArgumentException("itemUid is required");
 			}
@@ -54,9 +74,21 @@ public final class BukovBackpackViewModel {
 					|| magazineAmmo > magazineCapacity) {
 				throw new IllegalArgumentException("invalid magazine state");
 			}
+			if (!BukovNumbers.isFinite(durability)
+					|| !BukovNumbers.isFinite(heat)
+					|| !BukovNumbers.isFinite(fouling)
+					|| durability < 0f || durability > 1f
+					|| heat < 0f || heat > 1f
+					|| fouling < 0f || fouling > 1f) {
+				throw new IllegalArgumentException(
+						"firearm condition must be between 0 and 1");
+			}
 			this.itemUid = itemUid;
 			this.magazineAmmo = magazineAmmo;
 			this.magazineCapacity = magazineCapacity;
+			this.durability = durability;
+			this.heat = heat;
+			this.fouling = fouling;
 		}
 
 		public static EquippedFirearm from(
@@ -69,7 +101,10 @@ public final class BukovBackpackViewModel {
 			return new EquippedFirearm(
 					firearm.itemUid(),
 					firearm.magazineAmmo(),
-					definition.magazineSize);
+					definition.magazineSize,
+					firearm.durability(),
+					firearm.heat(),
+					firearm.fouling());
 		}
 	}
 
@@ -84,6 +119,8 @@ public final class BukovBackpackViewModel {
 		public final int unitValue;
 		public final long totalValue;
 		public final float durability;
+		public final float heat;
+		public final float fouling;
 		public final int magazineAmmo;
 		public final int magazineCapacity;
 		public final String weaponProfile;
@@ -105,9 +142,15 @@ public final class BukovBackpackViewModel {
 			totalWeight = item.totalWeight();
 			unitValue = item.unitValue();
 			totalValue = item.totalValue();
-			durability = item.durability();
 			equipped = equippedFirearm != null
 					&& itemUid.equals(equippedFirearm.itemUid);
+			durability = equipped
+					? equippedFirearm.durability
+					: item.durability();
+			heat = equipped ? equippedFirearm.heat : 0f;
+			fouling = equipped
+					? equippedFirearm.fouling
+					: item.fouling();
 			if (category == Category.FIREARM) {
 				FirearmDefinition definition = firearmDefinition(
 						item.definitionId(),
@@ -176,7 +219,9 @@ public final class BukovBackpackViewModel {
 						weaponProfile,
 						magazineAmmo,
 						magazineCapacity,
-						Math.round(durability * 100f));
+						Math.round(durability * 100f),
+						Math.round(fouling * 100f),
+						Math.round(heat * 100f));
 			}
 			if (category == Category.MISSION) {
 				return BukovMessages.get(

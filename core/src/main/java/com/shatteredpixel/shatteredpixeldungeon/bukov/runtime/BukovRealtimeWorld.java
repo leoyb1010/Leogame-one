@@ -38,8 +38,11 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolv
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SpatialAudioModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitZoneGeometry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.ArmorCatalog;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoStack;
@@ -232,7 +235,38 @@ public final class BukovRealtimeWorld
 			new IdentityHashMap<>();
 	private final ArrayList<Mob> pendingEnemyAttacks = new ArrayList<>();
 	private final HitscanResolver.TargetQuery targetQuery =
-			(minX, minY, maxX, maxY) -> targetBodies;
+			new HitscanResolver.TargetQuery() {
+				@Override
+				public Iterable<RealtimeBody> candidates(
+						float minX,
+						float minY,
+						float maxX,
+						float maxY) {
+					return targetBodies;
+				}
+
+				@Override
+				public RealtimeDamage.HitZone hitZone(
+						RealtimeBody body,
+						float originX,
+						float originY,
+						float directionX,
+						float directionY) {
+					Char target = charsByBody.get(body);
+					EnemyRuntime enemy = target instanceof Mob
+							? enemiesByMob.get((Mob)target) : null;
+					boolean boss = enemy != null
+							&& enemy.bossState != null;
+					return HitZoneGeometry.resolve(
+							body,
+							originX,
+							originY,
+							directionX,
+							directionY,
+							boss,
+							boss && enemy.bossState.vulnerable());
+				}
+			};
 	private final HitscanResolver.TargetQuery enemyShotTargetQuery =
 			(minX, minY, maxX, maxY) -> enemyShotTargetBodies;
 	private InputFrame inputFrame;
@@ -968,6 +1002,13 @@ public final class BukovRealtimeWorld
 		if (equippedFirearm == null || equippedDefinition == null) {
 			return;
 		}
+		equippedFirearm.cool(dt);
+		boolean reloadInterrupted = fireControl.isReloading()
+				&& reloadInterruptRequested(inputFrame);
+		if (reloadInterrupted) {
+			fireControl.cancelReload();
+			emitReloadEndPresentation();
+		}
 		applyPlayerAimAssist(equippedDefinition.effectiveRangeTiles);
 		boolean aimReady =
 				inputFrame.aim.x != 0f || inputFrame.aim.y != 0f;
@@ -975,7 +1016,8 @@ public final class BukovRealtimeWorld
 				&& (inputFrame.firePressed
 						|| inputFrame.fireHeld && !fireAimReadyLastStep);
 		boolean reloadAvailable = reloadActionAvailable();
-		if (inputFrame.reloadPressed
+		if (!reloadInterrupted
+				&& inputFrame.reloadPressed
 				&& !reloadAvailable
 				&& !fireControl.isReloading()
 				&& equippedFirearm.magazineAmmo()
@@ -988,7 +1030,9 @@ public final class BukovRealtimeWorld
 				dt,
 				aimReady && inputFrame.fireHeld,
 				aimedPress,
-				inputFrame.reloadPressed && reloadAvailable,
+				!reloadInterrupted
+						&& inputFrame.reloadPressed
+						&& reloadAvailable,
 				equippedFirearm,
 				equippedDefinition,
 				raidTheme == null
@@ -998,6 +1042,21 @@ public final class BukovRealtimeWorld
 				this
 		);
 		fireAimReadyLastStep = aimReady;
+	}
+
+	static boolean reloadInterruptRequested(InputFrame input) {
+		if (input == null) {
+			return false;
+		}
+		// Reloading while moving is intentional on both keyboard and the
+		// continuously-held iOS stick. Deliberate actions cancel it.
+		return input.firePressed
+				|| input.fireHeld
+				|| input.interactPressed
+				|| input.interactHeld
+				|| input.medicalPressed
+				|| input.dropPressed
+				|| input.backpackPressed;
 	}
 
 	private void applyPlayerAimAssist(float maximumRange) {
@@ -1275,7 +1334,26 @@ public final class BukovRealtimeWorld
 			if (target == null || !target.isAlive()) {
 				continue;
 			}
-			int damage = Math.max(1, Math.round(event.damage));
+			float ballisticDamage = event.damage;
+			EnemyRuntime enemy = target instanceof Mob
+					? enemiesByMob.get((Mob)target)
+					: null;
+			if (enemy != null && enemy.armor != null) {
+				float armored = resolveEnemyArmor(
+						enemy.armor,
+						ballisticDamage,
+						event.penetration,
+						event.hitZone);
+				if (armored < ballisticDamage) {
+					showEnemyStatus(
+							enemy,
+							CharSprite.NEUTRAL,
+							BukovMessages.get(
+									"bukov.raid.runtime.armor_absorbed"));
+				}
+				ballisticDamage = armored;
+			}
+			int damage = Math.max(1, Math.round(ballisticDamage));
 			damage = target.defenseProc(hero, damage);
 			damage = Math.max(1, damage - target.drRoll());
 			if (equippedFirearm != null) {
@@ -1286,7 +1364,6 @@ public final class BukovRealtimeWorld
 				);
 			}
 			if (target instanceof Mob) {
-				EnemyRuntime enemy = enemiesByMob.get((Mob)target);
 				if (enemy != null && enemy.bossState != null) {
 					boolean wasAlive = target.isAlive();
 					WhiteLineBossStateMachine.Result bossResult =
@@ -1298,22 +1375,6 @@ public final class BukovRealtimeWorld
 							bossHitFeedback(bossResult),
 							bossDeathFeedback(bossResult));
 					continue;
-				}
-				if (enemy != null) {
-					int armored = resolveEnemyArmor(
-							enemy.definition,
-							damage,
-							equippedDefinition == null
-									? 0f
-									: equippedDefinition.penetration);
-					if (armored < damage) {
-						showEnemyStatus(
-								enemy,
-								CharSprite.NEUTRAL,
-								BukovMessages.get(
-										"bukov.raid.runtime.armor_absorbed"));
-					}
-					damage = armored;
 				}
 			}
 			// Keep Mob.damage/die authoritative so XP, loot rolls, death VFX, and
@@ -1333,9 +1394,10 @@ public final class BukovRealtimeWorld
 			if (!target.isAlive() && target.realtimeBody != null) {
 				target.realtimeBody.active = false;
 				if (target instanceof Mob) {
-					EnemyRuntime enemy = enemiesByMob.get((Mob)target);
-					if (enemy != null) {
-						enemy.brain.markDead();
+					EnemyRuntime deadEnemy =
+							enemiesByMob.get((Mob)target);
+					if (deadEnemy != null) {
+						deadEnemy.brain.markDead();
 					}
 				}
 			}
@@ -2608,6 +2670,7 @@ public final class BukovRealtimeWorld
 	@Override
 	public void fire(Firearm firearm, FirearmDefinition definition) {
 		firedShotThisStep = true;
+		firearm.recordShot(definition);
 		combatHudTimeline.activity();
 		Item.updateQuickslot();
 		AmmoDefinition ammunition = ammoRegistry.require(
@@ -2669,6 +2732,7 @@ public final class BukovRealtimeWorld
 				? definition.movingSpreadDeg
 				: definition.baseSpreadDeg;
 		spread += fireControl.recoilSpreadDeg();
+		spread += firearm.conditionSpreadPenaltyDeg();
 		for (int pellet = 0; pellet < definition.pellets; pellet++) {
 			float radians = (float)Math.toRadians(
 					Random.Float(-spread, spread)
@@ -2726,10 +2790,15 @@ public final class BukovRealtimeWorld
 						shotHit.distance,
 						definition.effectiveRangeTiles,
 						ammunition.applyPenetration(definition.penetration),
-						RealtimeDamage.HitZone.CORE,
+						shotHit.zone,
 						null
 				);
-				pendingHits.add(new PendingHit(target, damage));
+				pendingHits.add(new PendingHit(
+						target,
+						damage,
+						ammunition.applyPenetration(
+								definition.penetration),
+						shotHit.zone));
 			} else if (shotHit.body == null
 					&& shotHit.distance < maximumDistance - 0.001f) {
 				combatFx.bulletMark(
@@ -2880,14 +2949,7 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public void reloadFinished() {
-		combatPresentation.emit(
-				CombatPresentationEvent.Type.PLAYER_RELOAD_END,
-				hero.id(),
-				hero.id(),
-				hero.pos,
-				playerAimCell(),
-				null,
-				1f);
+		emitReloadEndPresentation();
 		if (equippedFirearm != null) {
 			if (equippedFirearm.magazineAmmo() == 0) {
 				showHeroStatus(BukovMessages.get(
@@ -2898,6 +2960,17 @@ public final class BukovRealtimeWorld
 						equippedFirearm.magazineAmmo()));
 			}
 		}
+	}
+
+	private void emitReloadEndPresentation() {
+		combatPresentation.emit(
+				CombatPresentationEvent.Type.PLAYER_RELOAD_END,
+				hero.id(),
+				hero.id(),
+				hero.pos,
+				playerAimCell(),
+				null,
+				1f);
 	}
 
 	private void resolveEquippedFirearm() {
@@ -5266,17 +5339,28 @@ public final class BukovRealtimeWorld
 				.remainderUnsigned(mixed, 100L) < 35L;
 	}
 
-	static int resolveEnemyArmor(
-			EnemyArchetypeDefinition definition,
-			int damage,
-			float penetration) {
-		if (definition == null || damage <= 0
-				|| !hasAbility(definition, "ARMORED_FRONT")) {
-			return Math.max(0, damage);
+	static float resolveEnemyArmor(
+			RealtimeArmorState armor,
+			float damage,
+			float penetration,
+			RealtimeDamage.HitZone hitZone) {
+		if (armor == null) {
+			return damage;
 		}
-		float absorbed = penetration >= 25f
-				? 0.10f : penetration >= 15f ? 0.20f : 0.35f;
-		return Math.max(1, Math.round(damage * (1f - absorbed)));
+		return armor.resolveBullet(
+				damage,
+				penetration,
+				hitZone).healthDamage;
+	}
+
+	static RealtimeArmorState createEnemyArmor(
+			EnemyArchetypeDefinition definition) {
+		if (definition == null
+				|| !hasAbility(definition, "ARMORED_FRONT")) {
+			return null;
+		}
+		return RealtimeArmorState.fresh(
+				ArmorCatalog.require("patrol_vest"));
 	}
 
 	private void releaseEnemyFirearm(Mob defeated) {
@@ -5640,10 +5724,18 @@ public final class BukovRealtimeWorld
 	private static final class PendingHit {
 		private final Char target;
 		private final float damage;
+		private final float penetration;
+		private final RealtimeDamage.HitZone hitZone;
 
-		private PendingHit(Char target, float damage) {
+		private PendingHit(
+				Char target,
+				float damage,
+				float penetration,
+				RealtimeDamage.HitZone hitZone) {
 			this.target = target;
 			this.damage = damage;
+			this.penetration = penetration;
+			this.hitZone = hitZone;
 		}
 	}
 
@@ -5668,6 +5760,7 @@ public final class BukovRealtimeWorld
 		private final RealtimeLocalAvoidance avoidance;
 		private final int stableId;
 		private final EnemyArchetypeDefinition definition;
+		private final RealtimeArmorState armor;
 		private final EnemyRangedCombatController.Config rangedConfig;
 		private final WhiteLineBossStateMachine bossState;
 		private EnemyRangedCombatController rangedCombat;
@@ -5691,6 +5784,7 @@ public final class BukovRealtimeWorld
 				int mapHeight) {
 			this.mob = mob;
 			this.definition = definition;
+			armor = createEnemyArmor(definition);
 			body = mob.ensureRealtimeBody();
 			stableId = mob.id();
 			brain = new RealtimeEnemyBrain(stableId);

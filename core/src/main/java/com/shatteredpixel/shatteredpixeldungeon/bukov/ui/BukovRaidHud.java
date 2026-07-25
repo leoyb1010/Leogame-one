@@ -895,6 +895,44 @@ public final class BukovRaidHud extends Component {
 		float centerLeft = x + leftWidth + PADDING;
 		float centerRight = x + width - rightWidth - PADDING;
 		float centerWidth = Math.max(34f, centerRight - centerLeft);
+		if (!DeviceCompat.isDesktop()) {
+			// Landscape phones use the wide geometry, but not the desktop copy
+			// budget. Keep every persistent row to one line so the raid stays
+			// readable above the touch controls in both languages.
+			statusText.text(BukovRaidHudLayout.compactLine(
+					currentStatusLabel(),
+					leftWidth - PADDING * 2f,
+					uiScaleLevel));
+			weaponText.text(BukovRaidHudLayout.compactLine(
+					currentWeaponLabel(),
+					rightWidth - PADDING
+							- BukovRaidHudLayout.RELOAD_RING_SIZE - 3f,
+					uiScaleLevel));
+			objectiveText.text(BukovRaidHudLayout.compactLine(
+					objectiveLabel(
+							BukovHudFormat.objective(lastObjective)),
+					centerWidth - 10f,
+					uiScaleLevel));
+			extractionText.text(BukovRaidHudLayout.compactLine(
+					BukovHudFormat.extraction(
+							live.availableExtractions(),
+							live.extractionId(),
+							live.extractionAvailable(),
+							live.extractionActive(),
+							live.extractionProgress(),
+							live.extractionSeconds()),
+					centerWidth,
+					uiScaleLevel));
+			interactionText.text(BukovRaidHudLayout.compactLine(
+					BukovHudFormat.interaction(
+							live.interaction(),
+							live.interactionLabel(),
+							live.interactionProgress(),
+							live.interactionSeconds(),
+							false),
+					centerWidth - 10f,
+					uiScaleLevel));
+		}
 
 		positionHudIcon(healthIcon, x + PADDING, y + 3f);
 		healthText.setPos(x + PADDING + 10f, y + 3f);

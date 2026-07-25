@@ -40,6 +40,7 @@ public class FirearmItemTest {
 				6,
 				"test_expanding");
 		original.setDurability(0.42f);
+		original.setCondition(0.37f, 0.18f);
 
 		Bundle bundle = new Bundle();
 		original.storeInBundle(bundle);
@@ -54,6 +55,67 @@ public class FirearmItemTest {
 				"test_expanding",
 				restored.loadedAmmoDefinitionId(definition));
 		assertEquals(0.42f, restored.durability(), 0.0001f);
+		assertEquals(0.37f, restored.heat(), 0.0001f);
+		assertEquals(0.18f, restored.fouling(), 0.0001f);
+	}
+
+	@Test
+	public void legacyBundleDefaultsNewConditionToCleanAndCool() {
+		Firearm original = new Firearm().configure(
+				"test",
+				"uid-legacy",
+				3);
+		Bundle bundle = new Bundle();
+		original.storeInBundle(bundle);
+		bundle.remove("heat");
+		bundle.remove("fouling");
+
+		Firearm restored = new Firearm();
+		restored.restoreFromBundle(bundle);
+
+		assertEquals(0f, restored.heat(), 0f);
+		assertEquals(0f, restored.fouling(), 0f);
+		assertEquals(1f, restored.durability(), 0f);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void durabilityRejectsNonFiniteState() {
+		new Firearm().setDurability(Float.NaN);
+	}
+
+	@Test
+	public void liveShotsAgeHeatAndFoulingAndCoolingOnlyRemovesHeat() {
+		FirearmDefinition definition = FirearmDefinitionTest.validDefinition();
+		Firearm firearm = new Firearm().configure("test", "uid-condition", 6);
+
+		float initialDurability = firearm.durability();
+		firearm.recordShot(definition);
+
+		assertTrue(firearm.heat() > 0f);
+		assertTrue(firearm.fouling() > 0f);
+		assertTrue(firearm.durability() < initialDurability);
+		float foulingAfterShot = firearm.fouling();
+		float durabilityAfterShot = firearm.durability();
+
+		firearm.cool(1f);
+
+		assertEquals(0f, firearm.heat(), 0.0001f);
+		assertEquals(foulingAfterShot, firearm.fouling(), 0.0001f);
+		assertEquals(durabilityAfterShot, firearm.durability(), 0.0001f);
+	}
+
+	@Test
+	public void poorHotDirtyConditionAddsReadableSpreadPenalty() {
+		Firearm firearm = new Firearm().configure(
+				"test",
+				"uid-condition-spread",
+				6);
+		assertEquals(0f, firearm.conditionSpreadPenaltyDeg(), 0.0001f);
+
+		firearm.setDurability(0.35f);
+		firearm.setCondition(0.90f, 0.75f);
+
+		assertTrue(firearm.conditionSpreadPenaltyDeg() > 2f);
 	}
 
 	@Test

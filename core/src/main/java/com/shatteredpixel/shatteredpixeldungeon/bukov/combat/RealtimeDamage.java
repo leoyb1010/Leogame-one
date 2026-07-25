@@ -1,5 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
+
 public final class RealtimeDamage {
 
 	public enum HitZone {
@@ -14,19 +16,13 @@ public final class RealtimeDamage {
 		}
 	}
 
-	public static final class ArmorState {
-		public float durability;
-		public float resistance;
-		public float absorbedLastHit;
-	}
-
 	public static float resolve(float weaponDamage,
 								float ammoMultiplier,
 								float distance,
 								float effectiveRange,
 								float penetration,
 								HitZone zone,
-								ArmorState armor) {
+								RealtimeArmorState armor) {
 		if (weaponDamage < 0f || ammoMultiplier < 0f
 				|| distance < 0f || penetration < 0f) {
 			throw new IllegalArgumentException("damage inputs must not be negative");
@@ -46,27 +42,15 @@ public final class RealtimeDamage {
 				* rangeFactor
 				* zone.multiplier;
 
-		if (armor == null || armor.durability <= 0f) {
+		if (armor == null) {
 			return Math.max(1f, incoming);
 		}
-
-		float penetrationRatio = penetration / Math.max(1f, armor.resistance);
-		float blockRatio = clamp(
-				0.72f - penetrationRatio * 0.52f,
-				0.08f,
-				0.72f
-		);
-		float blocked = incoming * blockRatio;
-		armor.absorbedLastHit = blocked;
-		armor.durability = Math.max(
-				0f,
-				armor.durability - incoming * 0.015f
-		);
-		return Math.max(1f, incoming - blocked);
-	}
-
-	private static float clamp(float value, float min, float max) {
-		return Math.max(min, Math.min(max, value));
+		return Math.max(
+				1f,
+				armor.resolveBullet(
+						incoming,
+						penetration,
+						zone).healthDamage);
 	}
 
 	private RealtimeDamage() {

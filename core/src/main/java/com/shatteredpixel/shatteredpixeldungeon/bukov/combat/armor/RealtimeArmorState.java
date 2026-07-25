@@ -36,11 +36,13 @@ public final class RealtimeArmorState {
 
 	private RealtimeArmorState(
 			RaidItem original,
-			ArmorDefinition definition) {
-		this.original = original.copy();
+			ArmorDefinition definition,
+			float durabilityFraction) {
+		this.original = original == null ? null : original.copy();
 		this.definition = definition;
 		this.durability =
-				definition.maximumDurability * original.durability();
+				definition.maximumDurability
+						* clamp(durabilityFraction, 0f, 1f);
 	}
 
 	public static RealtimeArmorState fromRaidItem(
@@ -60,7 +62,22 @@ public final class RealtimeArmorState {
 			throw new IllegalArgumentException(
 					"equipped armor must be one physical item");
 		}
-		return new RealtimeArmorState(item, definition);
+		return new RealtimeArmorState(
+				item,
+				definition,
+				item.durability());
+	}
+
+	/**
+	 * Creates full-condition runtime armor for actors that do not own a
+	 * persistent RaidItem, such as an armored enemy.
+	 */
+	public static RealtimeArmorState fresh(
+			ArmorDefinition definition) {
+		if (definition == null) {
+			throw new IllegalArgumentException("definition is required");
+		}
+		return new RealtimeArmorState(null, definition, 1f);
 	}
 
 	/**
@@ -112,6 +129,10 @@ public final class RealtimeArmorState {
 	}
 
 	public RaidItem toRaidItem() {
+		if (original == null) {
+			throw new IllegalStateException(
+					"transient armor has no RaidItem");
+		}
 		return original.withRuntimeState(1, durabilityFraction());
 	}
 

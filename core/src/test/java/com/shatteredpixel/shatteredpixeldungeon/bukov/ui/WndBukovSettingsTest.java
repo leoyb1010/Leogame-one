@@ -126,6 +126,53 @@ public class WndBukovSettingsTest {
 		assertFalse(notices.contains("in-game\ncredits"));
 	}
 
+	@Test
+	public void bindingEntriesOpenExistingEditorAndPreserveSettingsWindow()
+			throws Exception {
+		String source = settingsSource();
+		Properties english = entryMessages("");
+		Properties chinese = entryMessages("_zh");
+
+		assertEquals("KEYBOARD BINDINGS", english.getProperty(
+				"bukov.entry.settings.keyboard_bindings"));
+		assertEquals("CONTROLLER BINDINGS", english.getProperty(
+				"bukov.entry.settings.controller_bindings"));
+		assertEquals("CONFIGURE", english.getProperty(
+				"bukov.entry.settings.configure"));
+		assertEquals("键盘绑定", chinese.getProperty(
+				"bukov.entry.settings.keyboard_bindings"));
+		assertEquals("手柄绑定", chinese.getProperty(
+				"bukov.entry.settings.controller_bindings"));
+		assertEquals("配置", chinese.getProperty(
+				"bukov.entry.settings.configure"));
+
+		assertTrue(source.contains(
+				"windows.WndKeyBindings;"));
+		assertTrue(source.contains("KEYBOARD_BINDINGS,"));
+		assertTrue(source.contains("CONTROLLER_BINDINGS,"));
+		assertTrue(source.indexOf("KEYBOARD_BINDINGS,")
+				< source.indexOf("LEGAL,"));
+		assertTrue(source.contains("openBindings(false);"));
+		assertTrue(source.contains("openBindings(true);"));
+		assertTrue(source.contains(
+				"setting == Setting.KEYBOARD_BINDINGS"));
+		assertTrue(source.contains(
+				"setting == Setting.CONTROLLER_BINDINGS"));
+		assertTrue(source.contains(
+				"return BukovTouchIcon.Glyph.SETTINGS;"));
+
+		int helperStart = source.indexOf(
+				"private void openBindings(boolean controller)");
+		int helperEnd = source.indexOf(
+				"\n\tprivate enum Setting", helperStart);
+		assertTrue(helperStart >= 0);
+		assertTrue(helperEnd > helperStart);
+		String helper = source.substring(helperStart, helperEnd);
+		assertTrue(helper.contains("new WndKeyBindings(controller)"));
+		assertTrue(helper.contains("addToFront("));
+		assertFalse(helper.contains("hide();"));
+	}
+
 	private static String settingsSource() throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(

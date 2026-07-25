@@ -422,7 +422,12 @@ public class BukovRuntimeLoadoutAdapterTest {
 		runtime.primaryWeapon().consumeRound();
 		runtime.primaryWeapon().consumeRound();
 		runtime.primaryWeapon().setDurability(0.42f);
+		runtime.primaryWeapon().setCondition(0.37f, 0.28f);
 		runtime.writeBack(raid.loot());
+		assertEquals(
+				0.28f,
+				raid.loot().item("persistent-gun").fouling(),
+				0.0001f);
 		raid.saveCheckpoint();
 
 		BukovRaidCoordinator resumed =
@@ -437,11 +442,40 @@ public class BukovRuntimeLoadoutAdapterTest {
 				0.42f,
 				restored.primaryWeapon().durability(),
 				0.0001f);
+		assertEquals(
+				0.28f,
+				restored.primaryWeapon().fouling(),
+				0.0001f);
 		assertSame(
 				restored.primaryWeapon(),
 				new BukovHeapLootAdapter(resumed)
 						.carriedHostItem("persistent-gun"));
 		assertEquals(24, restored.reserveAmmo().get(0).quantity());
+	}
+
+	@Test
+	public void writeBackCarriesPersistentConditionIntoAFreshRaidRuntime()
+			throws IOException {
+		LootTransaction ledger = deployedLedger(
+				"firearm:needle_9",
+				"ammo:ammo_9_standard");
+		BukovRuntimeLoadoutAdapter adapter = adapter();
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout first =
+				adapter.materialize(ledger);
+		first.primaryWeapon().setDurability(0.61f);
+		first.primaryWeapon().setCondition(0.84f, 0.33f);
+
+		first.writeBack(ledger);
+		BukovRuntimeLoadoutAdapter.RuntimeLoadout nextRaid =
+				adapter.materialize(ledger);
+
+		assertEquals(0.61f, nextRaid.primaryWeapon().durability(), 0.0001f);
+		assertEquals(0.33f, nextRaid.primaryWeapon().fouling(), 0.0001f);
+		assertEquals(
+				"Heat is transient and must start cool in a new raid",
+				0f,
+				nextRaid.primaryWeapon().heat(),
+				0f);
 	}
 
 	@Test

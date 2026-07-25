@@ -3,6 +3,9 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyRole;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyTier;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.ArmorCatalog;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
 import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 
 import org.junit.Test;
@@ -14,6 +17,8 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class FirstRaidEnemyProductionWiringTest {
@@ -51,24 +56,34 @@ public class FirstRaidEnemyProductionWiringTest {
 		EnemyArchetypeDefinition armored =
 				new EnemyArchetypeDefinition();
 		armored.abilities = new String[]{"ARMORED_FRONT"};
-		assertEquals(
-				65,
-				BukovRealtimeWorld.resolveEnemyArmor(
-						armored, 100, 8f));
-		assertEquals(
-				80,
-				BukovRealtimeWorld.resolveEnemyArmor(
-						armored, 100, 18f));
-		assertEquals(
-				90,
-				BukovRealtimeWorld.resolveEnemyArmor(
-						armored, 100, 30f));
-
+		assertNotNull(BukovRealtimeWorld.createEnemyArmor(armored));
 		armored.abilities = new String[]{"USE_COVER"};
+		assertNull(BukovRealtimeWorld.createEnemyArmor(armored));
+
+		float lowPen = resolveFreshEnemyArmor(100f, 8f);
+		float mediumPen = resolveFreshEnemyArmor(100f, 18f);
+		float highPen = resolveFreshEnemyArmor(100f, 30f);
+
+		assertTrue(lowPen < mediumPen);
+		assertTrue(mediumPen < highPen);
+		assertTrue(highPen < 100f);
 		assertEquals(
-				100,
+				100f,
 				BukovRealtimeWorld.resolveEnemyArmor(
-						armored, 100, 8f));
+						null,
+						100f,
+						8f,
+						RealtimeDamage.HitZone.CORE),
+				0.0001f);
+
+		RealtimeArmorState durable = RealtimeArmorState.fresh(
+				ArmorCatalog.require("patrol_vest"));
+		BukovRealtimeWorld.resolveEnemyArmor(
+				durable,
+				100f,
+				8f,
+				RealtimeDamage.HitZone.CORE);
+		assertTrue(durable.durabilityFraction() < 1f);
 	}
 
 	@Test
@@ -129,5 +144,16 @@ public class FirstRaidEnemyProductionWiringTest {
 				new EnemyArchetypeDefinition();
 		definition.role = role;
 		return BukovRealtimeWorld.enemyRoleLabel(definition);
+	}
+
+	private static float resolveFreshEnemyArmor(
+			float damage,
+			float penetration) {
+		return BukovRealtimeWorld.resolveEnemyArmor(
+				RealtimeArmorState.fresh(
+						ArmorCatalog.require("patrol_vest")),
+				damage,
+				penetration,
+				RealtimeDamage.HitZone.CORE);
 	}
 }

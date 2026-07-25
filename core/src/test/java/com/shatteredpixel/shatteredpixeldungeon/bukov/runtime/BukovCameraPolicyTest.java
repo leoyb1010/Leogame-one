@@ -30,6 +30,20 @@ public class BukovCameraPolicyTest {
 	}
 
 	@Test
+	public void landscapeIphoneUsesCloserCombatScaleThanDesktop() {
+		float mobileZoom = BukovCameraPolicy.resolveWorldZoom(
+				874f, 16f, true, false, 1f, 8f);
+		float desktopZoom = BukovCameraPolicy.resolveWorldZoom(
+				874f, 16f, true, true, 1f, 8f);
+		float mobileVisibleTiles = 874f / mobileZoom / 16f;
+
+		assertEquals(3f, mobileZoom, 0f);
+		assertEquals(2f, desktopZoom, 0f);
+		assertTrue(mobileVisibleTiles >= 18f);
+		assertTrue(mobileVisibleTiles <= 21f);
+	}
+
+	@Test
 	public void zoomIsIntegerAndRespectsEngineBounds() {
 		assertEquals(4f, BukovCameraPolicy.resolveWorldZoom(
 				2_560f, 16f, true, 1f, 4f), 0f);

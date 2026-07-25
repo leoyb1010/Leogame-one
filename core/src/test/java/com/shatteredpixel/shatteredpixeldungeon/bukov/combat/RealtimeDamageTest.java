@@ -1,6 +1,10 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.ArmorDefinition;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
 import org.junit.Test;
+
+import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,18 +41,24 @@ public class RealtimeDamageTest {
 
 	@Test
 	public void armorAbsorbsDamageAndLosesDurability() {
-		RealtimeDamage.ArmorState armor = new RealtimeDamage.ArmorState();
-		armor.durability = 1f;
-		armor.resistance = 20f;
+		RealtimeArmorState armor = RealtimeArmorState.fresh(
+				new ArmorDefinition(
+						"damage_test",
+						2,
+						100f,
+						20f,
+						EnumSet.of(RealtimeDamage.HitZone.CORE),
+						0f,
+						0f));
 
 		float resolved = RealtimeDamage.resolve(
 				20f, 1f, 5f, 10f, 10f,
 				RealtimeDamage.HitZone.CORE, armor
 		);
 
-		assertEquals(10.8f, resolved, 0.0001f);
-		assertEquals(9.2f, armor.absorbedLastHit, 0.0001f);
-		assertEquals(0.7f, armor.durability, 0.0001f);
+		assertEquals(9f, resolved, 0.0001f);
+		assertTrue(armor.durabilityFraction() < 1f);
+		assertTrue(armor.durabilityFraction() > 0f);
 	}
 
 	@Test

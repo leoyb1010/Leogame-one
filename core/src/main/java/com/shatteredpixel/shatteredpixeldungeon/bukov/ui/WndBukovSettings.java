@@ -11,6 +11,7 @@ import com.shatteredpixel.shatteredpixeldungeon.ui.GameLog;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.shatteredpixel.shatteredpixeldungeon.ui.ScrollPane;
 import com.shatteredpixel.shatteredpixeldungeon.ui.Window;
+import com.shatteredpixel.shatteredpixeldungeon.windows.WndKeyBindings;
 import com.shatteredpixel.shatteredpixeldungeon.windows.WndMessage;
 import com.watabou.gltextures.TextureCache;
 import com.watabou.input.KeyEvent;
@@ -217,6 +218,13 @@ public final class WndBukovSettings extends Window {
 		}
 	}
 
+	private void openBindings(boolean controller) {
+		// Keep this settings window alive underneath the editor. Confirming or
+		// cancelling bindings then returns to the same focus and scroll state.
+		ShatteredPixelDungeon.scene().addToFront(
+				new WndKeyBindings(controller));
+	}
+
 	private enum Setting {
 		LANGUAGE,
 		REDUCE_MOTION,
@@ -238,6 +246,8 @@ public final class WndBukovSettings extends Window {
 		AIM_CURVE,
 		TRIGGER,
 		BRIGHTNESS,
+		KEYBOARD_BINDINGS,
+		CONTROLLER_BINDINGS,
 		LEGAL,
 		CLOSE
 	}
@@ -339,6 +349,10 @@ public final class WndBukovSettings extends Window {
 		}
 
 		private BukovTouchIcon.Glyph navigationGlyph(Setting setting) {
+			if (setting == Setting.KEYBOARD_BINDINGS
+					|| setting == Setting.CONTROLLER_BINDINGS) {
+				return BukovTouchIcon.Glyph.SETTINGS;
+			}
 			if (setting == Setting.LEGAL) {
 				return BukovTouchIcon.Glyph.DOCUMENT;
 			}
@@ -434,6 +448,12 @@ public final class WndBukovSettings extends Window {
 					int value = SPDSettings.brightness() + 1;
 					SPDSettings.brightness(value > 1 ? -1 : value);
 					break;
+				case KEYBOARD_BINDINGS:
+					openBindings(false);
+					return;
+				case CONTROLLER_BINDINGS:
+					openBindings(true);
+					return;
 				case LEGAL:
 					showLegalNotice();
 					return;
@@ -615,6 +635,16 @@ public final class WndBukovSettings extends Window {
 				case BRIGHTNESS:
 					setCopy(entryMessage("settings.brightness"),
 							brightnessLabel(SPDSettings.brightness()));
+					break;
+				case KEYBOARD_BINDINGS:
+					setCopy(
+							entryMessage("settings.keyboard_bindings"),
+							entryMessage("settings.configure"));
+					break;
+				case CONTROLLER_BINDINGS:
+					setCopy(
+							entryMessage("settings.controller_bindings"),
+							entryMessage("settings.configure"));
 					break;
 				case LEGAL:
 					setCopy(

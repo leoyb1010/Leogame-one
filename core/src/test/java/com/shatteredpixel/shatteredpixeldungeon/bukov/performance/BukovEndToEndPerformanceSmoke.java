@@ -5,6 +5,8 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeProjectile;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.ArmorDefinition;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFeedbackPlan;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFeedbackRequest;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFeedbackResolver;
@@ -23,6 +25,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,6 +45,15 @@ public class BukovEndToEndPerformanceSmoke {
 	private static final int PROJECTILES = 200;
 	private static final int MAP_SIZE = 64;
 	private static final float FIXED_DT = 1f / 120f;
+	private static final ArmorDefinition ENEMY_ARMOR =
+			new ArmorDefinition(
+					"performance_enemy",
+					1,
+					80f,
+					6f,
+					EnumSet.of(RealtimeDamage.HitZone.CORE),
+					0f,
+					0f);
 	private static final CombatFeedbackRequest RIFLE_FEEDBACK =
 			new CombatFeedbackRequest(
 					CombatFeedbackType.RIFLE_SHOT, 0f, 1f
@@ -463,7 +475,8 @@ public class BukovEndToEndPerformanceSmoke {
 					enemy.health -= rounded;
 					if (enemy.health <= 0) {
 						enemy.health = 250;
-						enemy.armor.durability = 80f;
+						enemy.armor = RealtimeArmorState.fresh(
+								ENEMY_ARMOR);
 						resolveFeedback(KILL_FEEDBACK);
 					}
 				}
@@ -640,16 +653,14 @@ public class BukovEndToEndPerformanceSmoke {
 		final int index;
 		final RealtimeBody body;
 		final RealtimeEnemyBrain brain;
-		final RealtimeDamage.ArmorState armor =
-				new RealtimeDamage.ArmorState();
+		RealtimeArmorState armor;
 		int health = 250;
 
 		Enemy(int index, float x, float y) {
 			this.index = index;
 			body = body(x, y, 0.28f);
 			brain = new RealtimeEnemyBrain(index);
-			armor.durability = 80f;
-			armor.resistance = 6f;
+			armor = RealtimeArmorState.fresh(ENEMY_ARMOR);
 		}
 	}
 

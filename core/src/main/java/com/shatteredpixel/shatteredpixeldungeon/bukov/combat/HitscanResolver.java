@@ -12,6 +12,20 @@ public final class HitscanResolver {
 				float maxX,
 				float maxY
 		);
+
+		/**
+		 * Resolves the gameplay region hit by a ray after this query selected
+		 * the nearest body. Existing callers keep core-only behaviour while
+		 * production queries can provide authored body-region geometry.
+		 */
+		default RealtimeDamage.HitZone hitZone(
+				RealtimeBody body,
+				float originX,
+				float originY,
+				float directionX,
+				float directionY) {
+			return RealtimeDamage.HitZone.CORE;
+		}
 	}
 
 	public static final class Hit {
@@ -19,12 +33,14 @@ public final class HitscanResolver {
 		public float distance;
 		public float x;
 		public float y;
+		public RealtimeDamage.HitZone zone;
 
 		public void clear(float maximumDistance) {
 			body = null;
 			distance = maximumDistance;
 			x = 0f;
 			y = 0f;
+			zone = null;
 		}
 	}
 
@@ -98,6 +114,18 @@ public final class HitscanResolver {
 			}
 		}
 
+		if (out.body != null) {
+			out.zone = targets.hitZone(
+					out.body,
+					originX,
+					originY,
+					dx,
+					dy);
+			if (out.zone == null) {
+				throw new IllegalStateException(
+						"target query returned a null hit zone");
+			}
+		}
 		out.x = originX + dx * out.distance;
 		out.y = originY + dy * out.distance;
 	}

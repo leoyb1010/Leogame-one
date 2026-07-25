@@ -26,6 +26,9 @@ public final class BukovTouchControls extends Component {
 	private static final float ACTION_ICON_HEIGHT_RATIO = 0.66f;
 	private static final float ACTION_LABEL_HEIGHT_PX = 5f;
 	private static final float MIN_ACTION_HIT_SIZE_PX = 22f;
+	static final float STICK_RESTING_ALPHA = 0.46f;
+	static final float STICK_PRESSED_ALPHA = 0.92f;
+	static final float STICK_DISABLED_ALPHA = 0.28f;
 
 	public interface Listener {
 		void onActionPressed(BukovTouchState.Action action);
@@ -597,8 +600,10 @@ public final class BukovTouchControls extends Component {
 		private void setPressed(boolean pressed) {
 			boolean visiblyPressed = pressed && !disabled;
 			background.alpha(disabled
-					? 0.45f
-					: visiblyPressed ? 0.95f : 0.72f);
+					? STICK_DISABLED_ALPHA
+					: visiblyPressed
+							? STICK_PRESSED_ALPHA
+							: STICK_RESTING_ALPHA);
 			knob.alpha(disabled
 					? 0.40f
 					: visiblyPressed ? 1f : 0.80f);

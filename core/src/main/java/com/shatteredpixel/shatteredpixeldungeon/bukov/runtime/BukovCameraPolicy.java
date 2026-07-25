@@ -10,6 +10,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 public final class BukovCameraPolicy {
 
 	private static final float LANDSCAPE_VISIBLE_TILES = 24f;
+	private static final float MOBILE_LANDSCAPE_VISIBLE_TILES = 20f;
 	private static final float PORTRAIT_VISIBLE_TILES = 14f;
 
 	private BukovCameraPolicy() {
@@ -19,6 +20,7 @@ public final class BukovCameraPolicy {
 			float screenWidth,
 			float tileSize,
 			boolean landscape,
+			boolean desktop,
 			float minimumZoom,
 			float maximumZoom) {
 		if (!finite(screenWidth)
@@ -38,7 +40,9 @@ public final class BukovCameraPolicy {
 				minimumIntegerZoom,
 				(int)Math.floor(maximumZoom));
 		float visibleTiles = landscape
-				? LANDSCAPE_VISIBLE_TILES
+				? desktop
+						? LANDSCAPE_VISIBLE_TILES
+						: MOBILE_LANDSCAPE_VISIBLE_TILES
 				: PORTRAIT_VISIBLE_TILES;
 		int desiredZoom = Math.max(
 				1,
@@ -46,6 +50,25 @@ public final class BukovCameraPolicy {
 		return Math.max(
 				minimumIntegerZoom,
 				Math.min(maximumIntegerZoom, desiredZoom));
+	}
+
+	/**
+	 * Compatibility overload for non-platform callers. Historically every
+	 * landscape viewport used the desktop action scale.
+	 */
+	public static float resolveWorldZoom(
+			float screenWidth,
+			float tileSize,
+			boolean landscape,
+			float minimumZoom,
+			float maximumZoom) {
+		return resolveWorldZoom(
+				screenWidth,
+				tileSize,
+				landscape,
+				true,
+				minimumZoom,
+				maximumZoom);
 	}
 
 	private static boolean finite(float value) {

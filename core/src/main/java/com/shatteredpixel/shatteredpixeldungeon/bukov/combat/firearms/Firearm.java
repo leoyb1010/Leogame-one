@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
 import com.shatteredpixel.shatteredpixeldungeon.items.weapon.Weapon;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.ItemSpriteSheet;
 import com.watabou.utils.Bundle;
@@ -11,6 +12,8 @@ public class Firearm extends Weapon {
 	private static final String MAG = "magazine_ammo";
 	private static final String LOADED_AMMO = "loaded_ammo_definition_id";
 	private static final String DURABILITY = "durability";
+	private static final String HEAT = "heat";
+	private static final String FOULING = "fouling";
 	private static final String ATTACHMENT_BUILD = "attachment_build";
 
 	private String definitionId;
@@ -18,6 +21,8 @@ public class Firearm extends Weapon {
 	private int magazineAmmo;
 	private String loadedAmmoDefinitionId;
 	private float durability = 1f;
+	private float heat;
+	private float fouling;
 	private FirearmBuild attachmentBuild;
 
 	{
@@ -167,7 +172,70 @@ public class Firearm extends Weapon {
 	}
 
 	public void setDurability(float value) {
-		durability = Math.max(0f, Math.min(1f, value));
+		if (!BukovNumbers.isFinite(value)) {
+			throw new IllegalArgumentException("durability must be finite");
+		}
+		durability = unit(value);
+	}
+
+	/**
+	 * Commits the persistent condition cost of one live round. Heat cools
+	 * continuously, while fouling and durability are written back with the
+	 * firearm so two otherwise identical weapons can age differently.
+	 */
+	public void recordShot(FirearmDefinition definition) {
+		if (definition == null) {
+			throw new IllegalArgumentException("definition is required");
+		}
+		float heatGain = 0.035f + Math.min(
+				0.055f,
+				definition.recoilPerShot * 0.004f);
+		heat = unit(heat + heatGain);
+		fouling = unit(fouling + 0.0015f
+				+ definition.pellets * 0.00025f);
+		durability = unit(durability
+				- 0.00025f
+				- heat * 0.00030f);
+	}
+
+	public void cool(float elapsedSeconds) {
+		if (Float.isNaN(elapsedSeconds)
+				|| Float.isInfinite(elapsedSeconds)
+				|| elapsedSeconds < 0f) {
+			throw new IllegalArgumentException(
+					"elapsedSeconds must be finite and non-negative");
+		}
+		heat = Math.max(0f, heat - elapsedSeconds * 0.22f);
+	}
+
+	public float heat() {
+		return heat;
+	}
+
+	public float fouling() {
+		return fouling;
+	}
+
+	public void setCondition(float heat, float fouling) {
+		if (Float.isNaN(heat)
+				|| Float.isInfinite(heat)
+				|| Float.isNaN(fouling)
+				|| Float.isInfinite(fouling)) {
+			throw new IllegalArgumentException(
+					"condition values must be finite");
+		}
+		this.heat = unit(heat);
+		this.fouling = unit(fouling);
+	}
+
+	/**
+	 * Accuracy penalty consumed by the production hitscan path. This keeps
+	 * condition readable without introducing a surprise random hard jam.
+	 */
+	public float conditionSpreadPenaltyDeg() {
+		return fouling * 0.9f
+				+ Math.max(0f, heat - 0.50f) * 2.5f
+				+ (1f - durability) * 1.2f;
 	}
 
 	@Override
@@ -200,6 +268,8 @@ public class Firearm extends Weapon {
 		bundle.put(MAG, magazineAmmo);
 		bundle.put(LOADED_AMMO, loadedAmmoDefinitionId);
 		bundle.put(DURABILITY, durability);
+		bundle.put(HEAT, heat);
+		bundle.put(FOULING, fouling);
 		if (attachmentBuild != null) {
 			bundle.put(ATTACHMENT_BUILD, attachmentBuild);
 		}
@@ -213,8 +283,14 @@ public class Firearm extends Weapon {
 		magazineAmmo = Math.max(0, bundle.getInt(MAG));
 		loadedAmmoDefinitionId = bundle.getString(LOADED_AMMO);
 		durability = bundle.contains(DURABILITY)
-				? Math.max(0f, Math.min(1f, bundle.getFloat(DURABILITY)))
+				? unitOrDefault(bundle.getFloat(DURABILITY), 1f)
 				: 1f;
+		heat = bundle.contains(HEAT)
+				? unitOrDefault(bundle.getFloat(HEAT), 0f)
+				: 0f;
+		fouling = bundle.contains(FOULING)
+				? unitOrDefault(bundle.getFloat(FOULING), 0f)
+				: 0f;
 		if (bundle.contains(ATTACHMENT_BUILD)) {
 			com.watabou.utils.Bundlable restoredBuild =
 					bundle.get(ATTACHMENT_BUILD);
@@ -226,6 +302,14 @@ public class Firearm extends Weapon {
 		} else {
 			attachmentBuild = null;
 		}
+	}
+
+	private static float unit(float value) {
+		return Math.max(0f, Math.min(1f, value));
+	}
+
+	private static float unitOrDefault(float value, float fallback) {
+		return BukovNumbers.isFinite(value) ? unit(value) : fallback;
 	}
 
 	private static FirearmDefinition copyDefinition(FirearmDefinition source) {

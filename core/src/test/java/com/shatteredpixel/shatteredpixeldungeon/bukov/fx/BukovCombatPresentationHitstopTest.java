@@ -84,6 +84,20 @@ public class BukovCombatPresentationHitstopTest {
 	}
 
 	@Test
+	public void bossWeakPointSlowMotionRespectsFeedbackAndReduceMotion() {
+		assertTrue(BukovCombatPresentation.bossWeakPointSlowMotion(
+				CombatFeedbackType.BOSS_PHASE_BREAK, 2, false));
+		assertTrue(BukovCombatPresentation.bossWeakPointSlowMotion(
+				CombatFeedbackType.WEAKPOINT_KILL, 1, false));
+		assertFalse(BukovCombatPresentation.bossWeakPointSlowMotion(
+				CombatFeedbackType.KILL, 2, false));
+		assertFalse(BukovCombatPresentation.bossWeakPointSlowMotion(
+				CombatFeedbackType.BOSS_PHASE_BREAK, 0, false));
+		assertFalse(BukovCombatPresentation.bossWeakPointSlowMotion(
+				CombatFeedbackType.BOSS_PHASE_BREAK, 2, true));
+	}
+
+	@Test
 	public void rollingBudgetCapsHitstopAtSixHundredMillisecondsPerMinute() {
 		HitstopBudget budget = new HitstopBudget();
 

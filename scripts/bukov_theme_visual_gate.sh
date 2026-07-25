@@ -123,6 +123,14 @@ done
   -show_entries stream=width,height,pix_fmt -of csv=p=0 \
   "$ASSET_DIR/theme_visual_contact_sheet.png")" == "576,96,rgba" ]]
 
+# Hash uniqueness only proves that PNG bytes differ. This second gate removes
+# colour, compares local luminance ordering, and requires differences to be
+# distributed across atlas regions. Its self-test proves that six monotonic
+# recolours of one drawing are rejected.
+node "$SCRIPT_DIR/bukov_theme_structure_gate.mjs" --self-test
+node "$SCRIPT_DIR/bukov_theme_structure_gate.mjs" \
+  "$ASSET_DIR"
+
 # The generated terrain/water atlases retain source alpha exactly, proving
 # that terrain slice geometry and transparent boundaries did not move.
 ffmpeg -hide_banner -loglevel error -i \

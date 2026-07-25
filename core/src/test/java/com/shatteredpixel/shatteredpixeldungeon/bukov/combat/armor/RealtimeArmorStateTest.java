@@ -76,6 +76,28 @@ public class RealtimeArmorStateTest {
 	}
 
 	@Test
+	public void transientEnemyArmorUsesTheSameDurabilityResolver() {
+		RealtimeArmorState state = RealtimeArmorState.fresh(
+				ArmorCatalog.require("patrol_vest"));
+
+		RealtimeArmorState.HitResult result = state.resolveBullet(
+				30f,
+				8f,
+				RealtimeDamage.HitZone.CORE);
+
+		assertTrue(result.armorCovered);
+		assertTrue(result.absorbedDamage > 0f);
+		assertTrue(result.healthDamage < 30f);
+		assertTrue(state.durabilityFraction() < 1f);
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void transientEnemyArmorCannotMasqueradeAsInventoryItem() {
+		RealtimeArmorState.fresh(
+				ArmorCatalog.require("patrol_vest")).toRaidItem();
+	}
+
+	@Test
 	public void durabilityRoundTripsThroughRaidItemWithoutIdentityLoss() {
 		RaidItem item = armorItem("armor:ceramic_rig", 0.75f);
 		RealtimeArmorState state = RealtimeArmorState.fromRaidItem(

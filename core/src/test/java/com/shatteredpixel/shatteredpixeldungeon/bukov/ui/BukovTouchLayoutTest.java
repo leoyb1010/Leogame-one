@@ -8,6 +8,15 @@ import static org.junit.Assert.assertTrue;
 public class BukovTouchLayoutTest {
 
 	@Test
+	public void restingSticksLeaveMostOfTheMapVisible() {
+		assertTrue(BukovTouchControls.STICK_RESTING_ALPHA <= 0.50f);
+		assertTrue(BukovTouchControls.STICK_PRESSED_ALPHA
+				> BukovTouchControls.STICK_RESTING_ALPHA);
+		assertTrue(BukovTouchControls.STICK_DISABLED_ALPHA
+				< BukovTouchControls.STICK_RESTING_ALPHA);
+	}
+
+	@Test
 	public void landscapeLayoutKeepsEveryControlInsideSafeArea() {
 		BukovTouchLayout layout = BukovTouchLayout.calculate(
 				426f,

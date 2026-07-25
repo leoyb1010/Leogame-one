@@ -8,6 +8,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContrac
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContractRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.CharSprite;
 import com.shatteredpixel.shatteredpixeldungeon.sprites.HeroSprite;
+import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
 import com.watabou.input.ControllerHandler;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
@@ -96,7 +97,15 @@ public final class BukovCombatPresentation
 				break;
 			case ENEMY_HIT:
 				if (target != null && target.sprite != null) {
-					target.sprite.realtimeHitReaction();
+					/*
+					 * The committed phase transition is the hit reaction for
+					 * a White Line phase break. A generic priority-three hit
+					 * film would otherwise interrupt its six-frame bridge.
+					 */
+					if (event.feedbackType()
+							!= CombatFeedbackType.BOSS_PHASE_BREAK) {
+						target.sprite.realtimeHitReaction();
+					}
 				}
 				break;
 			case ENEMY_DEATH:
@@ -151,6 +160,13 @@ public final class BukovCombatPresentation
 		if (event.feedbackType() == null || combatFeedback <= 0) {
 			return;
 		}
+		if (bossWeakPointSlowMotion(
+				event.feedbackType(), combatFeedback, reduceMotion)
+				&& target != null
+				&& target.sprite instanceof BukovWhiteLineSprite) {
+			((BukovWhiteLineSprite)target.sprite)
+					.beginWeakPointSlowMotion();
+		}
 		float feedbackScale = combatFeedback / 2f;
 		float shakeScale = SPDSettings.screenShake() / 4f;
 		float vibrationScale =
@@ -175,9 +191,21 @@ public final class BukovCombatPresentation
 			int hitstopMs = scaledHitstopMs(
 					feedbackPlan.hitstopMs(), combatFeedback);
 			hitstopMs = hitstopBudget.request(hitstopMs);
+			CharSprite targetSprite =
+					target == null ? null : target.sprite;
+			if (bossWeakPointSlowMotion(
+					event.feedbackType(), combatFeedback, reduceMotion)
+					&& targetSprite instanceof BukovWhiteLineSprite) {
+				/*
+				 * CharSprite treats a paused non-looping film as complete.
+				 * Keep the Boss transition running at its presentation-only
+				 * 0.3x clock while the shooter still receives hitstop.
+				 */
+				targetSprite = null;
+			}
 			applySpriteHitstop(
 					source == null ? null : source.sprite,
-					target == null ? null : target.sprite,
+					targetSprite,
 					hitstopMs);
 		}
 		if (feedbackPlan.shakeAmplitudePx() > 0f
@@ -254,6 +282,16 @@ public final class BukovCombatPresentation
 				|| type == CombatPresentationEvent.Type.ENEMY_HIT
 				|| type == CombatPresentationEvent.Type.PLAYER_DEATH
 				|| type == CombatPresentationEvent.Type.ENEMY_DEATH;
+	}
+
+	static boolean bossWeakPointSlowMotion(
+			CombatFeedbackType type,
+			int combatFeedback,
+			boolean reduceMotion) {
+		return combatFeedback > 0
+				&& !reduceMotion
+				&& (type == CombatFeedbackType.BOSS_PHASE_BREAK
+						|| type == CombatFeedbackType.WEAKPOINT_KILL);
 	}
 
 	private static void playDeath(Char target) {

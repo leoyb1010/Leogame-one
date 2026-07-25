@@ -71,6 +71,54 @@ public class RaidPersistenceTest {
 	}
 
 	@Test
+	public void itemRoundTripPreservesPersistentFirearmFouling() {
+		RaidItem item = new RaidItem(
+				"conditioned-gun",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				850,
+				false,
+				false,
+				0.72f,
+				0.31f);
+		Bundle bundle = new Bundle();
+		bundle.put("item", item);
+
+		RaidItem restored = (RaidItem)bundle.get("item");
+
+		assertNotNull(restored);
+		assertEquals(0.72f, restored.durability(), 0.0001f);
+		assertEquals(0.31f, restored.fouling(), 0.0001f);
+		assertEquals(item.fingerprintPart(), restored.fingerprintPart());
+	}
+
+	@Test
+	public void legacyItemWithoutFoulingKeepsCleanDefaultAndOldFingerprint() {
+		RaidItem clean = new RaidItem(
+				"legacy-gun",
+				"firearm:needle_9",
+				1,
+				0.9f,
+				850,
+				false,
+				false,
+				0.72f);
+		Bundle bundle = new Bundle();
+		clean.storeInBundle(bundle);
+		bundle.remove("fouling");
+
+		RaidItem restored = new RaidItem();
+		restored.restoreFromBundle(bundle);
+
+		assertEquals(0f, restored.fouling(), 0f);
+		assertEquals(clean.fingerprintPart(), restored.fingerprintPart());
+		assertEquals(
+				legacyFingerprintPart(clean),
+				restored.fingerprintPart());
+	}
+
+	@Test
 	public void profileRoundTripPreservesLastDeploymentTemplate() {
 		BukovProfile profile = new BukovProfile();
 		RaidItem weapon = item("template-weapon", 1);
@@ -103,6 +151,21 @@ public class RaidPersistenceTest {
 		assertTrue(restored.conditionMet());
 		assertEquals(3f, restored.progressSeconds(), 0.0001f);
 		assertFalse(restored.completed());
+	}
+
+	private static String legacyFingerprintPart(RaidItem item) {
+		StringBuilder out = new StringBuilder();
+		out.append(item.itemUid().length())
+				.append('#').append(item.itemUid()).append(':');
+		out.append(item.definitionId().length())
+				.append('#').append(item.definitionId()).append(':');
+		out.append(item.quantity()).append(':')
+				.append(Float.floatToIntBits(item.unitWeight())).append(':')
+				.append(item.unitValue()).append(':')
+				.append(item.foundInRaid() ? 1 : 0).append(':')
+				.append(item.insured() ? 1 : 0).append(':')
+				.append(Float.floatToIntBits(item.durability()));
+		return out.toString();
 	}
 
 	private static RaidItem item(String uid, int quantity) {

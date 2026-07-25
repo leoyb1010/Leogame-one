@@ -21,6 +21,7 @@ public final class RaidItem implements Bundlable {
 	private static final String FOUND_IN_RAID = "found_in_raid";
 	private static final String INSURED = "insured";
 	private static final String DURABILITY = "durability";
+	private static final String FOULING = "fouling";
 
 	private String itemUid;
 	private String definitionId;
@@ -30,6 +31,7 @@ public final class RaidItem implements Bundlable {
 	private boolean foundInRaid;
 	private boolean insured;
 	private float durability;
+	private float fouling;
 
 	public RaidItem() {
 		// Required by Bundle reflection.
@@ -44,6 +46,28 @@ public final class RaidItem implements Bundlable {
 			boolean foundInRaid,
 			boolean insured,
 			float durability) {
+		this(
+				itemUid,
+				definitionId,
+				quantity,
+				unitWeight,
+				unitValue,
+				foundInRaid,
+				insured,
+				durability,
+				0f);
+	}
+
+	public RaidItem(
+			String itemUid,
+			String definitionId,
+			int quantity,
+			float unitWeight,
+			int unitValue,
+			boolean foundInRaid,
+			boolean insured,
+			float durability,
+			float fouling) {
 		this.itemUid = requireId(itemUid, "itemUid");
 		this.definitionId = requireId(definitionId, "definitionId");
 		if (quantity <= 0) {
@@ -60,12 +84,17 @@ public final class RaidItem implements Bundlable {
 				durability) || durability < 0f || durability > 1f) {
 			throw new IllegalArgumentException("durability must be between 0 and 1");
 		}
+		if (!com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers.isFinite(
+				fouling) || fouling < 0f || fouling > 1f) {
+			throw new IllegalArgumentException("fouling must be between 0 and 1");
+		}
 		this.quantity = quantity;
 		this.unitWeight = unitWeight;
 		this.unitValue = unitValue;
 		this.foundInRaid = foundInRaid;
 		this.insured = insured;
 		this.durability = durability;
+		this.fouling = fouling;
 	}
 
 	public String itemUid() {
@@ -100,6 +129,10 @@ public final class RaidItem implements Bundlable {
 		return durability;
 	}
 
+	public float fouling() {
+		return fouling;
+	}
+
 	public float totalWeight() {
 		return unitWeight * quantity;
 	}
@@ -117,10 +150,18 @@ public final class RaidItem implements Bundlable {
 				unitValue,
 				foundInRaid,
 				insured,
-				durability);
+				durability,
+				fouling);
 	}
 
 	public RaidItem withRuntimeState(int updatedQuantity, float updatedDurability) {
+		return withRuntimeState(updatedQuantity, updatedDurability, fouling);
+	}
+
+	public RaidItem withRuntimeState(
+			int updatedQuantity,
+			float updatedDurability,
+			float updatedFouling) {
 		return new RaidItem(
 				itemUid,
 				definitionId,
@@ -129,7 +170,8 @@ public final class RaidItem implements Bundlable {
 				unitValue,
 				foundInRaid,
 				insured,
-				updatedDurability);
+				updatedDurability,
+				updatedFouling);
 	}
 
 	/**
@@ -147,7 +189,8 @@ public final class RaidItem implements Bundlable {
 				unitValue,
 				updatedFoundInRaid,
 				insured,
-				durability);
+				durability,
+				fouling);
 	}
 
 	/** Insurance is consumed when an item is returned and must be repurchased. */
@@ -160,7 +203,8 @@ public final class RaidItem implements Bundlable {
 				unitValue,
 				foundInRaid,
 				updatedInsured,
-				durability);
+				durability,
+				fouling);
 	}
 
 	public RaidItem withUnitValue(int updatedUnitValue) {
@@ -176,7 +220,8 @@ public final class RaidItem implements Bundlable {
 				updatedUnitValue,
 				foundInRaid,
 				insured,
-				durability);
+				durability,
+				fouling);
 	}
 
 	String fingerprintPart() {
@@ -189,6 +234,12 @@ public final class RaidItem implements Bundlable {
 				.append(foundInRaid ? 1 : 0).append(':')
 				.append(insured ? 1 : 0).append(':')
 				.append(Float.floatToIntBits(durability));
+		// Keep the exact pre-condition fingerprint for clean weapons. This
+		// preserves idempotent settlement replay for saves created before
+		// fouling existed, while still distinguishing every dirty weapon.
+		if (fouling != 0f) {
+			out.append(':').append(Float.floatToIntBits(fouling));
+		}
 		return out.toString();
 	}
 
@@ -202,6 +253,7 @@ public final class RaidItem implements Bundlable {
 		bundle.put(FOUND_IN_RAID, foundInRaid);
 		bundle.put(INSURED, insured);
 		bundle.put(DURABILITY, durability);
+		bundle.put(FOULING, fouling);
 	}
 
 	@Override
@@ -214,7 +266,10 @@ public final class RaidItem implements Bundlable {
 				bundle.getInt(UNIT_VALUE),
 				bundle.getBoolean(FOUND_IN_RAID),
 				bundle.getBoolean(INSURED),
-				bundle.getFloat(DURABILITY));
+				bundle.getFloat(DURABILITY),
+				bundle.contains(FOULING)
+						? bundle.getFloat(FOULING)
+						: 0f);
 		itemUid = restored.itemUid;
 		definitionId = restored.definitionId;
 		quantity = restored.quantity;
@@ -223,6 +278,7 @@ public final class RaidItem implements Bundlable {
 		foundInRaid = restored.foundInRaid;
 		insured = restored.insured;
 		durability = restored.durability;
+		fouling = restored.fouling;
 	}
 
 	@Override
@@ -236,6 +292,7 @@ public final class RaidItem implements Bundlable {
 				&& foundInRaid == item.foundInRaid
 				&& insured == item.insured
 				&& Float.compare(durability, item.durability) == 0
+				&& Float.compare(fouling, item.fouling) == 0
 				&& itemUid.equals(item.itemUid)
 				&& definitionId.equals(item.definitionId);
 	}
@@ -250,7 +307,8 @@ public final class RaidItem implements Bundlable {
 				unitValue,
 				foundInRaid,
 				insured,
-				durability);
+				durability,
+				fouling);
 	}
 
 	private static String requireId(String value, String name) {

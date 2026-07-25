@@ -340,6 +340,7 @@ public class GameScene extends PixelScene {
 						DungeonTilemap.SIZE,
 						Camera.main.screenWidth()
 								>= Camera.main.screenHeight(),
+						DeviceCompat.isDesktop(),
 						minZoom,
 						maxZoom)
 				: GameMath.gate(
