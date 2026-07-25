@@ -1,5 +1,6 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeEnvironmentRules;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 
 import org.junit.Test;
@@ -30,6 +31,30 @@ public class FootstepSurfaceTest {
 		assertEquals(
 				FootstepSurface.HARD,
 				FootstepSurface.resolve(Terrain.CUSTOM_DECO_EMPTY, null));
+	}
+
+	@Test
+	public void allAuthoredThemeSurfacesMapToOneOfThreeFamilies() {
+		assertEquals(
+				FootstepSurface.WATER,
+				FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.WATER));
+		assertEquals(
+				FootstepSurface.METAL,
+				FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.EMBERS));
+		assertEquals(
+				FootstepSurface.METAL,
+				FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.EMPTY_SP));
+		assertEquals(
+				FootstepSurface.HARD,
+				FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.EMPTY_DECO));
+		assertEquals(
+				FootstepSurface.HARD,
+				FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.CUSTOM_DECO_EMPTY));
 	}
 
 	@Test

@@ -40,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SpatialAudioModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitZoneGeometry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeBodySpatialIndex;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.ArmorCatalog;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.armor.RealtimeArmorState;
@@ -219,6 +220,7 @@ public final class BukovRealtimeWorld
 	private final HitscanResolver.Hit enemyShotHit = new HitscanResolver.Hit();
 	private final PointF assistedAim = new PointF();
 	private final ArrayList<RealtimeBody> targetBodies = new ArrayList<>();
+	private final RealtimeBodySpatialIndex targetSpatialIndex;
 	private final ArrayList<RealtimeBody> enemyShotTargetBodies =
 			new ArrayList<>();
 	private final IdentityHashMap<RealtimeBody, Char> charsByBody =
@@ -242,7 +244,11 @@ public final class BukovRealtimeWorld
 						float minY,
 						float maxX,
 						float maxY) {
-					return targetBodies;
+					return targetSpatialIndex.candidates(
+							minX,
+							minY,
+							maxX,
+							maxY);
 				}
 
 				@Override
@@ -387,6 +393,9 @@ public final class BukovRealtimeWorld
 					refreshHeroVisibility();
 				});
 		collision = new GridCollision(collisionMap);
+		targetSpatialIndex = new RealtimeBodySpatialIndex(
+				collisionMap.width(),
+				collisionMap.height());
 		extractionCell = resolveExtractionCell(BASELINE_EXTRACTION_ID);
 		pumpCell = resolvePumpCell();
 		missionGateCells = resolveMissionGateCells();
@@ -1210,7 +1219,7 @@ public final class BukovRealtimeWorld
 		for (EnemyRuntime enemy : enemies) {
 			if (!enemy.mob.isAlive()) {
 				enemy.brain.markDead();
-				enemy.body.active = false;
+				deactivateEnemyBody(enemy);
 				continue;
 			}
 			if (enemy.brain.perceptionDue(dt)) {
@@ -1393,6 +1402,7 @@ public final class BukovRealtimeWorld
 			}
 			if (!target.isAlive() && target.realtimeBody != null) {
 				target.realtimeBody.active = false;
+				targetSpatialIndex.remove(target.realtimeBody);
 				if (target instanceof Mob) {
 					EnemyRuntime deadEnemy =
 							enemiesByMob.get((Mob)target);
@@ -2650,6 +2660,7 @@ public final class BukovRealtimeWorld
 		inputFrame = null;
 		fireControl.resetForWeaponSwap();
 		targetBodies.clear();
+		targetSpatialIndex.clear();
 		enemyShotTargetBodies.clear();
 		charsByBody.clear();
 		pendingHits.clear();
@@ -3459,7 +3470,7 @@ public final class BukovRealtimeWorld
 			EnemyRuntime enemy = enemies.get(i);
 			if (!enemy.present || !enemy.mob.isAlive()) {
 				enemy.brain.markDead();
-				enemy.body.active = false;
+				deactivateEnemyBody(enemy);
 				enemiesByMob.remove(enemy.mob);
 				enemies.remove(i);
 			}
@@ -3478,6 +3489,7 @@ public final class BukovRealtimeWorld
 			targetBodies.add(enemy.body);
 			charsByBody.put(enemy.body, enemy.mob);
 		}
+		targetSpatialIndex.rebuild(targetBodies);
 	}
 
 	private void sortEnemiesByStableId() {
@@ -3499,6 +3511,7 @@ public final class BukovRealtimeWorld
 			enemy.moving = false;
 			enemy.body.velocityX = 0f;
 			enemy.body.velocityY = 0f;
+			targetSpatialIndex.remove(enemy.body);
 			return;
 		}
 
@@ -3562,6 +3575,7 @@ public final class BukovRealtimeWorld
 		if (nextCell != enemy.mob.pos) {
 			enemy.mob.pos = nextCell;
 		}
+		targetSpatialIndex.update(enemy.body);
 	}
 
 	private void announceEnemyManeuver(EnemyRuntime enemy) {
@@ -3969,7 +3983,7 @@ public final class BukovRealtimeWorld
 			EnemyRuntime enemy = enemiesByMob.get(attacker);
 			if (enemy != null) {
 				enemy.brain.markDead();
-				enemy.body.active = false;
+				deactivateEnemyBody(enemy);
 			}
 			return;
 		}
@@ -5077,6 +5091,8 @@ public final class BukovRealtimeWorld
 			resolveWhiteLineLevel();
 			int cell = enemy.mob.pos;
 			enemy.mob.damageWithoutFloatingText(enemy.mob.HP, hero);
+			enemy.brain.markDead();
+			deactivateEnemyBody(enemy);
 			if (raid != null && raid.bossContractRequired()) {
 				raid.markBossContractCompleted();
 			}
@@ -5141,7 +5157,7 @@ public final class BukovRealtimeWorld
 			if (enemy.bossState.bypass(available)
 					== WhiteLineBossStateMachine.Result.BYPASSED) {
 				clearBossMechanismMarkers();
-				enemy.body.active = false;
+				deactivateEnemyBody(enemy);
 				enemy.brain.markDead();
 				enemy.mob.destroy();
 				if (enemy.mob.sprite != null) {
@@ -5150,6 +5166,12 @@ public final class BukovRealtimeWorld
 			}
 		}
 		if (available) resolveWhiteLineLevel();
+	}
+
+	private void deactivateEnemyBody(EnemyRuntime enemy) {
+		if (enemy == null) return;
+		enemy.body.active = false;
+		targetSpatialIndex.remove(enemy.body);
 	}
 
 	private void reconcileLegacyBossContractCheckpoint() {

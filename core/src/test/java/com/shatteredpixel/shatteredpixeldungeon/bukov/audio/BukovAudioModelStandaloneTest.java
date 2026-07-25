@@ -1,7 +1,9 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeEnvironmentRules;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.CollisionMap;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContract;
+import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 
 /**
  * Runs without Gradle, libGDX or an audio device.
@@ -69,6 +71,8 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError("combat must duck music by three dB");
 		}
 
+		assertFootstepAudio();
+
 		BukovAtmosphereController atmosphere =
 				new BukovAtmosphereController();
 		BukovAtmosphereSignal signal = new BukovAtmosphereSignal();
@@ -92,6 +96,48 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError("combat release must return to calm");
 		}
 		System.out.println("PASS: Bukov spatial/layered audio model");
+	}
+
+	private static void assertFootstepAudio() {
+		if (FootstepSurface.resolve(Terrain.WATER, null)
+						!= FootstepSurface.WATER
+				|| FootstepSurface.resolve(Terrain.OPEN_DOOR, null)
+						!= FootstepSurface.METAL
+				|| FootstepSurface.resolve(Terrain.EMPTY, null)
+						!= FootstepSurface.HARD) {
+			throw new AssertionError(
+					"terrain must select water, metal and hard footsteps");
+		}
+		if (FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.WATER)
+						!= FootstepSurface.WATER
+				|| FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.EMBERS)
+						!= FootstepSurface.METAL
+				|| FootstepSurface.forThemeSurface(
+						ThemeEnvironmentRules.Surface.CUSTOM_DECO_EMPTY)
+						!= FootstepSurface.HARD) {
+			throw new AssertionError(
+					"theme surface must select an authored footstep family");
+		}
+		for (FootstepSurface surface : FootstepSurface.values()) {
+			if (surface.asset(0).equals(surface.asset(1))
+					|| !surface.asset(0).equals(surface.asset(2))
+					|| surface.gain() <= 0f
+					|| surface.pitch(0) <= 0f
+					|| surface.pitch(0) == surface.pitch(1)) {
+				throw new AssertionError(
+						surface + " footstep variants must be audible "
+								+ "and deterministic");
+			}
+		}
+		FootstepCadence cadence = new FootstepCadence();
+		if (cadence.advance(0f, 0f, 1f)
+				|| cadence.advance(0.1f, 0f, 0.1f)
+				|| !cadence.advance(0.3f, 0f, 0.1f)) {
+			throw new AssertionError(
+					"footstep cadence must follow accepted movement distance");
+		}
 	}
 
 	private static ExperienceContract contract() {

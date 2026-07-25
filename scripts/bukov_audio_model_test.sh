@@ -18,10 +18,14 @@ java_cmd="${java_home:+$java_home/bin/}java"
 "$javac_cmd" -d "$test_dir" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/BukovNumbers.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/levels/Terrain.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/ThemeEnvironmentRules.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/AudioChannel.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAudioBusMix.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAtmosphereSignal.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAtmosphereController.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/FootstepCadence.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/FootstepSurface.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SoundCategory.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SpatialAudioModel.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/GunshotAudioPlan.java" \

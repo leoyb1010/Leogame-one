@@ -232,4 +232,6 @@ for record in "${expected[@]}"; do
   fi
 done
 
+python3 "$repo_root/scripts/bukov_footstep_audio_gate.py"
+
 echo "Bukov audio gate: PASS (${#expected[@]} original PCM SFX; no legacy combat audio)"

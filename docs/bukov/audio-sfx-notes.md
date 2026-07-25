@@ -55,6 +55,11 @@ open-door threshold terrain route to the metal pair; other walkable terrain
 uses the hard pair. All three surfaces use the same master/SFX mix as gun and
 interaction cues.
 
+The footstep gate also measures duration, zero-crossing rate and
+first-difference energy for each family. This keeps future remasters flexible
+while rejecting six valid-looking WAV files that no longer sound materially
+different from one another.
+
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is
 still in the raid.

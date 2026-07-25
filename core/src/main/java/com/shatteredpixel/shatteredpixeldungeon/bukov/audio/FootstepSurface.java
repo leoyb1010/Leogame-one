@@ -40,22 +40,28 @@ public enum FootstepSurface {
 	public static FootstepSurface resolve(
 			int terrain,
 			ThemeEnvironmentRules environmentRules) {
-		if (terrain == Terrain.WATER
-				|| environmentRules != null
-				&& environmentRules.activeOn(terrain)
-				&& environmentRules.surface
-						== ThemeEnvironmentRules.Surface.WATER) {
+		if (terrain == Terrain.WATER) {
 			return WATER;
 		}
 		if (terrain == Terrain.EMBERS
 				|| terrain == Terrain.EMPTY_SP
-				|| terrain == Terrain.OPEN_DOOR
-				|| environmentRules != null
-				&& environmentRules.activeOn(terrain)
-				&& (environmentRules.surface
-						== ThemeEnvironmentRules.Surface.EMBERS
-						|| environmentRules.surface
-						== ThemeEnvironmentRules.Surface.EMPTY_SP)) {
+				|| terrain == Terrain.OPEN_DOOR) {
+			return METAL;
+		}
+		if (environmentRules != null
+				&& environmentRules.activeOn(terrain)) {
+			return forThemeSurface(environmentRules.surface);
+		}
+		return HARD;
+	}
+
+	static FootstepSurface forThemeSurface(
+			ThemeEnvironmentRules.Surface surface) {
+		if (surface == ThemeEnvironmentRules.Surface.WATER) {
+			return WATER;
+		}
+		if (surface == ThemeEnvironmentRules.Surface.EMBERS
+				|| surface == ThemeEnvironmentRules.Surface.EMPTY_SP) {
 			return METAL;
 		}
 		return HARD;
