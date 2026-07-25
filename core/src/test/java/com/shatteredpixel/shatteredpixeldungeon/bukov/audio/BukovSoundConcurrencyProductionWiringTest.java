@@ -36,6 +36,44 @@ public class BukovSoundConcurrencyProductionWiringTest {
 				"public synchronized void stop( Object id, long playbackId )"));
 	}
 
+	@Test
+	public void realtimeWorldRoutesAllPlaybackThroughSixVoiceBudget()
+			throws Exception {
+		String world = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovRealtimeWorld.java");
+
+		assertTrue(world.contains(
+				"BukovConcurrentSoundPlayer worldSounds"));
+			assertTrue(world.contains("worldSounds.update(dt)"));
+			assertTrue(world.contains("worldSounds.stopAll()"));
+			assertTrue(world.contains(
+					"input.cancelTouches();\n"
+							+ "\t\t\tpreserveExtractionCompleteCue();\n"
+							+ "\t\t\tworldSounds.stopAll();"));
+			assertTrue(world.contains(
+					"worldSounds.detach(extractionCompleteSoundToken)"));
+		assertTrue(world.contains("worldSounds.begin("));
+		assertTrue(world.contains("worldSounds.playLayer("));
+		assertTrue(world.contains("worldSounds.play("));
+		assertTrue(world.contains("SoundCategory.PLAYER_GUNSHOT"));
+		assertTrue(world.contains("SoundCategory.ENEMY_GUNSHOT"));
+		assertTrue(world.contains("SoundCategory.EXTRACTION_CUE"));
+		assertTrue(world.contains("SoundCategory.FOOTSTEP"));
+		assertTrue(world.contains(
+				"enemyDefinition.audioProfile.gunshotFamily"));
+		assertTrue(world.contains(
+				"GunshotAcousticSpaceResolver.resolve("));
+		assertTrue(world.contains(
+				"gunshotAudio.bodyLeft() * gainScale * gain"));
+		assertTrue(world.contains("if (gain <= 0f) return;"));
+		assertTrue(world.contains("emitPlayerSound("));
+		assertTrue(world.contains("aiSoundSpatial.perceivable()"));
+		assertTrue(world.contains(
+				"KeySoundVisualizationResolver.resolve("));
+		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_ENEMY"));
+		assertFalse(world.contains("Sample.INSTANCE.play("));
+	}
+
 	private static String source(String path) throws Exception {
 		return new String(
 				Files.readAllBytes(Paths.get(path)),

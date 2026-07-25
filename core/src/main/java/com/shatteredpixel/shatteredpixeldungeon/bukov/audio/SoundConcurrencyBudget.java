@@ -6,9 +6,12 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovNumbers;
  * Deterministic per-bus voice budget for short Bukov sounds.
  *
  * <p>Every bus owns six logical voices. A new request may replace the oldest
- * voice in the lowest eligible priority, but never a protected voice.
- * Explicit release handles playback-complete callbacks where available;
- * timeouts guarantee recovery on backends that expose no completion event.</p>
+ * voice in the lowest eligible priority. An unprotected request can never
+ * replace a protected voice; a protected request may replace the oldest
+ * protected voice at an eligible priority so rapid critical cues do not
+ * deadlock their own bus. Explicit release handles playback-complete callbacks
+ * where available; timeouts guarantee recovery on backends that expose no
+ * completion event.</p>
  */
 public final class SoundConcurrencyBudget {
 
@@ -100,7 +103,8 @@ public final class SoundConcurrencyBudget {
 		int target = freeVoice(channelVoices);
 		long evictedToken = NO_TOKEN;
 		if (target < 0) {
-			target = replacementVoice(channelVoices, priority);
+			target = replacementVoice(
+					channelVoices, priority, protectedSource);
 			if (target < 0) {
 				return new Admission(NO_TOKEN, NO_TOKEN);
 			}
@@ -167,6 +171,14 @@ public final class SoundConcurrencyBudget {
 		return count;
 	}
 
+	public void clear() {
+		for (Voice[] channelVoices : voices) {
+			for (Voice voice : channelVoices) {
+				voice.clear();
+			}
+		}
+	}
+
 	public static Priority defaultPriority(SoundCategory category) {
 		if (category == null) {
 			throw new IllegalArgumentException("category is required");
@@ -204,11 +216,12 @@ public final class SoundConcurrencyBudget {
 
 	private static int replacementVoice(
 			Voice[] channelVoices,
-			Priority incomingPriority) {
+			Priority incomingPriority,
+			boolean incomingProtected) {
 		int replacement = -1;
 		for (int index = 0; index < channelVoices.length; index++) {
 			Voice candidate = channelVoices[index];
-			if (candidate.protectedSource
+			if ((candidate.protectedSource && !incomingProtected)
 					|| candidate.priority.ordinal()
 							> incomingPriority.ordinal()) {
 				continue;

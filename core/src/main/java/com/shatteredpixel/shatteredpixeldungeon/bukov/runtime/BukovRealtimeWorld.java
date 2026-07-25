@@ -21,14 +21,18 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.GridLineOfSight;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyBrain;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.RealtimeEnemyTactics;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.WhiteLineBossStateMachine;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.AudioChannel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignal;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignalSource;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovConcurrentSoundPlayer;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovSamplePlaybackSink;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepCadence;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepSurface;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpace;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpaceResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioPlan;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAudioResolver;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotSoundFamily;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.KeySoundVisualizationSource;
@@ -36,6 +40,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.PlayerSoundEventBuff
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCue;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.ReloadAudioCueResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundCategory;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SoundConcurrencyBudget;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.SpatialAudioModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitZoneGeometry;
@@ -104,7 +109,6 @@ import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovInteractionMa
 import com.shatteredpixel.shatteredpixeldungeon.sprites.bukov.BukovWhiteLineSprite;
 import com.watabou.noosa.Camera;
 import com.watabou.noosa.Game;
-import com.watabou.noosa.audio.Sample;
 import com.watabou.utils.PointF;
 import com.watabou.utils.Random;
 import com.watabou.utils.SparseArray;
@@ -142,6 +146,10 @@ public final class BukovRealtimeWorld
 	private static final float CAMERA_RESPONSIVENESS = 8f;
 	private static final float KEY_SOUND_LIFETIME_SECONDS = 0.9f;
 	private static final float KILL_CONFIRM_PITCH = 0.25f;
+	private static final float SHORT_SFX_TIMEOUT_SECONDS = 0.40f;
+	private static final float FOOTSTEP_TIMEOUT_SECONDS = 0.35f;
+	private static final float GUNSHOT_TIMEOUT_SECONDS = 0.85f;
+	private static final float CRITICAL_CUE_TIMEOUT_SECONDS = 0.85f;
 	private static final PointF ZERO_CAMERA_SHIFT = new PointF();
 
 	private enum SpawnVisibility {
@@ -203,6 +211,9 @@ public final class BukovRealtimeWorld
 			new CombatPresentationEventPool(96);
 	private final ExperienceContract audioContract =
 			new ExperienceContractRegistry().loadDefault();
+	private final BukovConcurrentSoundPlayer worldSounds =
+			new BukovConcurrentSoundPlayer(
+					new BukovSamplePlaybackSink());
 	private final SpatialAudioModel.Result aiSoundSpatial =
 			new SpatialAudioModel.Result();
 	private final SpatialAudioModel.Result playbackSpatial =
@@ -297,6 +308,8 @@ public final class BukovRealtimeWorld
 	private boolean backpackRequested;
 	private boolean playerDeathPresented;
 	private boolean extractionCompleteCuePlayed;
+	private long extractionCompleteSoundToken =
+			SoundConcurrencyBudget.NO_TOKEN;
 	private int lastMedicalCountdown = Integer.MIN_VALUE;
 	private String activeContainerId;
 	private float nextEnemySpawnSeconds;
@@ -413,6 +426,7 @@ public final class BukovRealtimeWorld
 			refreshHeroVisibility();
 		}
 		lastHudRoom = currentHudRoom();
+		recordBalanceRoom();
 		firearmRegistry.loadDefault();
 		ammoRegistry.loadDefault();
 		firearmRegistry.validateAmmunition(ammoRegistry);
@@ -885,6 +899,8 @@ public final class BukovRealtimeWorld
 				|| !hero.isAlive();
 		if (paused) {
 			input.cancelTouches();
+			preserveExtractionCompleteCue();
+			worldSounds.stopAll();
 		}
 		return paused;
 	}
@@ -972,7 +988,8 @@ public final class BukovRealtimeWorld
 			playSfx(
 					footstepSurface.asset(footstepSequence),
 					footstepSurface.gain(),
-					footstepSurface.pitch(footstepSequence));
+					footstepSurface.pitch(footstepSequence),
+					SoundCategory.FOOTSTEP);
 			footstepSequence++;
 		}
 
@@ -997,6 +1014,7 @@ public final class BukovRealtimeWorld
 					combatHudTimeline.activity();
 				}
 				lastHudRoom = room;
+				recordBalanceRoom();
 			}
 			refreshHeroVisibility();
 		}
@@ -1129,13 +1147,15 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public void updateSoundField(float dt) {
+		worldSounds.update(dt);
 		keySoundVisual.advance(dt);
 		combatHudTimeline.advance(dt);
 		if (combatHudTimeline.consumeKillSoundCue()) {
 			playSfx(
 					Assets.Sounds.Bukov.UI_CONFIRM,
 					0.42f,
-					KILL_CONFIRM_PITCH);
+					KILL_CONFIRM_PITCH,
+					SoundCategory.UI);
 		}
 		playerSounds.advance(dt);
 		if (playerSounds.activeCount() == 0) {
@@ -1255,6 +1275,8 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public void updateBrains(float dt) {
+		boolean combatActive = false;
+		boolean searchingAfterContact = false;
 		for (EnemyRuntime enemy : enemies) {
 			if (!enemy.mob.isAlive()) {
 				enemy.brain.markDead();
@@ -1305,6 +1327,22 @@ public final class BukovRealtimeWorld
 					showBossObjective(enemy);
 				}
 			}
+			switch (enemy.brain.state()) {
+				case ATTACK:
+				case CHASE:
+					combatActive = true;
+					break;
+				case SEARCH:
+					searchingAfterContact = true;
+					break;
+				default:
+					break;
+			}
+		}
+		if (raid != null) {
+			raid.updateBalanceFirefightState(
+					combatActive,
+					searchingAfterContact);
 		}
 	}
 
@@ -1448,8 +1486,16 @@ public final class BukovRealtimeWorld
 						nextAudioPitch(1f, 0.04f)
 				);
 				boolean wasAlive = hero.isAlive();
+				int healthBefore = hero.HP;
 				hero.damageWithoutFloatingText(damage, event.attacker);
-				emitPlayerHitOutcome(event.attacker, wasAlive, damage);
+				int appliedDamage = Math.max(0, healthBefore - hero.HP);
+				if (raid != null && appliedDamage > 0) {
+					raid.recordDamageTaken(appliedDamage);
+				}
+				emitPlayerHitOutcome(
+						event.attacker,
+						wasAlive,
+						appliedDamage);
 			} else if (hero.sprite != null) {
 				hero.sprite.showStatus(
 						CharSprite.NEUTRAL,
@@ -1636,7 +1682,8 @@ public final class BukovRealtimeWorld
 					playSfx(
 							Assets.Sounds.Bukov.SEARCH_COMPLETE,
 							0.72f,
-							nextAudioPitch(1f, 0.02f)
+							nextAudioPitch(1f, 0.02f),
+							SoundCategory.UI
 					);
 					releaseCompletedContainer(active.containerId);
 					if (FirstRaidMission.ARCHIVE_LOOT_TABLE_ID.equals(
@@ -1727,7 +1774,8 @@ public final class BukovRealtimeWorld
 				playSfx(
 						Assets.Sounds.Bukov.EXTRACTION_START,
 						0.82f,
-						1f
+						1f,
+						SoundCategory.EXTRACTION_CUE
 				);
 				lastExtractionCountdown = Integer.MIN_VALUE;
 				extractionInteraction = ExtractionState.Interaction.ACTIVE;
@@ -1991,7 +2039,8 @@ public final class BukovRealtimeWorld
 			playSfx(
 					Assets.Sounds.Bukov.GATE_UNLOCK,
 					0.9f,
-					1f
+					1f,
+					SoundCategory.UI
 			);
 			showHeroStatus(BukovMessages.get(
 					"bukov.raid.runtime.archive_verified"));
@@ -2527,10 +2576,11 @@ public final class BukovRealtimeWorld
 		for (ExtractionState extraction : raid.extractions()) {
 			if (!extraction.completed()) continue;
 			extractionCompleteCuePlayed = true;
-			playSfx(
+			extractionCompleteSoundToken = playSfx(
 					Assets.Sounds.Bukov.EXTRACTION_COMPLETE,
 					0.88f,
-					1f);
+					1f,
+					SoundCategory.EXTRACTION_CUE);
 			combatPresentation.emit(
 					CombatPresentationEvent.Type.EXTRACTION_COMPLETE,
 					hero.id(),
@@ -2673,6 +2723,8 @@ public final class BukovRealtimeWorld
 
 	@Override
 	public void disposeRealtimeObjects() {
+		preserveExtractionCompleteCue();
+		worldSounds.stopAll();
 		input.stop();
 		inputFrame = null;
 		fireControl.resetForWeaponSwap();
@@ -4014,8 +4066,13 @@ public final class BukovRealtimeWorld
 					nextAudioPitch(1f, 0.06f)
 			);
 			boolean wasAlive = hero.isAlive();
+			int healthBefore = hero.HP;
 			hero.damageWithoutFloatingText(damage, attacker);
-			emitPlayerHitOutcome(attacker, wasAlive, damage);
+			int appliedDamage = Math.max(0, healthBefore - hero.HP);
+			if (raid != null && appliedDamage > 0) {
+				raid.recordDamageTaken(appliedDamage);
+			}
+			emitPlayerHitOutcome(attacker, wasAlive, appliedDamage);
 		} else if (hero.sprite != null) {
 			hero.sprite.showStatus(
 					CharSprite.NEUTRAL,
@@ -4046,6 +4103,69 @@ public final class BukovRealtimeWorld
 		return Dungeon.level instanceof BukovLevel
 				? ((BukovLevel)Dungeon.level).room(hero.pos)
 				: null;
+	}
+
+	private void recordBalanceRoom() {
+		if (raid == null
+				|| !(Dungeon.level instanceof BukovLevel)
+				|| !raid.session().balanceTelemetry().routeId().isEmpty()) {
+			return;
+		}
+		BukovLevel level = (BukovLevel)Dungeon.level;
+		String roomId = level.stableRoomIdAt(hero.pos);
+		if (roomId.isEmpty()) return;
+		raid.recordBalanceRoom(roomId);
+		String routeId = resolvedRouteId(
+				level.raidLayout(),
+				raid.session().balanceVisitedRooms());
+		if (!routeId.isEmpty()) {
+			raid.identifyBalanceRoute(routeId);
+		}
+	}
+
+	static String resolvedRouteId(
+			BukovRaidLayout layout,
+			java.util.List<String> visitedRoomIds) {
+		if (layout == null
+				|| visitedRoomIds == null
+				|| visitedRoomIds.isEmpty()) {
+			return "";
+		}
+		String currentRoom =
+				visitedRoomIds.get(visitedRoomIds.size() - 1);
+		String result = "";
+		for (BukovRaidLayout.Route route : layout.routes) {
+			if (route == null
+					|| route.routeId == null
+					|| route.routeId.isEmpty()
+					|| route.roomIds.isEmpty()
+					|| !currentRoom.equals(
+							route.roomIds.get(
+									route.roomIds.size() - 1))
+					|| !orderedSubsequence(
+							route.roomIds,
+							visitedRoomIds)) {
+				continue;
+			}
+			if (!result.isEmpty()) {
+				return "";
+			}
+			result = route.routeId;
+		}
+		return result;
+	}
+
+	private static boolean orderedSubsequence(
+			java.util.List<String> required,
+			java.util.List<String> visited) {
+		int requiredIndex = 0;
+		for (String roomId : visited) {
+			if (requiredIndex < required.size()
+					&& required.get(requiredIndex).equals(roomId)) {
+				requiredIndex++;
+			}
+		}
+		return requiredIndex == required.size();
 	}
 
 	private void refreshHeroVisibility() {
@@ -4160,12 +4280,13 @@ public final class BukovRealtimeWorld
 						collisionMap,
 						heroBody.x,
 						heroBody.y);
-		playPlayerGunshotLayers(
+		playGunshotLayers(
 				definition.audioProfile.gunshotFamily.mechanicalAsset(sequence),
 				definition.audioProfile.gunshotFamily.bodyAsset(sequence),
 				acousticSpace.tailAsset(sequence),
 				gainScale,
-				pitchScale);
+				pitchScale,
+				SoundCategory.PLAYER_GUNSHOT);
 	}
 
 	private void playEnemyGunshot(EnemyRuntime enemy, float noiseRadius) {
@@ -4186,17 +4307,36 @@ public final class BukovRealtimeWorld
 				wallOcclusion,
 				false,
 				playbackSpatial);
+		int sequence = nextAudioSequence();
 		GunshotAudioResolver.resolve(
 				false,
-				nextAudioSequence(),
+				sequence,
 				deltaX,
 				deltaY,
 				playbackSpatial,
 				gunshotAudio);
 		if (insideSoundRadius) {
+			GunshotSoundFamily gunshotFamily =
+					GunshotSoundFamily.PISTOL;
+			if (enemy.definition.weaponDefinitionId != null) {
+				FirearmDefinition enemyDefinition =
+						firearmRegistry.require(
+								enemy.definition.weaponDefinitionId);
+				gunshotFamily =
+						enemyDefinition.audioProfile.gunshotFamily;
+			}
+			GunshotAcousticSpace acousticSpace =
+					GunshotAcousticSpaceResolver.resolve(
+							collisionMap,
+							enemy.body.x,
+							enemy.body.y);
 			playGunshotLayers(
-					Assets.Sounds.Bukov.GUNSHOT_ENEMY,
-					0.78f);
+					gunshotFamily.mechanicalAsset(sequence),
+					gunshotFamily.bodyAsset(sequence),
+					acousticSpace.tailAsset(sequence),
+					0.78f,
+					1f,
+					SoundCategory.ENEMY_GUNSHOT);
 		}
 		KeySoundVisualizationResolver.resolve(
 				SoundCategory.ENEMY_GUNSHOT,
@@ -4214,73 +4354,48 @@ public final class BukovRealtimeWorld
 		}
 	}
 
-	private void playGunshotLayers(String bodyAsset, float gainScale) {
-		playGunshotLayers(bodyAsset, gainScale, 1f);
-	}
-
 	private void playGunshotLayers(
-			String bodyAsset,
-			float gainScale,
-			float pitchScale) {
-		if (!gunshotAudio.audible()) return;
-		float safePitchScale = Math.max(0.5f, Math.min(2f, pitchScale));
-		playSfxStereo(
-				Assets.Sounds.Bukov.DRY_FIRE,
-				gunshotAudio.mechanicalLeft() * gainScale,
-				gunshotAudio.mechanicalRight() * gainScale,
-				Math.max(
-						0.5f,
-						Math.min(
-								2f,
-								gunshotAudio.mechanicalPitch()
-										* safePitchScale)));
-		playSfxStereo(
-				bodyAsset,
-				gunshotAudio.bodyLeft() * gainScale,
-				gunshotAudio.bodyRight() * gainScale,
-				Math.max(
-						0.5f,
-						Math.min(
-								2f,
-								gunshotAudio.bodyPitch()
-										* safePitchScale)));
-		playSfxStereo(
-				bodyAsset,
-				gunshotAudio.tailLeft() * gainScale,
-				gunshotAudio.tailRight() * gainScale,
-				Math.max(
-						0.5f,
-						Math.min(
-								2f,
-								gunshotAudio.tailPitch()
-										* safePitchScale)));
-	}
-
-	private void playPlayerGunshotLayers(
 			String mechanicalAsset,
 			String bodyAsset,
 			String tailAsset,
 			float gainScale,
-			float pitchScale) {
+			float pitchScale,
+			SoundCategory category) {
 		if (!gunshotAudio.audible()) return;
 		float safePitchScale = Math.max(0.5f, Math.min(2f, pitchScale));
-		playSfxStereo(
+		float gain = realtimeSfxGain();
+		if (gain <= 0f) return;
+		long source = worldSounds.begin(
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.defaultPriority(category),
+				SoundConcurrencyBudget.protectedByDefault(category),
+				GUNSHOT_TIMEOUT_SECONDS);
+		if (source == SoundConcurrencyBudget.NO_TOKEN) return;
+		boolean played = worldSounds.playLayer(
+				source,
 				mechanicalAsset,
-				gunshotAudio.mechanicalLeft() * gainScale,
-				gunshotAudio.mechanicalRight() * gainScale,
+				gunshotAudio.mechanicalLeft() * gainScale * gain,
+				gunshotAudio.mechanicalRight() * gainScale * gain,
 				clampedPitch(
 						gunshotAudio.mechanicalPitch()
 								* safePitchScale));
-		playSfxStereo(
+		played |= worldSounds.playLayer(
+				source,
 				bodyAsset,
-				gunshotAudio.bodyLeft() * gainScale,
-				gunshotAudio.bodyRight() * gainScale,
-				clampedPitch(gunshotAudio.bodyPitch() * safePitchScale));
-		playSfxStereo(
+				gunshotAudio.bodyLeft() * gainScale * gain,
+				gunshotAudio.bodyRight() * gainScale * gain,
+				clampedPitch(
+						gunshotAudio.bodyPitch() * safePitchScale));
+		played |= worldSounds.playLayer(
+				source,
 				tailAsset,
-				gunshotAudio.tailLeft() * gainScale,
-				gunshotAudio.tailRight() * gainScale,
-				clampedPitch(gunshotAudio.tailPitch() * safePitchScale));
+				gunshotAudio.tailLeft() * gainScale * gain,
+				gunshotAudio.tailRight() * gainScale * gain,
+				clampedPitch(
+						gunshotAudio.tailPitch() * safePitchScale));
+		if (!played) {
+			worldSounds.release(source);
+		}
 	}
 
 	private static float clampedPitch(float pitch) {
@@ -4296,24 +4411,63 @@ public final class BukovRealtimeWorld
 						SPDSettings.bukovSfxVolume());
 	}
 
-	private void playSfx(String asset, float volume, float pitch) {
-		float mixedVolume = volume * realtimeSfxGain();
-		if (mixedVolume <= 0f) return;
-		Sample.INSTANCE.play(asset, mixedVolume, pitch);
+	private long playSfx(String asset, float volume, float pitch) {
+		return playSfx(
+				asset,
+				volume,
+				pitch,
+				SoundConcurrencyBudget.Priority.NORMAL,
+				false,
+				SHORT_SFX_TIMEOUT_SECONDS);
 	}
 
-	private void playSfxStereo(
+	private long playSfx(
 			String asset,
-			float leftVolume,
-			float rightVolume,
-			float pitch) {
-		float gain = realtimeSfxGain();
-		if (gain <= 0f) return;
-		Sample.INSTANCE.play(
+			float volume,
+			float pitch,
+			SoundCategory category) {
+		return playSfx(
 				asset,
-				leftVolume * gain,
-				rightVolume * gain,
+				volume,
+				pitch,
+				SoundConcurrencyBudget.defaultPriority(category),
+				SoundConcurrencyBudget.protectedByDefault(category),
+				category == SoundCategory.FOOTSTEP
+						? FOOTSTEP_TIMEOUT_SECONDS
+						: category == SoundCategory.EXTRACTION_CUE
+								? CRITICAL_CUE_TIMEOUT_SECONDS
+								: SHORT_SFX_TIMEOUT_SECONDS);
+	}
+
+	private long playSfx(
+			String asset,
+			float volume,
+			float pitch,
+			SoundConcurrencyBudget.Priority priority,
+			boolean protectedSource,
+			float timeoutSeconds) {
+		float mixedVolume = volume * realtimeSfxGain();
+		if (mixedVolume <= 0f) {
+			return SoundConcurrencyBudget.NO_TOKEN;
+		}
+		return worldSounds.play(
+				asset,
+				AudioChannel.SFX,
+				priority,
+				protectedSource,
+				timeoutSeconds,
+				mixedVolume,
+				mixedVolume,
 				pitch);
+	}
+
+	private void preserveExtractionCompleteCue() {
+		if (extractionCompleteSoundToken
+				== SoundConcurrencyBudget.NO_TOKEN) {
+			return;
+		}
+		worldSounds.detach(extractionCompleteSoundToken);
+		extractionCompleteSoundToken = SoundConcurrencyBudget.NO_TOKEN;
 	}
 
 	private float enemyGunNoiseRadius(EnemyRuntime enemy) {
@@ -4955,7 +5109,8 @@ public final class BukovRealtimeWorld
 		playSfx(
 				Assets.Sounds.Bukov.GATE_UNLOCK,
 				0.82f,
-				0.92f);
+				0.92f,
+				SoundCategory.UI);
 		emitPumpBroadcast(
 				playerSounds,
 				pumpCell,

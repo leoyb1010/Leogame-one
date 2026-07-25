@@ -72,9 +72,14 @@ timeouts release and stop voices on the host backend otherwise.
 The existing `BukovUiSoundRouter` production path now enters the budget through
 `BukovUiSoundPlayer`: focus ticks are low priority, while confirm, cancel and
 error cues are protected. The router's master/SFX gain and `soundFx` mute check
-remain upstream and unchanged. Realtime gunfire is represented by the protected
-category policy but remains at its private world playback seam until that seam
-can be migrated without combining audio work with combat-world changes.
+remain upstream and unchanged.
+
+The realtime world's private playback seam uses the same budget. One gunshot
+is one logical source even though its mechanical, body and environment-tail
+layers remain three independently mixed PCM instances. Player gunfire and
+extraction cues are critical/protected, enemy gunfire is normal/replaceable,
+and footsteps are low priority. The fixed-step sound update owns timeout
+release, while world disposal stops every remaining backend instance.
 
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is

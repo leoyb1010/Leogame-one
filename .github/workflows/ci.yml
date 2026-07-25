@@ -93,6 +93,7 @@ jobs:
           bukov.save.iterations=100
           EOF
 
+          BUKOV_CRASH_EVIDENCE_DIR="$PWD/build/reports/bukov-ci/save-crash" \
           ./gradlew \
             --no-daemon \
             --console=plain \
@@ -123,6 +124,8 @@ jobs:
               "BukovSaveStressTest.xml": 1,
               "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.save."
               "BukovDiskSaveStressTest.xml": 2,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.save."
+              "BukovProcessCrashRecoveryTest.xml": 1,
               "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.raid."
               "BukovFiveModeLifecycleTest.xml": 5,
           }
@@ -147,6 +150,26 @@ jobs:
                   )
               result[filename] = actual
 
+          crash_summary = Path(
+              "build/reports/bukov-ci/save-crash/summary.json"
+          )
+          if not crash_summary.is_file():
+              raise SystemExit(
+                  f"missing process-crash evidence: {crash_summary}"
+              )
+          crash_result = json.loads(
+              crash_summary.read_text(encoding="utf-8")
+          )
+          if (
+              crash_result.get("status") != "passed"
+              or crash_result.get("processesHalted") != 4
+              or crash_result.get("validRecoveryStates") is not True
+              or crash_result.get("duplicateSettlement") is not False
+              or crash_result.get("duplicateUid") is not False
+          ):
+              raise SystemExit(
+                  f"invalid process-crash evidence: {crash_result}"
+              )
           output = Path("build/reports/bukov-ci/contracts.json")
           output.write_text(
               json.dumps(result, indent=2, sort_keys=True),

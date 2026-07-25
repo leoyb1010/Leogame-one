@@ -70,10 +70,46 @@ public class SoundConcurrencyBudgetTest {
 				SoundConcurrencyBudget.Priority.CRITICAL,
 				SoundConcurrencyBudget.defaultPriority(
 						SoundCategory.EXTRACTION_CUE));
+		assertEquals(
+				SoundConcurrencyBudget.Priority.CRITICAL,
+				SoundConcurrencyBudget.defaultPriority(
+						SoundCategory.PLAYER_GUNSHOT));
+		assertEquals(
+				SoundConcurrencyBudget.Priority.NORMAL,
+				SoundConcurrencyBudget.defaultPriority(
+						SoundCategory.ENEMY_GUNSHOT));
+		assertEquals(
+				SoundConcurrencyBudget.Priority.LOW,
+				SoundConcurrencyBudget.defaultPriority(
+						SoundCategory.FOOTSTEP));
 		assertTrue(SoundConcurrencyBudget.protectedByDefault(
 				SoundCategory.EXTRACTION_CUE));
 		assertTrue(SoundConcurrencyBudget.protectedByDefault(
 				SoundCategory.UI));
+	}
+
+	@Test
+	public void newestProtectedCriticalCueMayReplaceOldestProtectedPeer() {
+		SoundConcurrencyBudget budget = new SoundConcurrencyBudget();
+		long oldest = SoundConcurrencyBudget.NO_TOKEN;
+		for (int index = 0;
+				index < SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS;
+				index++) {
+			long token = budget.admit(
+					AudioChannel.SFX,
+					SoundConcurrencyBudget.Priority.CRITICAL,
+					true,
+					1f).token();
+			if (index == 0) oldest = token;
+		}
+		SoundConcurrencyBudget.Admission newest = budget.admit(
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.Priority.CRITICAL,
+				true,
+				1f);
+		assertTrue(newest.admitted());
+		assertEquals(oldest, newest.evictedToken());
+		assertFalse(budget.active(oldest));
 	}
 
 	@Test

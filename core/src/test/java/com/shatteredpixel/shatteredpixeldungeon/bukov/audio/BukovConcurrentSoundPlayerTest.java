@@ -72,6 +72,50 @@ public class BukovConcurrentSoundPlayerTest {
 		assertEquals(0, sink.played.size());
 	}
 
+	@Test
+	public void threeGunshotLayersShareOneLogicalVoice() {
+		FakeSink sink = new FakeSink();
+		BukovConcurrentSoundPlayer player =
+				new BukovConcurrentSoundPlayer(sink);
+		long source = player.begin(
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.Priority.NORMAL,
+				false,
+				0.5f);
+		assertTrue(player.playLayer(
+				source, "mechanical", 0.2f, 0.2f, 1.05f));
+		assertTrue(player.playLayer(
+				source, "body", 0.8f, 0.8f, 1f));
+		assertTrue(player.playLayer(
+				source, "tail", 0.3f, 0.3f, 0.9f));
+		assertEquals(1, player.activeCount(AudioChannel.SFX));
+		assertEquals(3, sink.played.size());
+
+		player.update(0.51f);
+		assertEquals(0, player.activeCount(AudioChannel.SFX));
+		assertEquals(3, sink.stopped.size());
+	}
+
+	@Test
+	public void detachedTransitionCueFinishesNaturallyAcrossStopAll() {
+		FakeSink sink = new FakeSink();
+		BukovConcurrentSoundPlayer player =
+				new BukovConcurrentSoundPlayer(sink);
+		long cue = play(
+				player,
+				"extraction-complete",
+				SoundConcurrencyBudget.Priority.CRITICAL,
+				true,
+				0.68f);
+
+		assertTrue(player.detach(cue));
+		assertEquals(0, player.activeCount(AudioChannel.SFX));
+		assertEquals(0, sink.stopped.size());
+
+		player.stopAll();
+		assertEquals(0, sink.stopped.size());
+	}
+
 	private static long play(
 			BukovConcurrentSoundPlayer player,
 			String asset,

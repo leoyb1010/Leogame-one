@@ -1,7 +1,7 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 
 /** Backend seam that keeps concurrency policy testable without an audio device. */
-interface BukovSoundPlaybackSink {
+public interface BukovSoundPlaybackSink {
 
 	long play(
 			String asset,

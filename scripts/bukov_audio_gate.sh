@@ -18,8 +18,10 @@ for forbidden in \
   'Assets.Sounds.ATK_SPIRITBOW' \
   'Assets.Sounds.HIT_ARROW' \
   'Assets.Sounds.CLICK' \
+  'Assets.Sounds.Bukov.GUNSHOT_ENEMY' \
   'equippedFirearm.hitSound' \
-  'attacker.hitSound'
+  'attacker.hitSound' \
+  'Sample.INSTANCE.play('
 do
   if rg -F --quiet "$forbidden" "$world"; then
     echo "Bukov audio gate: legacy sound reference remains: $forbidden" >&2
@@ -50,9 +52,17 @@ for required in \
   'GunshotAudioResolver.resolve(' \
   'definition.audioProfile.gunshotFamily.mechanicalAsset(sequence)' \
   'definition.audioProfile.gunshotFamily.bodyAsset(sequence)' \
+  'enemyDefinition.audioProfile.gunshotFamily' \
   'GunshotAcousticSpaceResolver.resolve(' \
   'acousticSpace.tailAsset(sequence)' \
-  'playPlayerGunshotLayers(' \
+  'playGunshotLayers(' \
+  'BukovConcurrentSoundPlayer worldSounds' \
+  'worldSounds.update(dt)' \
+  'worldSounds.stopAll()' \
+  'SoundCategory.PLAYER_GUNSHOT' \
+  'SoundCategory.ENEMY_GUNSHOT' \
+  'SoundCategory.EXTRACTION_CUE' \
+  'SoundCategory.FOOTSTEP' \
   'void reloadAudioCues(' \
   'ReloadAudioCue.values()' \
   'cue.asset()' \
@@ -244,7 +254,8 @@ for contract in \
   "$concurrency_budget:candidate.order" \
   "$concurrency_budget:remainingSeconds <= 0f" \
   "$concurrent_player:stopInactivePlaybacks()" \
-  "$concurrent_player:budget.release(admission.token())" \
+  "$concurrent_player:release(token);" \
+  "$concurrent_player:MAX_LAYERS_PER_SOURCE = 3" \
   "$ui_player:BukovConcurrentSoundPlayer sounds" \
   "$ui_player:cue != Cue.FOCUS" \
   "$sample:public synchronized void stop( Object id, long playbackId )"

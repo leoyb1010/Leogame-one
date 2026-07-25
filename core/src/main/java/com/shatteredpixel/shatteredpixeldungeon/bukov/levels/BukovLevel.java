@@ -381,6 +381,19 @@ public class BukovLevel extends RegularLevel {
 		return adaptedMap == null ? null : adaptedMap.room(stableRoomId);
 	}
 
+	/**
+	 * Returns the generated layout's persisted room identity for a live cell.
+	 * Runtime Room instances can be rebuilt during save/load, so callers must
+	 * not use object identity as route evidence.
+	 */
+	public String stableRoomIdAt(int cell) {
+		if (adaptedMap == null || cell < 0 || cell >= length()) {
+			return "";
+		}
+		BukovRaidLayout.Mark mark = adaptedMap.mark(room(cell));
+		return mark == null ? "" : mark.roomId();
+	}
+
 	public List<Room> rooms(BukovRaidLayout.Zone zone) {
 		return adaptedMap == null ? Collections.<Room>emptyList() : adaptedMap.rooms(zone);
 	}

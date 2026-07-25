@@ -24,7 +24,9 @@ public final class RaidSettlement {
 				false,
 				0f,
 				0,
-				false);
+				false,
+				BukovRaidMode.EXPEDITION,
+				RaidBalanceTelemetry.unavailable());
 	}
 
 	/**
@@ -45,7 +47,8 @@ public final class RaidSettlement {
 				elapsedSeconds,
 				kills,
 				missionCompleted,
-				BukovRaidMode.EXPEDITION);
+				BukovRaidMode.EXPEDITION,
+				RaidBalanceTelemetry.unavailable());
 	}
 
 	public RaidResult settle(
@@ -67,26 +70,36 @@ public final class RaidSettlement {
 				elapsedSeconds,
 				kills,
 				missionCompleted,
-				raidMode);
+				raidMode,
+				RaidBalanceTelemetry.unavailable());
 	}
 
-	private RaidResult settle(
+	public RaidResult settle(
 			BukovProfile profile,
 			LootTransaction carriedLoot,
 			RaidOutcome outcome,
-			boolean debriefAvailable,
 			float elapsedSeconds,
 			int kills,
-			boolean missionCompleted) {
+			boolean missionCompleted,
+			BukovRaidMode raidMode,
+			RaidBalanceTelemetry balanceTelemetry) {
+		if (raidMode == null) {
+			throw new IllegalArgumentException("raidMode is required");
+		}
+		if (balanceTelemetry == null) {
+			throw new IllegalArgumentException(
+					"balanceTelemetry is required");
+		}
 		return settle(
 				profile,
 				carriedLoot,
 				outcome,
-				debriefAvailable,
+				true,
 				elapsedSeconds,
 				kills,
 				missionCompleted,
-				BukovRaidMode.EXPEDITION);
+				raidMode,
+				balanceTelemetry);
 	}
 
 	private RaidResult settle(
@@ -97,7 +110,8 @@ public final class RaidSettlement {
 			float elapsedSeconds,
 			int kills,
 			boolean missionCompleted,
-			BukovRaidMode raidMode) {
+			BukovRaidMode raidMode,
+			RaidBalanceTelemetry balanceTelemetry) {
 		if (profile == null) {
 			throw new IllegalArgumentException("profile is required");
 		}
@@ -128,7 +142,10 @@ public final class RaidSettlement {
 					debriefAvailable,
 					elapsedSeconds,
 					kills,
-					missionCompleted)) {
+					missionCompleted,
+					balanceTelemetry.withExtractedValue(
+							outcome == RaidOutcome.SUCCESS
+									? existing.transferredValue() : 0L))) {
 				throw new IllegalStateException(
 						"Settlement payload changed for raid: " + carriedLoot.raidId());
 			}
@@ -144,7 +161,8 @@ public final class RaidSettlement {
 					debriefAvailable,
 					elapsedSeconds,
 					kills,
-					missionCompleted);
+					missionCompleted,
+					balanceTelemetry);
 		}
 
 		BukovProfile working = profile.copy();
@@ -233,7 +251,10 @@ public final class RaidSettlement {
 				debriefAvailable,
 				elapsedSeconds,
 				kills,
-				missionCompleted);
+				missionCompleted,
+				balanceTelemetry.withExtractedValue(
+						outcome == RaidOutcome.SUCCESS
+								? transferredValue : 0L));
 		working.recordSettlement(receipt);
 		working.longTermContracts().recordSettlement(
 				carriedLoot.raidId(),
@@ -285,7 +306,8 @@ public final class RaidSettlement {
 			boolean debriefAvailable,
 			float elapsedSeconds,
 			int kills,
-			boolean missionCompleted) {
+			boolean missionCompleted,
+			RaidBalanceTelemetry balanceTelemetry) {
 		BukovProfile working = profile.copy();
 		SettlementReceipt receipt = SettlementReceipt.create(
 				carriedLoot.raidId(),
@@ -302,7 +324,8 @@ public final class RaidSettlement {
 				debriefAvailable,
 				elapsedSeconds,
 				kills,
-				missionCompleted);
+				missionCompleted,
+				balanceTelemetry.withExtractedValue(0L));
 		working.recordSettlement(receipt);
 		profile.replaceWith(working);
 		return receipt.result(false);

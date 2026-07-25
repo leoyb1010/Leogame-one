@@ -24,7 +24,10 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("aiSoundSpatial.perceivable()"));
 		assertTrue(world.contains("GunshotAudioResolver.resolve("));
 		assertTrue(world.contains("playGunshotLayers("));
-		assertTrue(world.contains("Assets.Sounds.Bukov.DRY_FIRE"));
+		assertEquals(
+				"Dry-fire asset must only be used for an empty chamber",
+				1,
+				occurrences(world, "Assets.Sounds.Bukov.DRY_FIRE"));
 		assertTrue(world.contains(
 				"definition.audioProfile.gunshotFamily.mechanicalAsset(sequence)"));
 		assertTrue(world.contains(
@@ -32,7 +35,7 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("acousticSpace.tailAsset(sequence)"));
 		assertTrue(world.contains("GunshotAcousticSpaceResolver.resolve("));
 		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
-		assertTrue(world.contains("Assets.Sounds.Bukov.GUNSHOT_ENEMY"));
+		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_ENEMY"));
 		assertTrue(world.contains("void reloadAudioCues("));
 		assertTrue(world.contains("ReloadAudioCue.values()"));
 		assertTrue(world.contains("cue.asset()"));
@@ -46,10 +49,12 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("SPDSettings.bukovSfxVolume()"));
 		assertTrue(world.contains("private float realtimeSfxGain()"));
 		assertEquals(
-				"Runtime SFX must only reach Sample through the mixed mono and "
-						+ "stereo helpers",
-				2,
+				"Runtime SFX must only reach the bounded audio wrapper",
+				0,
 				occurrences(world, "Sample.INSTANCE.play("));
+		assertTrue(world.contains("BukovConcurrentSoundPlayer worldSounds"));
+		assertTrue(world.contains("worldSounds.update(dt)"));
+		assertTrue(world.contains("worldSounds.stopAll()"));
 
 		// The sole global RNG call is the committed ballistic spread. Audio
 		// variation is derived from its own sequence.

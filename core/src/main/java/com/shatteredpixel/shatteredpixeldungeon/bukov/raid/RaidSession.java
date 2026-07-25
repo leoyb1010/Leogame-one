@@ -3,6 +3,10 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.raid;
 import com.watabou.utils.Bundlable;
 import com.watabou.utils.Bundle;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public final class RaidSession implements Bundlable {
 
 	private static final String SEED = "seed";
@@ -17,6 +21,10 @@ public final class RaidSession implements Bundlable {
 	private static final String RAID_MODE = "raid_mode";
 	private static final String RAID_ORDINAL = "raid_ordinal";
 	private static final String KEY_DOORS = "key_doors";
+	private static final String BALANCE_TELEMETRY = "balance_telemetry";
+	private static final String BALANCE_VISITED_ROOMS =
+			"balance_visited_rooms";
+	private static final int MAX_BALANCE_ROOMS = 128;
 
 	public long seed;
 	public String raidId;
@@ -29,6 +37,10 @@ public final class RaidSession implements Bundlable {
 	private BukovRaidMode raidMode = BukovRaidMode.EXPEDITION;
 	private int raidOrdinal = 1;
 	private BukovKeyDoorState keyDoors = new BukovKeyDoorState();
+	private RaidBalanceTelemetry balanceTelemetry =
+			RaidBalanceTelemetry.unavailable();
+	private final ArrayList<String> balanceVisitedRooms =
+			new ArrayList<>();
 
 	public static RaidSession create(long seed, String raidId) {
 		return create(seed, raidId, BukovRaidMode.EXPEDITION, 1);
@@ -53,6 +65,8 @@ public final class RaidSession implements Bundlable {
 		result.raidId = raidId;
 		result.raidMode = raidMode;
 		result.raidOrdinal = raidOrdinal;
+		result.balanceTelemetry =
+				RaidBalanceTelemetry.begin(seed, raidMode);
 		return result;
 	}
 
@@ -120,6 +134,87 @@ public final class RaidSession implements Bundlable {
 		return killCount;
 	}
 
+	public RaidBalanceTelemetry balanceTelemetry() {
+		return balanceTelemetry.copy();
+	}
+
+	/**
+	 * Records authoritative map context once the host can identify the route
+	 * actually traversed. Unknown context remains empty rather than inferred.
+	 */
+	public void identifyBalanceContext(String themeId, String routeId) {
+		balanceTelemetry.identifyContext(themeId, routeId);
+	}
+
+	public void identifyBalanceTheme(String themeId) {
+		balanceTelemetry.identifyTheme(themeId);
+	}
+
+	public void identifyBalanceRoute(String routeId) {
+		balanceTelemetry.identifyRoute(routeId);
+	}
+
+	public void recordBalanceRoom(String roomId) {
+		if (!balanceTelemetry.available()) return;
+		if (roomId == null || roomId.isEmpty()) {
+			throw new IllegalArgumentException("roomId is required");
+		}
+		if (balanceVisitedRooms.contains(roomId)) return;
+		if (balanceVisitedRooms.size() >= MAX_BALANCE_ROOMS) {
+			throw new IllegalStateException(
+					"Balance route evidence exhausted");
+		}
+		balanceVisitedRooms.add(roomId);
+	}
+
+	public List<String> balanceVisitedRooms() {
+		return Collections.unmodifiableList(
+				new ArrayList<>(balanceVisitedRooms));
+	}
+
+	public void recordContainerSearch() {
+		balanceTelemetry.recordContainerSearch();
+	}
+
+	public void recordFirefight() {
+		balanceTelemetry.recordFirefight();
+	}
+
+	public void updateBalanceFirefightState(
+			boolean combatActive,
+			boolean searchingAfterContact) {
+		balanceTelemetry.updateFirefightState(
+				combatActive,
+				searchingAfterContact);
+	}
+
+	public void recordDamageTaken(int amount) {
+		balanceTelemetry.recordDamageTaken(amount);
+	}
+
+	RaidBalanceTelemetry settledBalanceTelemetry(
+			RaidOutcome outcome,
+			ExtractionState.Type extractionType) {
+		RaidBalanceTelemetry.End end;
+		if (outcome == RaidOutcome.DEATH) {
+			end = RaidBalanceTelemetry.End.DEATH;
+		} else if (extractionType == ExtractionState.Type.BASIC) {
+			end = RaidBalanceTelemetry.End.BASIC_EXTRACTION;
+		} else if (extractionType == ExtractionState.Type.CONDITIONAL) {
+			end = RaidBalanceTelemetry.End.CONDITIONAL_EXTRACTION;
+		} else if (extractionType == ExtractionState.Type.TEMPORARY) {
+			end = RaidBalanceTelemetry.End.TEMPORARY_EXTRACTION;
+		} else {
+			throw new IllegalArgumentException(
+					"successful raid requires extraction type");
+		}
+		return balanceTelemetry.settle(
+				elapsedSeconds,
+				killCount,
+				0L,
+				end);
+	}
+
 	@Override
 	public void storeInBundle(Bundle bundle) {
 		bundle.put(SEED, seed);
@@ -135,6 +230,10 @@ public final class RaidSession implements Bundlable {
 		bundle.put(RAID_MODE, raidMode);
 		bundle.put(RAID_ORDINAL, raidOrdinal);
 		bundle.put(KEY_DOORS, keyDoors);
+		bundle.put(BALANCE_TELEMETRY, balanceTelemetry);
+		bundle.put(
+				BALANCE_VISITED_ROOMS,
+				balanceVisitedRooms.toArray(new String[0]));
 	}
 
 	@Override
@@ -166,6 +265,36 @@ public final class RaidSession implements Bundlable {
 		} else {
 			// Safe migration for checkpoints created before key doors existed.
 			keyDoors = new BukovKeyDoorState();
+		}
+		if (bundle.contains(BALANCE_TELEMETRY)) {
+			Bundlable restoredTelemetry = bundle.get(BALANCE_TELEMETRY);
+			if (!(restoredTelemetry instanceof RaidBalanceTelemetry)) {
+				throw new IllegalStateException(
+						"Invalid persisted balance telemetry");
+			}
+			balanceTelemetry =
+					(RaidBalanceTelemetry) restoredTelemetry;
+		} else {
+			// Partial facts cannot be reconstructed from a legacy checkpoint.
+			balanceTelemetry = RaidBalanceTelemetry.unavailable();
+		}
+		balanceVisitedRooms.clear();
+		if (bundle.contains(BALANCE_VISITED_ROOMS)) {
+			String[] restoredRooms =
+					bundle.getStringArray(BALANCE_VISITED_ROOMS);
+			if (restoredRooms != null) {
+				for (String roomId : restoredRooms) {
+					if (roomId == null
+							|| roomId.isEmpty()
+							|| balanceVisitedRooms.contains(roomId)
+							|| balanceVisitedRooms.size()
+									>= MAX_BALANCE_ROOMS) {
+						throw new IllegalStateException(
+								"Invalid persisted balance route evidence");
+					}
+					balanceVisitedRooms.add(roomId);
+				}
+			}
 		}
 		if (enemySpawnEpoch < 0L || killCount < 0) {
 			throw new IllegalStateException("Invalid realtime raid progress");

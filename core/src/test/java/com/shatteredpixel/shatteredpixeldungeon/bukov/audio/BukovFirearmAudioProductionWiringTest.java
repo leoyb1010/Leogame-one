@@ -52,7 +52,11 @@ public class BukovFirearmAudioProductionWiringTest {
 		assertTrue(world.contains(
 				"definition.audioProfile.gunshotFamily.bodyAsset(sequence)"));
 		assertTrue(world.contains("acousticSpace.tailAsset(sequence)"));
-		assertTrue(world.contains("playPlayerGunshotLayers("));
+		assertTrue(world.contains("playGunshotLayers("));
+		assertTrue(world.contains(
+				"enemyDefinition.audioProfile.gunshotFamily"));
+		assertTrue(world.contains("SoundCategory.PLAYER_GUNSHOT"));
+		assertTrue(world.contains("SoundCategory.ENEMY_GUNSHOT"));
 		assertTrue(world.contains("GunshotAcousticSpaceResolver.resolve("));
 		assertFalse(world.contains("Assets.Sounds.Bukov.GUNSHOT_PLAYER"));
 		assertTrue(world.contains("public void reloadAudioCues("));

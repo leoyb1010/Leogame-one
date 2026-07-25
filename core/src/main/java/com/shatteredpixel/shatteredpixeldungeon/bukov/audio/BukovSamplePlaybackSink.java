@@ -3,7 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 import com.watabou.noosa.audio.Sample;
 
 /** Production bridge from the Bukov voice budget to the host sound backend. */
-final class BukovSamplePlaybackSink implements BukovSoundPlaybackSink {
+public final class BukovSamplePlaybackSink implements BukovSoundPlaybackSink {
 
 	@Override
 	public long play(

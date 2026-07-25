@@ -14,7 +14,8 @@
 六帧阶段过渡及 200 ms 表现慢动作、枪械热量/污损/耐久运行态、按键绑定
 入口、移动端 HUD/镜头/触控反馈修复、玩家射击空间桶索引，以及硬地/水面/
 金属三类脚步声路由和声学差异门禁；同时补入敌人巡逻/搜索闭环、UI 音效
-并发预算及仓库窗口的令牌化非阻塞入场动效。完整变更和未完成边界见
+并发预算、World 三层枪声与脚步调度、进程级崩溃恢复，以及真实路线/交火/
+承伤/结算的本地平衡采集和仓库窗口的令牌化非阻塞入场动效。完整变更和未完成边界见
 `docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
 
 本节在生成干净提交、同 SHA Final Gate、双端包和人工玩家路线证据前，不覆盖
@@ -43,7 +44,8 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 | 局外循环 | 仓库、配装、商店买卖/解锁、保险、合同和幂等结算已接入 | 玩家旅程 E2E 同 SHA 通过；双平台人工路线录像待补 |
 | 原创资产 | 72 帧物品/交互图标，79 个 PCM WAV | 静态资产、跨平台生成一致性、来源与包内法律门禁通过 |
 | iOS UI/音频 | 图标主识别、小字辅助、按压/禁用态、首次三项校准；原生 CoreAudio 无 fallback | Simulator 同 SHA 实际运行通过；物理 iPhone `NOT RUN` |
-| 存档/性能 | checkpoint、幂等结算、10k seed、100 save、双端墙钟 30 分钟 | render-callback gate 通过；硬件 GPU/Instruments 和真机热分析待补 |
+| 存档/性能 | checkpoint、幂等结算、10k seed、100 save、四进程强制崩溃恢复、双端墙钟 30 分钟 | JVM 崩溃只证明进程级恢复，不替代物理断电/fsync；硬件 GPU/Instruments 和真机热分析待补 |
+| 本地平衡 | checkpoint/结算保存真实模式、主题、唯一完整路线、搜索、交火、击杀、HP 承伤、时长、价值与结束类型；10 seed 报告门禁 | 尚无 10 局真实玩家样本，当前不能宣称节奏与经济平衡通过 |
 | CI/交付 | 本地 final gate 33/33；远端 `apple-java-build` 与 `java-build` 成功 | 人工/物理门禁不由 CI 自动签字 |
 
 ## 状态口径
@@ -62,7 +64,7 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 | 0 环境与保护 | `a91461c5` clean source；本地 final gate 33/33；core 1005、desktop 10、iOS 11；远端 Apple/Linux CI 全绿 | 原 Leogame-one 模式创建/存档/继续人工录像 | 🟡 |
 | 1 实时移动 | 120 Hz fixed-step、碰撞、键鼠/触控、镜头跟随、窗口化和像素对齐已接入；同 SHA 双端连续活跃行动 1850.970 / 2072.118 秒 | 实体手柄 20 分钟；60/120/144 Hz 同 seed 人工对照 | 🟡 |
 | 2 枪战 | 18 枪、8 弹药、hitscan、弹药守恒、换弹、伤害、护甲、医疗、自伤/友伤隔离、13 敌人与表现池已接入 | 实体手柄逐枪交火、精英/Boss 双平台完整反馈录像 | 🟡 |
-| 3 搜打撤 | profile/raid 存档、临时文件+备份、UID、幂等结算、仓库/配装/商店、容器、任务档案、门、三撤离和死亡损失已接入；100 次存档及玩家旅程 gate 通过 | 双平台完整人工路线、真实强退恢复和手柄焦点签字 | 🟡 |
+| 3 搜打撤 | profile/raid 存档、临时文件+备份、UID、幂等结算、仓库/配装/商店、容器、任务档案、门、三撤离和死亡损失已接入；100 次存档、玩家旅程及四进程强制崩溃 gate 通过 | 双平台完整人工路线、物理断电恢复和手柄焦点签字 | 🟡 |
 | 4 第一关 | 26–34 房、三路线、三撤离、首局枪弹兜底、任务门、地面物资、装备/医疗/敌人/合同链均有实现；10k seed 通过 | 十局留存、15–25 分钟整局节奏、六主题视觉差异人工验收 | 🟡 |
 | 5 体验与表现 | 品牌、App 图标、8 向动作、UI tokens、HUD 淡化/受击弧、七类 VFX 池、首次校准、仓库搜索排序、79 SFX、iOS 图标按钮及原生音频均接入 | 最终 UI/主题美术包、物理 iPhone、三人盲测及第 82 节人工签字 | 🟡 |
 | 6 性能与交付 | 同 SHA Apple 包、安装回执、包来源；macOS P95 12.5ms，iOS P95 17.6ms，60 Hz 阈值 18.4ms；33/33 final gate 和远端 CI 通过 | 硬件 GPU、Metal、显存、真机温度/热降频、全新机器离线恢复 | 🟡 |
@@ -90,6 +92,7 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 | 地图与撤离 | `bukov/levels/`、`bukov/map/`、`Dungeon.java` | `bukov/levels/*Test.java`、`bukov/map/*Test.java` |
 | 搜刮、仓库、结算 | `bukov/raid/`、`bukov/content/`、`WndBukovHub.java` | `bukov/raid/*Test.java`、`bukov/content/*Test.java` |
 | 文件存档 | `bukov/save/` | `bukov/save/*Test.java` |
+| 本地平衡与路线证据 | `RaidBalanceTelemetry.java`、`BukovBalanceReport.java`、`RaidSession.java`、`BukovRealtimeWorld.java` | `RaidBalanceTelemetryTest`、`BukovBalanceReportTest`、`BukovBalanceRuntimeWiringTest` |
 | HUD、触控与 UI 令牌 | `BukovRaidHud.java`、`BukovTouchControls.java`、`WndBukovHub.java`、`ui_tokens.json` | `bukov/ui/*Test.java` |
 | 表现、音频与体验合同 | `bukov/fx/`、`bukov/audio/`、`experience_contract.json` | `bukov/fx/*Test.java`、`bukov/audio/*Test.java` |
 | 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、CI |

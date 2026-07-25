@@ -207,6 +207,26 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError(
 					"timeout must stop backend playback and free its voice");
 		}
+
+		long transitionCue = player.play(
+				"extraction-complete",
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.Priority.CRITICAL,
+				true,
+				0.68f,
+				1f,
+				1f,
+				1f);
+		if (!player.detach(transitionCue)
+				|| player.activeCount(AudioChannel.SFX) != 0) {
+			throw new AssertionError(
+					"detached transition cue must free its logical voice");
+		}
+		player.stopAll();
+		if (sink.stopped != 1) {
+			throw new AssertionError(
+					"detached transition cue must finish naturally");
+		}
 	}
 
 	private static ExperienceContract contract() {

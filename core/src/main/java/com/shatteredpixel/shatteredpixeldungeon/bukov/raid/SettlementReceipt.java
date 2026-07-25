@@ -26,6 +26,7 @@ public final class SettlementReceipt implements Bundlable {
 	private static final String ELAPSED_SECONDS = "elapsed_seconds";
 	private static final String KILLS = "kills";
 	private static final String MISSION_COMPLETED = "mission_completed";
+	private static final String BALANCE_TELEMETRY = "balance_telemetry";
 
 	private String raidId;
 	private RaidOutcome outcome;
@@ -42,6 +43,8 @@ public final class SettlementReceipt implements Bundlable {
 	private float elapsedSeconds;
 	private int kills;
 	private boolean missionCompleted;
+	private RaidBalanceTelemetry balanceTelemetry =
+			RaidBalanceTelemetry.unavailable();
 
 	public SettlementReceipt() {
 		// Required by Bundle reflection.
@@ -62,7 +65,8 @@ public final class SettlementReceipt implements Bundlable {
 			boolean debriefAvailable,
 			float elapsedSeconds,
 			int kills,
-			boolean missionCompleted) {
+			boolean missionCompleted,
+			RaidBalanceTelemetry balanceTelemetry) {
 		SettlementReceipt result = new SettlementReceipt();
 		result.raidId = requireText(raidId, "raidId");
 		result.outcome = requireOutcome(outcome);
@@ -94,6 +98,9 @@ public final class SettlementReceipt implements Bundlable {
 		result.kills = debriefAvailable ? kills : 0;
 		result.missionCompleted =
 				debriefAvailable && missionCompleted;
+		result.balanceTelemetry = requireNonNull(
+				balanceTelemetry,
+				"balanceTelemetry").copy();
 		return result;
 	}
 
@@ -157,13 +164,18 @@ public final class SettlementReceipt implements Bundlable {
 		return missionCompleted;
 	}
 
+	public RaidBalanceTelemetry balanceTelemetry() {
+		return balanceTelemetry.copy();
+	}
+
 	boolean matches(
 			RaidOutcome requestedOutcome,
 			String requestedFingerprint,
 			boolean requestedDebrief,
 			float requestedElapsedSeconds,
 			int requestedKills,
-			boolean requestedMissionCompleted) {
+			boolean requestedMissionCompleted,
+			RaidBalanceTelemetry requestedBalanceTelemetry) {
 		boolean fingerprintMatches =
 				lootFingerprint.equals(requestedFingerprint)
 				|| !lootFingerprint.contains("|mode:")
@@ -181,7 +193,9 @@ public final class SettlementReceipt implements Bundlable {
 		return Float.floatToIntBits(elapsedSeconds)
 						== Float.floatToIntBits(requestedElapsedSeconds)
 				&& kills == requestedKills
-				&& missionCompleted == requestedMissionCompleted;
+				&& missionCompleted == requestedMissionCompleted
+				&& balanceTelemetry.matches(
+						requestedBalanceTelemetry);
 	}
 
 	RaidResult result(boolean replayed) {
@@ -219,7 +233,8 @@ public final class SettlementReceipt implements Bundlable {
 				debriefAvailable,
 				elapsedSeconds,
 				kills,
-				missionCompleted);
+				missionCompleted,
+				balanceTelemetry);
 	}
 
 	@Override
@@ -239,6 +254,7 @@ public final class SettlementReceipt implements Bundlable {
 		bundle.put(ELAPSED_SECONDS, elapsedSeconds);
 		bundle.put(KILLS, kills);
 		bundle.put(MISSION_COMPLETED, missionCompleted);
+		bundle.put(BALANCE_TELEMETRY, balanceTelemetry);
 	}
 
 	@Override
@@ -258,7 +274,8 @@ public final class SettlementReceipt implements Bundlable {
 				bundle.getBoolean(DEBRIEF_AVAILABLE),
 				bundle.getFloat(ELAPSED_SECONDS),
 				bundle.getInt(KILLS),
-				bundle.getBoolean(MISSION_COMPLETED));
+				bundle.getBoolean(MISSION_COMPLETED),
+				telemetry(bundle));
 		raidId = restored.raidId;
 		outcome = restored.outcome;
 		lootFingerprint = restored.lootFingerprint;
@@ -278,6 +295,7 @@ public final class SettlementReceipt implements Bundlable {
 		elapsedSeconds = restored.elapsedSeconds;
 		kills = restored.kills;
 		missionCompleted = restored.missionCompleted;
+		balanceTelemetry = restored.balanceTelemetry;
 	}
 
 	private static String requireText(String value, String name) {
@@ -329,6 +347,18 @@ public final class SettlementReceipt implements Bundlable {
 			result.add(((SettlementItemSnapshot) stored).copy());
 		}
 		return result;
+	}
+
+	private static RaidBalanceTelemetry telemetry(Bundle bundle) {
+		if (!bundle.contains(BALANCE_TELEMETRY)) {
+			return RaidBalanceTelemetry.unavailable();
+		}
+		Bundlable restored = bundle.get(BALANCE_TELEMETRY);
+		if (!(restored instanceof RaidBalanceTelemetry)) {
+			throw new IllegalStateException(
+					"Unexpected settlement balance telemetry");
+		}
+		return (RaidBalanceTelemetry) restored;
 	}
 
 	private static List<SettlementItemSnapshot> immutableSnapshots(

@@ -163,6 +163,7 @@ public final class BukovRaidCoordinator {
 				raidId,
 				raidMode,
 				raidOrdinal);
+		session.identifyBalanceTheme(profile.selectedMap());
 		float raidWeightCapacity = raidMode == BukovRaidMode.SCAVENGER
 				? BukovScavengerKit.weightCapacityKg()
 				: maxWeight;
@@ -264,6 +265,40 @@ public final class BukovRaidCoordinator {
 
 	public RaidSession session() {
 		return checkpoint.session();
+	}
+
+	public void identifyBalanceContext(String themeId, String routeId) {
+		ensureOpen();
+		session().identifyBalanceContext(themeId, routeId);
+	}
+
+	public void identifyBalanceRoute(String routeId) {
+		ensureOpen();
+		session().identifyBalanceRoute(routeId);
+	}
+
+	public void recordBalanceRoom(String roomId) {
+		ensureOpen();
+		session().recordBalanceRoom(roomId);
+	}
+
+	public void recordFirefight() {
+		ensureOpen();
+		session().recordFirefight();
+	}
+
+	public void updateBalanceFirefightState(
+			boolean combatActive,
+			boolean searchingAfterContact) {
+		ensureOpen();
+		session().updateBalanceFirefightState(
+				combatActive,
+				searchingAfterContact);
+	}
+
+	public void recordDamageTaken(int amount) {
+		ensureOpen();
+		session().recordDamageTaken(amount);
 	}
 
 	public LootTransaction loot() {
@@ -638,6 +673,9 @@ public final class BukovRaidCoordinator {
 			checkpoint.completeEvent(
 					FirstRaidMission.HIGH_VALUE_EVENT_ID);
 		}
+		if (result == BukovSearchableContainer.UpdateResult.COMPLETED) {
+			session().recordContainerSearch();
+		}
 		return result;
 	}
 
@@ -765,7 +803,10 @@ public final class BukovRaidCoordinator {
 				session().elapsedSeconds,
 				session().killCount(),
 				settlementMissionCompleted(),
-				session().raidMode());
+				session().raidMode(),
+				session().settledBalanceTelemetry(
+						outcome,
+						completedExtractionType(outcome)));
 
 		// The receipt and transferred/lost inventory become durable together.
 		saves.saveProfile(committedProfile);
@@ -784,6 +825,15 @@ public final class BukovRaidCoordinator {
 		return bossContractRequired()
 				? bossContractCompleted()
 				: firstRaidMissionCompleted();
+	}
+
+	private ExtractionState.Type completedExtractionType(
+			RaidOutcome outcome) {
+		if (outcome == RaidOutcome.DEATH) return null;
+		for (ExtractionState extraction : checkpoint.extractions()) {
+			if (extraction.completed()) return extraction.type();
+		}
+		throw new IllegalStateException("No extraction has completed");
 	}
 
 	private ExtractionState activeExtraction() {
