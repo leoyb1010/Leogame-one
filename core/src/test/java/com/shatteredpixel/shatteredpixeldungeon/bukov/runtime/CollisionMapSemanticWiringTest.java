@@ -32,15 +32,17 @@ public class CollisionMapSemanticWiringTest {
 		assertEquals(expected(
 				"runtime/RealtimeEnemyNavigator.java", 2,
 				"runtime/RealtimeHeroBodyRecovery.java", 2,
-				"runtime/BukovRealtimeWorld.java", 1,
+				// Loose-loot placement plus onboarding spawn placement.
+				"runtime/BukovRealtimeWorld.java", 2,
 				"runtime/GridCollision.java", 1), movement);
 		assertEquals(expected(
 				"combat/RealtimeProjectile.java", 1,
 				"combat/HitscanResolver.java", 3,
 				"audio/GunshotAcousticSpaceResolver.java", 1,
 				"ai/GridLineOfSight.java", 1,
-				// Sound occlusion plus diagonal target and both seams.
-				"runtime/BukovRealtimeWorld.java", 4), traces);
+				// Sound occlusion, diagonal target, both seams, and the
+				// onboarding spawn's line-of-fire check.
+				"runtime/BukovRealtimeWorld.java", 5), traces);
 	}
 
 	private static Map<String, Integer> occurrences(String marker)
