@@ -6,20 +6,21 @@
 
 玩法主题 ID 保持不变，以兼容现有存档；视觉资源 ID 只负责选择 atlas。
 
-| 玩法主题 ID | 视觉资源 ID | 地表图案 | 地标剪影 |
-|---|---|---|---|
-| `fog_depot` | `fog_depot` | 雾斑与潮湿补丁 | 信号桅杆 |
-| `rust_workshop` | `rust_works` | 斜向炉区警戒纹 | 排气烟囱 |
-| `flooded_passage` | `flooded_bunker` | 横向积水通道 | 架空管线 |
-| `overgrown_yard` | `container_yard` | 集装箱分块接缝 | 龙门吊钩 |
-| `cold_storage` | `cold_storage` | 冷库检修网格 | 制冷风扇 |
-| `sealed_lab` | `underground_lab` | 地下实验室电路纹 | 传感天线 |
+| 玩法主题 ID | 视觉资源 ID | 地表图案 | 地标剪影 | 静态环境叠层 |
+|---|---|---|---|---|
+| `fog_depot` | `fog_depot` | 雾斑与潮湿补丁 | 信号桅杆 | 低位破碎雾带 |
+| `rust_workshop` | `rust_works` | 斜向炉区警戒纹 | 排气烟囱 | 炉口热齿与焊接火星 |
+| `flooded_passage` | `flooded_bunker` | 横向积水通道 | 架空管线 | 漏水管与地面涟漪 |
+| `overgrown_yard` | `container_yard` | 集装箱分块接缝 | 龙门吊钩 | 沥青裂缝与杂草簇 |
+| `cold_storage` | `cold_storage` | 冷库检修网格 | 制冷风扇 | 冰晶与低位冷雾 |
+| `sealed_lab` | `underground_lab` | 地下实验室电路纹 | 传感天线 | 扫描面与诊断节点 |
 
-每个视觉资源 ID 都有三张独立运行时 atlas：
+每个视觉资源 ID 都有四张独立运行时 atlas：
 
 - `environment/bukov/tiles_<视觉资源 ID>.png`
 - `environment/bukov/water_<视觉资源 ID>.png`
 - `environment/bukov/landmarks_<视觉资源 ID>.png`
+- `environment/bukov/overlays_<视觉资源 ID>.png`
 
 精确文件名、尺寸、调色板和 SHA-256 记录在
 `core/src/main/assets/environment/bukov/theme_visual_manifest.json`。
@@ -38,6 +39,10 @@
 `scripts/generate_bukov_theme_visuals.mjs` 确定性生成。生成过程不下载、
 不调用网络、不引入第三方图片或新依赖。
 
+环境叠层是每张地图最多三个、每个 2×2 世界格的静态透明 tilemap。它不写
+terrain、不注册碰撞、没有逐帧更新或粒子分配；主题配置只决定语义房间锚点与
+数量，因此不会改变首关任务门、路线或性能主循环。
+
 ## 可玩性与交互契约
 
 - 地图房间、连接、碰撞、出生点、撤离点和任务门拓扑不由视觉生成器修改。
@@ -50,6 +55,21 @@
 
 交互色值和每主题 accent 精确值均以生成清单为准。
 
+## 仍依赖项目所有者最终原创母图的边界
+
+当前代码和门禁已经把六主题的结构、材质索引、地标、环境叠层与生产地图接通，
+但以下内容仍不是最终美术签字：
+
+- `tiles / water` 仍以宿主 atlas 的切片和 alpha 为底稿，加入项目主题图案，
+  最终应替换为六套原创 `tiles_master / water_master`。
+- `landmarks / overlays` 是项目脚本绘制的可玩像素基线，轮廓和语义已可用；最终
+  材质细节、雾/蒸汽/水滴/植被/霜气的层次仍需要六套原创
+  `landmarks_master / overlays_master`。
+- AI 或人工产出的母图不能直接缩小覆盖运行时文件，必须按
+  `ORIGINAL_ENVIRONMENT_ASSET_BRIEF_ZH.md` 重新像素化、切片并登记来源。
+
+原创母图不会再决定地图路线、任务门或叠层数量；它只替换已经固定的视觉槽位。
+
 ## 复现与验收
 
 ```bash
@@ -59,7 +79,8 @@ bash scripts/bukov_theme_visual_gate.sh
 
 门禁会从源文件重新生成六套资产并逐字节比对，同时验证：
 
-- 6 套 `tiles / water / landmarks` 各自哈希唯一；
+- 6 套 `tiles / water / landmarks / overlays` 各自哈希唯一；
+- 六套叠层的 alpha 剪影也各自唯一，纯换色叠层不能通过；
 - 尺寸和 RGBA 像素格式符合宿主 atlas；
 - `tiles / water` alpha 与宿主源图完全一致；
 - 每套地标均包含五类可交互语义色和独立主题剪影；

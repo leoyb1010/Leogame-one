@@ -16,8 +16,9 @@
 金属三类脚步声路由和声学差异门禁；同时补入敌人巡逻/搜索闭环、UI 音效
 并发预算、World 三层枪声与脚步调度、进程级崩溃恢复、真实路线/交火/
 承伤/结算的本地平衡采集、仓库窗口的令牌化非阻塞入场动效、精确配装 UID
-贯穿 checkpoint/结算的玩家旅程，以及 108,000 帧生产 `GameScene` 接线压力
-门禁。完整变更和未完成边界见 `docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
+贯穿 checkpoint/结算的玩家旅程、真实 World 敌我射击/死亡/击杀旅程、
+六主题非碰撞环境叠层、iOS 触控取消边界，以及 108,000 帧生产 `GameScene`
+接线压力门禁。完整变更和未完成边界见 `docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
 
 本节在生成干净提交、同 SHA Final Gate、双端包和人工玩家路线证据前，不覆盖
 下方 Alpha 31 的封存身份，也不宣称 Alpha 32 已发布。
@@ -38,7 +39,7 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 
 | 项目 | 当前代码/资产事实 | 当前证据与剩余边界 |
 |---|---|---|
-| 地图主题 | 6 个注册主题；首关 Figure-eight 语义图、三路线、三撤离 | 10,000 seed 同 SHA 通过；最终主题美术和十局人工体验待签字 |
+| 地图主题 | 6 个注册主题；首关 Figure-eight 语义图、三路线、三撤离；六套独立结构/材质/地标/环境叠层 | 10,000 seed 与视觉结构门禁通过；最终 24 张原创母图和十局人工体验待签字 |
 | 枪械与弹药 | 18 枪、8 弹药；统一射击/换弹/伤害链 | 自动玩家旅程通过；实体手柄逐枪验收待补 |
 | 敌人 | 13 个：9 普通、3 精英、1 Boss；能力标签有运行策略 | AI/交火自动门禁通过；完整 Boss 人工录像待补 |
 | Raid 模式 | 5 个；远征、快速清扫、拾荒者、Boss 合同、演练场 | 生命周期通过；25 个有效模式/主题/Boss 组合通过 |
@@ -96,7 +97,7 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 | 本地平衡与路线证据 | `RaidBalanceTelemetry.java`、`BukovBalanceReport.java`、`RaidSession.java`、`BukovRealtimeWorld.java` | `RaidBalanceTelemetryTest`、`BukovBalanceReportTest`、`BukovBalanceRuntimeWiringTest` |
 | HUD、触控与 UI 令牌 | `BukovRaidHud.java`、`BukovTouchControls.java`、`WndBukovHub.java`、`ui_tokens.json` | `bukov/ui/*Test.java` |
 | 表现、音频与体验合同 | `bukov/fx/`、`bukov/audio/`、`experience_contract.json` | `bukov/fx/*Test.java`、`bukov/audio/*Test.java` |
-| 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、CI |
+| 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、`BukovRealtimeCombatHarness`、`BukovFirstRaidProductionWiringTest`、CI |
 | 生产场景压力接线 | `GameScene.java`、`BukovGameSceneFrameLoop.java`、实时系统/空间索引/命中/表现对象池 | `BukovGameSceneProductionStressTest`、`scripts/bukov_gamescene_stress.sh`；无头 CPU 证据，不代表 GPU 帧率 |
 
 ## 最终统一验收命令

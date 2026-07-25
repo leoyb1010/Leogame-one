@@ -185,9 +185,6 @@ public final class RealtimeInput {
 		frame.sprintHeld = false;
 		frame.clearEdges();
 		cancelTouches();
-		if (touchControls != null) {
-			touchControls.resetInput();
-		}
 	}
 
 	public void touchControls(BukovTouchControls controls) {
@@ -204,6 +201,12 @@ public final class RealtimeInput {
 		movementTouch = null;
 		fireTouch = null;
 		interactTouch = null;
+		// Visible mobile controls own their own pointer capture. Clearing only
+		// the legacy playfield state can leave interact/fire held across a
+		// backpack, modal window or gameplay pause.
+		if (touchControls != null) {
+			touchControls.resetInput();
+		}
 	}
 
 	public InputFrame poll(RealtimeBody heroBody) {

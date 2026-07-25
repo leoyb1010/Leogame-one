@@ -171,6 +171,7 @@ PALETTE: blue-black, graphite, sterile grey, restrained violet and cyan signals
 | `tiles_master.png` | 1024×1024 | 地面、墙、门、转角、破损与边缘 | `tiles_<asset_id>.png`，256×256 RGBA |
 | `water_master.png` | 1024×1024 | 四帧水面/动态表面与边缘 | `water_<asset_id>.png`，32×32 RGBA |
 | `landmarks_master.png` | 1536×512 | 掩体、任务物、撤离与大型地标 | `landmarks_<asset_id>.png`，320×32 RGBA |
+| `overlays_master.png` | 1024×512 | 两帧雾、蒸汽、漏水、杂草、霜气或扫描环境叠层 | `overlays_<asset_id>.png`，64×32 RGBA |
 
 生成母版可以较大，便于挑选和修整；运行时目标必须由人工重新像素化并按既有索引
 切片，禁止直接缩小整张 AI 图片。
@@ -183,6 +184,7 @@ PALETTE: blue-black, graphite, sterile grey, restrained violet and cyan signals
 artwork/inbox/environment/<asset_id>/tiles_master.png
 artwork/inbox/environment/<asset_id>/water_master.png
 artwork/inbox/environment/<asset_id>/landmarks_master.png
+artwork/inbox/environment/<asset_id>/overlays_master.png
 artwork/inbox/environment/<asset_id>/PROMPT.md
 artwork/inbox/environment/<asset_id>/generation.json
 ```
@@ -206,6 +208,7 @@ artwork/inbox/environment/<asset_id>/generation.json
 core/src/main/assets/environment/bukov/tiles_<asset_id>.png
 core/src/main/assets/environment/bukov/water_<asset_id>.png
 core/src/main/assets/environment/bukov/landmarks_<asset_id>.png
+core/src/main/assets/environment/bukov/overlays_<asset_id>.png
 ```
 
 六个 `<asset_id>`：

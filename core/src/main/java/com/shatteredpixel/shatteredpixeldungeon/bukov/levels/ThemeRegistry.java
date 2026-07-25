@@ -148,6 +148,8 @@ public final class ThemeRegistry {
 				node.getString("floorPattern"),
 				node.getInt("wallDecoModulo"),
 				node.getInt("coverClusters"),
+				node.getString("environmentOverlayAnchor"),
+				node.getInt("environmentOverlayCount"),
 				parseEnvironmentRules(node.get("environmentRules")),
 				parseRoomWeights(node.get("roomWeights")),
 				parseStringWeights(node.get("lootWeights"), "lootWeights"),

@@ -52,6 +52,10 @@ public final class ThemeDefinition {
 	public final int wallDecoModulo;
 	/** Number of safe two-cell cover clusters attempted per authored room. */
 	public final int coverClusters;
+	/** Semantic room that receives this theme's non-colliding ambience decals. */
+	public final String environmentOverlayAnchor;
+	/** At most three static decals; one active theme never adds a frame loop. */
+	public final int environmentOverlayCount;
 	/** Fixed-step runtime tradeoff; never owns topology or direct damage. */
 	public final ThemeEnvironmentRules environmentRules;
 	private final Map<BukovRaidLayout.Zone, Float> roomWeights;
@@ -69,6 +73,8 @@ public final class ThemeDefinition {
 			String floorPattern,
 			int wallDecoModulo,
 			int coverClusters,
+			String environmentOverlayAnchor,
+			int environmentOverlayCount,
 			ThemeEnvironmentRules environmentRules,
 			Map<BukovRaidLayout.Zone, Float> roomWeights,
 			Map<String, Float> lootWeights,
@@ -83,6 +89,8 @@ public final class ThemeDefinition {
 		this.floorPattern = floorPattern;
 		this.wallDecoModulo = wallDecoModulo;
 		this.coverClusters = coverClusters;
+		this.environmentOverlayAnchor = environmentOverlayAnchor;
+		this.environmentOverlayCount = environmentOverlayCount;
 		this.environmentRules = environmentRules;
 		this.roomWeights = immutableCopy(roomWeights);
 		this.lootWeights = immutableCopy(lootWeights);
@@ -133,6 +141,10 @@ public final class ThemeDefinition {
 
 	public String landmarkTexture() {
 		return "environment/bukov/landmarks_" + visualAssetId + ".png";
+	}
+
+	public String environmentOverlayTexture() {
+		return "environment/bukov/overlays_" + visualAssetId + ".png";
 	}
 
 	/** Tunes the same mode's reinforcement cadence without a second loop. */
@@ -255,6 +267,12 @@ public final class ThemeDefinition {
 				"theme wallDecoModulo out of range: " + id);
 		require(coverClusters >= 1 && coverClusters <= 3,
 				"theme coverClusters out of range: " + id);
+		require(text(environmentOverlayAnchor)
+						&& environmentOverlayAnchor.matches("[a-z0-9_]+"),
+				"theme environmentOverlayAnchor is invalid: " + id);
+		require(environmentOverlayCount >= 1
+						&& environmentOverlayCount <= 3,
+				"theme environmentOverlayCount out of range: " + id);
 		require(environmentRules != null,
 				"theme environmentRules are required: " + id);
 

@@ -32,7 +32,7 @@ public final class BukovSemanticVisualLayer {
 		if (level.customTiles == null) {
 			level.customTiles = new ArrayList<>();
 		}
-		removeOldLandmarks(level);
+		removeOldThemeVisuals(level);
 
 		Set<Integer> protectedCells = protectedCells(level, layout);
 		for (BukovRaidLayout.Mark mark : layout.marks) {
@@ -40,6 +40,10 @@ public final class BukovSemanticVisualLayer {
 			styleWallEdge(level, layout.seed, mark, theme);
 		}
 
+		// Ambient decals render below semantic props and covers. They never own
+		// terrain, so later landmarks remain the clearest interaction layer.
+		placeEnvironmentOverlays(
+				level, layout, theme, protectedCells);
 		placeMissionLandmarks(level, layout, theme);
 		placeExtractionLandmarks(level, layout, theme);
 		placeSemanticLandmark(
@@ -75,13 +79,99 @@ public final class BukovSemanticVisualLayer {
 		return Kind.valueOf(theme.coverCombination().get(index));
 	}
 
-	private static void removeOldLandmarks(BukovLevel level) {
+	private static void removeOldThemeVisuals(BukovLevel level) {
 		Iterator<CustomTilemap> iterator = level.customTiles.iterator();
 		while (iterator.hasNext()) {
-			if (iterator.next() instanceof BukovLandmarkTilemap) {
+			CustomTilemap visual = iterator.next();
+			if (visual instanceof BukovLandmarkTilemap
+					|| visual instanceof BukovEnvironmentOverlayTilemap) {
 				iterator.remove();
 			}
 		}
+	}
+
+	private static void placeEnvironmentOverlays(
+			BukovLevel level,
+			BukovRaidLayout layout,
+			ThemeDefinition theme,
+			Set<Integer> protectedCells) {
+		if (theme == null) return;
+		BukovRaidLayout.Mark mark = semanticMark(
+				layout, theme.environmentOverlayAnchor);
+		if (mark == null) return;
+		Set<Integer> occupied = new HashSet<>(protectedCells);
+		for (CustomTilemap visual : level.customTiles) {
+			for (int y = visual.tileY;
+					y < visual.tileY + visual.tileH; y++) {
+				for (int x = visual.tileX;
+						x < visual.tileX + visual.tileW; x++) {
+					if (x >= 0 && x < level.width()
+							&& y >= 0 && y < level.height()) {
+						occupied.add(x + y * level.width());
+					}
+				}
+			}
+		}
+		int placed = 0;
+		for (int y = mark.top + 1; y < mark.bottom - 1; y++) {
+			for (int x = mark.left + 1; x < mark.right - 1; x++) {
+				if (!clearOverlayFootprint(
+						level, mark, x, y, occupied)) {
+					continue;
+				}
+				BukovEnvironmentOverlayTilemap overlay =
+						new BukovEnvironmentOverlayTilemap(
+								placed % 2 == 0
+										? BukovEnvironmentOverlayTilemap
+												.Variant.AMBIENT
+										: BukovEnvironmentOverlayTilemap
+												.Variant.ACCENT,
+								theme.visualAssetId);
+				overlay.pos(x, y);
+				level.customTiles.add(overlay);
+				reserveOverlayFootprint(
+						level.width(), x, y, occupied);
+				reserveOverlayFootprint(
+						level.width(), x, y, protectedCells);
+				placed++;
+				if (placed >= theme.environmentOverlayCount) {
+					return;
+				}
+			}
+		}
+	}
+
+	private static boolean clearOverlayFootprint(
+			BukovLevel level,
+			BukovRaidLayout.Mark mark,
+			int x,
+			int y,
+			Set<Integer> occupied) {
+		if (x <= mark.left || x + 1 >= mark.right
+				|| y <= mark.top || y + 1 >= mark.bottom) {
+			return false;
+		}
+		for (int checkY = y; checkY <= y + 1; checkY++) {
+			for (int checkX = x; checkX <= x + 1; checkX++) {
+				int cell = checkX + checkY * level.width();
+				if (occupied.contains(cell)
+						|| !isWalkable(level.map[cell])) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static void reserveOverlayFootprint(
+			int width,
+			int x,
+			int y,
+			Set<Integer> occupied) {
+		occupied.add(x + y * width);
+		occupied.add(x + 1 + y * width);
+		occupied.add(x + (y + 1) * width);
+		occupied.add(x + 1 + (y + 1) * width);
 	}
 
 	private static void styleFloor(

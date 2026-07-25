@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generator": "scripts/generate_bukov_theme_visuals.mjs",
   "internalSources": [
     "core/src/main/assets/environment/tiles_city.png",
@@ -19,9 +19,13 @@
       320,
       32
     ],
+    "overlays": [
+      64,
+      32
+    ],
     "contactSheet": [
       576,
-      96
+      128
     ]
   },
   "interactionColors": {
@@ -87,12 +91,14 @@
       "files": {
         "tiles": "environment/bukov/tiles_fog_depot.png",
         "water": "environment/bukov/water_fog_depot.png",
-        "landmarks": "environment/bukov/landmarks_fog_depot.png"
+        "landmarks": "environment/bukov/landmarks_fog_depot.png",
+        "overlays": "environment/bukov/overlays_fog_depot.png"
       },
       "sha256": {
         "tiles": "071c06c6c9a19cc5f2fc9834d15b66242a4f682d8373ed7bae8ae1b85b11578a",
         "water": "2622d51e972aa2c536ba2d39f9562c85da2792f56b14c53d1bfd8f35c084ed25",
-        "landmarks": "452527912647d38bb93263cd692576a3fec310419c5d9be75b775ba3ac96a993"
+        "landmarks": "452527912647d38bb93263cd692576a3fec310419c5d9be75b775ba3ac96a993",
+        "overlays": "8d829c066d5ec5797e877ab380470cfab8e877d05862655afbd3dc4be9cd43b5"
       }
     },
     {
@@ -125,12 +131,14 @@
       "files": {
         "tiles": "environment/bukov/tiles_rust_works.png",
         "water": "environment/bukov/water_rust_works.png",
-        "landmarks": "environment/bukov/landmarks_rust_works.png"
+        "landmarks": "environment/bukov/landmarks_rust_works.png",
+        "overlays": "environment/bukov/overlays_rust_works.png"
       },
       "sha256": {
         "tiles": "1a4117d0ad0c764a8c1a5981cdcd6b3a612174c554127085d3bd9046d0b2e25e",
         "water": "6f14c2d75e6548b6c052870ad605e96fb79054433150641541954260af980172",
-        "landmarks": "aaf0dccc87a2e70a1d16a276d06220fbd1669c8586916ef111131bbd2bbe0415"
+        "landmarks": "aaf0dccc87a2e70a1d16a276d06220fbd1669c8586916ef111131bbd2bbe0415",
+        "overlays": "fe2be812eb9407961f404bb7ca504f493bc84b8f0078e55dca88b443caeb393a"
       }
     },
     {
@@ -163,12 +171,14 @@
       "files": {
         "tiles": "environment/bukov/tiles_flooded_bunker.png",
         "water": "environment/bukov/water_flooded_bunker.png",
-        "landmarks": "environment/bukov/landmarks_flooded_bunker.png"
+        "landmarks": "environment/bukov/landmarks_flooded_bunker.png",
+        "overlays": "environment/bukov/overlays_flooded_bunker.png"
       },
       "sha256": {
         "tiles": "22047d057f4e0f3778f48a4ca59ac1dfcdf19f0eb86ec5449034f44c89c87b76",
         "water": "d877892c18390ad27e38ef65ee5659ca4837eaed3856121dd882e55a4915c8c2",
-        "landmarks": "4a36eb14849b1a74c309bb3307944e776cecd3901525409e74f8b64a2fd527d1"
+        "landmarks": "4a36eb14849b1a74c309bb3307944e776cecd3901525409e74f8b64a2fd527d1",
+        "overlays": "25711beac87fa760a11cb360523d5be696a4358fe48f0af11a92f7259e5ec3b8"
       }
     },
     {
@@ -201,12 +211,14 @@
       "files": {
         "tiles": "environment/bukov/tiles_container_yard.png",
         "water": "environment/bukov/water_container_yard.png",
-        "landmarks": "environment/bukov/landmarks_container_yard.png"
+        "landmarks": "environment/bukov/landmarks_container_yard.png",
+        "overlays": "environment/bukov/overlays_container_yard.png"
       },
       "sha256": {
         "tiles": "9b1bf947df59ece95f853dbea0353836a838b410cb0851c703535b5b25fd871d",
         "water": "f3665c0fce680703eb8a564de38ee8fd699acca4a545aeb9d2194549370aa87a",
-        "landmarks": "bfe3176f34c0e38b96435b37114eb7cbfd2572b79d4c82871bcf3a36857583c6"
+        "landmarks": "bfe3176f34c0e38b96435b37114eb7cbfd2572b79d4c82871bcf3a36857583c6",
+        "overlays": "a4455738189edff6f88b3884ea9039b0b7c487b8c2a93591e8b6936de31f00c3"
       }
     },
     {
@@ -239,12 +251,14 @@
       "files": {
         "tiles": "environment/bukov/tiles_cold_storage.png",
         "water": "environment/bukov/water_cold_storage.png",
-        "landmarks": "environment/bukov/landmarks_cold_storage.png"
+        "landmarks": "environment/bukov/landmarks_cold_storage.png",
+        "overlays": "environment/bukov/overlays_cold_storage.png"
       },
       "sha256": {
         "tiles": "1b283fd9544b69095ec472063370c49dbff769d8dd5508805e57adb5cd25dfd9",
         "water": "e66733b9262b48e174ad4aa13a53f91e0b64bf27c69ce36f8f9782abd792d486",
-        "landmarks": "c8da3aec24d73f12c757b87438ad4ac666a9a7e0b121e481eb85857c5a809c79"
+        "landmarks": "c8da3aec24d73f12c757b87438ad4ac666a9a7e0b121e481eb85857c5a809c79",
+        "overlays": "188a21c013812dfe0d4e620149d8d0e21f5c03a7e71dad300261722e318c9ffc"
       }
     },
     {
@@ -277,17 +291,19 @@
       "files": {
         "tiles": "environment/bukov/tiles_underground_lab.png",
         "water": "environment/bukov/water_underground_lab.png",
-        "landmarks": "environment/bukov/landmarks_underground_lab.png"
+        "landmarks": "environment/bukov/landmarks_underground_lab.png",
+        "overlays": "environment/bukov/overlays_underground_lab.png"
       },
       "sha256": {
         "tiles": "a7279c93c59a148cafacfbafbcc458b7f924ac59116bf3b3ffc27a6fc29a0079",
         "water": "c907889c55e997403d6a133b0bf2cab8f2552cece0dad4ad3b949a8a45b1cb39",
-        "landmarks": "0cb69387c34d99b8626b2113aedfb716a4be60e6e6c01a2cca8b58c499b24577"
+        "landmarks": "0cb69387c34d99b8626b2113aedfb716a4be60e6e6c01a2cca8b58c499b24577",
+        "overlays": "11cc18dbc73fae3b2b73377f1771c0a2c5487ca189d902b88a53383d884a0962"
       }
     }
   ],
   "contactSheet": {
     "file": "environment/bukov/theme_visual_contact_sheet.png",
-    "sha256": "9f3ec0e11c22cad60d73a1573bce8ce040dea8d5e81bdf53a628147221f11c99"
+    "sha256": "cfa1d65217336b852070e06510b07a52f37863c4c35304449ffc0acb07b2febb"
   }
 }

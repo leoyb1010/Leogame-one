@@ -7,6 +7,8 @@ ASSET_DIR="$REPO_ROOT/core/src/main/assets/environment/bukov"
 THEMES_JSON="$REPO_ROOT/core/src/main/assets/bukov/content/themes.json"
 LEVEL="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/BukovLevel.java"
 LANDMARK_TILEMAP="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/BukovLandmarkTilemap.java"
+ENV_OVERLAY_TILEMAP="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/BukovEnvironmentOverlayTilemap.java"
+THEME_DEFINITION="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/ThemeDefinition.java"
 SEMANTIC_LAYER="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/levels/BukovSemanticVisualLayer.java"
 GATE_OVERLAY="$REPO_ROOT/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/sprites/bukov/BukovFirstRaidLandmarks.java"
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/bukov-theme-visual-gate.XXXXXX")"
@@ -65,7 +67,7 @@ asset_ids=(
 )
 
 for asset_id in "${asset_ids[@]}"; do
-  for prefix in tiles water landmarks; do
+  for prefix in tiles water landmarks overlays; do
     # ponytail: decoded pixels are the portable contract across PNG encoders.
     assert_png_rgba_equal \
       "$ASSET_DIR/${prefix}_${asset_id}.png" \
@@ -81,6 +83,9 @@ for asset_id in "${asset_ids[@]}"; do
   [[ "$(ffprobe -v error -select_streams v:0 \
     -show_entries stream=width,height,pix_fmt -of csv=p=0 \
     "$ASSET_DIR/landmarks_${asset_id}.png")" == "320,32,rgba" ]]
+  [[ "$(ffprobe -v error -select_streams v:0 \
+    -show_entries stream=width,height,pix_fmt -of csv=p=0 \
+    "$ASSET_DIR/overlays_${asset_id}.png")" == "64,32,rgba" ]]
 done
 
 assert_png_rgba_equal \
@@ -107,7 +112,7 @@ for manifest_kind in committed generated; do
     assets="$TMP_DIR/assets"
   fi
   for asset_id in "${asset_ids[@]}"; do
-    for channel in tiles water landmarks; do
+    for channel in tiles water landmarks overlays; do
       assert_manifest_hash "$manifest" \
         ".themes[] | select(.assetId == \"$asset_id\") | .sha256.$channel" \
         "$assets/${channel}_${asset_id}.png" \
@@ -121,7 +126,7 @@ done
 
 [[ "$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height,pix_fmt -of csv=p=0 \
-  "$ASSET_DIR/theme_visual_contact_sheet.png")" == "576,96,rgba" ]]
+  "$ASSET_DIR/theme_visual_contact_sheet.png")" == "576,128,rgba" ]]
 
 # Hash uniqueness only proves that PNG bytes differ. This second gate removes
 # colour, compares local luminance ordering, and requires differences to be
@@ -201,11 +206,14 @@ const rgbaHashes = {
   tiles: new Set(),
   water: new Set(),
   landmarks: new Set(),
+  overlays: new Set(),
 };
+const overlayAlphaHashes = new Set();
 const dimensions = {
   tiles: [256, 256],
   water: [32, 32],
   landmarks: [320, 32],
+  overlays: [64, 32],
 };
 for (const theme of manifest.themes) {
   const decoded = {};
@@ -217,6 +225,7 @@ for (const theme of manifest.themes) {
       createHash("sha256").update(decoded[channel]).digest("hex"));
   }
   const landmarks = decoded.landmarks;
+  const overlays = decoded.overlays;
   for (const role of [
     "archive", "gate", "extraction", "conditional", "cache",
   ]) {
@@ -228,11 +237,28 @@ for (const theme of manifest.themes) {
   if (colorCount(landmarks, [...theme.palette.accent, 255]) < 8) {
     throw new Error(`${theme.assetId} lacks its landmark silhouette motif`);
   }
+  const alpha = Buffer.alloc(64 * 32);
+  const frameCoverage = [0, 0];
+  for (let pixel = 0; pixel < 64 * 32; pixel += 1) {
+    const value = overlays[pixel * 4 + 3];
+    alpha[pixel] = value;
+    if (value >= 32) frameCoverage[Math.floor((pixel % 64) / 32)] += 1;
+  }
+  if (frameCoverage[0] < 35 || frameCoverage[1] < 35) {
+    throw new Error(
+      `${theme.assetId} environment overlays are visually empty`);
+  }
+  overlayAlphaHashes.add(
+    createHash("sha256").update(alpha).digest("hex"));
 }
 for (const [channel, hashes] of Object.entries(rgbaHashes)) {
   if (hashes.size !== 6) {
     throw new Error(`${channel} assets are not visually unique`);
   }
+}
+if (overlayAlphaHashes.size !== 6) {
+  throw new Error(
+    "environment overlay silhouettes are palette-only duplicates");
 }
 NODE
 
@@ -248,9 +274,12 @@ done
 rg -Fq 'return visualTheme().tilesTexture();' "$LEVEL"
 rg -Fq 'return visualTheme().waterTexture();' "$LEVEL"
 rg -Fq 'return visualTheme().landmarkTexture();' "$LEVEL"
+rg -Fq 'environmentOverlayTexture()' "$THEME_DEFINITION"
 rg -Fq 'visualAssetId(theme)' "$SEMANTIC_LAYER"
+rg -Fq 'placeEnvironmentOverlays(' "$SEMANTIC_LAYER"
 rg -Fq 'level.landmarkTex()' "$GATE_OVERLAY"
 rg -Fq 'VISUAL_ASSET_ID' "$LANDMARK_TILEMAP"
+rg -Fq 'overlays_' "$ENV_OVERLAY_TILEMAP"
 
 if rg -q 'https?://|fetch\(|createReadStream' \
   "$SCRIPT_DIR/generate_bukov_theme_visuals.mjs"; then

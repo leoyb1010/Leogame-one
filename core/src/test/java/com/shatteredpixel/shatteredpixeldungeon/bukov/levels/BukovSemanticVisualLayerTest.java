@@ -26,6 +26,7 @@ import java.util.Set;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class BukovSemanticVisualLayerTest {
@@ -254,6 +255,95 @@ public class BukovSemanticVisualLayerTest {
 			assertTrue(theme.id + " produced no themed landmark",
 					themedLandmarks > 0);
 		}
+	}
+
+	@Test
+	public void eachThemePlacesBoundedNonCollidingEnvironmentOverlays() {
+		ThemeRegistry registry = new ThemeRegistry();
+		registry.loadDefault();
+		Set<String> placementFingerprints = new HashSet<>();
+
+		for (ThemeDefinition theme : registry.all()) {
+			BukovLevel level = level(12, 12);
+			BukovRaidLayout layout = new BukovRaidLayout();
+			layout.seed = 771144L;
+			layout.themeId = theme.id;
+			BukovRaidLayout.Mark anchor = room(
+					level,
+					1,
+					1,
+					theme.environmentOverlayAnchor,
+					BukovRaidLayout.Zone.COMBAT);
+			layout.marks.add(anchor);
+
+			BukovSemanticVisualLayer.apply(level, layout, theme);
+
+			int overlayCount = 0;
+			for (CustomTilemap visual : level.customTiles) {
+				if (!(visual
+						instanceof BukovEnvironmentOverlayTilemap)) {
+					continue;
+				}
+				BukovEnvironmentOverlayTilemap overlay =
+						(BukovEnvironmentOverlayTilemap)visual;
+				assertEquals(theme.visualAssetId,
+						overlay.visualAssetId());
+				assertTrue(overlay.tileW == 2 && overlay.tileH == 2);
+				for (int y = overlay.tileY;
+						y < overlay.tileY + overlay.tileH; y++) {
+					for (int x = overlay.tileX;
+							x < overlay.tileX + overlay.tileW; x++) {
+						int terrain =
+								level.map[x + y * level.width()];
+						assertTrue(
+								(Terrain.flags[terrain]
+										& Terrain.PASSABLE) != 0);
+					}
+				}
+				overlayCount++;
+			}
+			assertTrue(theme.id + " produced no environment overlay",
+					overlayCount > 0);
+			assertTrue(theme.id + " exceeded its overlay budget",
+					overlayCount <= theme.environmentOverlayCount);
+			assertTrue(theme.id + " exceeded the global overlay budget",
+					overlayCount <= 3);
+			assertTrue(placementFingerprints.add(
+					theme.environmentOverlayAnchor
+							+ ":" + theme.environmentOverlayCount));
+
+			BukovSemanticVisualLayer.apply(level, layout, theme);
+			int repeatedCount = 0;
+			for (CustomTilemap visual : level.customTiles) {
+				if (visual instanceof BukovEnvironmentOverlayTilemap) {
+					repeatedCount++;
+				}
+			}
+			assertEquals(overlayCount, repeatedCount);
+		}
+		assertEquals(6, placementFingerprints.size());
+	}
+
+	@Test
+	public void environmentOverlayVariantAndThemeSurviveBundleRestore() {
+		BukovEnvironmentOverlayTilemap original =
+				new BukovEnvironmentOverlayTilemap(
+						BukovEnvironmentOverlayTilemap
+								.Variant.ACCENT,
+						"flooded_bunker");
+		original.pos(4, 6);
+		Bundle stored = new Bundle();
+		stored.put("overlay", original);
+
+		BukovEnvironmentOverlayTilemap restored =
+				(BukovEnvironmentOverlayTilemap)stored.get("overlay");
+		assertNotNull(restored);
+		assertEquals(
+				BukovEnvironmentOverlayTilemap.Variant.ACCENT,
+				restored.variant());
+		assertEquals("flooded_bunker", restored.visualAssetId());
+		assertTrue(restored.tileX == 4 && restored.tileY == 6);
+		assertTrue(restored.tileW == 2 && restored.tileH == 2);
 	}
 
 	private static BukovLevel level(int width, int height) {

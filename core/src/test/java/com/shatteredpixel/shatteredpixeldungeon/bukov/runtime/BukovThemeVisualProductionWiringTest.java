@@ -1,7 +1,18 @@
 package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 
+import com.badlogic.gdx.Preferences;
+import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovAnchorPlanner;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovEnvironmentOverlayTilemap;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeRegistry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.CustomTilemap;
+import com.watabou.noosa.Game;
+import com.watabou.utils.GameSettings;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -11,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,6 +54,7 @@ public class BukovThemeVisualProductionWiringTest {
 		Set<String> tileHashes = new HashSet<>();
 		Set<String> waterHashes = new HashSet<>();
 		Set<String> landmarkHashes = new HashSet<>();
+		Set<String> overlayHashes = new HashSet<>();
 
 		for (ThemeDefinition theme : registry.all()) {
 			assertEquals(expected.get(theme.id), theme.visualAssetId);
@@ -55,11 +70,16 @@ public class BukovThemeVisualProductionWiringTest {
 					theme.landmarkTexture(),
 					landmarkHashes,
 					3000L);
+			assertAsset(
+					theme.environmentOverlayTexture(),
+					overlayHashes,
+					250L);
 		}
 
 		assertEquals(6, tileHashes.size());
 		assertEquals(6, waterHashes.size());
 		assertEquals(6, landmarkHashes.size());
+		assertEquals(6, overlayHashes.size());
 	}
 
 	@Test
@@ -82,6 +102,7 @@ public class BukovThemeVisualProductionWiringTest {
 		assertTrue(level.contains("return visualTheme().waterTexture();"));
 		assertTrue(level.contains("return visualTheme().landmarkTexture();"));
 		assertTrue(semantic.contains("visualAssetId(theme)"));
+		assertTrue(semantic.contains("placeEnvironmentOverlays("));
 		assertTrue(gate.contains("level.landmarkTex()"));
 		assertTrue(Files.size(
 				ASSET_ROOT.resolve("theme_visual_contact_sheet.png"))
@@ -89,6 +110,106 @@ public class BukovThemeVisualProductionWiringTest {
 		assertTrue(Files.size(
 				ASSET_ROOT.resolve("theme_visual_manifest.json"))
 				> 5000L);
+	}
+
+	@Test
+	public void sixRealGeneratedLevelsUseBoundedThemeOverlaysAndSafeRoutes()
+			throws IOException {
+		int previousDepth = Dungeon.depth;
+		int previousBranch = Dungeon.branch;
+		long previousSeed = Dungeon.seed;
+		com.shatteredpixel.shatteredpixeldungeon.levels.Level previousLevel =
+				Dungeon.level;
+		String previousVersion = Game.version;
+		BukovRaidMode previousMode = BukovMode.raidMode();
+		ArrayList<String> previousMaps =
+				new ArrayList<>(BukovMode.unlockedRaidThemes());
+		String previousSelected = BukovMode.selectedRaidTheme();
+		ThemeRegistry registry = new ThemeRegistry();
+		registry.loadDefault();
+		try {
+			GameSettings.set(defaultPreferences());
+			if (Game.version == null) Game.version = "test";
+			BukovMode.prepareRaidMode(BukovRaidMode.EXPEDITION);
+			for (ThemeDefinition theme : registry.all()) {
+				BukovMode.prepareUnlockedMaps(
+						Collections.singletonList(theme.id));
+				BukovMode.prepareSelectedMap(theme.id);
+				Dungeon.depth = 1;
+				Dungeon.branch = 0;
+				Dungeon.seed = 0x71000000L + theme.id.hashCode();
+				Dungeon.level = null;
+				BukovLevel level = new BukovLevel();
+				level.create();
+
+				assertEquals(theme.tilesTexture(), level.tilesTex());
+				assertEquals(theme.waterTexture(), level.waterTex());
+				assertEquals(theme.landmarkTexture(), level.landmarkTex());
+				int overlays = 0;
+				for (CustomTilemap visual : level.customTiles) {
+					if (visual
+							instanceof BukovEnvironmentOverlayTilemap) {
+						assertEquals(
+								theme.visualAssetId,
+								((BukovEnvironmentOverlayTilemap)visual)
+										.visualAssetId());
+						overlays++;
+					}
+				}
+				assertTrue(theme.id + " produced no production overlay",
+						overlays > 0);
+				assertTrue(theme.id + " exceeded overlay budget",
+						overlays <= theme.environmentOverlayCount
+								&& overlays <= 3);
+				BukovRaidLayout layout = level.raidLayout();
+				BukovAnchorPlanner.Result traversal =
+						BukovAnchorPlanner
+								.validateLockedMissionTraversal(
+										level.width(),
+										level.height(),
+										level.map,
+										layout,
+										level.entrance());
+				assertTrue(theme.id + ": " + traversal.reason,
+						traversal.valid);
+			}
+		} finally {
+			Dungeon.depth = previousDepth;
+			Dungeon.branch = previousBranch;
+			Dungeon.seed = previousSeed;
+			Dungeon.level = previousLevel;
+			Game.version = previousVersion;
+			BukovMode.prepareRaidMode(previousMode);
+			BukovMode.prepareUnlockedMaps(previousMaps);
+			BukovMode.prepareSelectedMap(previousSelected);
+			GameSettings.set(null);
+		}
+	}
+
+	private static Preferences defaultPreferences() {
+		return (Preferences)Proxy.newProxyInstance(
+				Preferences.class.getClassLoader(),
+				new Class<?>[]{Preferences.class},
+				(proxy, method, arguments) -> {
+					Class<?> type = method.getReturnType();
+					if (type == Preferences.class) return proxy;
+					if ("get".equals(method.getName())
+							&& (arguments == null
+									|| arguments.length == 0)) {
+						return Collections.emptyMap();
+					}
+					if (method.getName().startsWith("get")
+							&& arguments != null
+							&& arguments.length >= 2) {
+						return arguments[1];
+					}
+					if (type == boolean.class) return false;
+					if (type == int.class) return 0;
+					if (type == long.class) return 0L;
+					if (type == float.class) return 0f;
+					if (type == String.class) return "";
+					return null;
+				});
 	}
 
 	private static void assertAsset(

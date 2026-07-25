@@ -11,6 +11,8 @@
       "floorPattern": "FOG_PATCHES",
       "wallDecoModulo": 11,
       "coverClusters": 1,
+      "environmentOverlayAnchor": "fog_lamp_pump_station",
+      "environmentOverlayCount": 3,
       "environmentRules": {
         "id": "fog_concealment",
         "surface": "WATER",
@@ -37,6 +39,8 @@
       "floorPattern": "RUST_STRIPES",
       "wallDecoModulo": 5,
       "coverClusters": 3,
+      "environmentOverlayAnchor": "umbrella_frame_workshop",
+      "environmentOverlayCount": 2,
       "environmentRules": {
         "id": "rust_noise_lanes",
         "surface": "EMBERS",
@@ -63,6 +67,8 @@
       "floorPattern": "FLOOD_CHANNELS",
       "wallDecoModulo": 13,
       "coverClusters": 1,
+      "environmentOverlayAnchor": "flooded_warehouse",
+      "environmentOverlayCount": 3,
       "environmentRules": {
         "id": "flooded_slow_channels",
         "surface": "WATER",
@@ -89,6 +95,8 @@
       "floorPattern": "YARD_BLOCKS",
       "wallDecoModulo": 9,
       "coverClusters": 2,
+      "environmentOverlayAnchor": "broken_rail_loading",
+      "environmentOverlayCount": 3,
       "environmentRules": {
         "id": "yard_exposed_fireline",
         "surface": "CUSTOM_DECO_EMPTY",
@@ -115,6 +123,8 @@
       "floorPattern": "COLD_GRID",
       "wallDecoModulo": 7,
       "coverClusters": 2,
+      "environmentOverlayAnchor": "south_maintenance",
+      "environmentOverlayCount": 2,
       "environmentRules": {
         "id": "cold_service_grid",
         "surface": "EMPTY_SP",
@@ -141,6 +151,8 @@
       "floorPattern": "LAB_CIRCUIT",
       "wallDecoModulo": 3,
       "coverClusters": 3,
+      "environmentOverlayAnchor": "scrap_compactor",
+      "environmentOverlayCount": 2,
       "environmentRules": {
         "id": "lab_alarm_circuit",
         "surface": "EMBERS",

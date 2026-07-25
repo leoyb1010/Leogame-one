@@ -3,19 +3,8 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovHostMob;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.FirstRaidEnemySpawnDirector;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.Firearm;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmDefinition;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEventPool;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
@@ -25,7 +14,6 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidMode;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidWorldDefinitions;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRuntimeLoadoutAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovSearchableContainer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.LootTransaction;
@@ -46,9 +34,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -484,87 +469,30 @@ public class BukovPlayerJourneyAcceptanceTest {
 	private static void assertPlayerShotKillsOnGeneratedMap(
 			BukovRaidCoordinator raid,
 			BukovLevel level) throws IOException {
-		FirearmRegistry firearms = new FirearmRegistry();
-		firearms.loadJson(readContent("firearms.json"));
-		AmmoRegistry ammunition = new AmmoRegistry();
-		ammunition.loadJson(readContent("ammunition.json"));
-		BukovRuntimeLoadoutAdapter.RuntimeLoadout runtime =
-				new BukovRuntimeLoadoutAdapter(
-						firearms,
-						ammunition).materialize(raid);
-		Firearm firearm = runtime.primaryWeapon();
-		assertNotNull(firearm);
-		FirearmDefinition definition = firearm.definition(firearms);
-		int initialMagazine = firearm.magazineAmmo();
-		assertTrue(initialMagazine > 0);
-		EnemyArchetypeRegistry enemies = new EnemyArchetypeRegistry();
-		enemies.loadJson(readContent("enemies.json"));
-		BukovHostMob targetMob = new BukovHostMob().configure(
-				enemies.require(
-						FirstRaidEnemySpawnDirector.FIRST_GUNNER));
-		int initialTargetHealth = targetMob.HP;
-		assertNotNull(targetMob.spriteClass);
-
-		int[] adjacent = adjacentPassableCells(level);
-		RealtimeBody shooter = new RealtimeBody(
-				adjacent[0], level.width(), 0.25f);
-		RealtimeBody target = new RealtimeBody(
-				adjacent[1], level.width(), 0.25f);
-		CombatSink sink = new CombatSink(
-				new LevelCollisionMap(level),
-				shooter,
-				target,
-				targetMob);
-		FireControl control = new FireControl();
-		while (targetMob.HP > 0 && firearm.magazineAmmo() > 0) {
-			control.update(
-					definition.secondsPerShot(),
-					false,
-					false,
-					false,
-					firearm,
-					definition,
-					sink);
-			control.update(
-					0f,
-					true,
-					true,
-					false,
-					firearm,
-					definition,
-					sink);
-		}
-
-		assertTrue(targetMob.HP < initialTargetHealth);
-		assertTrue(targetMob.HP <= 0);
-		assertTrue(sink.tracerEvents > 0);
-		assertTrue(sink.nonZeroTracer);
-		assertTrue(firearm.magazineAmmo() < initialMagazine);
-		raid.session().recordKill();
-		runtime.writeBack(raid.loot());
-	}
-
-	private static int[] adjacentPassableCells(BukovLevel level) {
-		for (int cell = 0; cell < level.length(); cell++) {
-			if (!level.passable[cell] || level.solid[cell]) continue;
-			int x = cell % level.width();
-			int y = cell / level.width();
-			int right = cell + 1;
-			if (x + 1 < level.width()
-					&& right < level.length()
-					&& level.passable[right]
-					&& !level.solid[right]) {
-				return new int[]{cell, right};
-			}
-			int down = cell + level.width();
-			if (y + 1 < level.height()
-					&& down < level.length()
-					&& level.passable[down]
-					&& !level.solid[down]) {
-				return new int[]{cell, down};
-			}
-		}
-		throw new AssertionError("Generated Bukov map has no adjacent open cells");
+		BukovRealtimeCombatHarness.Result result =
+				BukovRealtimeCombatHarness.killOneGeneratedEnemy(
+						raid,
+						level);
+		assertTrue(result.toString(), result.generatedEnemyCount > 0);
+		assertEquals(
+				FirstRaidEnemySpawnDirector.FIRST_GUNNER,
+				result.targetDefinitionId);
+		assertTrue(
+				result.toString(),
+				result.finalTargetHealth < result.initialTargetHealth);
+		assertTrue(result.toString(), result.finalTargetHealth <= 0);
+		assertTrue(result.toString(), result.friendlyTracers > 0);
+		assertTrue(result.toString(), result.nonZeroFriendlyTracer);
+		assertTrue(result.toString(), result.hostileTracers > 0);
+		assertTrue(result.toString(), result.nonZeroHostileTracer);
+		assertTrue(
+				result.toString(),
+				result.finalMagazine < result.initialMagazine);
+		assertTrue(result.toString(), result.damageTaken > 0);
+		assertTrue(result.toString(), result.firefights > 0);
+		assertEquals(result.toString(), 1, result.killCount);
+		assertFalse(result.toString(), result.targetBodyActive);
+		assertFalse(result.toString(), result.targetStillInLevel);
 	}
 
 	private static boolean hasDefinitionPrefix(
@@ -594,118 +522,6 @@ public class BukovPlayerJourneyAcceptanceTest {
 				true,
 				false,
 				1f);
-	}
-
-	private static String readContent(String fileName)
-			throws IOException {
-		return new String(
-				Files.readAllBytes(Paths.get(
-						"src/main/assets/bukov/content/" + fileName)),
-				StandardCharsets.UTF_8);
-	}
-
-	private static final class CombatSink
-			implements FireControl.Sink {
-
-		private final CollisionMap collision;
-		private final RealtimeBody shooter;
-		private final RealtimeBody target;
-		private final BukovHostMob targetMob;
-		private final HitscanResolver.Hit hit =
-				new HitscanResolver.Hit();
-		private final CombatFxEventPool fx =
-				new CombatFxEventPool(16);
-		private int sequence;
-		private int tracerEvents;
-		private boolean nonZeroTracer;
-
-		private CombatSink(
-				CollisionMap collision,
-				RealtimeBody shooter,
-				RealtimeBody target,
-				BukovHostMob targetMob) {
-			this.collision = collision;
-			this.shooter = shooter;
-			this.target = target;
-			this.targetMob = targetMob;
-		}
-
-		@Override
-		public void fire(
-				Firearm firearm,
-				FirearmDefinition definition) {
-			float directionX = target.x - shooter.x;
-			float directionY = target.y - shooter.y;
-			HitscanResolver.cast(
-					shooter.x,
-					shooter.y,
-					directionX,
-					directionY,
-					definition.effectiveRangeTiles,
-					collision,
-					(minX, minY, maxX, maxY) ->
-							Collections.singletonList(target),
-					shooter,
-					hit);
-			fx.tracer(
-					1,
-					++sequence,
-					false,
-					shooter.x,
-					shooter.y,
-					hit.x,
-					hit.y,
-					definition.tracerIntensity);
-			fx.drain(event -> {
-				if (event.type() != CombatFxEvent.Type.TRACER) {
-					return;
-				}
-				tracerEvents++;
-				float dx = event.toX() - event.fromX();
-				float dy = event.toY() - event.fromY();
-				nonZeroTracer |= event.intensity() > 0f
-						&& dx * dx + dy * dy > 0.0001f;
-			});
-			if (hit.body == target) {
-				float damage = RealtimeDamage.resolve(
-						definition.damage,
-						1f,
-						hit.distance,
-						definition.effectiveRangeTiles,
-						definition.penetration,
-						RealtimeDamage.HitZone.CORE,
-						null);
-				targetMob.HP -= Math.max(1, Math.round(damage));
-				if (targetMob.HP <= 0) target.active = false;
-			}
-		}
-
-		@Override
-		public FireControl.AmmoSelection requestAmmo(
-				String caliber,
-				String preferredDefinitionId,
-				int maximum,
-				boolean allowAlternative) {
-			return FireControl.AmmoSelection.none();
-		}
-
-		@Override
-		public void dryFire() {
-		}
-
-		@Override
-		public void reloadStarted(float seconds) {
-		}
-
-		@Override
-		public void reloadAudioCues(
-				FirearmDefinition definition,
-				int cueMask) {
-		}
-
-		@Override
-		public void reloadFinished() {
-		}
 	}
 
 	/** Minimal deterministic preference store for generated-level headless runs. */

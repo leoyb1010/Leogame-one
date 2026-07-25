@@ -347,6 +347,14 @@ public final class BukovRealtimeWorld
 			Hero hero,
 			BukovRaidCoordinator raid,
 			BukovRaidPersistence.Commit persistenceCommit) {
+		this(hero, raid, persistenceCommit, true);
+	}
+
+	BukovRealtimeWorld(
+			Hero hero,
+			BukovRaidCoordinator raid,
+			BukovRaidPersistence.Commit persistenceCommit,
+			boolean createPresentationObjects) {
 		if (hero == null || Dungeon.level == null) {
 			throw new IllegalArgumentException("hero and level are required");
 		}
@@ -447,7 +455,9 @@ public final class BukovRealtimeWorld
 				: nextSpawnBoundary(raid.session().elapsedSeconds);
 		input.start();
 		ensureContainerMarkers();
-		createInteractionMarkers();
+		if (createPresentationObjects) {
+			createInteractionMarkers();
+		}
 	}
 
 	static boolean recoverHeroCheckpoint(

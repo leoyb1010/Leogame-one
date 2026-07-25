@@ -298,6 +298,76 @@ function semanticMarkers(buffer) {
   rect(buffer, width, 7 * 32 + 14, 22, 5, 3, SEMANTIC.cache);
 }
 
+function environmentOverlays(theme, themeIndex) {
+  const width = 64;
+  const output = Buffer.alloc(width * 32 * 4);
+  const accent = [...theme.accent, 220];
+  const bright = [...mix(theme.accent, theme.high, 0.65), 205];
+  const mid = [...theme.mid, 180];
+  const soft = [...mix(theme.shadow, theme.mid, 0.65), 105];
+  for (let frame = 0; frame < 2; frame += 1) {
+    const left = frame * 32;
+    if (themeIndex === 0) {
+      // Low coastal fog banks with different broken silhouettes per frame.
+      rect(output, width, left + 3, 22 - frame, 25, 3, soft);
+      rect(output, width, left + 7, 19 - frame, 17, 3, soft);
+      rect(output, width, left + 11, 17, 8, 2, mid);
+      line(output, width, left + 5, 26, left + 25, 26, accent);
+      put(output, width, left + 4 + frame * 20, 18, bright);
+    } else if (themeIndex === 1) {
+      // Furnace vent, rising heat teeth and loose welding sparks.
+      rect(output, width, left + 5, 25, 22, 3, mid);
+      for (let x = 7; x <= 25; x += 4) {
+        line(output, width, left + x, 25, left + x + 2, 20, accent);
+      }
+      line(output, width, left + 10, 18, left + 14, 11 - frame, soft);
+      line(output, width, left + 20, 18, left + 17, 8 + frame, soft);
+      put(output, width, left + 6 + frame * 18, 10, bright);
+      put(output, width, left + 25 - frame * 14, 6, bright);
+    } else if (themeIndex === 2) {
+      // Overhead pipe leak feeding concentric floor ripples.
+      rect(output, width, left + 2, 3, 18, 3, mid);
+      rect(output, width, left + 17, 4, 3, 7, mid);
+      line(output, width, left + 18, 11, left + 18, 18 + frame, accent);
+      put(output, width, left + 18, 20 + frame, bright);
+      line(output, width, left + 7, 25, left + 27, 25, soft);
+      line(output, width, left + 11, 22, left + 23, 22, accent);
+      line(output, width, left + 14, 19, left + 20, 19, bright);
+    } else if (themeIndex === 3) {
+      // Asphalt crack with two distinct weed and vine clusters.
+      line(output, width, left + 3, 28, left + 15, 21, mid);
+      line(output, width, left + 15, 21, left + 28, 27, mid);
+      const root = left + (frame === 0 ? 12 : 21);
+      line(output, width, root, 25, root, 11, accent);
+      line(output, width, root, 17, root - 7, 13, bright);
+      line(output, width, root, 19, root + 6, 14, bright);
+      line(output, width, root - 2, 25, root - 8, 20, soft);
+    } else if (themeIndex === 4) {
+      // Frost bloom, ice crystal spokes and low refrigeration mist.
+      rect(output, width, left + 3, 24, 26, 3, soft);
+      rect(output, width, left + 7, 21, 17, 2, soft);
+      const cx = left + (frame === 0 ? 12 : 21);
+      const cy = frame === 0 ? 13 : 11;
+      line(output, width, cx - 7, cy, cx + 7, cy, accent);
+      line(output, width, cx, cy - 7, cx, cy + 7, accent);
+      line(output, width, cx - 5, cy - 5, cx + 5, cy + 5, bright);
+      line(output, width, cx + 5, cy - 5, cx - 5, cy + 5, bright);
+    } else {
+      // Laboratory scan plane with circuit branches and diagnostic nodes.
+      const scanY = frame === 0 ? 9 : 17;
+      line(output, width, left + 3, scanY, left + 28, scanY, soft);
+      line(output, width, left + 6, 27, left + 6, 14, mid);
+      line(output, width, left + 6, 14, left + 17, 14, accent);
+      line(output, width, left + 17, 14, left + 17, 5, accent);
+      line(output, width, left + 17, 20, left + 27, 20, bright);
+      rect(output, width, left + 4, 25, 5, 4, accent);
+      rect(output, width, left + 15, 3, 5, 4, bright);
+      rect(output, width, left + 25, 18, 4, 4, accent);
+    }
+  }
+  return output;
+}
+
 function sha256(path) {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
@@ -331,6 +401,7 @@ try {
     const themedWater = recolor(water, 32, 32, theme, index, 1.25);
     const themedLandmarks = recolor(
       landmarks, 320, 32, theme, index, 0.45);
+    const themedOverlays = environmentOverlays(theme, index);
     themeMotif(themedLandmarks, theme, index);
     semanticMarkers(themedLandmarks);
 
@@ -338,6 +409,8 @@ try {
     const waterFile = join(outputDir, `water_${theme.assetId}.png`);
     const landmarkFile = join(
       outputDir, `landmarks_${theme.assetId}.png`);
+    const overlayFile = join(
+      outputDir, `overlays_${theme.assetId}.png`);
     encode(themedTiles, 256, 256, tileFile, `tiles-${theme.assetId}`);
     encode(themedWater, 32, 32, waterFile, `water-${theme.assetId}`);
     encode(
@@ -347,19 +420,28 @@ try {
       landmarkFile,
       `landmarks-${theme.assetId}`,
     );
+    encode(
+      themedOverlays,
+      64,
+      32,
+      overlayFile,
+      `overlays-${theme.assetId}`,
+    );
     generated.push({
       theme,
       tiles: themedTiles,
       water: themedWater,
       landmarks: themedLandmarks,
+      overlays: themedOverlays,
       tileFile,
       waterFile,
       landmarkFile,
+      overlayFile,
     });
   }
 
   const panelWidth = 96;
-  const panelHeight = 96;
+  const panelHeight = 128;
   const sheetWidth = panelWidth * THEMES.length;
   const sheet = Buffer.alloc(sheetWidth * panelHeight * 4);
   for (let index = 0; index < generated.length; index += 1) {
@@ -398,6 +480,10 @@ try {
       value.landmarks, 320, 7 * 32, 0, 32, 32,
       sheet, sheetWidth, panelX + 64, 64,
     );
+    copyRegion(
+      value.overlays, 64, 0, 0, 64, 32,
+      sheet, sheetWidth, panelX + 16, 96,
+    );
   }
   const contactSheet = join(outputDir, "theme_visual_contact_sheet.png");
   encode(
@@ -409,7 +495,7 @@ try {
   );
 
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generator: "scripts/generate_bukov_theme_visuals.mjs",
     internalSources: [
       "core/src/main/assets/environment/tiles_city.png",
@@ -420,6 +506,7 @@ try {
       tiles: [256, 256],
       water: [32, 32],
       landmarks: [320, 32],
+      overlays: [64, 32],
       contactSheet: [sheetWidth, panelHeight],
     },
     interactionColors: SEMANTIC,
@@ -439,11 +526,14 @@ try {
         water: `environment/bukov/water_${value.theme.assetId}.png`,
         landmarks:
           `environment/bukov/landmarks_${value.theme.assetId}.png`,
+        overlays:
+          `environment/bukov/overlays_${value.theme.assetId}.png`,
       },
       sha256: {
         tiles: sha256(value.tileFile),
         water: sha256(value.waterFile),
         landmarks: sha256(value.landmarkFile),
+        overlays: sha256(value.overlayFile),
       },
     })),
     contactSheet: {

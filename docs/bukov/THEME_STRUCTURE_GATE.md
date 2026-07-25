@@ -34,6 +34,9 @@
 | 水面 `water` | 8×8 px | 0.045 | 3 |
 | 地标 `landmarks` | 每个 32×32 帧 | 0.018 | 3 |
 
+`overlays` 另按 alpha 平面比较六套 64×32 图集，要求两帧各有有效像素且六套
+alpha 指纹全部不同。这样即使颜色不同，复用同一雾片/裂缝轮廓也会失败。
+
 门禁会逐对输出最弱主题组合。失败信息包含通道、主题名、实际结构距离、要求值和
 变化分区数量，便于直接定位“哪两套仍只是换色”。
 
@@ -70,7 +73,8 @@ node scripts/bukov_theme_structure_gate.mjs --self-test
 
 ## 边界
 
-当前 atlas 仍保留宿主切片和 alpha 契约，以维持地图索引与存档兼容。首批原创
+当前 terrain/water atlas 仍保留宿主切片和 alpha 契约，以维持地图索引与存档
+兼容；静态环境叠层是项目原创几何，但仍是可替换的工程底稿。首批原创
 环境素材的交付和目标路径见
 `docs/bukov/ORIGINAL_ENVIRONMENT_ASSET_BRIEF_ZH.md`。当原创 atlas 完成后，
 应将来源清单从宿主 `tiles_city.png` / `water3.png` 迁移到项目原创母版，同时
