@@ -66,7 +66,7 @@ Ordinary platform log prefixes before each telemetry JSON object are accepted.
 Run both platform captures through:
 
 ```sh
-package_source_commit=248b811a7c0575c1ffed7bc073da0179e1538c4c
+package_source_commit=a91461c5ba57aedb76f07acd741b749100425fb2
 python3 scripts/bukov_render_frame_gate.py \
   --input /absolute/path/macOS-render.log \
   --input /absolute/path/iOS-render.log \
@@ -100,28 +100,39 @@ The JSON summary reports exact counts and the worst cumulative histogram
 percentile among the individual runs. It deliberately does not label that
 value as a reconstructed cross-run percentile.
 
-## Accepted Alpha 30 packaged-app evidence
+## Accepted Alpha 31 packaged-app evidence
 
-The installed `2.0.0-alpha30-ios-ui-audio` candidate, source commit
-`248b811a7c0575c1ffed7bc073da0179e1538c4c`, passed the two-platform
+The installed `2.0.0-alpha31-e2e-ci` candidate, sealed release source commit
+`a91461c5ba57aedb76f07acd741b749100425fb2`, passed the two-platform
 render-callback gate on 2026-07-25. The immutable summary is:
 
-`/Users/leoyuan/Documents/日常/output/evidence/248b811a7-performance/render-frame-summary.json`
+`/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance/render-frame-summary.json`
 
-| Platform | Active gameplay | Delivered FPS | P50 | P95 | P99 | Refresh-budget misses |
-|---|---:|---:|---:|---:|---:|---:|
-| macOS | 1820.854 s | 115.629 | 9.7 ms | 13.2 ms | 16.8 ms | 3 / 210543 |
-| iOS Simulator | 1831.635 s | 59.995 | 16.7 ms | 17.8 ms | 18.1 ms | 322 / 109889 |
+| Platform | Active gameplay | Frames | Delivered FPS | P50 | P95 | P99 | Refresh-budget misses | >33.3 ms |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| macOS | 1850.970 s | 216158 | 116.781 | 8.9 ms | 12.5 ms | 16.8 ms | 4 | 1 |
+| iOS Simulator | 2072.118 s | 124310 | 59.992 | 16.7 ms | 17.6 ms | 18.1 ms | 366 | 3 |
 
 Both runs reported continuous active gameplay, monotonic sequences, no
 pause/suspend/session discontinuity and one stable resolution/refresh target.
-The aggregate P95 worst case was 17.8 ms, below the 18.4 ms 60 Hz threshold.
-This acceptance remains bound to `248b811a7`; later development code requires
-new packages and new captures.
+The aggregate contains 340468 frames over 3923.088 seconds. Its worst per-run
+P95 was 17.6 ms, below the 18.4 ms 60 Hz threshold. This acceptance remains
+bound to the sealed release source `a91461c5`; a later documentation-only
+commit does not change the package identity.
 
 The adjacent `thermal-process-snapshot.txt` reported no system thermal or
 performance warning at capture time. It is a process snapshot, not a substitute
 for Instruments/Metal hardware GPU, temperature or throttling evidence.
+
+The same sealed source also completed the 33-step serial automated final gate:
+
+`/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-final-gate/summary.json`
+
+All 33 steps passed, including render-callback pacing, full core/desktop/iOS
+tests, 10,000 seeds, 100 save iterations, 25 mode/theme/Boss combinations,
+Apple builds, packaged legal files, provenance and source-integrity
+verification. This automated result still does not replace physical iPhone,
+controller, hardware GPU/Instruments or full manual player-route evidence.
 
 The final serial gate requires both captures:
 
