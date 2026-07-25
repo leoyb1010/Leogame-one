@@ -80,6 +80,26 @@ Use the source commit embedded in the package and every telemetry record. Do
 not substitute a later development `HEAD` after more commits have landed:
 the gate must identify the binary that actually produced the logs.
 
+### Capture harness
+
+`scripts/bukov_capture_render_log.sh` does every mechanical part of a capture:
+it refuses to run on a dirty worktree, stamps the identity header, launches the
+packaged build, tees stdout, holds the capture window open, fails loudly if the
+app exits early or produced no telemetry, and finally validates the log through
+`bukov_render_frame_gate.py`.
+
+```sh
+scripts/bukov_capture_render_log.sh macOS /path/to/逃离布科夫.app
+scripts/bukov_capture_render_log.sh iOS <simulator-udid> com.leoyuan.escapefrombukov
+```
+
+One manual step remains by design: **an operator must enter a raid within the
+first minute and then leave the app alone**. `BukovFrameTelemetry` only emits
+while a raid is live with the hero alive and unpaused, so a capture left on the
+title or hub screen records nothing. Automating that entry would mean shipping
+an auto-play hook, which would change what this evidence means, so the harness
+stops short of it deliberately.
+
 The default per-run thresholds are:
 
 - uninterrupted duration at least 1,800 seconds;

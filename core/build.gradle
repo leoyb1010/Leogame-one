@@ -25,6 +25,7 @@ dependencies {
 def bukovTestProperties = [
         'bukov.seed.count',
         'bukov.firstRaidSeedCount',
+        'bukov.firstRaidWorldSeedCount',
         'bukov.save.iterations',
         'bukov.performance.seconds',
         'bukov.performance.e2e.seconds',

@@ -45,14 +45,34 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Ten deterministic, isolated production-World first-raid samples.
+ * Deterministic, isolated production-World first-raid samples.
  *
  * These are automated simulation facts, not human playtest duration claims.
  * The generated JSON preserves that distinction for downstream evidence gates.
  */
 public class BukovFirstRaidWorldSeedMatrixTest {
 
-	private static final int REQUIRED_SEEDS = 10;
+	/**
+	 * Ten samples keep the ordinary suite fast. The seed sweep gate raises this
+	 * via {@code -Dbukov.firstRaidWorldSeedCount} so a sealing run covers the
+	 * rare layouts a ten-sample matrix cannot reach.
+	 */
+	private static final int REQUIRED_SEEDS = requiredSeeds();
+
+	private static int requiredSeeds() {
+		String configured =
+				System.getProperty("bukov.firstRaidWorldSeedCount");
+		if (configured == null || configured.trim().isEmpty()) {
+			return 10;
+		}
+		int value = Integer.parseInt(configured.trim());
+		if (value < 1 || value > 10000) {
+			throw new IllegalArgumentException(
+					"bukov.firstRaidWorldSeedCount must be 1-10000, was "
+							+ value);
+		}
+		return value;
+	}
 	private static final String SAMPLE_TYPE =
 			"AUTOMATED_PRODUCTION_WORLD_ROUTE";
 	private static final String THEME_ID = "fog_depot";
@@ -116,7 +136,7 @@ public class BukovFirstRaidWorldSeedMatrixTest {
 	}
 
 	@Test
-	public void tenUniqueSeedsCompleteProductionWorldFirstRaid()
+	public void uniqueSeedsCompleteProductionWorldFirstRaid()
 			throws Exception {
 		Set<Long> uniqueSeeds = new HashSet<>();
 		List<SeedEvidence> evidence = new ArrayList<>();
