@@ -15,8 +15,6 @@ trap 'rm -rf "$temp_dir"' EXIT
 
 node "$script_dir/generate_bukov_item_visuals.mjs" \
   "$temp_dir/items.png" "$temp_dir/manifest.json" >/dev/null
-cmp "$atlas" "$temp_dir/items.png"
-cmp "$manifest" "$temp_dir/manifest.json"
 
 probe="$(ffprobe -v error -select_streams v:0 \
   -show_entries stream=width,height,pix_fmt -of csv=p=0 "$atlas")"
@@ -24,6 +22,19 @@ probe="$(ffprobe -v error -select_streams v:0 \
 
 ffmpeg -hide_banner -loglevel error -i "$atlas" \
   -f rawvideo -pix_fmt rgba "$temp_dir/items.rgba"
+ffmpeg -hide_banner -loglevel error -i "$temp_dir/items.png" \
+  -f rawvideo -pix_fmt rgba "$temp_dir/generated-items.rgba"
+
+# ponytail: PNG compression bytes vary between platform ffmpeg/zlib builds.
+# Compare decoded pixels and logical metadata; revisit only if the generator
+# gains a platform-independent encoder.
+cmp "$temp_dir/items.rgba" "$temp_dir/generated-items.rgba"
+jq -S 'del(.sha256)' "$manifest" > "$temp_dir/committed-manifest.json"
+jq -S 'del(.sha256)' "$temp_dir/manifest.json" \
+  > "$temp_dir/generated-manifest.json"
+cmp "$temp_dir/committed-manifest.json" "$temp_dir/generated-manifest.json"
+generated_sha="$(shasum -a 256 "$temp_dir/items.png" | awk '{print $1}')"
+[[ "$(jq -r '.sha256' "$temp_dir/manifest.json")" == "$generated_sha" ]]
 
 node --input-type=module - \
   "$temp_dir/items.rgba" "$manifest" "$mapping" "$provenance" \
