@@ -31,6 +31,16 @@ jobs:
             git fetch --no-tags --depth=1 origin "${release_sha}"
           fi
 
+      - name: Install Bukov gate tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes \
+            ffmpeg \
+            jq \
+            ripgrep
+
       - name: Verify Bukov gate tools
         shell: bash
         run: |
