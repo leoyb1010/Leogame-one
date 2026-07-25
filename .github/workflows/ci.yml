@@ -9,23 +9,171 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   java-build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+
+      - name: Fetch manifest source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_sha="$(
+            python3 -c 'import json; print(json.load(open("docs/bukov/RELEASE_MANIFEST.json", encoding="utf-8"))["product"]["releaseSourceCommit"])'
+          )"
+          if ! git cat-file -e "${release_sha}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "${release_sha}"
+          fi
+
+      - name: Verify Bukov gate tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tool in node python3 ffmpeg ffprobe jq rg file shasum; do
+            command -v "${tool}"
+          done
+
+      - name: Bukov static content gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/reports/bukov-ci/static
+
+          gates=(
+            scripts/bukov_ui_asset_gate.sh
+            scripts/bukov_audio_gate.sh
+            scripts/bukov_item_atlas_gate.sh
+            scripts/bukov_enemy_sprite_gate.sh
+            scripts/bukov_original_visual_gate.sh
+            scripts/bukov_theme_visual_gate.sh
+            scripts/bukov_legal_bundle_gate.sh
+            scripts/bukov_release_manifest_check.py
+          )
+
+          for gate in "${gates[@]}"; do
+            name="$(basename "${gate}")"
+            "${gate}" 2>&1 |
+              tee "build/reports/bukov-ci/static/${name}.log"
+          done
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-      - name: Test core and desktop
-        run: ./gradlew --no-daemon :core:test :desktop:test
+          cache-dependency-path: |
+            **/*.gradle
+            gradle/wrapper/gradle-wrapper.properties
+
+      - name: Test core, desktop and Bukov fast contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/reports/bukov-ci
+
+          cat > build/reports/bukov-ci/gate-config.txt <<'EOF'
+          bukov.seed.count=500
+          bukov.firstRaidSeedCount=500
+          bukov.save.iterations=100
+          EOF
+
+          ./gradlew \
+            --no-daemon \
+            --console=plain \
+            --stacktrace \
+            -Dbukov.seed.count=500 \
+            -Dbukov.firstRaidSeedCount=500 \
+            -Dbukov.save.iterations=100 \
+            :core:test \
+            :desktop:test \
+            2>&1 | tee build/reports/bukov-ci/gradle.log
+
+      - name: Verify Bukov JUnit contract coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          root = Path("core/build/test-results/test")
+          expected = {
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.levels."
+              "BukovFirstRaidCriticalPathSeedGateTest.xml": 1,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.levels."
+              "BukovSeedSweepTest.xml": 2,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.save."
+              "BukovSaveStressTest.xml": 1,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.save."
+              "BukovDiskSaveStressTest.xml": 2,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.raid."
+              "BukovFiveModeLifecycleTest.xml": 5,
+          }
+
+          result = {}
+          for filename, test_count in expected.items():
+              path = root / filename
+              if not path.is_file():
+                  raise SystemExit(f"missing required JUnit evidence: {path}")
+
+              suite = ET.parse(path).getroot()
+              actual = int(suite.attrib.get("tests", -1))
+              failures = int(suite.attrib.get("failures", 0))
+              errors = int(suite.attrib.get("errors", 0))
+              skipped = int(suite.attrib.get("skipped", 0))
+
+              if actual != test_count or failures or errors or skipped:
+                  raise SystemExit(
+                      f"invalid contract evidence: {filename}: "
+                      f"tests={actual}, failures={failures}, "
+                      f"errors={errors}, skipped={skipped}"
+                  )
+              result[filename] = actual
+
+          output = Path("build/reports/bukov-ci/contracts.json")
+          output.write_text(
+              json.dumps(result, indent=2, sort_keys=True),
+              encoding="utf-8",
+          )
+          print(
+              "Bukov required JUnit contracts verified:",
+              sum(result.values()),
+          )
+          PY
+
       - name: Validate internal release metadata
         run: python3 scripts/validate_release.py
       - name: Verify patch whitespace
         run: git diff --check
+
+      - name: Upload Bukov failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bukov-ci-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          compression-level: 6
+          path: |
+            build/reports/bukov-ci/**
+            core/build/test-results/test/**
+            core/build/reports/tests/test/**
+            desktop/build/test-results/test/**
+            desktop/build/reports/tests/test/**
+            docs/bukov/RELEASE_MANIFEST.json
+            artwork/licenses/ASSET_PROVENANCE.csv
+            core/src/main/assets/interfaces/bukov_ui_manifest.json
+            core/src/main/assets/environment/bukov/theme_visual_manifest.json
+            core/src/main/assets/sprites/bukov/enemy_animation_manifest.json
+            core/src/main/assets/sprites/bukov/items_interactions_manifest.json
+            core/src/main/assets/sprites/bukov_operator_manifest.json
 
   apple-java-build:
     runs-on: macos-14

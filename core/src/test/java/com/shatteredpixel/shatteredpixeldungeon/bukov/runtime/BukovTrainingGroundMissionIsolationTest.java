@@ -71,22 +71,23 @@ public class BukovTrainingGroundMissionIsolationTest {
 	}
 
 	@Test
-	public void sceneDoesNotCreateTrainingMissionContainers() throws Exception {
-		String scene = source(
+	public void productionDefinitionsDoNotCreateTrainingMissionContainers()
+			throws Exception {
+		String definitions = source(
 				"src/main/java/com/shatteredpixel/"
-						+ "shatteredpixeldungeon/scenes/GameScene.java");
+						+ "shatteredpixeldungeon/bukov/raid/"
+						+ "BukovRaidWorldDefinitions.java");
 		String containers = between(
-				scene,
-				"private List<BukovContainerDefinition> "
-						+ "bukovContainerDefinitions()",
-				"private void consumeBukovCombatFx");
+				definitions,
+				"public static List<BukovContainerDefinition> containers(",
+				"private BukovRaidWorldDefinitions()");
 
 		assertTrue(containers.contains(
 				"boolean missionEnabled = !level.raidMode().trainingGround()"));
 		assertTrue(containers.contains(
 				"FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals("));
 		int trainingReturn = containers.indexOf(
-				"if (!missionEnabled) {\n\t\t\t\t\treturn result;");
+				"if (!missionEnabled) {\n\t\t\treturn result;");
 		int archiveCreation = containers.indexOf(
 				"FirstRaidMission.ARCHIVE_CONTAINER_ID");
 		assertTrue(trainingReturn >= 0);

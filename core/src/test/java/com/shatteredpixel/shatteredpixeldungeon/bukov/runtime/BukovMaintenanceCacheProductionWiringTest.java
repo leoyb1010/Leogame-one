@@ -34,14 +34,15 @@ public class BukovMaintenanceCacheProductionWiringTest {
 	@Test
 	public void sideCacheIsAdditionalLockedContentOutsideMissionTopology()
 			throws IOException {
-		String scene = source(
+		String definitions = source(
 				"src/main/java/com/shatteredpixel/"
-						+ "shatteredpixeldungeon/scenes/GameScene.java");
-		assertTrue(scene.contains(
+						+ "shatteredpixeldungeon/bukov/raid/"
+						+ "BukovRaidWorldDefinitions.java");
+		assertTrue(definitions.contains(
 				".semanticCell(\"scrap_compactor\")"));
-		assertTrue(scene.contains(
+		assertTrue(definitions.contains(
 				".MAINTENANCE_CACHE_CONTAINER_ID"));
-		assertTrue(scene.contains(
+		assertTrue(definitions.contains(
 				"BukovFirstRaidLootTables.MAINTENANCE_CACHE"));
 
 		String level = source(

@@ -57,23 +57,20 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovUiSoundRouter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.AmmoRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.firearms.FirearmRegistry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.medical.RealtimeMedicalSystem;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.content.BukovFirstRaidLootTables;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatPresentation;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovCombatFxViewPool;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovDeathTransitionModel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovRaidLayout;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.mission.FirstRaidMission;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovFrameTelemetry;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovContainerDefinition;
-import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovExtractionStates;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHostRecoveryPolicy;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovProfile;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidCoordinator;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovGearRules;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRaidWorldDefinitions;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovRuntimeLoadoutAdapter;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.ExtractionState;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.RaidResult;
@@ -1179,9 +1176,15 @@ public class GameScene extends PixelScene {
 				bukovSaves = BukovSaveServices.platformDefault();
 				String raidId = currentBukovRaidId();
 				List<ExtractionState> extractionDefinitions =
-						bukovExtractionDefinitions();
+						BukovRaidWorldDefinitions.extractions(
+								Dungeon.level instanceof BukovLevel
+										? (BukovLevel)Dungeon.level
+										: null);
 				List<BukovContainerDefinition> containerDefinitions =
-						bukovContainerDefinitions();
+						BukovRaidWorldDefinitions.containers(
+								Dungeon.level instanceof BukovLevel
+										? (BukovLevel)Dungeon.level
+										: null);
 				boolean checkpointPresent =
 						bukovSaves.loadRaidCheckpoint() != null;
 				BukovHostRecoveryPolicy.Action hostRecovery =
@@ -1248,73 +1251,6 @@ public class GameScene extends PixelScene {
 				ShatteredPixelDungeon.switchScene(BukovHubScene.class);
 				return false;
 			}
-			}
-
-			private List<ExtractionState> bukovExtractionDefinitions() {
-				if (!(Dungeon.level instanceof BukovLevel)) {
-					return Collections.singletonList(ExtractionState.basic());
-				}
-				BukovRaidLayout layout = ((BukovLevel)Dungeon.level).raidLayout();
-				if (layout == null || layout.extractions.isEmpty()) {
-					return Collections.singletonList(ExtractionState.basic());
-				}
-				return BukovExtractionStates.fromLayout(layout);
-			}
-
-			private List<BukovContainerDefinition> bukovContainerDefinitions() {
-				if (!(Dungeon.level instanceof BukovLevel)) {
-					return Collections.emptyList();
-				}
-				BukovLevel level = (BukovLevel)Dungeon.level;
-				boolean missionEnabled = !level.raidMode().trainingGround();
-				List<BukovContainerDefinition> result = new ArrayList<>();
-				for (BukovRaidLayout.LootAnchor anchor :
-						level.lootAnchors()) {
-					if (anchor.cell < 0) continue;
-					if (!missionEnabled
-							&& FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
-									anchor.lootTableId)) {
-						continue;
-					}
-					result.add(new BukovContainerDefinition(
-							anchor.id,
-							anchor.cell,
-							anchor.lootTableId,
-							FirstRaidMission.HIGH_VALUE_LOOT_TABLE_ID.equals(
-									anchor.lootTableId) ? 3 : 2,
-							anchor.searchSeconds,
-							false));
-				}
-				int maintenanceCell = level.semanticCell("scrap_compactor");
-				if (maintenanceCell < 0) {
-					throw new IllegalStateException(
-							"Bukov raid is missing the optional maintenance cache anchor");
-				}
-				result.add(new BukovContainerDefinition(
-						BukovFirstRaidLootTables
-								.MAINTENANCE_CACHE_CONTAINER_ID,
-						maintenanceCell,
-						BukovFirstRaidLootTables.MAINTENANCE_CACHE,
-						3,
-						3.2f,
-						true));
-				if (!missionEnabled) {
-					return result;
-				}
-				BukovRaidLayout.MissionGate missionGate =
-						level.missionGate();
-				if (missionGate == null || missionGate.archiveCell < 0) {
-					throw new IllegalStateException(
-							"Bukov first-raid layout is missing Q01 archive anchor");
-				}
-				result.add(new BukovContainerDefinition(
-						FirstRaidMission.ARCHIVE_CONTAINER_ID,
-						missionGate.archiveCell,
-						FirstRaidMission.ARCHIVE_LOOT_TABLE_ID,
-						1,
-						1.4f,
-						false));
-				return result;
 			}
 
 			private void consumeBukovCombatFx(CombatFxEvent event) {
