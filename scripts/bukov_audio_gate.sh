@@ -7,6 +7,7 @@ fire_control="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldun
 assets="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/Assets.java"
 concurrency_budget="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SoundConcurrencyBudget.java"
 concurrent_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovConcurrentSoundPlayer.java"
+concurrency_runtime="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovSoundConcurrencyRuntime.java"
 ui_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovUiSoundPlayer.java"
 sample="$repo_root/SPD-classes/src/main/java/com/watabou/noosa/audio/Sample.java"
 sound_dir="$repo_root/core/src/main/assets/sounds/bukov"
@@ -256,7 +257,14 @@ for contract in \
   "$concurrent_player:stopInactivePlaybacks()" \
   "$concurrent_player:release(token);" \
   "$concurrent_player:MAX_LAYERS_PER_SOURCE = 3" \
+  "$concurrent_player:PRODUCTION_RUNTIME" \
+  "$concurrent_player:public static BukovConcurrentSoundPlayer production(" \
+  "$concurrency_runtime:SoundConcurrencyBudget budget" \
+  "$concurrency_runtime:stopEvictedPlaybackAcrossOwners()" \
+  "$concurrency_runtime:budget.clear(ownerId)" \
   "$ui_player:BukovConcurrentSoundPlayer sounds" \
+  "$ui_player:BukovConcurrentSoundPlayer.production(" \
+  "$world:BukovConcurrentSoundPlayer.production(" \
   "$ui_player:cue != Cue.FOCUS" \
   "$sample:public synchronized void stop( Object id, long playbackId )"
 do

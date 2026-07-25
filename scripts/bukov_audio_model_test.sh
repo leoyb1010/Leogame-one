@@ -26,6 +26,7 @@ java_cmd="${java_home:+$java_home/bin/}java"
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovAtmosphereController.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/SoundConcurrencyBudget.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovSoundPlaybackSink.java" \
+  "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovSoundConcurrencyRuntime.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovConcurrentSoundPlayer.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/FootstepCadence.java" \
   "$repo_dir/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/FootstepSurface.java" \

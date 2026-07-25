@@ -50,7 +50,7 @@ public class BukovFrameTelemetryWiringGuardTest {
 				"updateBukovFrameTelemetry();",
 				liveBlock);
 		int fixedSimulationUpdate = scene.indexOf(
-				"bukovRealtime.update(Game.elapsed);",
+				"BukovGameSceneFrameLoop.update(",
 				liveBlock);
 		assertTrue(liveBlock >= 0);
 		assertTrue(telemetryUpdate > liveBlock);

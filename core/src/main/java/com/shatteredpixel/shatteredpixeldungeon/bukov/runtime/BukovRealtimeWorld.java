@@ -212,7 +212,7 @@ public final class BukovRealtimeWorld
 	private final ExperienceContract audioContract =
 			new ExperienceContractRegistry().loadDefault();
 	private final BukovConcurrentSoundPlayer worldSounds =
-			new BukovConcurrentSoundPlayer(
+			BukovConcurrentSoundPlayer.production(
 					new BukovSamplePlaybackSink());
 	private final SpatialAudioModel.Result aiSoundSpatial =
 			new SpatialAudioModel.Result();

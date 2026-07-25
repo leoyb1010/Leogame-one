@@ -116,6 +116,150 @@ public class BukovConcurrentSoundPlayerTest {
 		assertEquals(0, sink.stopped.size());
 	}
 
+	@Test
+	public void sharedRuntimeCapsCombinedOwnersAtSixAndStopsVictim() {
+		BukovSoundConcurrencyRuntime runtime =
+				new BukovSoundConcurrencyRuntime();
+		FakeSink worldSink = new FakeSink();
+		FakeSink uiSink = new FakeSink();
+		BukovConcurrentSoundPlayer world =
+				new BukovConcurrentSoundPlayer(worldSink, runtime);
+		BukovConcurrentSoundPlayer ui =
+				new BukovConcurrentSoundPlayer(uiSink, runtime);
+		for (int index = 0;
+				index < SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS;
+				index++) {
+			play(
+					world,
+					"world-" + index,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f);
+		}
+
+		long confirm = play(
+				ui,
+				"ui-confirm",
+				SoundConcurrencyBudget.Priority.HIGH,
+				true,
+				1f);
+
+		assertTrue(confirm > 0L);
+		assertEquals(
+				SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS,
+				world.activeCount(AudioChannel.SFX));
+		assertEquals(
+				SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS,
+				ui.activeCount(AudioChannel.SFX));
+		assertEquals(1, worldSink.stopped.size());
+		assertEquals("world-0", worldSink.stopped.get(0));
+		assertEquals(0, uiSink.stopped.size());
+	}
+
+	@Test
+	public void sharedRuntimeStopAllOnlyStopsCallingOwner() {
+		BukovSoundConcurrencyRuntime runtime =
+				new BukovSoundConcurrencyRuntime();
+		FakeSink worldSink = new FakeSink();
+		FakeSink uiSink = new FakeSink();
+		BukovConcurrentSoundPlayer world =
+				new BukovConcurrentSoundPlayer(worldSink, runtime);
+		BukovConcurrentSoundPlayer ui =
+				new BukovConcurrentSoundPlayer(uiSink, runtime);
+		play(
+				world,
+				"enemy-shot",
+				SoundConcurrencyBudget.Priority.NORMAL,
+				false,
+				1f);
+		play(
+				ui,
+				"ui-confirm",
+				SoundConcurrencyBudget.Priority.HIGH,
+				true,
+				1f);
+
+		world.stopAll();
+
+		assertEquals(1, worldSink.stopped.size());
+		assertEquals(0, uiSink.stopped.size());
+		assertEquals(1, ui.activeCount(AudioChannel.SFX));
+		ui.stopAll();
+		assertEquals(1, uiSink.stopped.size());
+	}
+
+	@Test
+	public void sharedRuntimeAdvancesEachOwnerClockOnlyOnce() {
+		BukovSoundConcurrencyRuntime runtime =
+				new BukovSoundConcurrencyRuntime();
+		FakeSink worldSink = new FakeSink();
+		FakeSink uiSink = new FakeSink();
+		BukovConcurrentSoundPlayer world =
+				new BukovConcurrentSoundPlayer(worldSink, runtime);
+		BukovConcurrentSoundPlayer ui =
+				new BukovConcurrentSoundPlayer(uiSink, runtime);
+		play(
+				world,
+				"world",
+				SoundConcurrencyBudget.Priority.NORMAL,
+				false,
+				0.1f);
+		play(
+				ui,
+				"ui",
+				SoundConcurrencyBudget.Priority.NORMAL,
+				false,
+				0.1f);
+
+		world.update(0.06f);
+		ui.update(0.06f);
+		assertEquals(2, world.activeCount(AudioChannel.SFX));
+
+		world.update(0.05f);
+		assertEquals(1, ui.activeCount(AudioChannel.SFX));
+		assertEquals(1, worldSink.stopped.size());
+		assertEquals(0, uiSink.stopped.size());
+
+		ui.update(0.05f);
+		assertEquals(0, ui.activeCount(AudioChannel.SFX));
+		assertEquals(1, uiSink.stopped.size());
+	}
+
+	@Test
+	public void publicConstructorKeepsTestPlayersIsolated() {
+		FakeSink firstSink = new FakeSink();
+		FakeSink secondSink = new FakeSink();
+		BukovConcurrentSoundPlayer first =
+				new BukovConcurrentSoundPlayer(firstSink);
+		BukovConcurrentSoundPlayer second =
+				new BukovConcurrentSoundPlayer(secondSink);
+		for (int index = 0;
+				index < SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS;
+				index++) {
+			play(
+					first,
+					"first-" + index,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f);
+			play(
+					second,
+					"second-" + index,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f);
+		}
+
+		assertEquals(
+				SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS,
+				first.activeCount(AudioChannel.SFX));
+		assertEquals(
+				SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS,
+				second.activeCount(AudioChannel.SFX));
+		assertEquals(0, firstSink.stopped.size());
+		assertEquals(0, secondSink.stopped.size());
+	}
+
 	private static long play(
 			BukovConcurrentSoundPlayer player,
 			String asset,

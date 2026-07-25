@@ -28,7 +28,8 @@ def bukovTestProperties = [
         'bukov.performance.seconds',
         'bukov.performance.e2e.seconds',
         'bukov.performance.e2e.maxP95Ms',
-        'bukov.performance.e2e.maxAllocatedBytesPerFrame'
+        'bukov.performance.e2e.maxAllocatedBytesPerFrame',
+        'bukov.gamescene.stress.frames'
 ]
 
 tasks.withType(Test).configureEach {

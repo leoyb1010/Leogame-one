@@ -23,7 +23,7 @@ public final class BukovUiSoundPlayer {
 	private static final float ERROR_TIMEOUT_SECONDS = 0.18f;
 
 	private final BukovConcurrentSoundPlayer sounds =
-			new BukovConcurrentSoundPlayer(
+			BukovConcurrentSoundPlayer.production(
 					new BukovSamplePlaybackSink());
 	private float focusCooldown;
 

@@ -23,7 +23,7 @@ source_branch=""
 started_utc=""
 lock_held=false
 evidence_created=false
-planned_step_count=33
+planned_step_count=34
 
 usage() {
   cat <<'USAGE'
@@ -416,24 +416,27 @@ execute_sequence() {
   run_step "28-performance-e2e-1800" \
     "108,000-frame simulated 30-enemy/200-projectile CPU regression" \
     "$script_dir/bukov_performance_e2e.sh" 1800
+  run_step "29-gamescene-production-stress-108000" \
+    "108,000-frame headless production GameScene handoff stress (no GPU claim)" \
+    "$script_dir/bukov_gamescene_stress.sh" 108000
 
-  run_step "29-build-macos" \
+  run_step "30-build-macos" \
     "Build the macOS jpackage application image" \
     "$gradle" :desktop:jpackageImage --rerun-tasks --no-daemon
-  run_step "30-build-ios-simulator" \
+  run_step "31-build-ios-simulator" \
     "Build and launch the iOS Simulator application" \
     "$gradle" :ios:launchIPhoneSimulator \
       "-Probovm.device.name=$ios_device" --rerun-tasks --no-daemon
-  run_step "31-packaged-legal" \
+  run_step "32-packaged-legal" \
     "Verify legal payloads in both built application bundles" \
     /bin/sh "$script_dir/bukov_packaged_legal_gate.sh" "$mac_app" "$ios_app"
-  run_step "32-packaged-provenance" \
+  run_step "33-packaged-provenance" \
     "Prove both Apple bundles are clean builds of the sealed source commit" \
     "$script_dir/bukov_package_personal_build.sh" \
       --output "$evidence_dir" \
       --version "gate-${source_commit[1,12]}" \
       --dry-run
-  run_step "33-source-integrity" \
+  run_step "34-source-integrity" \
     "Verify final HEAD and clean worktree still match the sealed source" \
     /bin/zsh -c \
       '[[ "$(git -C "$1" rev-parse HEAD)" == "$2" ]] && [[ -z "$(git -C "$1" status --porcelain --untracked-files=all)" ]]' \

@@ -126,6 +126,8 @@ jobs:
               "BukovDiskSaveStressTest.xml": 2,
               "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.save."
               "BukovProcessCrashRecoveryTest.xml": 1,
+              "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.performance."
+              "BukovGameSceneProductionStressTest.xml": 2,
               "TEST-com.shatteredpixel.shatteredpixeldungeon.bukov.raid."
               "BukovFiveModeLifecycleTest.xml": 5,
           }

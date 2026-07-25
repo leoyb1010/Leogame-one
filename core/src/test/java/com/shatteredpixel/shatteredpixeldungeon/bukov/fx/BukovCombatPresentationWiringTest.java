@@ -47,12 +47,15 @@ public class BukovCombatPresentationWiringTest {
 	public void sceneDrainsCosmeticEventsAfterSimulation() throws Exception {
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
+		String frameLoop = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/performance/BukovGameSceneFrameLoop.java");
 		String world = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/runtime/BukovRealtimeWorld.java");
 		String presentation = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/BukovCombatPresentation.java");
 
-		assertTrue(scene.contains("bukovRealtime.update(Game.elapsed);"));
+		assertTrue(scene.contains("BukovGameSceneFrameLoop.update("));
+		assertTrue(frameLoop.contains("realtime.update(renderDelta);"));
 		assertTrue(scene.contains("drainCombatPresentation"));
 		assertTrue(world.contains(
 				"CombatPresentationEvent.Type.PLAYER_FIRE"));

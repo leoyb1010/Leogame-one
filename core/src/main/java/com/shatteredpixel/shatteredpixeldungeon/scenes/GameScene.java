@@ -63,6 +63,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.BukovDeathTransitionMod
 import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFxEvent;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.BukovLevel;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovFrameTelemetry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.performance.BukovGameSceneFrameLoop;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovContainerDefinition;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovDeploymentHandoff;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.raid.BukovHeapLootAdapter;
@@ -1646,7 +1647,8 @@ public class GameScene extends PixelScene {
 
 			if (BukovMode.active() && bukovRealtime != null) {
 				updateBukovFrameTelemetry();
-				bukovRealtime.update(Game.elapsed);
+				BukovGameSceneFrameLoop.update(
+						bukovRealtime, Game.elapsed);
 				/*
 				 * RealtimeWorld owns the smooth camera, while this final
 				 * presentation guard keeps that camera inside the authored
@@ -1656,7 +1658,8 @@ public class GameScene extends PixelScene {
 				 */
 				enforceBukovViewport();
 				updateBukovAudio(Game.elapsed);
-				bukovRealtime.drainCombatFx(bukovFxConsumer);
+				BukovGameSceneFrameLoop.drainCombatFx(
+						bukovRealtime, bukovFxConsumer);
 				if (bukovCombatPresentation != null) {
 					bukovCombatPresentation.update(Game.elapsed);
 					bukovRealtime.drainCombatPresentation(

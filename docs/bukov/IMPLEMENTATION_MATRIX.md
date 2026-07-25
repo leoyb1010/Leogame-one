@@ -14,9 +14,10 @@
 六帧阶段过渡及 200 ms 表现慢动作、枪械热量/污损/耐久运行态、按键绑定
 入口、移动端 HUD/镜头/触控反馈修复、玩家射击空间桶索引，以及硬地/水面/
 金属三类脚步声路由和声学差异门禁；同时补入敌人巡逻/搜索闭环、UI 音效
-并发预算、World 三层枪声与脚步调度、进程级崩溃恢复，以及真实路线/交火/
-承伤/结算的本地平衡采集和仓库窗口的令牌化非阻塞入场动效。完整变更和未完成边界见
-`docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
+并发预算、World 三层枪声与脚步调度、进程级崩溃恢复、真实路线/交火/
+承伤/结算的本地平衡采集、仓库窗口的令牌化非阻塞入场动效、精确配装 UID
+贯穿 checkpoint/结算的玩家旅程，以及 108,000 帧生产 `GameScene` 接线压力
+门禁。完整变更和未完成边界见 `docs/bukov/ALPHA32_CHANGELOG_ZH.md`。
 
 本节在生成干净提交、同 SHA Final Gate、双端包和人工玩家路线证据前，不覆盖
 下方 Alpha 31 的封存身份，也不宣称 Alpha 32 已发布。
@@ -96,6 +97,7 @@ Alpha 31 已经把此前“开发 HEAD”和“安装候选”收敛到同一源
 | HUD、触控与 UI 令牌 | `BukovRaidHud.java`、`BukovTouchControls.java`、`WndBukovHub.java`、`ui_tokens.json` | `bukov/ui/*Test.java` |
 | 表现、音频与体验合同 | `bukov/fx/`、`bukov/audio/`、`experience_contract.json` | `bukov/fx/*Test.java`、`bukov/audio/*Test.java` |
 | 玩家旅程门禁 | `BukovRaidSession`、`BukovRealtimeWorld`、部署/结算场景 | `BukovPlayerJourneyAcceptanceTest`、CI |
+| 生产场景压力接线 | `GameScene.java`、`BukovGameSceneFrameLoop.java`、实时系统/空间索引/命中/表现对象池 | `BukovGameSceneProductionStressTest`、`scripts/bukov_gamescene_stress.sh`；无头 CPU 证据，不代表 GPU 帧率 |
 
 ## 最终统一验收命令
 

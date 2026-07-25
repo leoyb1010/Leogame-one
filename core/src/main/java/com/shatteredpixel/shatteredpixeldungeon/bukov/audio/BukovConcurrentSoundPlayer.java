@@ -13,6 +13,8 @@ public final class BukovConcurrentSoundPlayer {
 			AudioChannel.values().length
 					* SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS
 					* MAX_LAYERS_PER_SOURCE;
+	private static final BukovSoundConcurrencyRuntime PRODUCTION_RUNTIME =
+			new BukovSoundConcurrencyRuntime();
 
 	private static final class Playback {
 
@@ -27,20 +29,41 @@ public final class BukovConcurrentSoundPlayer {
 		}
 	}
 
-	private final SoundConcurrencyBudget budget =
-			new SoundConcurrencyBudget();
+	private final BukovSoundConcurrencyRuntime runtime;
+	private final long ownerId;
 	private final BukovSoundPlaybackSink sink;
 	private final Playback[] playbacks =
 			new Playback[MAX_TRACKED_PLAYBACKS];
 
+	/**
+	 * Creates an isolated player for tests and non-production tools.
+	 * Production call sites must use {@link #production(BukovSoundPlaybackSink)}
+	 * so every producer shares the same six-voice-per-bus contract.
+	 */
 	public BukovConcurrentSoundPlayer(BukovSoundPlaybackSink sink) {
+		this(sink, new BukovSoundConcurrencyRuntime());
+	}
+
+	BukovConcurrentSoundPlayer(
+			BukovSoundPlaybackSink sink,
+			BukovSoundConcurrencyRuntime runtime) {
 		if (sink == null) {
 			throw new IllegalArgumentException("sink is required");
 		}
+		if (runtime == null) {
+			throw new IllegalArgumentException("runtime is required");
+		}
 		this.sink = sink;
+		this.runtime = runtime;
+		ownerId = runtime.newOwnerId();
 		for (int index = 0; index < playbacks.length; index++) {
 			playbacks[index] = new Playback();
 		}
+	}
+
+	public static BukovConcurrentSoundPlayer production(
+			BukovSoundPlaybackSink sink) {
+		return new BukovConcurrentSoundPlayer(sink, PRODUCTION_RUNTIME);
 	}
 
 	public long play(
@@ -83,12 +106,16 @@ public final class BukovConcurrentSoundPlayer {
 			SoundConcurrencyBudget.Priority priority,
 			boolean protectedSource,
 			float timeoutSeconds) {
-		SoundConcurrencyBudget.Admission admission = budget.admit(
-				channel, priority, protectedSource, timeoutSeconds);
+		SoundConcurrencyBudget.Admission admission = runtime.admit(
+				this,
+				ownerId,
+				channel,
+				priority,
+				protectedSource,
+				timeoutSeconds);
 		if (!admission.admitted()) {
 			return SoundConcurrencyBudget.NO_TOKEN;
 		}
-		stopInactivePlaybacks();
 		return admission.token();
 	}
 
@@ -98,7 +125,7 @@ public final class BukovConcurrentSoundPlayer {
 			float leftVolume,
 			float rightVolume,
 			float pitch) {
-		if (!budget.active(token)) return false;
+		if (!runtime.active(ownerId, token)) return false;
 		if (asset == null || asset.trim().isEmpty()) {
 			throw new IllegalArgumentException("asset is required");
 		}
@@ -127,13 +154,15 @@ public final class BukovConcurrentSoundPlayer {
 	}
 
 	public void update(float deltaSeconds) {
-		budget.update(deltaSeconds);
+		runtime.update(ownerId, deltaSeconds);
 		stopInactivePlaybacks();
+		runtime.ownerBecameIdle(this, ownerId);
 	}
 
 	public boolean release(long token) {
-		boolean released = budget.release(token);
+		boolean released = runtime.release(ownerId, token);
 		stopInactivePlaybacks();
+		runtime.ownerBecameIdle(this, ownerId);
 		return released;
 	}
 
@@ -143,22 +172,28 @@ public final class BukovConcurrentSoundPlayer {
 	 * unbounded sounds must use {@link #release(long)} or {@link #stopAll()}.
 	 */
 	public boolean detach(long token) {
-		if (!budget.release(token)) return false;
+		if (!runtime.release(ownerId, token)) return false;
 		for (Playback playback : playbacks) {
 			if (playback.token == token) {
 				playback.clear();
 			}
 		}
+		runtime.ownerBecameIdle(this, ownerId);
 		return true;
 	}
 
 	public int activeCount(AudioChannel channel) {
-		return budget.activeCount(channel);
+		return runtime.activeCount(channel);
 	}
 
 	public void stopAll() {
-		budget.clear();
+		runtime.clear(ownerId);
 		stopInactivePlaybacks();
+		runtime.ownerBecameIdle(this, ownerId);
+	}
+
+	long ownerId() {
+		return ownerId;
 	}
 
 	private Playback freePlayback() {
@@ -176,10 +211,10 @@ public final class BukovConcurrentSoundPlayer {
 		return count;
 	}
 
-	private void stopInactivePlaybacks() {
+	void stopInactivePlaybacks() {
 		for (Playback playback : playbacks) {
 			if (playback.token == 0L
-					|| budget.active(playback.token)) {
+					|| runtime.active(ownerId, playback.token)) {
 				continue;
 			}
 			sink.stop(playback.asset, playback.playbackId);

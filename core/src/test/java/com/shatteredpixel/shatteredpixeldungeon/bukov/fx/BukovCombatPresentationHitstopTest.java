@@ -130,6 +130,8 @@ public class BukovCombatPresentationHitstopTest {
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/BukovCombatPresentation.java");
 		String scene = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/scenes/GameScene.java");
+		String frameLoop = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/performance/BukovGameSceneFrameLoop.java");
 
 		assertFalse(presentation.contains("BukovRealtimeWorld"));
 		assertFalse(presentation.contains("RealtimeRaidSystem"));
@@ -137,7 +139,8 @@ public class BukovCombatPresentationHitstopTest {
 		assertFalse(presentation.contains("inputFrame"));
 		assertFalse(presentation.contains(".damage("));
 		assertTrue(presentation.contains("sprite.paused = true"));
-		assertTrue(scene.contains("bukovRealtime.update(Game.elapsed);"));
+		assertTrue(scene.contains("BukovGameSceneFrameLoop.update("));
+		assertTrue(frameLoop.contains("realtime.update(renderDelta);"));
 		assertTrue(scene.contains(
 				"bukovCombatPresentation.update(Game.elapsed);"));
 		assertTrue(scene.contains("bukovCombatPresentation.dispose();"));

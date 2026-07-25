@@ -3,6 +3,9 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.runtime;
 import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.actors.hero.Hero;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.BukovMode;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.BukovHostMob;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.EnemyArchetypeRegistry;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.ai.FirstRaidEnemySpawnDirector;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.FireControl;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.HitscanResolver;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.combat.RealtimeDamage;
@@ -34,7 +37,9 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubController;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.ui.BukovHubViewModel;
 import com.shatteredpixel.shatteredpixeldungeon.items.Heap;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Level;
+import com.badlogic.gdx.Preferences;
 import com.watabou.noosa.Game;
+import com.watabou.utils.GameSettings;
 
 import org.junit.After;
 import org.junit.Before;
@@ -46,8 +51,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -85,6 +92,7 @@ public class BukovPlayerJourneyAcceptanceTest {
 		previousMode = BukovMode.raidMode();
 		previousMaps = new ArrayList<>(BukovMode.unlockedRaidThemes());
 		previousSelectedMap = BukovMode.selectedRaidTheme();
+		GameSettings.set(new MemoryPreferences());
 		if (Game.version == null) Game.version = "test";
 	}
 
@@ -100,6 +108,7 @@ public class BukovPlayerJourneyAcceptanceTest {
 		BukovMode.prepareRaidMode(previousMode);
 		BukovMode.prepareUnlockedMaps(previousMaps);
 		BukovMode.prepareSelectedMap(previousSelectedMap);
+		GameSettings.set(null);
 	}
 
 	@Test
@@ -114,6 +123,9 @@ public class BukovPlayerJourneyAcceptanceTest {
 		assertFalse(hub.viewModel().canDeploy);
 		hub.prepareAndConfirmDeployment();
 		assertTrue(hub.viewModel().canDeploy);
+		Set<String> deployedUids = new HashSet<>(
+				saves.loadProfile().loadout().selectedUids());
+		assertFalse(deployedUids.isEmpty());
 
 		long seed = 0xB0C0F001L;
 		BukovLevel level = buildLevel(seed);
@@ -126,6 +138,15 @@ public class BukovPlayerJourneyAcceptanceTest {
 		assertEquals(0, saves.loadProfile().loadout().distinctItemCount());
 		assertTrue(hasDefinitionPrefix(raid, "firearm:"));
 		assertTrue(hasDefinitionPrefix(raid, "ammo:"));
+		for (String deployedUid : deployedUids) {
+			assertFalse(saves.loadProfile().stash().contains(deployedUid));
+			assertTrue(raid.loot().contains(deployedUid));
+		}
+		raid.setExtractionCondition(
+				FirstRaidMission.CONDITIONAL_EXTRACTION_ID,
+				true);
+		assertFalse(raid.beginExtraction(
+				FirstRaidMission.CONDITIONAL_EXTRACTION_ID));
 
 		assertPlayerShotKillsOnGeneratedMap(raid, level);
 		assertEquals(1, raid.session().killCount());
@@ -155,6 +176,22 @@ public class BukovPlayerJourneyAcceptanceTest {
 		MissionGateTerrain.apply(level, gate.gateCells, true, null);
 		assertGateBlocked(collision, level.width(), gate.gateCells, false);
 
+		raid.saveCheckpoint();
+		raid = BukovRaidCoordinator.resume(saves);
+		assertNotNull(raid);
+		assertTrue(raid.eventCompleted(FirstRaidMission.EVENT_ID));
+		assertEquals(
+				FirstRaidMission.Stage.SECURE_HIGH_VALUE_CACHE,
+				raid.firstRaidStage());
+		assertTrue(raid.loot().contains(archiveUid));
+		assertTrue(raid.extraction(
+				FirstRaidMission.CONDITIONAL_EXTRACTION_ID)
+				.conditionMet());
+		for (String deployedUid : deployedUids) {
+			assertTrue(raid.loot().contains(deployedUid));
+		}
+		loot = new BukovHeapLootAdapter(raid);
+
 		BukovRaidCoordinator.ContainerSnapshot highValue =
 				containerForTable(
 						raid,
@@ -169,9 +206,6 @@ public class BukovPlayerJourneyAcceptanceTest {
 				FirstRaidMission.Stage.EXTRACT,
 				raid.firstRaidStage());
 
-		raid.setExtractionCondition(
-				FirstRaidMission.CONDITIONAL_EXTRACTION_ID,
-				true);
 		completeExtraction(
 				raid,
 				FirstRaidMission.CONDITIONAL_EXTRACTION_ID);
@@ -181,9 +215,13 @@ public class BukovPlayerJourneyAcceptanceTest {
 		assertTrue(result.missionCompleted());
 		assertEquals(1, result.kills());
 		assertTrue(result.transferredUids().contains(archiveUid));
+		assertTrue(result.transferredUids().containsAll(deployedUids));
 		assertNull(saves.loadRaidCheckpoint());
 		assertTrue(saves.loadProfile().completedContracts().contains(
 				FirstRaidMission.EVENT_ID));
+		for (String deployedUid : deployedUids) {
+			assertTrue(saves.loadProfile().stash().contains(deployedUid));
+		}
 
 		BukovHubViewModel returned =
 				new BukovHubController(saves).viewModel();
@@ -459,6 +497,13 @@ public class BukovPlayerJourneyAcceptanceTest {
 		FirearmDefinition definition = firearm.definition(firearms);
 		int initialMagazine = firearm.magazineAmmo();
 		assertTrue(initialMagazine > 0);
+		EnemyArchetypeRegistry enemies = new EnemyArchetypeRegistry();
+		enemies.loadJson(readContent("enemies.json"));
+		BukovHostMob targetMob = new BukovHostMob().configure(
+				enemies.require(
+						FirstRaidEnemySpawnDirector.FIRST_GUNNER));
+		int initialTargetHealth = targetMob.HP;
+		assertNotNull(targetMob.spriteClass);
 
 		int[] adjacent = adjacentPassableCells(level);
 		RealtimeBody shooter = new RealtimeBody(
@@ -468,9 +513,10 @@ public class BukovPlayerJourneyAcceptanceTest {
 		CombatSink sink = new CombatSink(
 				new LevelCollisionMap(level),
 				shooter,
-				target);
+				target,
+				targetMob);
 		FireControl control = new FireControl();
-		while (sink.targetHealth > 0 && firearm.magazineAmmo() > 0) {
+		while (targetMob.HP > 0 && firearm.magazineAmmo() > 0) {
 			control.update(
 					definition.secondsPerShot(),
 					false,
@@ -489,8 +535,8 @@ public class BukovPlayerJourneyAcceptanceTest {
 					sink);
 		}
 
-		assertTrue(sink.targetHealth < CombatSink.INITIAL_HEALTH);
-		assertTrue(sink.targetHealth <= 0);
+		assertTrue(targetMob.HP < initialTargetHealth);
+		assertTrue(targetMob.HP <= 0);
 		assertTrue(sink.tracerEvents > 0);
 		assertTrue(sink.nonZeroTracer);
 		assertTrue(firearm.magazineAmmo() < initialMagazine);
@@ -561,16 +607,14 @@ public class BukovPlayerJourneyAcceptanceTest {
 	private static final class CombatSink
 			implements FireControl.Sink {
 
-		private static final int INITIAL_HEALTH = 80;
-
 		private final CollisionMap collision;
 		private final RealtimeBody shooter;
 		private final RealtimeBody target;
+		private final BukovHostMob targetMob;
 		private final HitscanResolver.Hit hit =
 				new HitscanResolver.Hit();
 		private final CombatFxEventPool fx =
 				new CombatFxEventPool(16);
-		private int targetHealth = INITIAL_HEALTH;
 		private int sequence;
 		private int tracerEvents;
 		private boolean nonZeroTracer;
@@ -578,10 +622,12 @@ public class BukovPlayerJourneyAcceptanceTest {
 		private CombatSink(
 				CollisionMap collision,
 				RealtimeBody shooter,
-				RealtimeBody target) {
+				RealtimeBody target,
+				BukovHostMob targetMob) {
 			this.collision = collision;
 			this.shooter = shooter;
 			this.target = target;
+			this.targetMob = targetMob;
 		}
 
 		@Override
@@ -629,8 +675,8 @@ public class BukovPlayerJourneyAcceptanceTest {
 						definition.penetration,
 						RealtimeDamage.HitZone.CORE,
 						null);
-				targetHealth -= Math.max(1, Math.round(damage));
-				if (targetHealth <= 0) target.active = false;
+				targetMob.HP -= Math.max(1, Math.round(damage));
+				if (targetMob.HP <= 0) target.active = false;
 			}
 		}
 
@@ -659,6 +705,138 @@ public class BukovPlayerJourneyAcceptanceTest {
 
 		@Override
 		public void reloadFinished() {
+		}
+	}
+
+	/** Minimal deterministic preference store for generated-level headless runs. */
+	private static final class MemoryPreferences implements Preferences {
+
+		private final Map<String, Object> values = new HashMap<>();
+
+		@Override
+		public Preferences putBoolean(String key, boolean value) {
+			values.put(key, value);
+			return this;
+		}
+
+		@Override
+		public Preferences putInteger(String key, int value) {
+			values.put(key, value);
+			return this;
+		}
+
+		@Override
+		public Preferences putLong(String key, long value) {
+			values.put(key, value);
+			return this;
+		}
+
+		@Override
+		public Preferences putFloat(String key, float value) {
+			values.put(key, value);
+			return this;
+		}
+
+		@Override
+		public Preferences putString(String key, String value) {
+			values.put(key, value);
+			return this;
+		}
+
+		@Override
+		public Preferences put(Map<String, ?> additions) {
+			values.putAll(additions);
+			return this;
+		}
+
+		@Override
+		public boolean getBoolean(String key) {
+			return getBoolean(key, false);
+		}
+
+		@Override
+		public int getInteger(String key) {
+			return getInteger(key, 0);
+		}
+
+		@Override
+		public long getLong(String key) {
+			return getLong(key, 0L);
+		}
+
+		@Override
+		public float getFloat(String key) {
+			return getFloat(key, 0f);
+		}
+
+		@Override
+		public String getString(String key) {
+			return getString(key, "");
+		}
+
+		@Override
+		public boolean getBoolean(String key, boolean defaultValue) {
+			Object value = values.get(key);
+			return value instanceof Boolean
+					? (Boolean) value
+					: defaultValue;
+		}
+
+		@Override
+		public int getInteger(String key, int defaultValue) {
+			Object value = values.get(key);
+			return value instanceof Number
+					? ((Number) value).intValue()
+					: defaultValue;
+		}
+
+		@Override
+		public long getLong(String key, long defaultValue) {
+			Object value = values.get(key);
+			return value instanceof Number
+					? ((Number) value).longValue()
+					: defaultValue;
+		}
+
+		@Override
+		public float getFloat(String key, float defaultValue) {
+			Object value = values.get(key);
+			return value instanceof Number
+					? ((Number) value).floatValue()
+					: defaultValue;
+		}
+
+		@Override
+		public String getString(String key, String defaultValue) {
+			Object value = values.get(key);
+			return value instanceof String
+					? (String) value
+					: defaultValue;
+		}
+
+		@Override
+		public Map<String, ?> get() {
+			return Collections.unmodifiableMap(
+					new HashMap<>(values));
+		}
+
+		@Override
+		public boolean contains(String key) {
+			return values.containsKey(key);
+		}
+
+		@Override
+		public void clear() {
+			values.clear();
+		}
+
+		@Override
+		public void remove(String key) {
+			values.remove(key);
+		}
+
+		@Override
+		public void flush() {
 		}
 	}
 }

@@ -51,6 +51,7 @@ public final class SoundConcurrencyBudget {
 	private static final class Voice {
 
 		private long token;
+		private long ownerId;
 		private long order;
 		private Priority priority;
 		private boolean protectedSource;
@@ -62,6 +63,7 @@ public final class SoundConcurrencyBudget {
 
 		private void clear() {
 			token = 0L;
+			ownerId = 0L;
 			order = 0L;
 			priority = null;
 			protectedSource = false;
@@ -87,6 +89,24 @@ public final class SoundConcurrencyBudget {
 			Priority priority,
 			boolean protectedSource,
 			float timeoutSeconds) {
+		return admit(
+				0L,
+				channel,
+				priority,
+				protectedSource,
+				timeoutSeconds);
+	}
+
+	Admission admit(
+			long ownerId,
+			AudioChannel channel,
+			Priority priority,
+			boolean protectedSource,
+			float timeoutSeconds) {
+		if (ownerId < 0L) {
+			throw new IllegalArgumentException(
+					"ownerId must be non-negative");
+		}
 		if (channel == null) {
 			throw new IllegalArgumentException("channel is required");
 		}
@@ -113,6 +133,7 @@ public final class SoundConcurrencyBudget {
 
 		Voice voice = channelVoices[target];
 		voice.token = nextToken();
+		voice.ownerId = ownerId;
 		voice.order = nextOrder++;
 		voice.priority = priority;
 		voice.protectedSource = protectedSource;
@@ -121,6 +142,14 @@ public final class SoundConcurrencyBudget {
 	}
 
 	public void update(float deltaSeconds) {
+		update(0L, deltaSeconds);
+	}
+
+	void update(long ownerId, float deltaSeconds) {
+		if (ownerId < 0L) {
+			throw new IllegalArgumentException(
+					"ownerId must be non-negative");
+		}
 		if (!BukovNumbers.isFinite(deltaSeconds) || deltaSeconds < 0f) {
 			throw new IllegalArgumentException(
 					"deltaSeconds must be finite and non-negative");
@@ -128,7 +157,7 @@ public final class SoundConcurrencyBudget {
 		if (deltaSeconds == 0f) return;
 		for (Voice[] channelVoices : voices) {
 			for (Voice voice : channelVoices) {
-				if (!voice.active()) continue;
+				if (!voice.active() || voice.ownerId != ownerId) continue;
 				voice.remainingSeconds -= deltaSeconds;
 				if (voice.remainingSeconds <= 0f) {
 					voice.clear();
@@ -138,10 +167,14 @@ public final class SoundConcurrencyBudget {
 	}
 
 	public boolean release(long token) {
+		return release(0L, token);
+	}
+
+	boolean release(long ownerId, long token) {
 		if (token <= 0L) return false;
 		for (Voice[] channelVoices : voices) {
 			for (Voice voice : channelVoices) {
-				if (voice.token == token) {
+				if (voice.token == token && voice.ownerId == ownerId) {
 					voice.clear();
 					return true;
 				}
@@ -151,10 +184,16 @@ public final class SoundConcurrencyBudget {
 	}
 
 	public boolean active(long token) {
+		return active(0L, token);
+	}
+
+	boolean active(long ownerId, long token) {
 		if (token <= 0L) return false;
 		for (Voice[] channelVoices : voices) {
 			for (Voice voice : channelVoices) {
-				if (voice.token == token) return true;
+				if (voice.token == token && voice.ownerId == ownerId) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -169,6 +208,24 @@ public final class SoundConcurrencyBudget {
 			if (voice.active()) count++;
 		}
 		return count;
+	}
+
+	int activeCount(long ownerId) {
+		int count = 0;
+		for (Voice[] channelVoices : voices) {
+			for (Voice voice : channelVoices) {
+				if (voice.active() && voice.ownerId == ownerId) count++;
+			}
+		}
+		return count;
+	}
+
+	void clear(long ownerId) {
+		for (Voice[] channelVoices : voices) {
+			for (Voice voice : channelVoices) {
+				if (voice.ownerId == ownerId) voice.clear();
+			}
+		}
 	}
 
 	public void clear() {

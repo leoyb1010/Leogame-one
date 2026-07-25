@@ -227,6 +227,50 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError(
 					"detached transition cue must finish naturally");
 		}
+
+		BukovSoundConcurrencyRuntime shared =
+				new BukovSoundConcurrencyRuntime();
+		CountingSoundSink worldSink = new CountingSoundSink();
+		CountingSoundSink uiSink = new CountingSoundSink();
+		BukovConcurrentSoundPlayer world =
+				new BukovConcurrentSoundPlayer(worldSink, shared);
+		BukovConcurrentSoundPlayer ui =
+				new BukovConcurrentSoundPlayer(uiSink, shared);
+		for (int index = 0;
+				index < SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS;
+				index++) {
+			world.play(
+					"world-" + index,
+					AudioChannel.SFX,
+					SoundConcurrencyBudget.Priority.LOW,
+					false,
+					1f,
+					1f,
+					1f,
+					1f);
+		}
+		ui.play(
+				"ui-confirm",
+				AudioChannel.SFX,
+				SoundConcurrencyBudget.Priority.HIGH,
+				true,
+				1f,
+				1f,
+				1f,
+				1f);
+		if (ui.activeCount(AudioChannel.SFX)
+					!= SoundConcurrencyBudget.MAX_ACTIVE_PER_BUS
+				|| worldSink.stopped != 1) {
+			throw new AssertionError(
+					"shared owners must obey one six-voice SFX budget");
+		}
+		world.stopAll();
+		if (ui.activeCount(AudioChannel.SFX) != 1
+				|| uiSink.stopped != 0) {
+			throw new AssertionError(
+					"owner stopAll must not stop another owner's cue");
+		}
+		ui.stopAll();
 	}
 
 	private static ExperienceContract contract() {

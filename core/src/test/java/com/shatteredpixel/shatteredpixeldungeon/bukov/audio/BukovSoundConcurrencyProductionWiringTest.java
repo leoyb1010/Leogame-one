@@ -24,6 +24,8 @@ public class BukovSoundConcurrencyProductionWiringTest {
 				"../SPD-classes/src/main/java/com/watabou/noosa/audio/Sample.java");
 
 		assertTrue(player.contains("BukovConcurrentSoundPlayer sounds"));
+		assertTrue(player.contains(
+				"BukovConcurrentSoundPlayer.production("));
 		assertTrue(player.contains("sounds.update(deltaSeconds)"));
 		assertTrue(player.contains("AudioChannel.SFX"));
 		assertTrue(player.contains("cue != Cue.FOCUS"));
@@ -44,6 +46,8 @@ public class BukovSoundConcurrencyProductionWiringTest {
 
 		assertTrue(world.contains(
 				"BukovConcurrentSoundPlayer worldSounds"));
+		assertTrue(world.contains(
+				"BukovConcurrentSoundPlayer.production("));
 			assertTrue(world.contains("worldSounds.update(dt)"));
 			assertTrue(world.contains("worldSounds.stopAll()"));
 			assertTrue(world.contains(
