@@ -980,7 +980,11 @@ public class GameScene extends PixelScene {
 						bukovWorld.firearmRegistry(),
 						bukovRaid.session(),
 						bukovWorld
-				);
+				).safeInsets(
+						insets.left,
+						bukovSafeTop,
+						insets.right,
+						insets.bottom);
 				if (!DeviceCompat.isDesktop()) {
 					bukovHud.objective(BukovHudFormat.TOUCH_OBJECTIVE);
 				}

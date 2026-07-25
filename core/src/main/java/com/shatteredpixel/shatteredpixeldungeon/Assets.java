@@ -351,6 +351,14 @@ public class Assets {
 					"sounds/bukov/extraction_start.wav";
 			public static final String EXTRACTION_COMPLETE =
 					"sounds/bukov/extraction_complete.wav";
+			public static final String KILL_CONFIRM =
+					"sounds/bukov/kill_confirm.wav";
+			public static final String BOSS_PHASE_BREAK =
+					"sounds/bukov/boss_phase_break.wav";
+			public static final String BOSS_SLAM =
+					"sounds/bukov/boss_slam.wav";
+			public static final String BOSS_OVERLOAD =
+					"sounds/bukov/boss_overload.wav";
 			public static final String UI_FOCUS =
 					"sounds/bukov/ui_focus.wav";
 			public static final String UI_CONFIRM =
@@ -451,6 +459,8 @@ public class Assets {
 				Bukov.RELOAD_CHARGE,
 				Bukov.LOOT_PICKUP, Bukov.SEARCH_COMPLETE, Bukov.GATE_UNLOCK,
 				Bukov.EXTRACTION_START, Bukov.EXTRACTION_COMPLETE,
+				Bukov.KILL_CONFIRM, Bukov.BOSS_PHASE_BREAK,
+				Bukov.BOSS_SLAM, Bukov.BOSS_OVERLOAD,
 				Bukov.UI_FOCUS, Bukov.UI_CONFIRM, Bukov.UI_CANCEL,
 				Bukov.UI_ERROR,
 				Bukov.FOOTSTEP_HARD[0], Bukov.FOOTSTEP_HARD[1],

@@ -66,6 +66,7 @@ final class BukovRealtimeCombatHarness {
 		final int killCount;
 		final boolean targetBodyActive;
 		final boolean targetStillInLevel;
+		final BackpackPauseEvidence backpackPause;
 
 		private Result(
 				int generatedEnemyCount,
@@ -78,7 +79,8 @@ final class BukovRealtimeCombatHarness {
 				RaidBalanceTelemetry telemetry,
 				int killCount,
 				boolean targetBodyActive,
-				boolean targetStillInLevel) {
+				boolean targetStillInLevel,
+				BackpackPauseEvidence backpackPause) {
 			this.generatedEnemyCount = generatedEnemyCount;
 			this.targetDefinitionId = targetDefinitionId;
 			this.initialTargetHealth = initialTargetHealth;
@@ -94,6 +96,7 @@ final class BukovRealtimeCombatHarness {
 			this.killCount = killCount;
 			this.targetBodyActive = targetBodyActive;
 			this.targetStillInLevel = targetStillInLevel;
+			this.backpackPause = backpackPause;
 		}
 
 		@Override
@@ -114,9 +117,55 @@ final class BukovRealtimeCombatHarness {
 		}
 	}
 
+	static final class BackpackPauseEvidence {
+		final int damageBeforePause;
+		final float pausedElapsedDelta;
+		final int pausedHealthDelta;
+		final int pausedMagazineDelta;
+		final float pausedEnemyMovementSquared;
+		final int pausedDamageDelta;
+		final float resumedElapsedDelta;
+		final int resumedMagazineDelta;
+		final int resumedDamageDelta;
+
+		private BackpackPauseEvidence(
+				int damageBeforePause,
+				float pausedElapsedDelta,
+				int pausedHealthDelta,
+				int pausedMagazineDelta,
+				float pausedEnemyMovementSquared,
+				int pausedDamageDelta,
+				float resumedElapsedDelta,
+				int resumedMagazineDelta,
+				int resumedDamageDelta) {
+			this.damageBeforePause = damageBeforePause;
+			this.pausedElapsedDelta = pausedElapsedDelta;
+			this.pausedHealthDelta = pausedHealthDelta;
+			this.pausedMagazineDelta = pausedMagazineDelta;
+			this.pausedEnemyMovementSquared = pausedEnemyMovementSquared;
+			this.pausedDamageDelta = pausedDamageDelta;
+			this.resumedElapsedDelta = resumedElapsedDelta;
+			this.resumedMagazineDelta = resumedMagazineDelta;
+			this.resumedDamageDelta = resumedDamageDelta;
+		}
+	}
+
 	static Result killOneGeneratedEnemy(
 			BukovRaidCoordinator raid,
 			BukovLevel level) throws IOException {
+		return runGeneratedEnemyCombat(raid, level, false);
+	}
+
+	static Result verifyBackpackPauseAgainstGeneratedEnemy(
+			BukovRaidCoordinator raid,
+			BukovLevel level) throws IOException {
+		return runGeneratedEnemyCombat(raid, level, true);
+	}
+
+	private static Result runGeneratedEnemyCombat(
+			BukovRaidCoordinator raid,
+			BukovLevel level,
+			boolean verifyBackpackPause) throws IOException {
 		if (raid == null || level == null) {
 			throw new IllegalArgumentException("raid and level are required");
 		}
@@ -226,6 +275,17 @@ final class BukovRealtimeCombatHarness {
 				system.drainCombatFx(fx::accept);
 			}
 
+			BackpackPauseEvidence backpackPause = verifyBackpackPause
+					? exerciseBackpackPause(
+							world,
+							system,
+							raid,
+							hero,
+							firearm,
+							target,
+							mouse)
+					: null;
+
 			for (int frame = 0;
 					frame < PLAYER_KILL_TIMEOUT_FRAMES
 							&& target.isAlive();
@@ -258,7 +318,8 @@ final class BukovRealtimeCombatHarness {
 					telemetry,
 					raid.session().killCount(),
 					target.realtimeBody.active,
-					level.mobs.contains(target));
+					level.mobs.contains(target),
+					backpackPause);
 		} finally {
 			if (system != null) {
 				system.dispose();
@@ -277,6 +338,66 @@ final class BukovRealtimeCombatHarness {
 			SPDSettings.bukovMasterVolume(previousMasterVolume);
 			SPDSettings.bukovSfxVolume(previousSfxVolume);
 		}
+	}
+
+	private static BackpackPauseEvidence exerciseBackpackPause(
+			BukovRealtimeWorld world,
+			RealtimeRaidSystem system,
+			BukovRaidCoordinator raid,
+			Hero hero,
+			Firearm firearm,
+			BukovHostMob target,
+			MouseState mouse) {
+		aimAwayFrom(target, hero);
+		mouse.fire = true;
+		float elapsedBeforePause = raid.session().elapsedSeconds;
+		int heroHealthBeforePause = hero.HP;
+		int magazineBeforePause = firearm.magazineAmmo();
+		float enemyXBeforePause = target.realtimeBody.x;
+		float enemyYBeforePause = target.realtimeBody.y;
+		int damageBeforePause =
+				raid.session().balanceTelemetry().damageTaken();
+
+		world.setBackpackOpen(true);
+		system.update(1f);
+
+		float elapsedDuringPause = raid.session().elapsedSeconds;
+		int heroHealthDuringPause = hero.HP;
+		int magazineDuringPause = firearm.magazineAmmo();
+		float enemyXDuringPause = target.realtimeBody.x;
+		float enemyYDuringPause = target.realtimeBody.y;
+		int damageDuringPause =
+				raid.session().balanceTelemetry().damageTaken();
+
+		world.setBackpackOpen(false);
+		system.update(RENDER_STEP);
+		float elapsedAfterResumeFrame = raid.session().elapsedSeconds;
+		int magazineAfterResumeFrame = firearm.magazineAmmo();
+
+		mouse.fire = false;
+		for (int frame = 0;
+				frame < ENEMY_FIRE_TIMEOUT_FRAMES
+						&& raid.session().balanceTelemetry().damageTaken()
+								<= damageBeforePause;
+				frame++) {
+			aimAt(target);
+			system.update(RENDER_STEP);
+		}
+
+		return new BackpackPauseEvidence(
+				damageBeforePause,
+				elapsedDuringPause - elapsedBeforePause,
+				heroHealthDuringPause - heroHealthBeforePause,
+				magazineDuringPause - magazineBeforePause,
+				(enemyXDuringPause - enemyXBeforePause)
+						* (enemyXDuringPause - enemyXBeforePause)
+						+ (enemyYDuringPause - enemyYBeforePause)
+						* (enemyYDuringPause - enemyYBeforePause),
+				damageDuringPause - damageBeforePause,
+				elapsedAfterResumeFrame - elapsedBeforePause,
+				magazineAfterResumeFrame - magazineBeforePause,
+				raid.session().balanceTelemetry().damageTaken()
+						- damageBeforePause);
 	}
 
 	private static BukovHostMob onboardingGunner(BukovLevel level) {
@@ -298,6 +419,19 @@ final class BukovRealtimeCombatHarness {
 		float worldX = target.realtimeBody.x * DungeonTilemap.SIZE;
 		float worldY = target.realtimeBody.y * DungeonTilemap.SIZE;
 		Point screen = Camera.main.cameraToScreen(worldX, worldY);
+		PointerEvent.setHoverPos(new PointF(screen.x, screen.y));
+	}
+
+	private static void aimAwayFrom(BukovHostMob target, Hero hero) {
+		RealtimeBody body = hero.ensureRealtimeBody();
+		float awayX = body.x - target.realtimeBody.x;
+		float awayY = body.y - target.realtimeBody.y;
+		if (awayX * awayX + awayY * awayY <= 0.0001f) {
+			awayX = 1f;
+		}
+		Point screen = Camera.main.cameraToScreen(
+				(body.x + awayX * 4f) * DungeonTilemap.SIZE,
+				(body.y + awayY * 4f) * DungeonTilemap.SIZE);
 		PointerEvent.setHoverPos(new PointF(screen.x, screen.y));
 	}
 

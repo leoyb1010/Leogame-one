@@ -52,9 +52,17 @@
       "manifest": "core/src/main/assets/sprites/bukov/items_interactions_manifest.json"
     },
     "soundEffects": {
-      "expected": 79,
+      "expected": 83,
+      "scope": "current Alpha 32 development worktree",
+      "packagedAlpha31Expected": 79,
       "directory": "core/src/main/assets/sounds/bukov",
-      "format": "mono 48 kHz PCM16 WAV"
+      "format": "mono 48 kHz PCM16 WAV",
+      "requiredCues": [
+        "kill_confirm.wav",
+        "boss_phase_break.wav",
+        "boss_slam.wav",
+        "boss_overload.wav"
+      ]
     },
     "provenanceLedger": "artwork/licenses/ASSET_PROVENANCE.csv",
     "generatorScripts": [

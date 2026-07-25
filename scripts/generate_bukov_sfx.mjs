@@ -671,6 +671,43 @@ const sounds = {
     return finish(out);
   },
 
+  kill_confirm() {
+    const out = buffer(0.076);
+    // The authored fundamental stays inside the 200-300 Hz Gate 5 band.
+    addChirp(out, 0.001, 0.069, 268, 224, 0.72, 2.8);
+    addChirp(out, 0.006, 0.054, 242, 218, 0.24, 3.4);
+    return finish(out);
+  },
+
+  boss_phase_break() {
+    const out = buffer(0.34);
+    addNoise(out, 0, 0.11, 0.42, 0x911, 0.24, 0.35, 5.8);
+    addChirp(out, 0.008, 0.19, 132, 56, 0.58, 2.2);
+    addClick(out, 0.096, 0.72, 0.52);
+    addChirp(out, 0.105, 0.19, 540, 1180, 0.24, 2.5);
+    addClick(out, 0.268, 0.28, 0.72);
+    return finish(out);
+  },
+
+  boss_slam() {
+    const out = buffer(0.29);
+    addNoise(out, 0, 0.16, 0.66, 0x921, 0.1, 0.08, 4.5);
+    addChirp(out, 0.002, 0.24, 108, 42, 0.82, 2.7);
+    addClick(out, 0.012, 0.34, 0.38);
+    addNoise(out, 0.09, 0.17, 0.18, 0x922, 0.035, 0.16, 2.9);
+    return finish(out);
+  },
+
+  boss_overload() {
+    const out = buffer(0.39);
+    addNoise(out, 0, 0.28, 0.54, 0x931, 0.36, 0.58, 3.7);
+    addChirp(out, 0.002, 0.22, 1640, 138, 0.48, 2.6);
+    addChirp(out, 0.075, 0.25, 94, 38, 0.64, 2.2);
+    addClick(out, 0.185, 0.48, 0.74);
+    addNoise(out, 0.19, 0.18, 0.22, 0x932, 0.06, 0.32, 2.8);
+    return finish(out);
+  },
+
   ui_focus() {
     const out = buffer(0.028);
     addClick(out, 0.001, 0.34, 0.72);

@@ -113,6 +113,8 @@ public class BukovRaidHudStateTest {
 		assertFalse(state.colorblindAssist());
 		assertFalse(state.aimVisible());
 		assertFalse(state.navigationVisible());
+		assertEquals(0f, state.navigationDeltaX(), 0f);
+		assertEquals(0f, state.navigationDeltaY(), 0f);
 		assertFalse(state.threatVisible());
 	}
 
@@ -214,6 +216,8 @@ public class BukovRaidHudStateTest {
 		assertEquals(
 				BukovRaidHudState.Distance.FAR,
 				state.navigationDistance());
+		assertEquals(-8f, state.navigationDeltaX(), 0f);
+		assertEquals(-8f, state.navigationDeltaY(), 0f);
 		assertEquals(
 				BukovMessages.get(
 						"bukov.raid.combat.navigation_format",

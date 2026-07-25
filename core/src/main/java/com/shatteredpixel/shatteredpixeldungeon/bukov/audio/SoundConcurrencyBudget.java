@@ -245,6 +245,7 @@ public final class SoundConcurrencyBudget {
 			case EXTRACTION_CUE:
 				return Priority.CRITICAL;
 			case BOSS_CUE:
+			case COMBAT_FEEDBACK:
 			case UI:
 				return Priority.HIGH;
 			case ENEMY_GUNSHOT:

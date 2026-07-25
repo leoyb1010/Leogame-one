@@ -79,6 +79,10 @@ public class SoundConcurrencyBudgetTest {
 				SoundConcurrencyBudget.defaultPriority(
 						SoundCategory.ENEMY_GUNSHOT));
 		assertEquals(
+				SoundConcurrencyBudget.Priority.HIGH,
+				SoundConcurrencyBudget.defaultPriority(
+						SoundCategory.COMBAT_FEEDBACK));
+		assertEquals(
 				SoundConcurrencyBudget.Priority.LOW,
 				SoundConcurrencyBudget.defaultPriority(
 						SoundCategory.FOOTSTEP));

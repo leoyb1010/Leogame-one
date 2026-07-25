@@ -9,6 +9,7 @@ concurrency_budget="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpi
 concurrent_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovConcurrentSoundPlayer.java"
 concurrency_runtime="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovSoundConcurrencyRuntime.java"
 ui_player="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/BukovUiSoundPlayer.java"
+feedback_audio="$repo_root/core/src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/CombatFeedbackAudioCue.java"
 sample="$repo_root/SPD-classes/src/main/java/com/watabou/noosa/audio/Sample.java"
 sound_dir="$repo_root/core/src/main/assets/sounds/bukov"
 firearms="$repo_root/core/src/main/assets/bukov/content/firearms.json"
@@ -26,6 +27,23 @@ for forbidden in \
 do
   if rg -F --quiet "$forbidden" "$world"; then
     echo "Bukov audio gate: legacy sound reference remains: $forbidden" >&2
+    exit 1
+  fi
+done
+
+for required in \
+  'case KILL:' \
+  'case WEAKPOINT_KILL:' \
+  'case BOSS_PHASE_BREAK:' \
+  'case BOSS_SLAM:' \
+  'case EXPLOSION:' \
+  'Assets.Sounds.Bukov.KILL_CONFIRM' \
+  'Assets.Sounds.Bukov.BOSS_PHASE_BREAK' \
+  'Assets.Sounds.Bukov.BOSS_SLAM' \
+  'Assets.Sounds.Bukov.BOSS_OVERLOAD'
+do
+  if ! rg -F --quiet "$required" "$feedback_audio"; then
+    echo "Bukov audio gate: combat feedback route missing: $required" >&2
     exit 1
   fi
 done
@@ -74,6 +92,13 @@ for required in \
   'Assets.Sounds.Bukov.GATE_UNLOCK' \
   'Assets.Sounds.Bukov.EXTRACTION_START' \
   'Assets.Sounds.Bukov.EXTRACTION_COMPLETE' \
+  'playCombatFeedbackCue(killConfirmFeedback)' \
+  'playCombatFeedbackCue(hitFeedback)' \
+  'playCombatFeedbackCue(pulseFeedback)' \
+  'CombatFeedbackAudioCue.asset(feedbackType)' \
+  'CombatFeedbackAudioCue.volume(feedbackType)' \
+  'CombatFeedbackAudioCue.pitch(feedbackType)' \
+  'CombatFeedbackAudioCue.category(feedbackType)' \
   'FootstepCadence footstepCadence' \
   'footstepCadence.advance(' \
   'FootstepSurface.resolve(' \
@@ -159,6 +184,10 @@ expected=(
   "gate_unlock.wav:3618d9de7dd2b8c405c266fb36f417f788f443366003c60782883a6337c07746"
   "extraction_start.wav:4b1478710831348c7086f4b13bcc5c5c5111b4678828453ad79c9d594a189712"
   "extraction_complete.wav:b62c7d0ffbe9a367bae62d79a2ec61936a4af440e89183f3b838215e32effd27"
+  "kill_confirm.wav:20897e3b5421e3815f8268295efafa96f3b98c8c3ccbbc4947005730a9450be4"
+  "boss_phase_break.wav:301eec7ef93f19b691e10ec414705518770131c559a56ad3051bf4992b2c6547"
+  "boss_slam.wav:55cf5d2514865e614bfd3cbcd19c11e381bfe1dd17a6d695a22ee930e3d5049d"
+  "boss_overload.wav:fc3beb9ae86de0f6178e3983bebf1d8b2a78ada84d77c910df985dc223886ba5"
   "ui_focus.wav:82db81c0a81cbf07443b3ae0bbf76c3b3f9df1633f9e1a0a92216f3c4fe423f6"
   "ui_confirm.wav:a732006019dd556eef4807ce13c32b5dff456349ebb5b0ea13abb29194c81836"
   "ui_cancel.wav:2a68b61aeab0d45c4d54fb658f5130a06e2b5df309a5b3cf32113208974cf6c4"
@@ -252,6 +281,7 @@ for contract in \
   "$concurrency_budget:protectedByDefault(SoundCategory category)" \
   "$concurrency_budget:case PLAYER_GUNSHOT:" \
   "$concurrency_budget:case EXTRACTION_CUE:" \
+  "$concurrency_budget:case COMBAT_FEEDBACK:" \
   "$concurrency_budget:candidate.order" \
   "$concurrency_budget:remainingSeconds <= 0f" \
   "$concurrent_player:stopInactivePlaybacks()" \

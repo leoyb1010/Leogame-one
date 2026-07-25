@@ -27,6 +27,7 @@ import com.shatteredpixel.shatteredpixeldungeon.items.KindOfWeapon;
 import com.shatteredpixel.shatteredpixeldungeon.items.armor.Armor;
 import com.shatteredpixel.shatteredpixeldungeon.messages.BukovMessages;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
+import com.shatteredpixel.shatteredpixeldungeon.tiles.DungeonTilemap;
 import com.shatteredpixel.shatteredpixeldungeon.ui.RenderedTextBlock;
 import com.watabou.input.ControllerHandler;
 import com.watabou.input.PointerEvent;
@@ -84,6 +85,8 @@ public final class BukovRaidHud extends Component {
 	private ColorBlock bossFill;
 	private ColorBlock navigationBadge;
 	private ColorBlock threatBadge;
+	private ColorBlock mobileNavigationBadge;
+	private ColorBlock mobileNavigationEdge;
 	private ColorBlock interactionBadge;
 	private ColorBlock tutorialBadge;
 	private ColorBlock tutorialEdge;
@@ -100,6 +103,10 @@ public final class BukovRaidHud extends Component {
 	private Image timerIcon;
 	private Image soundIcon;
 	private Image hitIcon;
+	private Image mobileNavigationPickupIcon;
+	private Image mobileNavigationMissionIcon;
+	private Image mobileNavigationExtractionIcon;
+	private Image mobileNavigationUnavailableStrike;
 
 	private RenderedTextBlock healthText;
 	private RenderedTextBlock armorText;
@@ -118,6 +125,7 @@ public final class BukovRaidHud extends Component {
 	private RenderedTextBlock bossObjectiveText;
 	private RenderedTextBlock navigationText;
 	private RenderedTextBlock threatText;
+	private RenderedTextBlock mobileNavigationArrow;
 	private RenderedTextBlock tutorialText;
 
 	private Hero hero;
@@ -150,12 +158,19 @@ public final class BukovRaidHud extends Component {
 	private int lastExtractionKey = Integer.MIN_VALUE;
 	private String lastExtractionId;
 	private int lastReloadBucket = Integer.MIN_VALUE;
+	private BukovRaidHudState.Direction lastMobileNavigationDirection;
+	private final BukovMobileNavigationLayout.Rect mobileNavigationRect =
+			new BukovMobileNavigationLayout.Rect();
 	private float healthFraction;
 	private float uiSeconds;
 	private float healthFlashRemaining;
 	private boolean injuryIndicatorsVisible;
 	private int uiScaleLevel = -1;
 	private float uiScale = 1f;
+	private float safeLeft;
+	private float safeTop;
+	private float safeRight;
+	private float safeBottom;
 
 	public BukovRaidHud() {
 		super();
@@ -209,6 +224,12 @@ public final class BukovRaidHud extends Component {
 		navigationBadge =
 				block(tokens.colorWithAlpha("panel.result", 184));
 		threatBadge = block(tokens.colorWithAlpha("ink.shadow", 184));
+		mobileNavigationBadge =
+				block(tokens.colorWithAlpha("ink.shadow", 216));
+		mobileNavigationBadge.visible = false;
+		mobileNavigationEdge =
+				block(tokens.colorWithAlpha("accent.interact", 255));
+		mobileNavigationEdge.visible = false;
 		interactionBadge =
 				block(tokens.colorWithAlpha("panel.deep", 232));
 		tutorialBadge =
@@ -258,6 +279,17 @@ public final class BukovRaidHud extends Component {
 				BukovUiAssets.HudElement.SOUND, valuableColor);
 		hitIcon = hudIcon(
 				BukovUiAssets.HudElement.HIT, dangerColor);
+		mobileNavigationPickupIcon = mobileNavigationIcon(
+				BukovUiAssets.StatusIcon.LOOT, valuableColor);
+		mobileNavigationMissionIcon = mobileNavigationIcon(
+				BukovUiAssets.StatusIcon.ACTION, interactColor);
+		mobileNavigationExtractionIcon = mobileNavigationIcon(
+				BukovUiAssets.StatusIcon.EXTRACT, extractColor);
+		mobileNavigationUnavailableStrike =
+				BukovUiAssets.touchDisabledStrike(dangerColor);
+		mobileNavigationUnavailableStrike.hardlight(dangerColor);
+		mobileNavigationUnavailableStrike.visible = false;
+		add(mobileNavigationUnavailableStrike);
 
 		injuryIcons = new Image[] {
 				BukovUiAssets.icon(
@@ -318,6 +350,10 @@ public final class BukovRaidHud extends Component {
 		navigationText.align(RenderedTextBlock.CENTER_ALIGN);
 		threatText = text(BukovVisualContract.FONT_BODY, dangerColor);
 		threatText.align(RenderedTextBlock.CENTER_ALIGN);
+		mobileNavigationArrow = text(
+				BukovVisualContract.FONT_BODY, interactColor);
+		mobileNavigationArrow.align(RenderedTextBlock.CENTER_ALIGN);
+		mobileNavigationArrow.visible = false;
 		tutorialText = text(
 				BukovVisualContract.FONT_BODY, primaryColor);
 		tutorialText.align(RenderedTextBlock.CENTER_ALIGN);
@@ -351,6 +387,16 @@ public final class BukovRaidHud extends Component {
 	public void objective(String objective) {
 		fallbackObjective = BukovHudFormat.objective(objective);
 		refresh();
+	}
+
+	public BukovRaidHud safeInsets(
+			float left, float top, float right, float bottom) {
+		safeLeft = Math.max(0f, left);
+		safeTop = Math.max(0f, top);
+		safeRight = Math.max(0f, right);
+		safeBottom = Math.max(0f, bottom);
+		layout();
+		return this;
 	}
 
 	public static float preferredHeight(float availableWidth) {
@@ -808,6 +854,9 @@ public final class BukovRaidHud extends Component {
 		threatBadge.alpha(awarenessAlpha);
 		threatText.hardlight(
 				live.threatUrgent() ? dangerColor : valuableColor);
+		refreshMobileNavigation(
+				!textEdgeRail && mobileNavigationTargetOffscreen(),
+				awarenessAlpha);
 		int reticleColor = lastCapacity <= 0 || lastMagazine <= 0
 				? dangerColor
 				: live.firing() ? valuableColor : interactColor;
@@ -1317,6 +1366,10 @@ public final class BukovRaidHud extends Component {
 			hitText.visible = false;
 			soundIcon.visible = false;
 			hitIcon.visible = false;
+			layoutMobileNavigation(
+					viewportWidth,
+					viewportHeight,
+					playableTop);
 		}
 		positionHudIcon(
 				interactionIcon,
@@ -1437,6 +1490,118 @@ public final class BukovRaidHud extends Component {
 				uiY,
 				playableTop + 4f,
 				Math.max(playableTop + 4f, viewportHeight - 4f));
+	}
+
+	private boolean mobileNavigationTargetOffscreen() {
+		if (!live.navigationVisible()
+				|| hero == null
+				|| hero.sprite == null
+				|| Camera.main == null) {
+			return false;
+		}
+		float heroWorldX =
+				hero.sprite.x + hero.sprite.width() * 0.5f;
+		float heroWorldY =
+				hero.sprite.y + hero.sprite.height() * 0.5f;
+		return !BukovMobileNavigationLayout.targetInsideWorldViewport(
+				heroWorldX,
+				heroWorldY,
+				live.navigationDeltaX(),
+				live.navigationDeltaY(),
+				DungeonTilemap.SIZE,
+				Camera.main.scroll.x,
+				Camera.main.scroll.y,
+				Camera.main.width,
+				Camera.main.height,
+				DungeonTilemap.SIZE * 0.5f);
+	}
+
+	private void refreshMobileNavigation(
+			boolean visible, float awarenessAlpha) {
+		mobileNavigationBadge.visible = visible;
+		mobileNavigationEdge.visible = visible;
+		mobileNavigationArrow.visible = visible;
+		mobileNavigationUnavailableStrike.visible =
+				visible && !live.navigationAvailable();
+		mobileNavigationPickupIcon.visible =
+				visible
+						&& live.navigationCue()
+								== BukovRaidHudState.Cue.PICKUP;
+		mobileNavigationMissionIcon.visible =
+				visible
+						&& live.navigationCue()
+								== BukovRaidHudState.Cue.MISSION;
+		mobileNavigationExtractionIcon.visible =
+				visible
+						&& live.navigationCue()
+								== BukovRaidHudState.Cue.EXTRACTION;
+		if (!visible) return;
+
+		if (lastMobileNavigationDirection
+				!= live.navigationDirection()) {
+			lastMobileNavigationDirection =
+					live.navigationDirection();
+			mobileNavigationArrow.text(
+					BukovCombatHudFormat.directionShape(
+							lastMobileNavigationDirection));
+		}
+		int color = mobileNavigationColor(
+				live.navigationCue(),
+				live.navigationAvailable());
+		mobileNavigationEdge.hardlight(color);
+		mobileNavigationArrow.hardlight(color);
+		mobileNavigationBadge.alpha(awarenessAlpha);
+		mobileNavigationEdge.alpha(awarenessAlpha);
+		mobileNavigationArrow.alpha(awarenessAlpha);
+		mobileNavigationPickupIcon.alpha(awarenessAlpha);
+		mobileNavigationMissionIcon.alpha(awarenessAlpha);
+		mobileNavigationExtractionIcon.alpha(awarenessAlpha);
+		mobileNavigationUnavailableStrike.alpha(awarenessAlpha);
+	}
+
+	private void layoutMobileNavigation(
+			float viewportWidth,
+			float viewportHeight,
+			float playableTop) {
+		if (live.navigationDirection() == null) return;
+		BukovMobileNavigationLayout.Rect indicator =
+				BukovMobileNavigationLayout.calculate(
+						viewportWidth,
+						viewportHeight,
+						safeLeft,
+						Math.max(safeTop, playableTop),
+						safeRight,
+						safeBottom,
+						live.navigationDirection(),
+						mobileNavigationRect);
+		mobileNavigationBadge.x = indicator.x;
+		mobileNavigationBadge.y = indicator.y;
+		mobileNavigationBadge.size(
+				indicator.width,
+				indicator.height);
+		mobileNavigationEdge.x = indicator.x;
+		mobileNavigationEdge.y = indicator.y;
+		mobileNavigationEdge.size(2f, indicator.height);
+		positionMobileNavigationIcon(
+				mobileNavigationPickupIcon,
+				indicator.x + 2f,
+				indicator.y + 3f);
+		positionMobileNavigationIcon(
+				mobileNavigationMissionIcon,
+				indicator.x + 2f,
+				indicator.y + 3f);
+		positionMobileNavigationIcon(
+				mobileNavigationExtractionIcon,
+				indicator.x + 2f,
+				indicator.y + 3f);
+		positionMobileNavigationIcon(
+				mobileNavigationUnavailableStrike,
+				indicator.x + 2f,
+				indicator.y + 3f);
+		mobileNavigationArrow.maxWidth(7);
+		mobileNavigationArrow.setPos(
+				indicator.x + 12f,
+				indicator.y + 5f);
 	}
 
 	private void positionReticle(float centerX, float centerY) {
@@ -1656,6 +1821,22 @@ public final class BukovRaidHud extends Component {
 		return result;
 	}
 
+	private Image mobileNavigationIcon(
+			BukovUiAssets.StatusIcon icon, int fallbackColor) {
+		Image result = BukovUiAssets.icon(icon, fallbackColor);
+		result.hardlight(fallbackColor);
+		result.visible = false;
+		add(result);
+		return result;
+	}
+
+	private void positionMobileNavigationIcon(
+			Image icon, float iconX, float iconY) {
+		icon.scale.set(0.625f);
+		icon.x = iconX;
+		icon.y = iconY;
+	}
+
 	private void positionHudIcon(Image icon, float iconX, float iconY) {
 		icon.scale.set(0.5f * uiScale);
 		icon.x = iconX;
@@ -1705,6 +1886,18 @@ public final class BukovRaidHud extends Component {
 		return BukovMessages.get(
 				"bukov.raid.hud.objective_format",
 				objective);
+	}
+
+	private int mobileNavigationColor(
+			BukovRaidHudState.Cue cue, boolean available) {
+		if (!available) return dangerColor;
+		if (cue == BukovRaidHudState.Cue.PICKUP) {
+			return valuableColor;
+		}
+		if (cue == BukovRaidHudState.Cue.EXTRACTION) {
+			return extractColor;
+		}
+		return interactColor;
 	}
 
 	private String currentStatusLabel() {

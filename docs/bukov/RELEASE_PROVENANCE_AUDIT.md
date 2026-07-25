@@ -1,6 +1,6 @@
 # 发行来源与许可证审计
 
-审计日期：2026-07-24
+审计日期：2026-07-25
 状态：静态台账通过；最终发行包复核 `PENDING EVIDENCE`
 
 ## 许可证边界
@@ -31,7 +31,7 @@
 | `generate_bukov_item_visuals.mjs` | 72 帧物品/交互图集与 manifest |
 | `generate_bukov_landmarks.mjs` | 首关工业地标图集 |
 | `generate_bukov_operator_sprite.mjs` | 行动员动画图集 |
-| `generate_bukov_sfx.mjs` | 28 个单声道 48 kHz PCM16 WAV |
+| `generate_bukov_sfx.mjs` | 83 个单声道 48 kHz PCM16 WAV，含击杀确认与三个 Boss 专属 cue |
 
 ## 最终发行前仍需完成
 

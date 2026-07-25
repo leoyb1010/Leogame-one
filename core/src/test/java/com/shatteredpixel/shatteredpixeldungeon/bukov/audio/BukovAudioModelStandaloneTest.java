@@ -3,6 +3,7 @@ package com.shatteredpixel.shatteredpixeldungeon.bukov.audio;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.levels.ThemeEnvironmentRules;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.runtime.CollisionMap;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.settings.ExperienceContract;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.fx.CombatFeedbackType;
 import com.shatteredpixel.shatteredpixeldungeon.levels.Terrain;
 
 /**
@@ -71,8 +72,9 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError("combat must duck music by three dB");
 		}
 
-		assertFootstepAudio();
-		assertConcurrencyBudget();
+			assertFootstepAudio();
+			assertConcurrencyBudget();
+			assertCombatFeedbackAudio();
 
 		BukovAtmosphereController atmosphere =
 				new BukovAtmosphereController();
@@ -97,6 +99,23 @@ public final class BukovAudioModelStandaloneTest {
 			throw new AssertionError("combat release must return to calm");
 		}
 		System.out.println("PASS: Bukov spatial/layered audio model");
+	}
+
+	private static void assertCombatFeedbackAudio() {
+		for (CombatFeedbackType type : new CombatFeedbackType[]{
+				CombatFeedbackType.KILL,
+				CombatFeedbackType.WEAKPOINT_KILL,
+				CombatFeedbackType.BOSS_PHASE_BREAK,
+				CombatFeedbackType.BOSS_SLAM,
+				CombatFeedbackType.EXPLOSION}) {
+			if (CombatFeedbackAudioCue.asset(type) == null
+					|| CombatFeedbackAudioCue.volume(type) <= 0f
+					|| CombatFeedbackAudioCue.pitch(type) != 1f
+					|| CombatFeedbackAudioCue.category(type) == null) {
+				throw new AssertionError(
+						type + " must have a complete Gate 5 audio route");
+			}
+		}
 	}
 
 	private static void assertFootstepAudio() {

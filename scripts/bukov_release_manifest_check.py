@@ -85,6 +85,9 @@ def check_assets(manifest: dict) -> None:
         len(sounds) == assets["soundEffects"]["expected"],
         f"sound count mismatch: {len(sounds)}",
     )
+    sound_names = {sound.name for sound in sounds}
+    for cue in assets["soundEffects"].get("requiredCues", []):
+        require(cue in sound_names, f"required sound cue missing: {cue}")
 
     ledger_path = ROOT / assets["provenanceLedger"]
     with ledger_path.open(encoding="utf-8", newline="") as handle:
@@ -231,7 +234,8 @@ def main() -> None:
     print(
         "Bukov release manifest: PASS "
         "(6 themes, 18 firearms, 13 enemies, 5 modes, "
-        f"72 icon frames, 79 SFX; {evidence_scope})"
+        f"72 icon frames, {manifest['originalAssets']['soundEffects']['expected']} "
+        f"SFX; {evidence_scope})"
     )
 
 

@@ -11,6 +11,10 @@
 Alpha 31 二进制身份。物理 iPhone、实体手柄、硬件 GPU/Instruments、三人盲测
 和完整双平台人工玩家路线录像仍为 `NOT RUN` 或 `PENDING EVIDENCE`。
 
+> 历史边界：下表的 79 个 WAV 是 Alpha 31 封存包的真实计数。Alpha 32
+> 开发工作树现有 83 个 WAV，并新增击杀确认、Boss 阶段击破、砸地与过载 cue；
+> 它们必须随下一候选重新构建和取证，不能倒填为 Alpha 31 已验证内容。
+
 ## 构建身份
 
 | 字段 | 值 |
@@ -53,7 +57,7 @@ Alpha 31 二进制身份。物理 iPhone、实体手柄、硬件 GPU/Instruments
 | 五模式生命周期 | PASS | final gate step 20 |
 | 模式/主题/Boss 矩阵 | PASS：25 个有效组合；25 成功结算、25 死亡结算 | final gate step 21 |
 | 内容规模 | PASS：6 主题、18 枪械、9 普通敌人、3 精英、1 Boss、5 模式 | final gate/static gates |
-| 原创图标与音频 | PASS：72 帧图标、79 个 mono 48 kHz PCM16 WAV | final gate steps 5、8、10、14、15 |
+| 原创图标与音频（Alpha 31 封存） | PASS：72 帧图标、79 个 mono 48 kHz PCM16 WAV | final gate steps 5、8、10、14、15 |
 | 10k 地图 seed | PASS：10,000；exit 0 | final gate step 25 |
 | 存档压力 | PASS：100 次；exit 0 | final gate step 26 |
 | Apple 构建与包来源 | PASS：macOS、iOS Simulator、法律文件、来源完整性 | final gate steps 29–33 |

@@ -66,6 +66,25 @@ public class BukovRaidHudWiringGuardTest {
 		assertTrue(hud.contains("BukovCombatHudFormat.bossTitle(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.navigation(live)"));
 		assertTrue(hud.contains("BukovCombatHudFormat.threat(live)"));
+		assertTrue(hud.contains(
+				"!textEdgeRail && mobileNavigationTargetOffscreen()"));
+		assertTrue(hud.contains(
+				"BukovMobileNavigationLayout.targetInsideWorldViewport("));
+		assertTrue(hud.contains(
+				"BukovUiAssets.StatusIcon.LOOT"));
+		assertTrue(hud.contains(
+				"BukovUiAssets.StatusIcon.ACTION"));
+		assertTrue(hud.contains(
+				"BukovUiAssets.StatusIcon.EXTRACT"));
+		String mobileNavigation = hud.substring(
+				hud.indexOf("private boolean mobileNavigationTargetOffscreen()"),
+				hud.indexOf("private void positionReticle("));
+		assertFalse(
+				"mobile navigation must never expose enemy threat state",
+				mobileNavigation.contains("live.threat"));
+		assertFalse(
+				"mobile navigation refresh must remain allocation-free",
+				mobileNavigation.contains("new "));
 		assertTrue(hud.contains("live.combatAwarenessAlpha()"));
 		assertTrue(hud.contains("BukovHitDirectionArc"));
 		assertTrue(hud.contains("BukovSoundDirectionArc"));
@@ -174,6 +193,10 @@ public class BukovRaidHudWiringGuardTest {
 				"Math.max(0f, insets.top)"));
 		assertTrue(scene.contains(
 				"bukovTouchControls.hudBottom(bukovHud.bottom() + 2f)"));
+		assertTrue(scene.contains(
+				").safeInsets("));
+		assertTrue(scene.contains(
+				"insets.bottom);"));
 		assertTrue(scene.contains(
 				"bukovSafeTop + 4f"));
 		assertTrue(scene.contains(

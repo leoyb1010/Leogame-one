@@ -42,6 +42,10 @@ registration, and rejects the old bow/crossbow/click/hit audio references from
 | Mission gate unlocked | `sounds/bukov/gate_unlock.wav` | `3618d9de7dd2b8c405c266fb36f417f788f443366003c60782883a6337c07746` |
 | Extraction transponder starts | `sounds/bukov/extraction_start.wav` | `4b1478710831348c7086f4b13bcc5c5c5111b4678828453ad79c9d594a189712` |
 | Extraction confirmation | `sounds/bukov/extraction_complete.wav` | `b62c7d0ffbe9a367bae62d79a2ec61936a4af440e89183f3b838215e32effd27` |
+| Kill confirmation | `sounds/bukov/kill_confirm.wav` | `20897e3b5421e3815f8268295efafa96f3b98c8c3ccbbc4947005730a9450be4` |
+| Boss phase break | `sounds/bukov/boss_phase_break.wav` | `301eec7ef93f19b691e10ec414705518770131c559a56ad3051bf4992b2c6547` |
+| Boss slam | `sounds/bukov/boss_slam.wav` | `55cf5d2514865e614bfd3cbcd19c11e381bfe1dd17a6d695a22ee930e3d5049d` |
+| Boss overload | `sounds/bukov/boss_overload.wav` | `fc3beb9ae86de0f6178e3983bebf1d8b2a78ada84d77c910df985dc223886ba5` |
 | Hard footstep 1 | `sounds/bukov/footstep_hard_1.wav` | `2b9c0d8a85914502bedc62a05168c2c32f439787806e815cef55df1a4014794d` |
 | Hard footstep 2 | `sounds/bukov/footstep_hard_2.wav` | `71b90b18a6ceb6fe3cbac900d6b69179e137bd6335dc60ae5616040ff01a2deb` |
 | Water footstep 1 | `sounds/bukov/footstep_water_1.wav` | `6e4f45708cb00f384229ebdd0ccae67f94fedb8bb069f78d49c88dffc68bb71a` |
@@ -90,6 +94,12 @@ World-owned backend instance without cutting off UI playback.
 `extraction_complete.wav` is registered for the settlement transition seam;
 the current realtime world plays the transponder-start cue while the player is
 still in the raid.
+
+Gate 5 combat outcomes use a dedicated feedback resolver. Normal and weak-point
+kills share the short 200-300 Hz `kill_confirm.wav`; Boss phase breaks, slam
+pulses and fog-lamp overload explosions each use a distinct authored cue. All
+four assets play at their recorded pitch (`1.0`) through the Bukov SFX bus and
+the shared six-voice concurrency budget rather than repitching a UI sound.
 
 The original `gunshot_player.wav` and `gunshot_enemy.wav` remain registered
 only as compatibility fallbacks while production call sites migrate. New

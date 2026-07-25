@@ -42,7 +42,7 @@
 | Raid 模式 | 5 | `PENDING EVIDENCE` | 每模式一局 |
 | 商店 | 买入、出售、余额、幂等、行动中锁定 | `PENDING EVIDENCE` | 操作录像与存档快照 |
 | 图标 | 72 帧 | `PENDING EVIDENCE` | 图集门禁与游戏内抽样 |
-| SFX | 79 个 WAV | `PENDING EVIDENCE` | 音频门禁与四通道混音抽样 |
+| SFX | 83 个 WAV；必含击杀确认、Boss 阶段击破、砸地与过载 cue | `PENDING EVIDENCE` | 音频门禁、战斗事件路由与四通道混音抽样 |
 
 ## 4. macOS 玩家路径
 

@@ -55,6 +55,22 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("BukovConcurrentSoundPlayer worldSounds"));
 		assertTrue(world.contains("worldSounds.update(dt)"));
 		assertTrue(world.contains("worldSounds.stopAll()"));
+		assertTrue(world.contains(
+				"playCombatFeedbackCue(killConfirmFeedback)"));
+		assertTrue(world.contains(
+				"playCombatFeedbackCue(hitFeedback)"));
+		assertTrue(world.contains(
+				"playCombatFeedbackCue(pulseFeedback)"));
+		assertTrue(world.contains(
+				"CombatFeedbackAudioCue.asset(feedbackType)"));
+		assertTrue(world.contains(
+				"CombatFeedbackAudioCue.volume(feedbackType)"));
+		assertTrue(world.contains(
+				"CombatFeedbackAudioCue.pitch(feedbackType)"));
+		assertTrue(world.contains(
+				"CombatFeedbackAudioCue.category(feedbackType)"));
+		assertFalse(world.contains("KILL_CONFIRM_PITCH"));
+		assertFalse(world.contains("Assets.Sounds.Bukov.UI_CONFIRM"));
 
 		// The sole global RNG call is the committed ballistic spread. Audio
 		// variation is derived from its own sequence.
@@ -67,6 +83,16 @@ public class BukovAudioRuntimeWiringGuardTest {
 		assertTrue(world.contains("Assets.Sounds.Bukov.EXTRACTION_START"));
 		assertTrue(world.contains("Assets.Sounds.Bukov.EXTRACTION_COMPLETE"));
 		assertTrue(world.contains("Assets.Sounds.Bukov.LOOT_PICKUP"));
+
+		String feedbackAudio = source(
+				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/audio/CombatFeedbackAudioCue.java");
+		for (String cue : new String[]{
+				"KILL_CONFIRM",
+				"BOSS_PHASE_BREAK",
+				"BOSS_SLAM",
+				"BOSS_OVERLOAD"}) {
+			assertTrue(feedbackAudio.contains("Assets.Sounds.Bukov." + cue));
+		}
 
 		String presentation = source(
 				"src/main/java/com/shatteredpixel/shatteredpixeldungeon/bukov/fx/BukovCombatPresentation.java");

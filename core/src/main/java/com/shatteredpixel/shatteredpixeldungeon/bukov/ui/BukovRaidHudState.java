@@ -99,6 +99,8 @@ public final class BukovRaidHudState {
 	private Cue navigationCue = Cue.NONE;
 	private Direction navigationDirection;
 	private Distance navigationDistance;
+	private float navigationDeltaX;
+	private float navigationDeltaY;
 	private String navigationLabel;
 	private boolean navigationAvailable;
 	private boolean threatVisible;
@@ -168,6 +170,8 @@ public final class BukovRaidHudState {
 		navigationCue = Cue.NONE;
 		navigationDirection = null;
 		navigationDistance = null;
+		navigationDeltaX = 0f;
+		navigationDeltaY = 0f;
 		navigationLabel = null;
 		navigationAvailable = false;
 		threatVisible = false;
@@ -209,6 +213,8 @@ public final class BukovRaidHudState {
 		navigationCue = cue;
 		navigationDirection = direction(deltaX, deltaY);
 		navigationDistance = distance(distance);
+		navigationDeltaX = deltaX;
+		navigationDeltaY = deltaY;
 		navigationLabel = text(label);
 		navigationAvailable = available;
 	}
@@ -638,6 +644,14 @@ public final class BukovRaidHudState {
 
 	public Distance navigationDistance() {
 		return navigationDistance;
+	}
+
+	public float navigationDeltaX() {
+		return navigationDeltaX;
+	}
+
+	public float navigationDeltaY() {
+		return navigationDeltaY;
 	}
 
 	public String navigationLabel() {

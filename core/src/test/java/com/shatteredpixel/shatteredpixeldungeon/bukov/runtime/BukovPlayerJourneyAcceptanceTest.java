@@ -220,6 +220,69 @@ public class BukovPlayerJourneyAcceptanceTest {
 	}
 
 	@Test
+	public void realWorldBackpackPausesAndResumesWithoutCatchUp()
+			throws Exception {
+		InMemoryBukovSaveService saves =
+				new InMemoryBukovSaveService();
+		BukovHubController hub = new BukovHubController(saves);
+		hub.prepareAndConfirmDeployment();
+
+		long seed = 0xBACCAC01L;
+		BukovLevel level = buildLevel(seed);
+		BukovRaidCoordinator raid = startRaid(
+				saves,
+				level,
+				seed,
+				"journey-backpack-pause");
+		BukovRealtimeCombatHarness.Result result =
+				BukovRealtimeCombatHarness
+						.verifyBackpackPauseAgainstGeneratedEnemy(
+								raid,
+								level);
+		BukovRealtimeCombatHarness.BackpackPauseEvidence pause =
+				result.backpackPause;
+
+		assertNotNull(result.toString(), pause);
+		assertTrue(
+				"pause probe must begin after production enemy AI is active",
+				pause.damageBeforePause > 0);
+		assertEquals(
+				"the paused second must not advance raid time",
+				0f,
+				pause.pausedElapsedDelta,
+				0f);
+		assertEquals(
+				"enemy attacks must not damage the operator behind the backpack",
+				0,
+				pause.pausedHealthDelta);
+		assertEquals(
+				"held fire must not consume ammunition behind the backpack",
+				0,
+				pause.pausedMagazineDelta);
+		assertEquals(
+				"enemy position must not advance while the real World is paused",
+				0f,
+				pause.pausedEnemyMovementSquared,
+				0f);
+		assertEquals(
+				"enemy AI must not resolve hidden damage while paused",
+				0,
+				pause.pausedDamageDelta);
+
+		assertEquals(
+				"resume must simulate only the new render frame, not the paused second",
+				1f / 60f,
+				pause.resumedElapsedDelta,
+				0.00001f);
+		assertTrue(
+				"held fire must resume through the production input/fire loop",
+				pause.resumedMagazineDelta < 0);
+		assertTrue(
+				"enemy AI must resume after the backpack closes",
+				pause.resumedDamageDelta > 0);
+	}
+
+	@Test
 	public void e01E02AndE03AllSettleThroughRealMapDefinitions()
 			throws Exception {
 		String[] extractionIds = {"E01", "E02", "E03"};

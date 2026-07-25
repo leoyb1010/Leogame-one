@@ -39,7 +39,8 @@ public class CollisionMapSemanticWiringTest {
 				"combat/HitscanResolver.java", 3,
 				"audio/GunshotAcousticSpaceResolver.java", 1,
 				"ai/GridLineOfSight.java", 1,
-				"runtime/BukovRealtimeWorld.java", 1), traces);
+				// Sound occlusion plus diagonal target and both seams.
+				"runtime/BukovRealtimeWorld.java", 4), traces);
 	}
 
 	private static Map<String, Integer> occurrences(String marker)

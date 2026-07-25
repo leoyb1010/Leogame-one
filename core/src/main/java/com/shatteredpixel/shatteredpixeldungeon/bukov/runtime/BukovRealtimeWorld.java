@@ -26,6 +26,7 @@ import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSigna
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovAtmosphereSignalSource;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovConcurrentSoundPlayer;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.BukovSamplePlaybackSink;
+import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.CombatFeedbackAudioCue;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepCadence;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.FootstepSurface;
 import com.shatteredpixel.shatteredpixeldungeon.bukov.audio.GunshotAcousticSpace;
@@ -145,7 +146,6 @@ public final class BukovRealtimeWorld
 	private static final float CAMERA_HALF_DEAD_ZONE_Y = 8f;
 	private static final float CAMERA_RESPONSIVENESS = 8f;
 	private static final float KEY_SOUND_LIFETIME_SECONDS = 0.9f;
-	private static final float KILL_CONFIRM_PITCH = 0.25f;
 	private static final float SHORT_SFX_TIMEOUT_SECONDS = 0.40f;
 	private static final float FOOTSTEP_TIMEOUT_SECONDS = 0.35f;
 	private static final float GUNSHOT_TIMEOUT_SECONDS = 0.85f;
@@ -308,6 +308,7 @@ public final class BukovRealtimeWorld
 	private boolean backpackRequested;
 	private boolean playerDeathPresented;
 	private boolean extractionCompleteCuePlayed;
+	private CombatFeedbackType killConfirmFeedback = CombatFeedbackType.KILL;
 	private long extractionCompleteSoundToken =
 			SoundConcurrencyBudget.NO_TOKEN;
 	private int lastMedicalCountdown = Integer.MIN_VALUE;
@@ -1166,11 +1167,8 @@ public final class BukovRealtimeWorld
 		keySoundVisual.advance(dt);
 		combatHudTimeline.advance(dt);
 		if (combatHudTimeline.consumeKillSoundCue()) {
-			playSfx(
-					Assets.Sounds.Bukov.UI_CONFIRM,
-					0.42f,
-					KILL_CONFIRM_PITCH,
-					SoundCategory.UI);
+			playCombatFeedbackCue(killConfirmFeedback);
+			killConfirmFeedback = CombatFeedbackType.KILL;
 		}
 		playerSounds.advance(dt);
 		if (playerSounds.activeCount() == 0) {
@@ -4652,16 +4650,18 @@ public final class BukovRealtimeWorld
 				? Math.max(4, boss.minimumDamage() - 2)
 				: boss.maximumDamage();
 		pendingEnemyShots.add(new PendingEnemyShot(boss.mob, damage));
+		CombatFeedbackType pulseFeedback = bossPulseFeedback(phase);
 		combatPresentation.emit(
 				CombatPresentationEvent.Type.ENEMY_FIRE,
 				boss.stableId,
 				hero.id(),
 				boss.mob.pos,
 				hero.pos,
-				bossPulseFeedback(phase),
+				pulseFeedback,
 				phase
 						== WhiteLineBossStateMachine.Phase.DECOY_SEARCH
 						? 0.7f : 1f);
+		playCombatFeedbackCue(pulseFeedback);
 		combatFx.explosion(
 				boss.stableId,
 				++boss.bossPulseSequence,
@@ -4947,12 +4947,54 @@ public final class BukovRealtimeWorld
 	}
 
 	private boolean withinInteractionRange(int firstCell, int secondCell) {
-		if (firstCell < 0 || secondCell < 0) return false;
 		int width = Dungeon.level.width();
-		return Math.max(
-				Math.abs(firstCell % width - secondCell % width),
-				Math.abs(firstCell / width - secondCell / width)
-		) <= 1;
+		return withinInteractionRange(
+				firstCell,
+				secondCell,
+				width,
+				Dungeon.level.length(),
+				collisionMap);
+	}
+
+	static boolean withinInteractionRange(
+			int firstCell,
+			int secondCell,
+			int width,
+			int length,
+			CollisionMap collisionMap) {
+		if (width <= 0
+				|| length <= 0
+				|| firstCell < 0
+				|| secondCell < 0
+				|| firstCell >= length
+				|| secondCell >= length) {
+			return false;
+		}
+		int firstX = firstCell % width;
+		int firstY = firstCell / width;
+		int secondX = secondCell % width;
+		int secondY = secondCell / width;
+		int deltaX = Math.abs(firstX - secondX);
+		int deltaY = Math.abs(firstY - secondY);
+		if (Math.max(deltaX, deltaY) > 1) {
+			return false;
+		}
+		if (deltaX == 0 || deltaY == 0) {
+			// Orthogonal adjacency deliberately allows an obstructing target
+			// cell: doors and wall-mounted mechanisms must be operable from
+			// the neighbouring floor tile.
+			return true;
+		}
+		if (collisionMap == null) {
+			return false;
+		}
+		// A diagonal reach crosses both cells at the shared corner. Requiring
+		// the target and both seams to stay open prevents searching a container
+		// or operating a pump/Boss mechanism through a wall corner. Obstructing
+		// wall-mounted targets remain operable only from an orthogonal tile.
+		return !collisionMap.blocksLine(secondX, secondY)
+				&& !collisionMap.blocksLine(firstX, secondY)
+				&& !collisionMap.blocksLine(secondX, firstY);
 	}
 
 	private void readNavigationHudState(
@@ -5755,8 +5797,11 @@ public final class BukovRealtimeWorld
 				target.pos,
 				hitFeedback,
 				intensity);
+		playCombatFeedbackCue(hitFeedback);
 		if (wasAlive && !target.isAlive()) {
-			combatHudTimeline.kill(killDistanceTiles(target));
+			scheduleKillConfirmation(
+					deathFeedback,
+					killDistanceTiles(target));
 			combatPresentation.emit(
 					CombatPresentationEvent.Type.ENEMY_DEATH,
 					hero.id(),
@@ -5766,6 +5811,32 @@ public final class BukovRealtimeWorld
 					deathFeedback,
 					intensity);
 		}
+	}
+
+	private void scheduleKillConfirmation(
+			CombatFeedbackType feedbackType,
+			float distanceTiles) {
+		CombatFeedbackType requested =
+				feedbackType == CombatFeedbackType.WEAKPOINT_KILL
+						? CombatFeedbackType.WEAKPOINT_KILL
+						: CombatFeedbackType.KILL;
+		if (requested == CombatFeedbackType.WEAKPOINT_KILL
+				|| killConfirmFeedback != CombatFeedbackType.WEAKPOINT_KILL) {
+			killConfirmFeedback = requested;
+		}
+		combatHudTimeline.kill(distanceTiles);
+	}
+
+	private void playCombatFeedbackCue(CombatFeedbackType feedbackType) {
+		String asset = CombatFeedbackAudioCue.asset(feedbackType);
+		SoundCategory category =
+				CombatFeedbackAudioCue.category(feedbackType);
+		if (asset == null || category == null) return;
+		playSfx(
+				asset,
+				CombatFeedbackAudioCue.volume(feedbackType),
+				CombatFeedbackAudioCue.pitch(feedbackType),
+				category);
 	}
 
 	static CombatFeedbackType playerShotFeedback(
