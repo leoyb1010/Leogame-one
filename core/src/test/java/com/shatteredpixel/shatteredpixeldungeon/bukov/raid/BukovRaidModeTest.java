@@ -69,12 +69,14 @@ public class BukovRaidModeTest {
 
 	@Test
 	public void trainingCapsEachResolvedHitWithoutChangingFormalRaids() {
-		assertEquals(0, BukovRaidMode.TRAINING_GROUND.incomingDamage(0));
-		assertEquals(1, BukovRaidMode.TRAINING_GROUND.incomingDamage(1));
-		assertEquals(1, BukovRaidMode.TRAINING_GROUND.incomingDamage(18));
+		assertEquals(0, BukovRaidMode.TRAINING_GROUND.incomingDamage(0, 20));
+		assertEquals(1, BukovRaidMode.TRAINING_GROUND.incomingDamage(1, 20));
+		assertEquals(18, BukovRaidMode.TRAINING_GROUND.incomingDamage(18, 20));
+		assertEquals(4, BukovRaidMode.TRAINING_GROUND.incomingDamage(18, 5));
+		assertEquals(0, BukovRaidMode.TRAINING_GROUND.incomingDamage(18, 1));
 		for (BukovRaidMode mode : BukovRaidMode.values()) {
 			if (mode.trainingGround()) continue;
-			assertEquals(18, mode.incomingDamage(18));
+			assertEquals(18, mode.incomingDamage(18, 1));
 		}
 	}
 

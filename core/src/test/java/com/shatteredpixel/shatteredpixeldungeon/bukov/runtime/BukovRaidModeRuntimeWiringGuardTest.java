@@ -23,7 +23,8 @@ public class BukovRaidModeRuntimeWiringGuardTest {
 		assertTrue(world.contains("raidMode.maximumActiveEnemiesAt(elapsed)"));
 		assertTrue(world.contains("raidMode.convergenceStarted(elapsed)"));
 		assertTrue(world.contains("raidMode.overtime(elapsed)"));
-		assertTrue(world.contains("raidMode.incomingDamage(damage)"));
+		assertTrue(world.contains(
+				"raidMode.incomingDamage(damage, hero.HP)"));
 		String convergence = between(
 				world,
 				"private void applyModeConvergence()",

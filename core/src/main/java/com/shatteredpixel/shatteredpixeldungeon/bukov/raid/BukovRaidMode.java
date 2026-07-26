@@ -135,14 +135,17 @@ public enum BukovRaidMode {
 	 * letting the opening target kill a new player before the tutorial can be
 	 * completed. Formal raid modes preserve the fully resolved damage value.
 	 */
-	public int incomingDamage(int resolvedDamage) {
+	public int incomingDamage(int resolvedDamage, int currentHealth) {
 		if (resolvedDamage < 0) {
 			throw new IllegalArgumentException(
 					"resolvedDamage must be non-negative");
 		}
-		return trainingGround() && resolvedDamage > 0
-				? 1
-				: resolvedDamage;
+		if (currentHealth < 0) {
+			throw new IllegalArgumentException(
+					"currentHealth must be non-negative");
+		}
+		if (!trainingGround()) return resolvedDamage;
+		return Math.min(resolvedDamage, Math.max(0, currentHealth - 1));
 	}
 
 	/**

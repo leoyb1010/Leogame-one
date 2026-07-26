@@ -1501,7 +1501,7 @@ public final class BukovRealtimeWorld
 			if (damage >= 0) {
 				damage = Math.max(0, damage - hero.drRoll());
 			}
-			damage = raidMode.incomingDamage(damage);
+			damage = raidMode.incomingDamage(damage, hero.HP);
 			if (damage > 0) {
 				playSfx(
 						Assets.Sounds.Bukov.BULLET_HIT,
@@ -4158,7 +4158,7 @@ public final class BukovRealtimeWorld
 		if (damage >= 0) {
 			damage = Math.max(0, damage - hero.drRoll());
 		}
-		damage = raidMode.incomingDamage(damage);
+		damage = raidMode.incomingDamage(damage, hero.HP);
 		if (damage > 0) {
 			playSfx(
 					Assets.Sounds.Bukov.CONTACT_HIT,
