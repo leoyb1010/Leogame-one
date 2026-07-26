@@ -131,6 +131,21 @@ public enum BukovRaidMode {
 	}
 
 	/**
+	 * Training keeps real hit, armor, status and medical feedback without
+	 * letting the opening target kill a new player before the tutorial can be
+	 * completed. Formal raid modes preserve the fully resolved damage value.
+	 */
+	public int incomingDamage(int resolvedDamage) {
+		if (resolvedDamage < 0) {
+			throw new IllegalArgumentException(
+					"resolvedDamage must be non-negative");
+		}
+		return trainingGround() && resolvedDamage > 0
+				? 1
+				: resolvedDamage;
+	}
+
+	/**
 	 * Training is an untimed firing range. Its 3-5 minute values remain a
 	 * recommended exercise length for presentation, never a convergence or
 	 * overtime deadline.

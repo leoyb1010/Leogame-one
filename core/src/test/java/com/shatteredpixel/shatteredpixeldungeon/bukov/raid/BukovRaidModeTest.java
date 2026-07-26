@@ -68,6 +68,17 @@ public class BukovRaidModeTest {
 	}
 
 	@Test
+	public void trainingCapsEachResolvedHitWithoutChangingFormalRaids() {
+		assertEquals(0, BukovRaidMode.TRAINING_GROUND.incomingDamage(0));
+		assertEquals(1, BukovRaidMode.TRAINING_GROUND.incomingDamage(1));
+		assertEquals(1, BukovRaidMode.TRAINING_GROUND.incomingDamage(18));
+		for (BukovRaidMode mode : BukovRaidMode.values()) {
+			if (mode.trainingGround()) continue;
+			assertEquals(18, mode.incomingDamage(18));
+		}
+	}
+
+	@Test
 	public void profileRoundTripPreservesModeProgressAndTutorialLedger() {
 		BukovProfile profile = new BukovProfile();
 		profile.selectRaidMode(BukovRaidMode.BOSS_CONTRACT);
