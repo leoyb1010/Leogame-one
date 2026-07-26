@@ -5,11 +5,11 @@
     "nameEn": "Escape from Bukov",
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
-    "releaseState": "automation_and_platform_smoke_passed_not_final",
-    "releaseSourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-    "packagedCandidateSourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-    "packagedCandidateVersion": "2.0.0-alpha31-e2e-ci",
-    "sourceIdentityNote": "This manifest documentation may be committed after the sealed release source; package, platform, final-gate and CI evidence remain bound to a91461c5ba57aedb76f07acd741b749100425fb2."
+    "releaseState": "personal_build_validated_mac_and_ios_simulator",
+    "releaseSourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+    "packagedCandidateSourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+    "packagedCandidateVersion": "2.0.0-alpha34-stage",
+    "sourceIdentityNote": "This documentation commit follows the sealed source. Packages, dual-platform soak and 34-step final-gate evidence are bound to d3740ff7b63c2d49a456cb1d6f918984c38ac6e4."
   },
   "content": {
     "themes": {
@@ -53,8 +53,7 @@
     },
     "soundEffects": {
       "expected": 83,
-      "scope": "current Alpha 32 development worktree",
-      "packagedAlpha31Expected": 79,
+      "scope": "Alpha 34 sealed source",
       "directory": "core/src/main/assets/sounds/bukov",
       "format": "mono 48 kHz PCM16 WAV",
       "requiredCues": [
@@ -77,37 +76,37 @@
     "macOS": {
       "implementation": "present",
       "packageEvidence": {
-        "status": "superseded",
-        "candidateState": "current_installed_candidate_not_final",
-        "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha31-e2e-ci-a91461c5b/逃离布科夫-macOS-alpha31-e2e-ci-a91461c5b.zip",
-        "archiveSha256": "c8d92774e6703092073ba2322c93cff04b9d2738a54c3a5af42f851405ccf2bf",
-        "binary": "/Users/leoyuan/Applications/逃离布科夫.app/Contents/MacOS/逃离布科夫",
-        "binarySha256": "3e5a29cfdce0423bac62b658964c8d574b41b316de357cc1ad688cf6699e8358",
-        "builtAt": "2026-07-25T08:57:01+08:00",
-        "log": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts/20260725T015200Z-a91461c5ba57-99831.txt"
+        "status": "passed",
+        "candidateState": "immutable_archive_verified",
+        "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+        "artifact": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/逃离布科夫-alpha34-stage-d3740ff7b63c/逃离布科夫-macOS-alpha34-stage-d3740ff7b63c.zip",
+        "archiveSha256": "05634da7ff0ad77822e72b2752213c6fc9ae4b390514efdef7bda517aa3dee5c",
+        "binary": "/private/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/desktop/jpackage/逃离布科夫.app/Contents/MacOS/逃离布科夫",
+        "binarySha256": "8fc7d7a3af8a2d2fa49b508b532a31cbe3e3b53b1f7679af6a42aeec1d9c71ed",
+        "builtAt": "2026-07-26T10:42:51+08:00",
+        "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json"
       },
       "interactiveQa": {
-        "status": "partial_pass",
-        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance",
+        "status": "passed",
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-performance",
         "report": "docs/bukov/FINAL_QA_REPORT.md"
       }
     },
     "iOS": {
       "implementation": "present",
       "aotEvidence": {
-        "status": "superseded",
-        "candidateState": "current_installed_candidate_not_final",
-        "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-        "artifact": "/Users/leoyuan/Documents/日常/output/逃离布科夫-alpha31-e2e-ci-a91461c5b/逃离布科夫-iOS-Simulator-alpha31-e2e-ci-a91461c5b.zip",
-        "archiveSha256": "cc178c6fd7372a49c7ffc51b4e1170a04c304b475ecece60cb97b722cb935529",
-        "binary": "/Users/leoyuan/Library/Developer/CoreSimulator/Devices/50D8337F-7AFD-4AAE-AB44-318BCDC02AF6/data/Containers/Bundle/Application/A0E3DEE3-A3EF-48C6-8B44-ED8627E3F189/逃离布科夫-iOS-Simulator.app/IOSLauncher",
-        "binarySha256": "92181b4af77a6e3a7be8ddfbd41a69fb490cfd19ced65b5d107e0e1a09be8079",
-        "builtAt": "2026-07-25T08:57:01+08:00",
-        "log": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts/20260725T015200Z-a91461c5ba57-99831.txt"
+        "status": "passed",
+        "candidateState": "immutable_archive_verified",
+        "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+        "artifact": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/逃离布科夫-alpha34-stage-d3740ff7b63c/逃离布科夫-iOS-Simulator-alpha34-stage-d3740ff7b63c.zip",
+        "archiveSha256": "2c938e45d361545fe9db644cc6adf06f5772130496a5d2c491d063b4c33a2809",
+        "binary": "/private/var/folders/49/prfm1k9s5sg5b8pmbx1z37pm0000gn/C/escape-from-bukov-gradle/ios/robovm.tmp/IOSLauncher.app/IOSLauncher",
+        "binarySha256": "36c1dc19e19d6becc3bc82b7c78fc6f51d28b75f17ccf42c6311c67ba3122279",
+        "builtAt": "2026-07-26T10:42:51+08:00",
+        "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json"
       },
       "simulatorQa": {
-        "status": "partial_pass",
+        "status": "passed",
         "runtime": "iOS 26.5",
         "device": "Codex Test iPhone 17 Pro",
         "deviceId": "50D8337F-7AFD-4AAE-AB44-318BCDC02AF6",
@@ -115,8 +114,8 @@
           "portrait",
           "landscape"
         ],
-        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance",
-        "nativeAudioEvidence": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance/iOS-audio.log",
+        "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-performance",
+        "nativeAudioEvidence": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/05-static-audio.log",
         "nativeAudioStatus": "passed_no_fallback"
       },
       "deviceQa": {
@@ -138,12 +137,12 @@
     ],
     "packagedRenderCallbackFramePacing": {
       "status": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "scope": "macOS package and iOS simulator",
       "metricKind": "cpu-render-callback-frame-pacing",
       "hardwareGpuCounter": false,
-      "summary": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance/render-frame-summary.json",
-      "worstRunP95Ms": 17.6,
+      "summary": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-performance/dual-render-summary-d3740ff7b63c.json",
+      "worstRunP95Ms": 17.9,
       "worstRunP99Ms": 18.1,
       "limitation": "Gdx.graphics.getDeltaTime measures delivered render-callback pacing, not hardware GPU time, draw calls, Metal utilization, temperature or thermal throttling."
     },
@@ -153,13 +152,13 @@
     },
     "thirtyMinuteSoak": {
       "status": "passed_packaged_apps",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "minimumDurationSecondsPerPlatform": 1800,
-      "macOSActiveGameplaySeconds": 1850.97,
-      "iOSActiveGameplaySeconds": 2072.118,
-      "totalFrames": 340468,
-      "totalSeconds": 3923.088,
-      "log": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-performance/render-frame-summary.json",
+      "macOSActiveGameplaySeconds": 1811.117,
+      "iOSActiveGameplaySeconds": 1811.7,
+      "totalFrames": 304468,
+      "totalSeconds": 3622.817,
+      "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-performance/dual-render-summary-d3740ff7b63c.json",
       "limitation": "Wall-clock packaged-app render-callback soak passed; this is not hardware GPU or physical iOS thermal evidence."
     }
   },
@@ -170,22 +169,23 @@
     ],
     "seedSweep": {
       "status": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "count": 10000,
-      "log": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-final-gate/25-seed-10000.log"
+      "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/25-seed-10000.log",
+      "worldRouteCount": 200
     },
     "saveStress": {
       "status": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "iterations": 100,
-      "log": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-final-gate/26-save-100.log"
+      "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/26-save-100.log"
     },
     "freshInstallRecoveryQa": {
       "status": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "scope": "macOS installed app plus iOS simulator install/launch",
-      "evidenceDirectory": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts",
-      "receipt": "/Users/leoyuan/Library/Logs/EscapeFromBukov/install-receipts/20260725T015200Z-a91461c5ba57-99831.txt"
+      "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate",
+      "receipt": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json"
     }
   },
   "validation": {
@@ -199,25 +199,25 @@
     ],
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
-      "status": "pending_final_gate",
+      "status": "passed",
       "automationStatus": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "tests": {
-        "core": 1005,
+        "core": 1162,
         "desktop": 10,
         "ios": 11,
         "failures": 0
       },
-      "log": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-final-gate",
-      "statusReason": "The automated suite passed, but the non-final release scope keeps final personal-build sign-off pending until physical/manual requirements are complete."
+      "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate",
+      "statusReason": "All local Core, Desktop and iOS suites passed inside the 34-step final gate; physical-device and human-route evidence remain outside this stage seal."
     },
     "finalGate": {
       "status": "passed_automation",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-      "plannedSteps": 33,
-      "passedSteps": 33,
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+      "plannedSteps": 34,
+      "passedSteps": 34,
       "failedSteps": 0,
-      "summary": "/Users/leoyuan/Documents/日常/output/evidence/a91461c5b-alpha31-final-gate/summary.json",
+      "summary": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json",
       "includes": [
         "10,000 seed sweep",
         "100 save iterations",
@@ -228,9 +228,9 @@
       ]
     },
     "remoteCi": {
-      "status": "passed",
-      "sourceCommit": "a91461c5ba57aedb76f07acd741b749100425fb2",
-      "run": "https://github.com/leoyb1010/Leogame-one/actions/runs/30137122827",
+      "status": "pending_post_push",
+      "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
+      "run": "pending",
       "jobs": [
         "apple-java-build",
         "java-build"
@@ -240,7 +240,7 @@
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
-    "currentPlatformClaim": "final_gate_pending",
+    "currentPlatformClaim": "passed_mac_and_ios_simulator",
     "rule": "Package, platform soak, final-gate and remote-CI evidence are all bound to the sealed releaseSourceCommit. A later documentation-only commit does not change the release binary identity.",
     "knownLimitations": [
       "Physical iOS device QA was not run.",
