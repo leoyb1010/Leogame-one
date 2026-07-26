@@ -125,13 +125,22 @@ public class BukovFiveModeLifecycleTest {
 			assertTrue(hasDefinition(
 					raid, BukovScavengerKit.BACKPACK_DEFINITION));
 		} else if (mode.trainingGround()) {
-			assertEquals(2, raid.loot().distinctItemCount());
+			assertEquals(5, raid.loot().distinctItemCount());
 			assertTrue(hasDefinition(
 					raid,
 					BukovRaidCoordinator.TRAINING_FIREARM_DEFINITION));
 			assertTrue(hasDefinition(
 					raid,
 					BukovRaidCoordinator.TRAINING_AMMO_DEFINITION));
+			assertTrue(hasDefinition(
+					raid,
+					BukovRaidCoordinator.TRAINING_ARMOR_DEFINITION));
+			assertTrue(hasDefinition(
+					raid,
+					BukovRaidCoordinator.TRAINING_BLEED_DEFINITION));
+			assertTrue(hasDefinition(
+					raid,
+					BukovRaidCoordinator.TRAINING_HEAL_DEFINITION));
 			assertEquals(0, deployed.raidsStarted());
 		} else {
 			assertTrue(raid.loot().distinctItemCount() >= 2);

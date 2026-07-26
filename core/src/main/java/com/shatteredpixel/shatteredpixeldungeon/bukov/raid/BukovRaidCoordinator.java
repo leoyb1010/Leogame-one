@@ -27,6 +27,9 @@ public final class BukovRaidCoordinator {
 
 	static final String TRAINING_FIREARM_DEFINITION = "firearm:needle_9";
 	static final String TRAINING_AMMO_DEFINITION = "ammo:ammo_9_training";
+	static final String TRAINING_ARMOR_DEFINITION = "armor:soft_vest";
+	static final String TRAINING_BLEED_DEFINITION = "medical:tourniquet";
+	static final String TRAINING_HEAL_DEFINITION = "medical:first_aid";
 	static final int TRAINING_AMMO_QUANTITY = 120;
 	public static final String BOSS_CONTRACT_COMPLETED_EVENT_ID =
 			"boss_contract:white_line_defeated";
@@ -947,6 +950,33 @@ public final class BukovRaidCoordinator {
 				TRAINING_AMMO_DEFINITION,
 				TRAINING_AMMO_QUANTITY,
 				0.012f,
+				0,
+				false,
+				false,
+				1f));
+		addTrainingItem(carried, new RaidItem(
+				"training:" + raidId + ":soft_vest",
+				TRAINING_ARMOR_DEFINITION,
+				1,
+				2.4f,
+				0,
+				false,
+				false,
+				1f));
+		addTrainingItem(carried, new RaidItem(
+				"training:" + raidId + ":tourniquet",
+				TRAINING_BLEED_DEFINITION,
+				2,
+				0.08f,
+				0,
+				false,
+				false,
+				1f));
+		addTrainingItem(carried, new RaidItem(
+				"training:" + raidId + ":first_aid",
+				TRAINING_HEAL_DEFINITION,
+				2,
+				0.32f,
 				0,
 				false,
 				false,

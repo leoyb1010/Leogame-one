@@ -261,7 +261,7 @@ public class BukovDeploymentFlowTest {
 		assertEquals(3, deployed.stash().distinctItemCount());
 		assertEquals(0, deployed.loadout().distinctItemCount());
 		assertEquals(0, deployed.raidsStarted());
-		assertEquals(2, raid.loot().distinctItemCount());
+		assertEquals(5, raid.loot().distinctItemCount());
 		assertEquals(
 				BukovRaidCoordinator.TRAINING_FIREARM_DEFINITION,
 				findByDefinition(
@@ -274,6 +274,18 @@ public class BukovDeploymentFlowTest {
 						raid,
 						BukovRaidCoordinator.TRAINING_AMMO_DEFINITION)
 						.quantity());
+		assertEquals(
+				BukovRaidCoordinator.TRAINING_ARMOR_DEFINITION,
+				findByDefinition(
+						raid,
+						BukovRaidCoordinator.TRAINING_ARMOR_DEFINITION)
+						.definitionId());
+		assertEquals(2, findByDefinition(
+				raid, BukovRaidCoordinator.TRAINING_BLEED_DEFINITION)
+				.quantity());
+		assertEquals(2, findByDefinition(
+				raid, BukovRaidCoordinator.TRAINING_HEAL_DEFINITION)
+				.quantity());
 		assertEquals(BukovRaidMode.TRAINING_GROUND,
 				raid.session().raidMode());
 
@@ -309,11 +321,11 @@ public class BukovDeploymentFlowTest {
 		saves.saveProfile(profile);
 
 		BukovRaidCoordinator started = start(saves, "training-resume");
-		assertEquals(2, started.loot().distinctItemCount());
+		assertEquals(5, started.loot().distinctItemCount());
 		started.saveCheckpoint();
 
 		BukovRaidCoordinator resumed = BukovRaidCoordinator.resume(saves);
-		assertEquals(2, resumed.loot().distinctItemCount());
+		assertEquals(5, resumed.loot().distinctItemCount());
 		assertEquals(
 				1,
 				findByDefinition(
