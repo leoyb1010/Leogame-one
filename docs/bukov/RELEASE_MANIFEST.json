@@ -5,7 +5,7 @@
     "nameEn": "Escape from Bukov",
     "bundleId": "com.leoyuan.escapefrombukov",
     "license": "GPL-3.0-or-later",
-    "releaseState": "personal_build_validated_mac_and_ios_simulator",
+    "releaseState": "automation_and_platform_smoke_passed_not_final",
     "releaseSourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
     "packagedCandidateSourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
     "packagedCandidateVersion": "2.0.0-alpha34-stage",
@@ -76,7 +76,7 @@
     "macOS": {
       "implementation": "present",
       "packageEvidence": {
-        "status": "passed",
+        "status": "superseded",
         "candidateState": "immutable_archive_verified",
         "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
         "artifact": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/逃离布科夫-alpha34-stage-d3740ff7b63c/逃离布科夫-macOS-alpha34-stage-d3740ff7b63c.zip",
@@ -87,7 +87,7 @@
         "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json"
       },
       "interactiveQa": {
-        "status": "passed",
+        "status": "partial_pass",
         "evidenceDirectory": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-performance",
         "report": "docs/bukov/FINAL_QA_REPORT.md"
       }
@@ -95,7 +95,7 @@
     "iOS": {
       "implementation": "present",
       "aotEvidence": {
-        "status": "passed",
+        "status": "superseded",
         "candidateState": "immutable_archive_verified",
         "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
         "artifact": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/逃离布科夫-alpha34-stage-d3740ff7b63c/逃离布科夫-iOS-Simulator-alpha34-stage-d3740ff7b63c.zip",
@@ -106,7 +106,7 @@
         "log": "/Users/leoyuan/Documents/日常/output/evidence/d3740ff7b63c-alpha34-final-gate/summary.json"
       },
       "simulatorQa": {
-        "status": "passed",
+        "status": "partial_pass",
         "runtime": "iOS 26.5",
         "device": "Codex Test iPhone 17 Pro",
         "deviceId": "50D8337F-7AFD-4AAE-AB44-318BCDC02AF6",
@@ -199,7 +199,7 @@
     ],
     "gradleSuite": {
       "command": "./scripts/apple-gradle core:test ios:test desktop:test --no-daemon",
-      "status": "passed",
+      "status": "pending_final_gate",
       "automationStatus": "passed",
       "sourceCommit": "d3740ff7b63c2d49a456cb1d6f918984c38ac6e4",
       "tests": {
@@ -240,7 +240,7 @@
   "evidencePolicy": {
     "qaTemplate": "docs/bukov/FINAL_QA_REPORT_TEMPLATE.md",
     "qaReport": "docs/bukov/FINAL_QA_REPORT.md",
-    "currentPlatformClaim": "passed_mac_and_ios_simulator",
+    "currentPlatformClaim": "final_gate_pending",
     "rule": "Package, platform soak, final-gate and remote-CI evidence are all bound to the sealed releaseSourceCommit. A later documentation-only commit does not change the release binary identity.",
     "knownLimitations": [
       "Physical iOS device QA was not run.",
