@@ -62,6 +62,26 @@ public class BukovRaidModeSelectionWiringGuardTest {
 		assertEquals(1, occurrences(selector, "close.call();"));
 	}
 
+	@Test
+	public void scrollPaneRoutesTapsToModeCards() throws Exception {
+		String selector = source("WndBukovRaidModeSelection.java");
+
+		assertTrue(selector.contains("public void onClick(float x, float y)"));
+		assertTrue(selector.contains("modeIndexAt(y, cardButtons.size())"));
+		assertTrue(selector.contains("selectMode(modeIndex)"));
+	}
+
+	@Test
+	public void modeTapIndexRejectsOutsideContent() {
+		assertEquals(0, WndBukovRaidModeSelection.modeIndexAt(0f, 5));
+		assertEquals(0, WndBukovRaidModeSelection.modeIndexAt(30.9f, 5));
+		assertEquals(1, WndBukovRaidModeSelection.modeIndexAt(31f, 5));
+		assertEquals(4, WndBukovRaidModeSelection.modeIndexAt(154.9f, 5));
+		assertEquals(-1, WndBukovRaidModeSelection.modeIndexAt(155f, 5));
+		assertEquals(-1, WndBukovRaidModeSelection.modeIndexAt(-1f, 5));
+		assertEquals(-1, WndBukovRaidModeSelection.modeIndexAt(0f, 0));
+	}
+
 	private static int occurrences(String source, String value) {
 		int count = 0;
 		int offset = 0;

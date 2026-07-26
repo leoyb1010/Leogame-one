@@ -120,7 +120,15 @@ public final class WndBukovRaidModeSelection extends Window {
 				CARD_HEIGHT * 2,
 				windowHeight - HEADER_HEIGHT - FOOTER_HEIGHT);
 		ModeList list = new ModeList(windowWidth - MARGIN * 2);
-		cardScroll = new ScrollPane(list);
+		cardScroll = new ScrollPane(list) {
+			@Override
+			public void onClick(float x, float y) {
+				int modeIndex = modeIndexAt(y, cardButtons.size());
+				if (modeIndex >= 0) {
+					selectMode(modeIndex);
+				}
+			}
+		};
 		add(cardScroll);
 		cardScroll.setRect(
 				MARGIN,
@@ -158,6 +166,14 @@ public final class WndBukovRaidModeSelection extends Window {
 			return value;
 		}
 		return value.substring(0, Math.max(1, maxCharacters - 3)) + "...";
+	}
+
+	static int modeIndexAt(float contentY, int modeCount) {
+		if (contentY < 0f || modeCount <= 0) {
+			return -1;
+		}
+		int modeIndex = (int) (contentY / CARD_HEIGHT);
+		return modeIndex < modeCount ? modeIndex : -1;
 	}
 
 	private static void center(
